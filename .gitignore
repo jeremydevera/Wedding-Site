@@ -1,0 +1,14 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Dependencies / build output (if you later add a build step)
+node_modules/
+dist/
+build/
+
+# Bundled single-file export (regenerate as needed)
+*-standalone.html
