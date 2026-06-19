@@ -1,10 +1,14 @@
+import React from "react";
+import { uid } from "./store.jsx";
+const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
+
 // ============================================================================
 // components.jsx — shared UI primitives used across the app.
 // ============================================================================
-const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
 
 // --- Striped placeholder for imagery the client will replace ----------------
-function Placeholder({ label = "photo", ratio = "4 / 3", className = "", style = {} }) {
+export function Placeholder({ label = "photo", ratio = "4 / 3", className = "", style = {} }) {
   return (
     <div className={"ph " + className} style={{ aspectRatio: ratio, ...style }}>
       <span className="ph__label">{label}</span>
@@ -13,7 +17,7 @@ function Placeholder({ label = "photo", ratio = "4 / 3", className = "", style =
 }
 
 // --- Monogram (couple initials) ---------------------------------------------
-function Monogram({ a, b, size = 40 }) {
+export function Monogram({ a, b, size = 40 }) {
   const ia = (a || "A").trim().charAt(0).toUpperCase();
   const ib = (b || "B").trim().charAt(0).toUpperCase();
   return (
@@ -24,7 +28,7 @@ function Monogram({ a, b, size = 40 }) {
 }
 
 // --- Button -----------------------------------------------------------------
-function Button({ variant = "primary", size = "md", block, type = "button", className = "", children, ...rest }) {
+export function Button({ variant = "primary", size = "md", block, type = "button", className = "", children, ...rest }) {
   const cls = [
     "btn",
     `btn--${variant}`,
@@ -38,7 +42,7 @@ function Button({ variant = "primary", size = "md", block, type = "button", clas
 }
 
 // --- Form field wrapper -----------------------------------------------------
-function Field({ label, required, hint, error, children, id }) {
+export function Field({ label, required, hint, error, children, id }) {
   return (
     <label className="field" htmlFor={id}>
       {label && (
@@ -53,18 +57,18 @@ function Field({ label, required, hint, error, children, id }) {
   );
 }
 
-function Input(props) {
+export function Input(props) {
   return <input className={"input " + (props.className || "")} {...props} />;
 }
-function Textarea(props) {
+export function Textarea(props) {
   return <textarea className={"input textarea " + (props.className || "")} {...props} />;
 }
-function Select({ children, ...props }) {
+export function Select({ children, ...props }) {
   return <select className={"input select " + (props.className || "")} {...props}>{children}</select>;
 }
 
 // --- Section header ---------------------------------------------------------
-function SectionHead({ eyebrow, title, lead, center, light }) {
+export function SectionHead({ eyebrow, title, lead, center, light }) {
   return (
     <header className={"sec-head" + (center ? " sec-head--center" : "") + (light ? " sec-head--light" : "")}>
       {eyebrow && <div className="eyebrow">{eyebrow}</div>}
@@ -75,7 +79,7 @@ function SectionHead({ eyebrow, title, lead, center, light }) {
 }
 
 // --- Modal ------------------------------------------------------------------
-function Modal({ open, onClose, children, wide, label = "Dialog" }) {
+export function Modal({ open, onClose, children, wide, label = "Dialog" }) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => { if (e.key === "Escape") onClose && onClose(); };
@@ -96,8 +100,8 @@ function Modal({ open, onClose, children, wide, label = "Dialog" }) {
 }
 
 // --- Toast (transient confirmation) -----------------------------------------
-let _toastFn = null;
-function ToastHost() {
+export let _toastFn = null;
+export function ToastHost() {
   const [toasts, setToasts] = useState([]);
   useEffect(() => {
     _toastFn = (msg, kind = "ok") => {
@@ -115,11 +119,11 @@ function ToastHost() {
     </div>
   );
 }
-function toast(msg, kind) { if (_toastFn) _toastFn(msg, kind); }
+export function toast(msg, kind) { if (_toastFn) _toastFn(msg, kind); }
 
 // --- Confirm dialog (promise-based, styled) ---------------------------------
-let _confirmFn = null;
-function ConfirmHost() {
+export let _confirmFn = null;
+export function ConfirmHost() {
   const [state, setState] = useState(null);
   useEffect(() => {
     _confirmFn = (opts) => new Promise((resolve) => setState({ ...opts, resolve }));
@@ -144,14 +148,14 @@ function ConfirmHost() {
     </Modal>
   );
 }
-function confirmDialog(opts) {
+export function confirmDialog(opts) {
   const o = typeof opts === "string" ? { message: opts } : (opts || {});
   if (!_confirmFn) return Promise.resolve(window.confirm(o.message || "Are you sure?"));
   return _confirmFn(o);
 }
 
 // --- Crop modal (pan + zoom within an aspect frame) -------------------------
-function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc }) {
+export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc }) {
   const [zoom, setZoom] = useState(1);
   const [off, setOff] = useState({ x: 0, y: 0 });
   const [nat, setNat] = useState({ w: 0, h: 0 });
@@ -249,7 +253,7 @@ function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc }) {
 }
 
 // --- Google Maps helpers (parse pasted map links for coordinates) -----------
-function mapResolveQuery(q) {
+export function mapResolveQuery(q) {
   q = (q || "").trim();
   if (!q) return "";
   const at = q.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);              // .../@40.7,-74.0,15z
@@ -260,12 +264,12 @@ function mapResolveQuery(q) {
   if (place) return decodeURIComponent(place[1].replace(/\+/g, " "));
   return q;
 }
-function mapEmbedUrl(q) { return "https://www.google.com/maps?q=" + encodeURIComponent(mapResolveQuery(q)) + "&output=embed"; }
-function mapDirUrl(q) { return "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(mapResolveQuery(q)); }
-function mapSearchUrl(q) { return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent((q || "").trim() || "wedding venue"); }
+export function mapEmbedUrl(q) { return "https://www.google.com/maps?q=" + encodeURIComponent(mapResolveQuery(q)) + "&output=embed"; }
+export function mapDirUrl(q) { return "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(mapResolveQuery(q)); }
+export function mapSearchUrl(q) { return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent((q || "").trim() || "wedding venue"); }
 
 // --- Countdown to a date ----------------------------------------------------
-function useCountdown(targetIso) {
+export function useCountdown(targetIso) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -280,7 +284,7 @@ function useCountdown(targetIso) {
   return { days, hours, minutes, seconds, done: target <= now };
 }
 
-function Countdown({ targetIso, light }) {
+export function Countdown({ targetIso, light }) {
   const { days, hours, minutes, seconds, done } = useCountdown(targetIso);
   if (done) return <div className={"countdown countdown--done" + (light ? " countdown--light" : "")}>The day is here — cheers! ✨</div>;
   const units = [
@@ -302,7 +306,7 @@ function Countdown({ targetIso, light }) {
 }
 
 // --- small inline icons (line style, no slop) -------------------------------
-const Icon = {
+export const Icon = {
   rings: (p) => (<svg viewBox="0 0 24 24" fill="none" {...p}><circle cx="9" cy="15" r="6" stroke="currentColor" strokeWidth="1.4"/><circle cx="15" cy="13" r="6" stroke="currentColor" strokeWidth="1.4"/></svg>),
   pin: (p) => (<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11Z" stroke="currentColor" strokeWidth="1.4"/><circle cx="12" cy="10" r="2.4" stroke="currentColor" strokeWidth="1.4"/></svg>),
   camera: (p) => (<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M3 8.5A1.5 1.5 0 0 1 4.5 7H7l1.2-1.8A1 1 0 0 1 9 4.7h6a1 1 0 0 1 .8.5L17 7h2.5A1.5 1.5 0 0 1 21 8.5v9A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5v-9Z" stroke="currentColor" strokeWidth="1.4"/><circle cx="12" cy="12.5" r="3.2" stroke="currentColor" strokeWidth="1.4"/></svg>),
@@ -330,8 +334,8 @@ const Icon = {
 
 // --- Floating home decorations (toggleable) --------------------------------
 // Butterfly colour is approximated by hue-rotating the base (blue ~210°) glyph.
-const BFLY_BASE_HUE = 210;
-function hexToHue(hex) {
+export const BFLY_BASE_HUE = 210;
+export function hexToHue(hex) {
   hex = String(hex || "").replace("#", "");
   if (hex.length === 3) hex = hex.replace(/./g, (c) => c + c);
   const r = parseInt(hex.slice(0, 2), 16) / 255, g = parseInt(hex.slice(2, 4), 16) / 255, b = parseInt(hex.slice(4, 6), 16) / 255;
@@ -345,8 +349,8 @@ function hexToHue(hex) {
   h *= 60; if (h < 0) h += 360;
   return h;
 }
-function bflyHueShift(hex) { return Math.round(hexToHue(hex) - BFLY_BASE_HUE); }
-const BFLY_COLORS = [
+export function bflyHueShift(hex) { return Math.round(hexToHue(hex) - BFLY_BASE_HUE); }
+export const BFLY_COLORS = [
   { hex: "#5aa9e6", name: "Blue" },
   { hex: "#8e7bd6", name: "Violet" },
   { hex: "#e67ea9", name: "Pink" },
@@ -354,7 +358,7 @@ const BFLY_COLORS = [
   { hex: "#e8b54a", name: "Gold" },
   { hex: "#5fae7e", name: "Green" },
 ];
-function decorGlyph(style) {
+export function decorGlyph(style) {
   const a = { fill: "currentColor" };
   switch (style) {
     case "butterflies":
@@ -377,7 +381,7 @@ function decorGlyph(style) {
   }
 }
 
-function FloatingDecor({ on, style, butterflyStyle, butterflyColor, butterflyFlight, butterflyCount }) {
+export function FloatingDecor({ on, style, butterflyStyle, butterflyColor, butterflyFlight, butterflyCount }) {
   const active = on && style && style !== "none";
   const baseCount = style === "fireflies" ? 20 : style === "confetti" ? 28 : style === "petals" || style === "leaves" ? 18 : 12;
   const count = style === "butterflies" ? Math.max(1, Math.min(40, Math.round(butterflyCount || 12))) : baseCount;
@@ -419,7 +423,7 @@ function FloatingDecor({ on, style, butterflyStyle, butterflyColor, butterflyFli
 }
 
 // Small contained preview of a decoration (for the admin settings panel)
-function DecorPreview({ style, butterflyStyle, butterflyColor, butterflyCount, butterflyFlight }) {
+export function DecorPreview({ style, butterflyStyle, butterflyColor, butterflyCount, butterflyFlight }) {
   const isB = style === "butterflies";
   const n = isB ? Math.max(1, Math.min(24, Math.round(butterflyCount || 12))) : 5;
   const flight = butterflyFlight || "flutter";

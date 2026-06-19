@@ -1,10 +1,17 @@
+import React from "react";
+import { go } from "./nav.js";
+import { Store, useStore } from "./store.jsx";
+import { Button, Field, Icon, Input, Select, Textarea } from "./components.jsx";
+import { PageHero } from "./pages-main.jsx";
+const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
+
 // ============================================================================
 // rsvp.jsx — RSVP form with validation, duplicate detection, success state
 // ============================================================================
 
-const DIET_OPTIONS = ["None", "Vegetarian", "Vegan", "Gluten-free", "Halal", "Kosher", "Seafood allergy", "Nut allergy", "Other"];
+export const DIET_OPTIONS = ["None", "Vegetarian", "Vegan", "Gluten-free", "Halal", "Kosher", "Seafood allergy", "Nut allergy", "Other"];
 
-function RSVPPage() {
+export function RSVPPage() {
   const { settings, rsvps } = useStore();
   const [form, setForm] = useState({
     fullName: "", email: "", phone: "", status: "attending", count: 1,

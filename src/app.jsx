@@ -1,15 +1,29 @@
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { go } from "./nav.js";
+import { Store, useStore } from "./store.jsx";
+import { FONT_OPTIONS, THEMES, THEME_FONTS, applyTheme } from "./themes.jsx";
+import { Button, ConfirmHost, FloatingDecor, Icon, Monogram, ToastHost, confirmDialog, toast } from "./components.jsx";
+import { TweakButton, TweakColor, TweakSection, TweakSelect, TweakText, TweakToggle, TweaksPanel } from "./tweaks-panel.jsx";
+import { DetailsPage, Home, SchedulePage, StoryPage, VenuePage } from "./pages-main.jsx";
+import { RSVPPage } from "./rsvp.jsx";
+import { GalleryPage, UploadPage, VideoMessagePage } from "./media.jsx";
+import { GuestbookPage, QuizPage } from "./social.jsx";
+import { AdminApp, ImageUploadField } from "./admin-manage.jsx";
+const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
+
 // ============================================================================
 // app.jsx — router, public nav + footer, tweaks panel, root App, mount
 // ============================================================================
 
-const ROUTES = {
+export const ROUTES = {
   home: Home, story: StoryPage, details: DetailsPage, schedule: SchedulePage,
   venue: VenuePage, rsvp: RSVPPage, upload: UploadPage, gallery: GalleryPage,
   guestbook: GuestbookPage, quiz: QuizPage, "video-message": VideoMessagePage,
   admin: AdminApp,
 };
 
-const NAV_LINKS = [
+export const NAV_LINKS = [
   { key: "home", label: "Home" },
   { key: "story", label: "Our Story" },
   { key: "details", label: "Details" },
@@ -20,12 +34,9 @@ const NAV_LINKS = [
   { key: "quiz", label: "Quiz" },
 ];
 
-function go(route) {
-  window.location.hash = "#/" + route;
-}
 window.go = go;
 
-function useRoute() {
+export function useRoute() {
   const parse = () => {
     const h = (window.location.hash || "#/home").replace(/^#\/?/, "");
     const key = h.split(/[/?]/)[0] || "home";
@@ -41,7 +52,7 @@ function useRoute() {
 }
 
 // --- Public nav -------------------------------------------------------------
-function Nav({ route }) {
+export function Nav({ route }) {
   const { settings } = useStore();
   const [drawer, setDrawer] = useState(false);
   return (
@@ -85,7 +96,7 @@ function Nav({ route }) {
   );
 }
 
-function Footer() {
+export function Footer() {
   const { settings } = useStore();
   return (
     <footer className="footer">
@@ -105,9 +116,9 @@ function Footer() {
 }
 
 // --- Tweaks (binds to Store) ------------------------------------------------
-const ACCENT_OPTIONS = ["#5b7560", "#5d7b97", "#b5654a", "#b06a72", "#b08d57", "#7a5a78"];
+export const ACCENT_OPTIONS = ["#5b7560", "#5d7b97", "#b5654a", "#b06a72", "#b08d57", "#7a5a78"];
 
-function TweaksContent() {
+export function TweaksContent() {
   const { settings } = useStore();
   const s = settings;
   const upd = (patch) => Store.updateSettings(patch);
@@ -168,13 +179,13 @@ function TweaksContent() {
   );
 }
 
-function THEME_DEFAULT_ACCENT(themeKey) {
+export function THEME_DEFAULT_ACCENT(themeKey) {
   // approximate hex of each theme's accent so the swatch shows a selection
   return ({ classic: "#5b7560", noir: "#b08d57", garden: "#3f7a52", blush: "#b06a72", dusk: "#5f7d9c", burgundy: "#7d2f3c", lavender: "#8f7fb0", emerald: "#2f7a5a", terracotta: "#c06a44", champagne: "#b08d57", envelope: "#5c6b3c" })[themeKey] || "#5b7560";
 }
 
 // --- Root -------------------------------------------------------------------
-function App() {
+export function App() {
   const route = useRoute();
   const { settings } = useStore();
 

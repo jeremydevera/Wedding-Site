@@ -1,13 +1,16 @@
+import React from "react";
+const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
+
 // ============================================================================
 // store.jsx — localStorage-backed app store with pub/sub + seed data
 // Everything the "backend" would hold lives here so the prototype truly works:
 // settings, RSVPs, guestbook, media, quiz submissions.
 // ============================================================================
 
-const STORE_KEY = "evermore_store_v3";
+export const STORE_KEY = "evermore_store_v3";
 
 // ---- Seed / default data ---------------------------------------------------
-const DEFAULT_SETTINGS = {
+export const DEFAULT_SETTINGS = {
   theme: "classic",
   partnerA: "Jeremy",
   partnerB: "Irish",
@@ -49,7 +52,7 @@ const DEFAULT_SETTINGS = {
   bodyFont: "Jost",
 };
 
-const SEED_SCHEDULE = [
+export const SEED_SCHEDULE = [
   { time: "2:15 PM", title: "Guest Arrival", desc: "Welcome drinks on the south lawn.", loc: "Garden Terrace" },
   { time: "3:00 PM", title: "Ceremony", desc: "Please be seated by 2:50. The ceremony begins promptly.", loc: "The Old Orchard" },
   { time: "3:45 PM", title: "Cocktail Hour", desc: "Canap\u00e9s, signature cocktails, and live strings.", loc: "Stone Courtyard" },
@@ -58,14 +61,14 @@ const SEED_SCHEDULE = [
   { time: "11:30 PM", title: "Send-Off", desc: "A sparkler farewell under the stars.", loc: "Front Drive" },
 ];
 
-const SEED_STORY = [
-  { year: "2018", title: "How we met", desc: "A rainy bookshop in Brooklyn and one shared umbrella.", img: "assets/samples/story1.png" },
-  { year: "2020", title: "First trip", desc: "Three days lost in Lisbon, and never happier.", img: "assets/samples/story2.png" },
-  { year: "2023", title: "Moving in", desc: "A tiny apartment, a loud cat, endless plants.", img: "assets/samples/story3.png" },
-  { year: "2025", title: "The proposal", desc: "Sunrise on the Maine coast, with the ring in a coffee cup.", img: "assets/samples/story4.png" },
+export const SEED_STORY = [
+  { year: "2018", title: "How we met", desc: "A rainy bookshop in Brooklyn and one shared umbrella.", img: "/assets/samples/story1.png" },
+  { year: "2020", title: "First trip", desc: "Three days lost in Lisbon, and never happier.", img: "/assets/samples/story2.png" },
+  { year: "2023", title: "Moving in", desc: "A tiny apartment, a loud cat, endless plants.", img: "/assets/samples/story3.png" },
+  { year: "2025", title: "The proposal", desc: "Sunrise on the Maine coast, with the ring in a coffee cup.", img: "/assets/samples/story4.png" },
 ];
 
-const SEED_FAQ = [
+export const SEED_FAQ = [
   { q: "What time should I arrive?", a: "Please arrive by 2:30 PM so we can begin the ceremony on time at 3:00." },
   { q: "Can I bring a plus-one?", a: "Your invitation will note the number of seats reserved in your name. Please RSVP accordingly." },
   { q: "Are children welcome?", a: "We love your little ones, but this will be an adults-only celebration with a few exceptions noted on your invite." },
@@ -73,7 +76,7 @@ const SEED_FAQ = [
   { q: "Can I take photos?", a: "We're having an unplugged ceremony, but please photograph everything afterward and upload it here!" },
 ];
 
-const SEED_QUIZ = [
+export const SEED_QUIZ = [
   { id: "q1", type: "multiple_choice", q: "Where did the couple first meet?", options: ["A coffee shop", "A bookshop", "A wedding", "Online"], answer: 1 },
   { id: "q2", type: "multiple_choice", q: "Which city was their first trip together?", options: ["Paris", "Rome", "Lisbon", "Tokyo"], answer: 2 },
   { id: "q3", type: "true_false", q: "Jeremy proposed at sunset.", options: ["True", "False"], answer: 1 },
@@ -81,31 +84,31 @@ const SEED_QUIZ = [
   { id: "q5", type: "multiple_choice", q: "Who is more likely to be late?", options: ["Jeremy", "Irish", "Both", "Neither"], answer: 0 },
 ];
 
-const SEED_GUESTBOOK = [
+export const SEED_GUESTBOOK = [
   { id: "gb1", name: "Eleanor Vance", relationship: "Aunt", message: "I have watched you both grow into the most wonderful pair. Wishing you a lifetime of joy.", status: "visible", createdAt: Date.now() - 86400000 * 5 },
   { id: "gb2", name: "Marcus & Dev", relationship: "College friends", message: "From dorm-room ramen to wedding bells. Couldn't be prouder. Let's party!", status: "visible", createdAt: Date.now() - 86400000 * 3 },
   { id: "gb3", name: "Priya Anand", relationship: "Coworker", message: "Congratulations to the loveliest couple. May your story keep getting better.", status: "visible", createdAt: Date.now() - 86400000 * 1 },
 ];
 
-const SEED_RSVPS = [  { id: "r1", fullName: "Eleanor Vance", email: "eleanor@example.com", phone: "555-0142", status: "attending", count: 2, plusOne: "George Vance", diet: "Vegetarian", dietNotes: "", song: "At Last \u2014 Etta James", notes: "Can't wait!", createdAt: Date.now() - 86400000 * 6 },
+export const SEED_RSVPS = [  { id: "r1", fullName: "Eleanor Vance", email: "eleanor@example.com", phone: "555-0142", status: "attending", count: 2, plusOne: "George Vance", diet: "Vegetarian", dietNotes: "", song: "At Last \u2014 Etta James", notes: "Can't wait!", createdAt: Date.now() - 86400000 * 6 },
   { id: "r2", fullName: "Marcus Bell", email: "marcus@example.com", phone: "555-0199", status: "attending", count: 1, plusOne: "", diet: "None", dietNotes: "", song: "September \u2014 EW&F", notes: "", createdAt: Date.now() - 86400000 * 4 },
   { id: "r3", fullName: "Priya Anand", email: "priya@example.com", phone: "", status: "maybe", count: 1, plusOne: "", diet: "Vegan", dietNotes: "", song: "", notes: "Will confirm by July.", createdAt: Date.now() - 86400000 * 2 },
   { id: "r4", fullName: "Tom Okafor", email: "tom@example.com", phone: "555-0177", status: "not_attending", count: 0, plusOne: "", diet: "None", dietNotes: "", song: "", notes: "So sorry to miss it!", createdAt: Date.now() - 86400000 * 1 },
 ];
 
-const SEED_MEDIA = [
-  { id: "m1", type: "photo", category: "gallery", dataUrl: "assets/samples/g1.png", name: "Eleanor V.", message: "Golden hour on the lawn.", status: "approved", ratio: "3 / 4", createdAt: Date.now() - 3600000 * 9 },
-  { id: "m2", type: "photo", category: "gallery", dataUrl: "assets/samples/g2.png", name: "Marcus B.", message: "The garden looked unreal.", status: "approved", ratio: "4 / 3", createdAt: Date.now() - 3600000 * 8 },
-  { id: "m3", type: "video", category: "gallery", dataUrl: "assets/samples/g3.png", src: null, name: "Priya A.", message: "Toast time! 🥂", status: "approved", ratio: "4 / 3", createdAt: Date.now() - 3600000 * 7 },
-  { id: "m4", type: "photo", category: "gallery", dataUrl: "assets/samples/g4.png", name: "Sofia R.", message: "Petals everywhere.", status: "approved", ratio: "1 / 1", createdAt: Date.now() - 3600000 * 6 },
-  { id: "m5", type: "photo", category: "gallery", dataUrl: "assets/samples/g5.png", name: "Daniel K.", message: "Cheers to the happy couple.", status: "approved", ratio: "3 / 4", createdAt: Date.now() - 3600000 * 5 },
-  { id: "m6", type: "photo", category: "gallery", dataUrl: "assets/samples/g6.png", name: "Tom O.", message: "Dusk over the courtyard.", status: "approved", ratio: "4 / 3", createdAt: Date.now() - 3600000 * 4 },
-  { id: "m7", type: "photo", category: "gallery", dataUrl: "assets/samples/g7.png", name: "Hana M.", message: "", status: "approved", ratio: "1 / 1", createdAt: Date.now() - 3600000 * 3 },
-  { id: "m8", type: "photo", category: "gallery", dataUrl: "assets/samples/g8.png", name: "Leo F.", message: "First dance!", status: "approved", ratio: "3 / 4", createdAt: Date.now() - 3600000 * 2 },
-  { id: "m9", type: "photo", category: "gallery", dataUrl: "assets/samples/g9.png", name: "Aunt Rosa", message: "Sparkler send-off.", status: "pending", ratio: "4 / 3", createdAt: Date.now() - 3600000 * 1 },
+export const SEED_MEDIA = [
+  { id: "m1", type: "photo", category: "gallery", dataUrl: "/assets/samples/g1.png", name: "Eleanor V.", message: "Golden hour on the lawn.", status: "approved", ratio: "3 / 4", createdAt: Date.now() - 3600000 * 9 },
+  { id: "m2", type: "photo", category: "gallery", dataUrl: "/assets/samples/g2.png", name: "Marcus B.", message: "The garden looked unreal.", status: "approved", ratio: "4 / 3", createdAt: Date.now() - 3600000 * 8 },
+  { id: "m3", type: "video", category: "gallery", dataUrl: "/assets/samples/g3.png", src: null, name: "Priya A.", message: "Toast time! 🥂", status: "approved", ratio: "4 / 3", createdAt: Date.now() - 3600000 * 7 },
+  { id: "m4", type: "photo", category: "gallery", dataUrl: "/assets/samples/g4.png", name: "Sofia R.", message: "Petals everywhere.", status: "approved", ratio: "1 / 1", createdAt: Date.now() - 3600000 * 6 },
+  { id: "m5", type: "photo", category: "gallery", dataUrl: "/assets/samples/g5.png", name: "Daniel K.", message: "Cheers to the happy couple.", status: "approved", ratio: "3 / 4", createdAt: Date.now() - 3600000 * 5 },
+  { id: "m6", type: "photo", category: "gallery", dataUrl: "/assets/samples/g6.png", name: "Tom O.", message: "Dusk over the courtyard.", status: "approved", ratio: "4 / 3", createdAt: Date.now() - 3600000 * 4 },
+  { id: "m7", type: "photo", category: "gallery", dataUrl: "/assets/samples/g7.png", name: "Hana M.", message: "", status: "approved", ratio: "1 / 1", createdAt: Date.now() - 3600000 * 3 },
+  { id: "m8", type: "photo", category: "gallery", dataUrl: "/assets/samples/g8.png", name: "Leo F.", message: "First dance!", status: "approved", ratio: "3 / 4", createdAt: Date.now() - 3600000 * 2 },
+  { id: "m9", type: "photo", category: "gallery", dataUrl: "/assets/samples/g9.png", name: "Aunt Rosa", message: "Sparkler send-off.", status: "pending", ratio: "4 / 3", createdAt: Date.now() - 3600000 * 1 },
 ];
 
-function defaultState() {
+export function defaultState() {
   return {
     settings: { ...DEFAULT_SETTINGS },
     schedule: SEED_SCHEDULE,
@@ -120,7 +123,7 @@ function defaultState() {
 }
 
 // ---- Store core ------------------------------------------------------------
-function loadState() {
+export function loadState() {
   try {
     const raw = localStorage.getItem(STORE_KEY);
     if (!raw) return defaultState();
@@ -137,10 +140,10 @@ function loadState() {
   }
 }
 
-let _state = loadState();
-const _subs = new Set();
+export let _state = loadState();
+export const _subs = new Set();
 
-function persist() {
+export function persist() {
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify(_state));
   } catch (e) {
@@ -148,11 +151,11 @@ function persist() {
   }
 }
 
-function emit() {
+export function emit() {
   _subs.forEach((fn) => fn(_state));
 }
 
-const Store = {
+export const Store = {
   get: () => _state,
   subscribe(fn) {
     _subs.add(fn);
@@ -274,12 +277,12 @@ const Store = {
   },
 };
 
-function uid() {
+export function uid() {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 }
 
 // React hook: subscribe a component to the whole store
-function useStore() {
+export function useStore() {
   const [, force] = React.useReducer((x) => x + 1, 0);
   React.useEffect(() => Store.subscribe(() => force()), []);
   return Store.get();

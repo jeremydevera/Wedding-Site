@@ -1,10 +1,19 @@
+import React from "react";
+import { go } from "./nav.js";
+import { Store, useStore } from "./store.jsx";
+import { EG_TINTS, THEMES, THEME_FONTS, egTintGradient, isPremiumTheme } from "./themes.jsx";
+import { BFLY_COLORS, Button, CropModal, DecorPreview, Field, Icon, Input, Modal, Monogram, Placeholder, SectionHead, Select, Textarea, bflyHueShift, confirmDialog, mapEmbedUrl, mapSearchUrl, toast } from "./components.jsx";
+import { Home } from "./pages-main.jsx";
+import { ADMIN_SESSION, AdminDashboard, AdminLogin, QRCanvas, downloadCSV, downloadQR, fmtDate, isAuthed } from "./admin-core.jsx";
+const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
+
 // ============================================================================
 // admin-manage.jsx — RSVP table, media/guestbook moderation, quiz, QR, settings
 // + AdminApp shell (sidebar + routing between tabs)
 // ============================================================================
 
 // Reusable image uploader for admin (hero, story milestones)
-function ImageUploadField({ value, onChange, label, ratio = "4 / 3", framePreview, defaultPreview, tintStrength, tintGradient }) {
+export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", framePreview, defaultPreview, tintStrength, tintGradient }) {
   const ref = useRef(null);
   const [cropSrc, setCropSrc] = useState(null);
   const aspect = (() => { const m = String(ratio).split("/").map((n) => parseFloat(n)); return (m.length === 2 && m[1]) ? m[0] / m[1] : 1; })();
@@ -43,7 +52,7 @@ function ImageUploadField({ value, onChange, label, ratio = "4 / 3", framePrevie
 }
 
 // Add / edit a quiz question
-function QuestionEditor({ open, question, onClose }) {
+export function QuestionEditor({ open, question, onClose }) {
   const blank = { type: "multiple_choice", q: "", options: ["", "", "", ""], answer: 0 };
   const [f, setF] = useState(blank);
   useEffect(() => {
@@ -108,7 +117,7 @@ function QuestionEditor({ open, question, onClose }) {
   );
 }
 
-function RsvpsAdmin() {
+export function RsvpsAdmin() {
   const { rsvps } = useStore();
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("all");
@@ -199,7 +208,7 @@ function RsvpsAdmin() {
   );
 }
 
-function MediaAdmin() {
+export function MediaAdmin() {
   const { media } = useStore();
   const [type, setType] = useState("all");
   const [status, setStatus] = useState("all");
@@ -274,7 +283,7 @@ function MediaAdmin() {
   );
 }
 
-function GuestbookAdmin() {
+export function GuestbookAdmin() {
   const { guestbook } = useStore();
   const [q, setQ] = useState("");
   const filtered = guestbook.filter((g) => !q || g.name.toLowerCase().includes(q.toLowerCase()));
@@ -322,7 +331,7 @@ function GuestbookAdmin() {
   );
 }
 
-function QuizAdmin() {
+export function QuizAdmin() {
   const { quizSubs, quiz } = useStore();
   const [open, setOpen] = useState(null);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -416,7 +425,7 @@ function QuizAdmin() {
   );
 }
 
-const QR_TARGETS = [
+export const QR_TARGETS = [
   { key: "home", label: "Main Website", path: "#/home" },
   { key: "rsvp", label: "RSVP", path: "#/rsvp" },
   { key: "upload", label: "Photo / Video Upload", path: "#/upload" },
@@ -426,7 +435,7 @@ const QR_TARGETS = [
   { key: "video-message", label: "Video Message", path: "#/video-message" },
 ];
 
-function QrAdmin() {
+export function QrAdmin() {
   const base = window.location.origin + window.location.pathname;
   return (
     <div className="panel">
@@ -450,7 +459,7 @@ function QrAdmin() {
   );
 }
 
-function AdminToggle({ checked, onChange, label, desc }) {
+export function AdminToggle({ checked, onChange, label, desc }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "13px 0", borderBottom: "1px solid var(--line)" }}>
       <div><div style={{ fontWeight: 600 }}>{label}</div>{desc && <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2 }}>{desc}</div>}</div>
@@ -461,7 +470,7 @@ function AdminToggle({ checked, onChange, label, desc }) {
   );
 }
 
-function ScheduleAdmin() {
+export function ScheduleAdmin() {
   const { schedule } = useStore();
   const addItem = () => {
     Store.updateSchedule([...schedule, { time: "", title: "New moment", desc: "", loc: "" }]);
@@ -508,7 +517,7 @@ function ScheduleAdmin() {
   );
 }
 
-function SettingsAdmin() {
+export function SettingsAdmin() {
   const { settings, story } = useStore();
   const f = settings;
   const set = (k) => (e) => Store.updateSettings({ [k]: e.target && e.target.type === "checkbox" ? e.target.checked : e.target.value });
@@ -650,7 +659,7 @@ function SettingsAdmin() {
       <div className="panel">
         <div className="panel__head"><div className="panel__title">Envelope Frame Photo</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Shows inside the oval frame on the opened envelope</span></div>
         <div className="panel__body" style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-          <ImageUploadField label="Photo inside the oval frame" ratio="1 / 1" framePreview="assets/invite/p2-frame.png" defaultPreview="assets/invite/frame-video.gif"
+          <ImageUploadField label="Photo inside the oval frame" ratio="1 / 1" framePreview="/assets/invite/p2-frame.png" defaultPreview="/assets/invite/frame-video.gif"
             value={f.frameImage} onChange={(v) => setKey("frameImage", v)} />
           <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 10, maxWidth: 360 }}>A square photo of the two of you works best. Leave empty to keep the default animated frame.</p>
         </div>
@@ -663,7 +672,7 @@ function SettingsAdmin() {
         <div className="panel__body">
           <div style={{ display: "flex", gap: 28, alignItems: "flex-start", flexWrap: "wrap" }}>
             <div style={{ flex: "1 1 300px", minWidth: 260, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-              <ImageUploadField label="Background image" ratio="16 / 9" defaultPreview="assets/invite/bg-wedding.jpg" tintStrength={f.envTintOn !== false ? (f.envTint == null ? 55 : f.envTint) : 0} tintGradient={egTintGradient(f.envTintColor || "olive")}
+              <ImageUploadField label="Background image" ratio="16 / 9" defaultPreview="/assets/invite/bg-wedding.jpg" tintStrength={f.envTintOn !== false ? (f.envTint == null ? 55 : f.envTint) : 0} tintGradient={egTintGradient(f.envTintColor || "olive")}
                 value={f.envBgImage} onChange={(v) => setKey("envBgImage", v)} />
               <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 10, maxWidth: 360 }}>A wide landscape photo works best — it sits behind the envelope and gently zooms when the invitation opens. Leave empty to keep the default.</p>
             </div>
@@ -790,7 +799,7 @@ function SettingsAdmin() {
 }
 
 // --- Admin shell ------------------------------------------------------------
-const ADMIN_TABS = [
+export const ADMIN_TABS = [
   { key: "dashboard", label: "Dashboard", icon: "grid" },
   { key: "rsvps", label: "RSVPs", icon: "check" },
   { key: "media", label: "Media", icon: "camera" },
@@ -801,7 +810,7 @@ const ADMIN_TABS = [
   { key: "settings", label: "Settings", icon: "user" },
 ];
 
-function AdminApp() {
+export function AdminApp() {
   const { settings } = useStore();
   const [authed, setAuthed] = useState(isAuthed());
   const [tab, setTab] = useState("dashboard");

@@ -1,8 +1,15 @@
+import React from "react";
+import { go } from "./nav.js";
+import { Store, useStore } from "./store.jsx";
+import { Button, Field, Icon, Input, Modal, SectionHead, Textarea, toast } from "./components.jsx";
+import { PageHero } from "./pages-main.jsx";
+const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
+
 // ============================================================================
 // social.jsx — Guestbook + Couple Quiz
 // ============================================================================
 
-function GuestbookPage() {
+export function GuestbookPage() {
   const { guestbook } = useStore();
   const [form, setForm] = useState({ name: "", relationship: "", message: "" });
   const [errors, setErrors] = useState({});
@@ -73,7 +80,7 @@ function GuestbookPage() {
 }
 
 // --- Quiz ------------------------------------------------------------------
-function QuizPage() {
+export function QuizPage() {
   const { quiz } = useStore();
   const [stage, setStage] = useState("intro"); // intro | playing | result
   const [name, setName] = useState("");

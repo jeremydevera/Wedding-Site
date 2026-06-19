@@ -1,10 +1,13 @@
+import React from "react";
+const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
+
 // ============================================================================
 // themes.jsx — theme engine. Each theme is a complete look the client can pick.
 // applyTheme() writes CSS custom properties onto :root; Tweaks can layer
 // accent/font overrides on top.
 // ============================================================================
 
-const THEMES = {
+export const THEMES = {
   classic: {
     label: "Classic Ivory",
     blurb: "Warm cream and rich gold. Soft, romantic, timeless.",
@@ -301,7 +304,7 @@ const THEMES = {
   },
 };
 
-const FONT_OPTIONS = {
+export const FONT_OPTIONS = {
   display: {
     "Cormorant Garamond": "'Cormorant Garamond', serif",
     Playfair: "'Playfair Display', serif",
@@ -322,7 +325,7 @@ const FONT_OPTIONS = {
 };
 
 // Each theme also gets its own typography (keys map into FONT_OPTIONS)
-const THEME_FONTS = {
+export const THEME_FONTS = {
   classic:    { display: "Cormorant Garamond", body: "Jost" },
   classic2:   { display: "Playfair",            body: "Jost" },
   classic3:   { display: "Cormorant Garamond", body: "Jost" },
@@ -339,13 +342,13 @@ const THEME_FONTS = {
   glass:      { display: "Jost",                body: "Nunito Sans" },
 };
 // Per-theme button shape
-const THEME_BTN = {
+export const THEME_BTN = {
   classic: "4px", classic2: "0px", classic3: "2px", noir: "0px", garden: "999px", blush: "999px", dusk: "6px",
   burgundy: "0px", lavender: "999px", emerald: "2px", terracotta: "12px", champagne: "0px", envelope: "2px", glass: "999px",
 };
 
 // Apply a theme + optional tweak overrides ({accent, gold, displayFont, bodyFont})
-function applyTheme(themeKey, overrides = {}) {
+export function applyTheme(themeKey, overrides = {}) {
   const theme = THEMES[themeKey] || THEMES.classic;
   const root = document.documentElement;
   root.setAttribute("data-theme", themeKey);
@@ -365,11 +368,11 @@ function applyTheme(themeKey, overrides = {}) {
 }
 
 // Premium themes get extra capabilities (e.g. the layout Arrange tool).
-const PREMIUM_THEMES = ["envelope"];
-function isPremiumTheme(key) { return PREMIUM_THEMES.indexOf(key) !== -1; }
+export const PREMIUM_THEMES = ["envelope"];
+export function isPremiumTheme(key) { return PREMIUM_THEMES.indexOf(key) !== -1; }
 
 // Envelope background tint presets — each is a vertical 2-stop gradient (with alpha).
-const EG_TINTS = {
+export const EG_TINTS = {
   olive:    { label: "Olive",    top: "oklch(0.30 0.06 126 / 0.62)", bottom: "oklch(0.22 0.05 126 / 0.78)", dot: "#41502a" },
   charcoal: { label: "Charcoal", top: "oklch(0.28 0.01 250 / 0.60)", bottom: "oklch(0.18 0.01 250 / 0.80)", dot: "#2c2f33" },
   wine:     { label: "Wine",     top: "oklch(0.28 0.09 22 / 0.60)",  bottom: "oklch(0.20 0.08 22 / 0.80)",  dot: "#5a2230" },
@@ -377,7 +380,7 @@ const EG_TINTS = {
   sepia:    { label: "Sepia",    top: "oklch(0.34 0.05 70 / 0.58)",  bottom: "oklch(0.24 0.05 64 / 0.78)",  dot: "#5c4527" },
   plum:     { label: "Plum",     top: "oklch(0.30 0.08 330 / 0.60)", bottom: "oklch(0.21 0.07 330 / 0.80)", dot: "#4d2845" },
 };
-function egTintGradient(key) {
+export function egTintGradient(key) {
   const t = EG_TINTS[key] || EG_TINTS.olive;
   return `linear-gradient(180deg, ${t.top}, ${t.bottom})`;
 }

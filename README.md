@@ -1,38 +1,43 @@
-# Evermore — Wedding Invitation Site
+# Evermore — Wedding / Event Site
 
-A single-page wedding website with a guest-facing invitation and a password-protected
-admin area for the couple to manage everything. Built as a static site (no backend),
-organized into small, single-responsibility modules so it stays easy to maintain.
+A single-page event website (guest-facing pages + a password-gated admin area),
+built with **Vite + React**. Data is currently **mock data** held in the browser's
+`localStorage` — there is no backend yet (Supabase + multi-tenant come next; see
+`docs/superpowers/specs/`).
 
 ---
 
 ## Quick start (local)
 
-The pages load `.jsx` via the in-browser Babel transformer, so they must be served
-over HTTP — **opening `index.html` from the file system will show a blank page.**
-
 ```bash
-cd wedding-site
-python3 -m http.server 8000      # then open http://localhost:8000
-# or:  npx serve
-# or:  VS Code → "Live Server" extension → Open with Live Server
+npm install
+npm run dev          # dev server with hot reload
+# build + check the production output:
+npm run build        # outputs to dist/
+npm run preview      # serve the built dist/ locally
 ```
 
-Requires internet on first load (React, Babel, fonts, and the QR library load from CDNs).
+First load fetches Google Fonts from a CDN; everything else (React, the app, the QR
+library) is bundled locally by Vite.
 
 ---
 
 ## Project structure
 
 ```
-wedding-site/
-├── index.html            # Entry point. Loads CDN libs + app scripts in dependency order.
-├── styles.css            # All styling. Themed via CSS custom properties (--*).
-├── assets/
-│   ├── invite/           # Envelope-theme art (envelope, paper, heart, frame, flowers, bg)
-│   └── samples/          # Placeholder photos (hero, story, gallery)
-└── js/
-    ├── store.jsx         # State + persistence. Single source of truth (localStorage).
+.
+├── index.html            # Vite entry. Loads /src/main.jsx as a module.
+├── vite.config.js        # Vite + @vitejs/plugin-react config (build -> dist/).
+├── package.json
+├── public/
+│   └── assets/           # Static art, served at /assets/*
+│       ├── invite/       # Envelope-theme art
+│       └── samples/      # Placeholder photos (hero, story, gallery)
+└── src/
+    ├── main.jsx          # Entry: imports styles, app (self-mounts), drag helper.
+    ├── styles.css        # All styling. Themed via CSS custom properties (--*).
+    ├── nav.js            # Tiny hash-router helper: go("route").
+    ├── store.jsx         # State + persistence (localStorage mock data).
     ├── themes.jsx        # Theme definitions (colors/fonts per look).
     ├── components.jsx    # Shared UI: Button, Modal, CropModal, Field, Countdown, icons, map helpers.
     ├── tweaks-panel.jsx  # Live style-tweak overlay.
@@ -42,49 +47,39 @@ wedding-site/
     ├── social.jsx        # Guestbook, quiz, video messages.
     ├── admin-core.jsx    # Admin shell: sign-in, layout, navigation.
     ├── admin-manage.jsx  # Admin panels: settings, theme, venue, photos, content editors.
-    ├── app.jsx           # Router + nav + footer. Mounts the app.
+    ├── app.jsx           # Router + nav + footer. Mounts the app (ReactDOM.createRoot).
     └── drag-arrange.js   # Plain-JS drag-to-arrange helper for the envelope layout.
 ```
 
-**Load order matters** — `index.html` lists the scripts in dependency order
-(`store` first, `app` last). If you add a module, insert it where its dependencies
-are already defined.
+Modules are plain ES modules now (explicit `import`/`export`); Vite resolves the graph,
+so script load order is no longer manual.
 
 ---
 
 ## Architecture notes
 
-- **State & data:** `store.jsx` holds all settings and guest-submitted data and persists
-  to the browser's `localStorage`. There is **no server** — data is per-device and not
-  shared between visitors. Real RSVP collection would require adding a backend.
-- **Defaults:** the couple's defaults (names, date, venue, times, theme) live in the
-  `DEFAULTS` object at the top of `store.jsx`. Edit there to change the out-of-the-box content.
-- **Theming:** colors and fonts are CSS custom properties defined in `styles.css` and
-  switched by `themes.jsx`. Add a theme by extending the `THEMES` map and adding its tokens.
-- **Admin:** reachable via the "Admin sign in" link in the footer. Lets the couple edit
-  content, venue/map, theme, and the envelope frame photo without touching code.
+- **State & data (mock):** `store.jsx` holds all settings and guest-submitted data and
+  persists to `localStorage`. **No server** — data is per-device, not shared between
+  visitors. Real persistence/auth/multi-tenant is the next milestone (Supabase).
+- **Defaults:** out-of-the-box content (names, date, venue, times, theme) lives in
+  `DEFAULT_SETTINGS` at the top of `store.jsx`, or via Admin → Settings.
+- **Theming:** colors/fonts are CSS custom properties switched by `themes.jsx`. Add a
+  look by extending the `THEMES` map (a plain data object — no JSX needed).
+- **Admin:** reachable via the "Admin sign in" link in the footer (mock password in
+  `DEFAULT_SETTINGS.adminPassword`).
 
 ---
 
-## How to make common changes
+## Deploying (Cloudflare Pages)
 
-| I want to change…                | Edit…                                              |
-|----------------------------------|----------------------------------------------------|
-| Couple names / date / venue      | `DEFAULTS` in `js/store.jsx` (or Admin → Settings) |
-| Colors / fonts                   | tokens in `styles.css`; theme map in `js/themes.jsx` |
-| A guest page's copy or layout    | the matching component in `js/pages-main.jsx`      |
-| RSVP questions/flow              | `js/rsvp.jsx`                                       |
-| Envelope art / layout            | `assets/invite/*` and the envelope styles in `styles.css` |
-| Admin panels                     | `js/admin-manage.jsx`                               |
+This is a static SPA — deploy the build output:
 
----
+- **Build command:** `npm run build`
+- **Output directory:** `dist`
+- **Framework preset:** none / Vite
 
-## Deploying
+Connect the GitHub repo to Cloudflare Pages (or drag `dist/` to Netlify Drop for a quick
+test). Routing is hash-based (`#/home`), so no SPA redirect rule is needed.
 
-Static host — drop the folder on **Netlify Drop**, **Vercel**, or **GitHub Pages**
-(Settings → Pages → `main` / root). No build step required.
-
-### Production note
-The site compiles JSX in the browser on every load (fine for a personal site, slightly
-slower first paint). For a faster, "production" build you'd precompile the `.jsx` to
-plain JS and drop the Babel CDN script. Not required to run.
+> Note: data is still browser-local mock data, so a deployed site won't share RSVPs or
+> guestbook entries between devices until the Supabase backend is added.

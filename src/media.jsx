@@ -1,14 +1,21 @@
+import React from "react";
+import { go } from "./nav.js";
+import { Store, uid, useStore } from "./store.jsx";
+import { Button, Field, Icon, Input, Modal, Placeholder } from "./components.jsx";
+import { PageHero } from "./pages-main.jsx";
+const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
+
 // ============================================================================
 // media.jsx — photo/video upload (with progress + confirmation), gallery, lightbox
 // ============================================================================
 
-const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/jpg"];
-const VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
-const PHOTO_MAX = 25 * 1024 * 1024;
-const VIDEO_MAX = 100 * 1024 * 1024;
+export const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/jpg"];
+export const VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
+export const PHOTO_MAX = 25 * 1024 * 1024;
+export const VIDEO_MAX = 100 * 1024 * 1024;
 
 // Downscale an image file to a JPEG data URL (keeps localStorage small)
-function imageToDataUrl(file, maxDim = 1100) {
+export function imageToDataUrl(file, maxDim = 1100) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
@@ -28,7 +35,7 @@ function imageToDataUrl(file, maxDim = 1100) {
 }
 
 // Capture a poster frame from a video file; keep an object URL for playback
-function videoToThumb(file) {
+export function videoToThumb(file) {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file);
     const v = document.createElement("video");
@@ -48,7 +55,7 @@ function videoToThumb(file) {
   });
 }
 
-function UploadFlow({ category = "gallery", title, eyebrow, lead, accept = "both" }) {
+export function UploadFlow({ category = "gallery", title, eyebrow, lead, accept = "both" }) {
   const [name, setName] = useState("");
   const [msg, setMsg] = useState("");
   const [items, setItems] = useState([]); // {file, type, thumb}
@@ -212,7 +219,7 @@ function UploadFlow({ category = "gallery", title, eyebrow, lead, accept = "both
   );
 }
 
-function UploadPage() {
+export function UploadPage() {
   const [mode, setMode] = useState("photo");
   return (
     <div>
@@ -230,7 +237,7 @@ function UploadPage() {
   );
 }
 
-function VideoMessagePage() {
+export function VideoMessagePage() {
   return (
     <UploadFlow
       category="private_video_message"
@@ -243,7 +250,7 @@ function VideoMessagePage() {
 }
 
 // --- Gallery ---------------------------------------------------------------
-function GalleryPage() {
+export function GalleryPage() {
   const { media, settings } = useStore();
   const [filter, setFilter] = useState("all");
   const [active, setActive] = useState(null);

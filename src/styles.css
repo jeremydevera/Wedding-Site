@@ -138,7 +138,7 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 [data-theme="classic"] .hero__names, [data-theme="classic3"] .hero__names, [data-theme="glass"] .hero__names { text-shadow: none; }
 /* Olive Envelope theme — the themed hero uses the invitation's wedding photo */
 [data-theme="envelope"] .hero__media--themed {
-  background: url("assets/invite/bg-wedding.jpg") center 46% / cover no-repeat;
+  background: url("/assets/invite/bg-wedding.jpg") center 46% / cover no-repeat;
 }
 [data-theme="envelope"] .hero__tint--themed {
   background: linear-gradient(180deg, oklch(0.3 0.06 126 / 0.5), oklch(0.24 0.05 126 / 0.62));
@@ -838,7 +838,7 @@ body.env-sealed .decor { display: none; }
 body.env-sealed .nav { display: none; }
 .eg-bg {
   position: absolute; inset: 0; z-index: 0;
-  background: url("assets/invite/bg-wedding.jpg") center 46% / cover no-repeat;
+  background: url("/assets/invite/bg-wedding.jpg") center 46% / cover no-repeat;
   transform: scale(1.32); transform-origin: center; will-change: transform;
 }
 .eg-hero.is-open .eg-bg { animation: egBgZoom 8s ease-out forwards; }

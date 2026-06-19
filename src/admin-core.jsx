@@ -1,13 +1,20 @@
+import React from "react";
+import qrcode from "qrcode-generator";
+import { go } from "./nav.js";
+import { useStore } from "./store.jsx";
+import { Button, Field, Icon, Input, Monogram, Placeholder, toast } from "./components.jsx";
+const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
+
 // ============================================================================
 // admin-core.jsx — admin auth, shell/sidebar, dashboard, shared admin utils
 // ============================================================================
 
-const ADMIN_SESSION = "evermore_admin_session";
+export const ADMIN_SESSION = "evermore_admin_session";
 
-function isAuthed() { return sessionStorage.getItem(ADMIN_SESSION) === "1"; }
+export function isAuthed() { return sessionStorage.getItem(ADMIN_SESSION) === "1"; }
 
 // CSV download helper
-function downloadCSV(filename, rows) {
+export function downloadCSV(filename, rows) {
   const esc = (v) => {
     const s = v == null ? "" : String(v);
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
@@ -21,12 +28,12 @@ function downloadCSV(filename, rows) {
   toast("Export downloaded");
 }
 
-function fmtDate(ts) {
+export function fmtDate(ts) {
   return new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
 // --- QR canvas (uses global qrcode-generator) -------------------------------
-function QRCanvas({ text, size = 150, fg = "#1b1b1b" }) {
+export function QRCanvas({ text, size = 150, fg = "#1b1b1b" }) {
   const ref = useRef(null);
   useEffect(() => {
     if (!ref.current || typeof qrcode === "undefined") return;
@@ -49,7 +56,7 @@ function QRCanvas({ text, size = 150, fg = "#1b1b1b" }) {
   return <canvas ref={ref} style={{ width: size, height: size }} />;
 }
 
-function downloadQR(text, label) {
+export function downloadQR(text, label) {
   if (typeof qrcode === "undefined") return;
   const size = 600;
   const qr = qrcode(0, "M"); qr.addData(text); qr.make();
@@ -71,7 +78,7 @@ function downloadQR(text, label) {
 }
 
 // --- Login ------------------------------------------------------------------
-function AdminLogin({ onAuthed }) {
+export function AdminLogin({ onAuthed }) {
   const { settings } = useStore();
   const [pw, setPw] = useState("");
   const [err, setErr] = useState("");
@@ -109,7 +116,7 @@ function AdminLogin({ onAuthed }) {
 }
 
 // --- Dashboard --------------------------------------------------------------
-function AdminDashboard({ goTab }) {
+export function AdminDashboard({ goTab }) {
   const { rsvps, media, guestbook, quizSubs } = useStore();
   const attending = rsvps.filter((r) => r.status === "attending");
   const guestCount = attending.reduce((s, r) => s + (r.count || 0), 0);

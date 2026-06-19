@@ -1,8 +1,15 @@
+import React from "react";
+import { go } from "./nav.js";
+import { useStore } from "./store.jsx";
+import { egTintGradient } from "./themes.jsx";
+import { Button, Countdown, Icon, Placeholder, SectionHead, mapDirUrl, mapEmbedUrl } from "./components.jsx";
+const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
+
 // ============================================================================
 // pages-main.jsx — Home + content pages (Details, Story, Schedule, Venue, FAQ)
 // ============================================================================
 
-function HeroBg() {
+export function HeroBg() {
   const { settings } = useStore();
   if (settings.heroImage) {
     return (
@@ -19,21 +26,21 @@ function HeroBg() {
   );
 }
 
-function StoryImg({ row }) {
+export function StoryImg({ row }) {
   return row && row.img
     ? <img src={row.img} alt={row.title} style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", borderRadius: "var(--radius)", display: "block" }} />
     : <Placeholder label="story photo" ratio="4 / 3" />;
 }
 
 // Olive-green tint strength → CSS vars for the envelope background overlay.
-function egTintVars(s) {
+export function egTintVars(s) {
   const on = s.envTintOn !== false;
   const open = on ? Math.max(0, Math.min(100, s.envTint == null ? 55 : s.envTint)) / 100 : 0;
   const sealed = on ? Math.min(1, open + 0.35) : 0;
   return { "--eg-tint": open, "--eg-tint-sealed": sealed, "--eg-tint-grad": egTintGradient(s.envTintColor || "olive") };
 }
 
-function EnvelopeHero() {
+export function EnvelopeHero() {
   const { settings } = useStore();
   const s = settings;
   const [open, setOpen] = React.useState(false);
@@ -115,7 +122,7 @@ function EnvelopeHero() {
         {/* Sealed envelope */}
         <div className={"eg-page" + (open ? "" : " is-active")}>
           <div className={"inv-sealed-wrap eg-sealed" + (ready ? " is-ready" : "")}>
-            <img ref={artRef} className="inv-sealed-art" src="assets/invite/env-closed.webp" alt="Sealed olive envelope with lace trim and wax seal" onLoad={() => setReady(true)} />
+            <img ref={artRef} className="inv-sealed-art" src="/assets/invite/env-closed.webp" alt="Sealed olive envelope with lace trim and wax seal" onLoad={() => setReady(true)} />
             <div className="inv-letter-from">
               <span className="inv-lf-label">A Love Letter From</span>
               <span className="inv-lf-names"><span className="inv-lf-type">{s.partnerA} &amp; {s.partnerB}</span></span>
@@ -129,7 +136,7 @@ function EnvelopeHero() {
         <div className={"eg-page" + (open ? " is-active" : "")}>
           <div className={"inv-env-stack eg-open" + (open ? " is-open" : "")}>
             <div className="inv-l-card">
-              <img src="assets/invite/p2-card.png" alt="Cream invitation card with green striped border" />
+              <img src="/assets/invite/p2-card.png" alt="Cream invitation card with green striped border" />
               <div className="inv-card-text">
                 <span className="inv-ct-label">Save the Date</span>
                 <span className="inv-ct-name"><span className="inv-ct-ink">{s.partnerA}</span></span>
@@ -139,16 +146,16 @@ function EnvelopeHero() {
             </div>
             <div className="inv-l-framegroup">
               <div className="inv-l-video" aria-hidden="true">
-                <img src={s.frameImage || "assets/invite/frame-video.gif"} alt="" />
+                <img src={s.frameImage || "/assets/invite/frame-video.gif"} alt="" />
               </div>
-              <img className="inv-frame-img" src="assets/invite/p2-frame.png" alt="Cream oval frame with embossed peony" />
+              <img className="inv-frame-img" src="/assets/invite/p2-frame.png" alt="Cream oval frame with embossed peony" />
             </div>
             <div className="inv-l-heart">
-              <img src="assets/invite/p2-heart.webp" alt="Burgundy lace heart" />
+              <img src="/assets/invite/p2-heart.webp" alt="Burgundy lace heart" />
               <span className="inv-heart-text">{heartDate}</span>
             </div>
-            <img className="inv-l-front" src="assets/invite/p2-envelope-front.png" alt="Olive envelope front pocket" />
-            <img className="inv-l-flower" src="assets/invite/p2-flowers.png" alt="Floral spray of calla lilies, anthurium, orchids and amaranthus" />
+            <img className="inv-l-front" src="/assets/invite/p2-envelope-front.png" alt="Olive envelope front pocket" />
+            <img className="inv-l-flower" src="/assets/invite/p2-flowers.png" alt="Floral spray of calla lilies, anthurium, orchids and amaranthus" />
           </div>
         </div>
       </div>
@@ -161,7 +168,7 @@ function EnvelopeHero() {
   );
 }
 
-function EnvelopeInvite() {
+export function EnvelopeInvite() {
   const { settings } = useStore();
   const s = settings;
   const [open, setOpen] = React.useState(false);
@@ -175,7 +182,7 @@ function EnvelopeInvite() {
       {/* Sealed envelope */}
       <div className={"inv-page" + (open ? "" : " is-active")}>
         <div className="inv-sealed-wrap">
-          <img className="inv-sealed-art" src="assets/invite/env-closed.webp" alt="Sealed olive envelope with lace trim and wax seal" />
+          <img className="inv-sealed-art" src="/assets/invite/env-closed.webp" alt="Sealed olive envelope with lace trim and wax seal" />
           <div className="inv-letter-from">
             <span className="inv-lf-label">A Love Letter From</span>
             <span className="inv-lf-names"><span className="inv-lf-type">{s.partnerA} &amp; {s.partnerB}</span></span>
@@ -189,7 +196,7 @@ function EnvelopeInvite() {
       <div className={"inv-page" + (open ? " is-active" : "")}>
         <div className="inv-env-stack">
           <div className="inv-l-card">
-            <img src="assets/invite/p2-card.png" alt="Cream invitation card with green striped border" />
+            <img src="/assets/invite/p2-card.png" alt="Cream invitation card with green striped border" />
             <div className="inv-card-text">
               <span className="inv-ct-label">Save the Date</span>
               <span className="inv-ct-name"><span className="inv-ct-ink">{s.partnerA}</span></span>
@@ -199,23 +206,23 @@ function EnvelopeInvite() {
           </div>
           <div className="inv-l-framegroup">
             <div className="inv-l-video" aria-hidden="true">
-              <img src={s.frameImage || "assets/invite/frame-video.gif"} alt="" />
+              <img src={s.frameImage || "/assets/invite/frame-video.gif"} alt="" />
             </div>
-            <img className="inv-frame-img" src="assets/invite/p2-frame.png" alt="Cream oval frame with embossed peony" />
+            <img className="inv-frame-img" src="/assets/invite/p2-frame.png" alt="Cream oval frame with embossed peony" />
           </div>
           <div className="inv-l-heart">
-            <img src="assets/invite/p2-heart.webp" alt="Burgundy lace heart" />
+            <img src="/assets/invite/p2-heart.webp" alt="Burgundy lace heart" />
             <span className="inv-heart-text">{heartDate}</span>
           </div>
-          <img className="inv-l-front" src="assets/invite/p2-envelope-front.png" alt="Olive envelope front pocket" />
-          <img className="inv-l-flower" src="assets/invite/p2-flowers.png" alt="Floral spray of calla lilies, anthurium, orchids and amaranthus" />
+          <img className="inv-l-front" src="/assets/invite/p2-envelope-front.png" alt="Olive envelope front pocket" />
+          <img className="inv-l-flower" src="/assets/invite/p2-flowers.png" alt="Floral spray of calla lilies, anthurium, orchids and amaranthus" />
         </div>
       </div>
     </div>
   );
 }
 
-function Home() {
+export function Home() {
   const { settings, story, schedule } = useStore();
   const s = settings;
 
@@ -327,7 +334,7 @@ function Home() {
   );
 }
 
-function PageHero({ eyebrow, title, lead }) {
+export function PageHero({ eyebrow, title, lead }) {
   return (
     <div className="page-hero container">
       <div className="eyebrow eyebrow--solo" style={{ justifyContent: "center" }}>{eyebrow}</div>
@@ -337,7 +344,7 @@ function PageHero({ eyebrow, title, lead }) {
   );
 }
 
-function StoryPage() {
+export function StoryPage() {
   const { story } = useStore();
   return (
     <div className="fade-up">
@@ -360,7 +367,7 @@ function StoryPage() {
   );
 }
 
-function DetailsPage() {
+export function DetailsPage() {
   const { settings, faq } = useStore();
   const s = settings;
   const [open, setOpen] = useState(0);
@@ -418,7 +425,7 @@ function DetailsPage() {
   );
 }
 
-function ScheduleView({ items, style }) {
+export function ScheduleView({ items, style }) {
   const s = style || "line";
   if (s === "cards") {
     return (
@@ -481,7 +488,7 @@ function ScheduleView({ items, style }) {
   );
 }
 
-function SchedulePage() {
+export function SchedulePage() {
   const { schedule, settings } = useStore();
   return (
     <div className="fade-up">
@@ -495,7 +502,7 @@ function SchedulePage() {
   );
 }
 
-function VenuePage() {
+export function VenuePage() {
   const { settings } = useStore();
   const s = settings;
   const query = (s.mapQuery && s.mapQuery.trim()) || s.venueAddress;
