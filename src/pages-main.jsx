@@ -2,7 +2,7 @@ import React from "react";
 import { go } from "./nav.js";
 import { useStore } from "./store.jsx";
 import { egTintGradient } from "./themes.jsx";
-import { Button, Countdown, Icon, Placeholder, SectionHead, mapDirUrl, mapEmbedUrl } from "./components.jsx";
+import { Button, Countdown, FloatingDecor, Icon, Placeholder, SectionHead, mapDirUrl, mapEmbedUrl } from "./components.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // ============================================================================
@@ -268,7 +268,8 @@ export function Home() {
 
       {/* COUNTDOWN (envelope theme — the hero is replaced by the envelope) */}
       {s.theme === "envelope" && (
-        <section className="block" id="home-countdown" style={{ textAlign: "center", paddingBottom: 96 }}>
+        <section className="block eg-celebrate" id="home-countdown" style={{ textAlign: "center", paddingBottom: 96 }}>
+          <FloatingDecor on style="petals" />
           <div className="container container--narrow">
             <div className="eyebrow eyebrow--solo" style={{ justifyContent: "center" }}>{s.tagline}</div>
             <h2 style={{ fontSize: "clamp(28px,4.6vw,44px)", margin: "16px 0 14px", color: "var(--ink)" }}>
