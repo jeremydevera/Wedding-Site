@@ -1,0 +1,55 @@
+// ============================================================================
+// eventTypes.js — Event-type registry.
+//
+// The platform serves many kinds of events from one engine. Each event type
+// supplies its own terminology, the sections it shows, and which themes apply.
+// Adding a new event type (birthday, corporate, …) is purely additive: add an
+// entry here, then content/pages read from it. See docs/STRUCTURE.md.
+//
+// NOTE: "wedding" is fully wired today. "birthday"/"corporate" are scaffolds —
+// ready-to-extend examples so the structure scales without a rewrite. The
+// wedding-specific copy still lives in the page components; the `terms` tokens
+// below are the target for migrating that copy to be event-type-driven.
+// ============================================================================
+
+export const EVENT_TYPES = {
+  wedding: {
+    label: "Wedding",
+    terms: { host: "the couple", action: "We're getting married", rsvp: "Will you be there?" },
+    sections: ["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"],
+    defaultTheme: "classic",
+    themes: ["classic", "classic2", "classic3", "glass", "noir", "garden", "blush", "dusk", "burgundy", "lavender", "emerald", "terracotta", "champagne", "envelope"],
+  },
+
+  birthday: {
+    label: "Birthday",
+    terms: { host: "the celebrant", action: "Let's celebrate!", rsvp: "Can you make it?" },
+    sections: ["details", "schedule", "venue", "gallery", "guestbook"],
+    defaultTheme: "blush",
+    themes: ["blush", "lavender", "champagne", "garden", "dusk", "terracotta"],
+  },
+
+  corporate: {
+    label: "Corporate Event",
+    terms: { host: "the team", action: "You're invited", rsvp: "Will you attend?" },
+    sections: ["details", "schedule", "venue", "rsvp", "gallery"],
+    defaultTheme: "noir",
+    themes: ["noir", "glass", "emerald", "burgundy"],
+  },
+};
+
+export const DEFAULT_EVENT_TYPE = "wedding";
+
+export function eventType(key) {
+  return EVENT_TYPES[key] || EVENT_TYPES[DEFAULT_EVENT_TYPE];
+}
+
+// Theme keys allowed for an event type — drives the theme picker in admin.
+export function themesForEvent(key) {
+  return eventType(key).themes;
+}
+
+// Whether a section should render for the active event type.
+export function hasSection(key, section) {
+  return eventType(key).sections.includes(section);
+}

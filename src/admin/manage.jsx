@@ -1,10 +1,10 @@
 import React from "react";
-import { go } from "./nav.js";
-import { Store, useStore } from "./store.jsx";
-import { EG_TINTS, THEMES, THEME_FONTS, egTintGradient, isPremiumTheme } from "./themes.jsx";
-import { BFLY_COLORS, Button, CropModal, DecorPreview, Field, Icon, Input, Modal, Monogram, Placeholder, SectionHead, Select, Textarea, bflyHueShift, confirmDialog, mapEmbedUrl, mapSearchUrl, toast } from "./components.jsx";
-import { Home } from "./pages-main.jsx";
-import { ADMIN_SESSION, AdminDashboard, AdminLogin, QRCanvas, downloadCSV, downloadQR, fmtDate, isAuthed } from "./admin-core.jsx";
+import { go } from "@/lib/nav.js";
+import { Store, useStore } from "@/lib/store.jsx";
+import { EG_TINTS, THEMES, THEME_FONTS, egTintGradient, isPremiumTheme } from "@/themes";
+import { BFLY_COLORS, Button, CropModal, DecorPreview, Field, Icon, Input, Modal, Monogram, Placeholder, SectionHead, Select, Textarea, bflyHueShift, confirmDialog, mapEmbedUrl, mapSearchUrl, toast } from "@/ui/components.jsx";
+import { Home } from "@/pages/PublicPages.jsx";
+import { ADMIN_SESSION, AdminDashboard, AdminLogin, QRCanvas, downloadCSV, downloadQR, fmtDate, isAuthed } from "@/admin/core.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // ============================================================================

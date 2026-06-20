@@ -1,15 +1,15 @@
 import React from "react";
-import ReactDOM from "react-dom/client";
-import { go } from "./nav.js";
-import { Store, useStore } from "./store.jsx";
-import { FONT_OPTIONS, THEMES, THEME_FONTS, applyTheme } from "./themes.jsx";
-import { Button, ConfirmHost, FloatingDecor, Icon, Monogram, ToastHost, confirmDialog, toast } from "./components.jsx";
-import { TweakButton, TweakColor, TweakSection, TweakSelect, TweakText, TweakToggle, TweaksPanel } from "./tweaks-panel.jsx";
-import { DetailsPage, Home, SchedulePage, StoryPage, VenuePage } from "./pages-main.jsx";
-import { RSVPPage } from "./rsvp.jsx";
-import { GalleryPage, UploadPage, VideoMessagePage } from "./media.jsx";
-import { GuestbookPage, QuizPage } from "./social.jsx";
-import { AdminApp, ImageUploadField } from "./admin-manage.jsx";
+
+import { go } from "@/lib/nav.js";
+import { Store, useStore } from "@/lib/store.jsx";
+import { FONT_OPTIONS, THEMES, THEME_FONTS, applyTheme } from "@/themes";
+import { Button, ConfirmHost, FloatingDecor, Icon, Monogram, ToastHost, confirmDialog, toast } from "@/ui/components.jsx";
+import { TweakButton, TweakColor, TweakSection, TweakSelect, TweakText, TweakToggle, TweaksPanel } from "@/ui/tweaks-panel.jsx";
+import { DetailsPage, Home, SchedulePage, StoryPage, VenuePage } from "@/pages/PublicPages.jsx";
+import { RSVPPage } from "@/features/rsvp.jsx";
+import { GalleryPage, UploadPage, VideoMessagePage } from "@/features/media.jsx";
+import { GuestbookPage, QuizPage } from "@/features/social.jsx";
+import { AdminApp, ImageUploadField } from "@/admin/manage.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // ============================================================================
@@ -260,4 +260,3 @@ applyTheme(Store.get().settings.theme, {
   bodyFont: Store.get().settings.bodyFont,
 });
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);

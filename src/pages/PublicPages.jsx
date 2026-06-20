@@ -1,8 +1,8 @@
 import React from "react";
-import { go } from "./nav.js";
-import { useStore } from "./store.jsx";
-import { egTintGradient } from "./themes.jsx";
-import { Button, Countdown, FloatingDecor, Icon, Placeholder, SectionHead, mapDirUrl, mapEmbedUrl } from "./components.jsx";
+import { go } from "@/lib/nav.js";
+import { useStore } from "@/lib/store.jsx";
+import { egTintGradient } from "@/themes";
+import { Button, Countdown, FloatingDecor, Icon, Placeholder, SectionHead, mapDirUrl, mapEmbedUrl } from "@/ui/components.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // ============================================================================

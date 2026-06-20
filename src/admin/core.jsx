@@ -1,8 +1,8 @@
 import React from "react";
 import qrcode from "qrcode-generator";
-import { go } from "./nav.js";
-import { useStore } from "./store.jsx";
-import { Button, Field, Icon, Input, Monogram, Placeholder, toast } from "./components.jsx";
+import { go } from "@/lib/nav.js";
+import { useStore } from "@/lib/store.jsx";
+import { Button, Field, Icon, Input, Monogram, Placeholder, toast } from "@/ui/components.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // ============================================================================

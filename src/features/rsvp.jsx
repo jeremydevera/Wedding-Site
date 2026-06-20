@@ -1,8 +1,8 @@
 import React from "react";
-import { go } from "./nav.js";
-import { Store, useStore } from "./store.jsx";
-import { Button, Field, Icon, Input, Select, Textarea } from "./components.jsx";
-import { PageHero } from "./pages-main.jsx";
+import { go } from "@/lib/nav.js";
+import { Store, useStore } from "@/lib/store.jsx";
+import { Button, Field, Icon, Input, Select, Textarea } from "@/ui/components.jsx";
+import { PageHero } from "@/pages/PublicPages.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // ============================================================================

@@ -1,5 +1,5 @@
 import React from "react";
-import { uid } from "./store.jsx";
+import { uid } from "@/lib/store.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // ============================================================================
