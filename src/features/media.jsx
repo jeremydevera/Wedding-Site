@@ -333,4 +333,3 @@ export function GalleryPage() {
   );
 }
 
-Object.assign(window, { UploadPage, VideoMessagePage, GalleryPage, UploadFlow, imageToDataUrl });

@@ -205,4 +205,3 @@ export function QuizPage() {
   );
 }
 
-Object.assign(window, { GuestbookPage, QuizPage });

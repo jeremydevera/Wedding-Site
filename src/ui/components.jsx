@@ -454,10 +454,3 @@ export function DecorPreview({ style, butterflyStyle, butterflyColor, butterflyC
   );
 }
 
-Object.assign(window, {
-  useState, useEffect, useRef, useMemo, useCallback,
-  Placeholder, Monogram, Button, Field, Input, Textarea, Select,
-  SectionHead, Modal, ToastHost, toast, Countdown, useCountdown, Icon, FloatingDecor, DecorPreview,
-  ConfirmHost, confirmDialog, mapResolveQuery, mapEmbedUrl, mapDirUrl, mapSearchUrl,
-  BFLY_COLORS, bflyHueShift, CropModal,
-});

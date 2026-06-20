@@ -6,7 +6,7 @@ import { Button, Field, Icon, Input, Monogram, Placeholder, toast } from "@/ui/c
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // ============================================================================
-// admin-core.jsx — admin auth, shell/sidebar, dashboard, shared admin utils
+// admin/core.jsx — admin auth, shell/sidebar, dashboard, shared admin utils
 // ============================================================================
 
 export const ADMIN_SESSION = "evermore_admin_session";
@@ -203,4 +203,3 @@ export function AdminDashboard({ goTab }) {
   );
 }
 
-Object.assign(window, { isAuthed, ADMIN_SESSION, downloadCSV, fmtDate, QRCanvas, downloadQR, AdminLogin, AdminDashboard });

@@ -10,10 +10,11 @@ import { RSVPPage } from "@/features/rsvp.jsx";
 import { GalleryPage, UploadPage, VideoMessagePage } from "@/features/media.jsx";
 import { GuestbookPage, QuizPage } from "@/features/social.jsx";
 import { AdminApp, ImageUploadField } from "@/admin/manage.jsx";
+import { hasSection } from "@/config/eventTypes.js";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // ============================================================================
-// app.jsx — router, public nav + footer, tweaks panel, root App, mount
+// app/App.jsx — router, public nav + footer, tweaks panel, root App, mount
 // ============================================================================
 
 export const ROUTES = {
@@ -34,7 +35,12 @@ export const NAV_LINKS = [
   { key: "quiz", label: "Quiz" },
 ];
 
-window.go = go;
+// Nav links visible for the active event type (home always shows). Driven by
+// the event-type registry so adding a type (birthday, corporate) re-shapes nav.
+function visibleNav(eventType) {
+  return NAV_LINKS.filter((l) => l.key === "home" || hasSection(eventType, l.key));
+}
+
 
 export function useRoute() {
   const parse = () => {
@@ -63,7 +69,7 @@ export function Nav({ route }) {
           <span className="nav__names">{settings.partnerA} <span className="amp">&amp;</span> {settings.partnerB}</span>
         </a>
         <div className="nav__links">
-          {NAV_LINKS.map((l) => (
+          {visibleNav(settings.eventType).map((l) => (
             <button key={l.key} className={"nav__link" + (route === l.key ? " nav__link--active" : "")} onClick={() => go(l.key)}>{l.label}</button>
           ))}
         </div>
@@ -81,7 +87,7 @@ export function Nav({ route }) {
               <Monogram a={settings.partnerA} b={settings.partnerB} size={40} />
               <button className="nav__burger" onClick={() => setDrawer(false)} aria-label="Close">{Icon.close({})}</button>
             </div>
-            {NAV_LINKS.map((l) => (
+            {visibleNav(settings.eventType).map((l) => (
               <button key={l.key} className={"drawer__link" + (route === l.key ? " drawer__link--active" : "")} onClick={() => { go(l.key); setDrawer(false); }}>{l.label}</button>
             ))}
             <button className="drawer__link" onClick={() => { go("upload"); setDrawer(false); }}>Share Photos</button>
@@ -105,7 +111,7 @@ export function Footer() {
         <div className="footer__names">{settings.partnerA} <span className="amp">&amp;</span> {settings.partnerB}</div>
         <div className="footer__hash">{settings.hashtag}</div>
         <div className="footer__links">
-          {NAV_LINKS.map((l) => <button key={l.key} onClick={() => go(l.key)}>{l.label}</button>)}
+          {visibleNav(settings.eventType).map((l) => <button key={l.key} onClick={() => go(l.key)}>{l.label}</button>)}
           <button onClick={() => go("upload")}>Upload</button>
         </div>
         <p className="footer__fine">{settings.weddingDateLabel} &middot; {settings.venueName}</p>

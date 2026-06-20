@@ -1,8 +1,6 @@
-import React from "react";
-const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // ============================================================================
-// themes.jsx — theme engine. Each theme is a complete look the client can pick.
+// themes/registry.js — theme engine. Each theme is a complete look the client can pick.
 // applyTheme() writes CSS custom properties onto :root; Tweaks can layer
 // accent/font overrides on top.
 // ============================================================================
@@ -385,4 +383,3 @@ export function egTintGradient(key) {
   return `linear-gradient(180deg, ${t.top}, ${t.bottom})`;
 }
 
-Object.assign(window, { THEMES, FONT_OPTIONS, THEME_FONTS, THEME_BTN, applyTheme, PREMIUM_THEMES, isPremiumTheme, EG_TINTS, egTintGradient });

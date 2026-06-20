@@ -12,6 +12,8 @@
 // below are the target for migrating that copy to be event-type-driven.
 // ============================================================================
 
+import { THEMES } from "@/themes";
+
 export const EVENT_TYPES = {
   wedding: {
     label: "Wedding",
@@ -52,4 +54,14 @@ export function themesForEvent(key) {
 // Whether a section should render for the active event type.
 export function hasSection(key, section) {
   return eventType(key).sections.includes(section);
+}
+
+// Dev-only integrity check: every referenced theme key must exist, and each
+// defaultTheme must be in its own list. Stripped from production builds.
+if (import.meta.env && import.meta.env.DEV) {
+  for (const [key, t] of Object.entries(EVENT_TYPES)) {
+    const unknown = t.themes.filter((k) => !THEMES[k]);
+    if (unknown.length) console.error(`[eventTypes] ${key}: unknown theme keys → ${unknown.join(", ")}`);
+    if (!t.themes.includes(t.defaultTheme)) console.error(`[eventTypes] ${key}: defaultTheme "${t.defaultTheme}" not in its themes list`);
+  }
 }

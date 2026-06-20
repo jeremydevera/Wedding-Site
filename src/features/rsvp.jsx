@@ -157,4 +157,3 @@ export function RSVPPage() {
   );
 }
 
-Object.assign(window, { RSVPPage });

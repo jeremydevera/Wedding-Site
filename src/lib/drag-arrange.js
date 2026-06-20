@@ -1,7 +1,11 @@
 /* Drag-to-arrange mode for the open-envelope stack.
    Toggle with the "Arrange" button (bottom-left). Drag pieces to move,
    scroll-wheel over a piece to resize it, then hit "Copy CSS" to read
-   the final values back. Plain JS, no build step. */
+   the final values back. Loaded lazily as an ES module from main.jsx. */
+import { PREMIUM_THEMES } from "@/themes";
+import { STORE_KEY } from "@/lib/store.jsx";
+import { ADMIN_SESSION } from "@/admin/core.jsx";
+
 (function () {
   "use strict";
 
@@ -193,12 +197,11 @@
   // Shown only to the signed-in couple while the Olive Envelope theme is active
   // (so guests never see it). Manual overrides: ?arrange in the URL, or the
   // Ctrl/Cmd+Shift+A shortcut, which force it on regardless of theme.
-  function isAdmin() { try { return sessionStorage.getItem("evermore_admin_session") === "1"; } catch (e) { return false; } }
+  function isAdmin() { try { return sessionStorage.getItem(ADMIN_SESSION) === "1"; } catch (e) { return false; } }
   function settingsObj() {
-    try { return (JSON.parse(localStorage.getItem("evermore_store_v3") || "{}").settings || {}); }
+    try { return (JSON.parse(localStorage.getItem(STORE_KEY) || "{}").settings || {}); }
     catch (e) { return {}; }
   }
-  var PREMIUM_THEMES = ["envelope"];
   function manualOverride() {
     if (/[?&]arrange\b/.test(location.search)) return true;
     try { return localStorage.getItem("arrangeMode") === "1"; } catch (e) { return false; }

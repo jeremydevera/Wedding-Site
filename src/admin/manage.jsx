@@ -5,10 +5,11 @@ import { EG_TINTS, THEMES, THEME_FONTS, egTintGradient, isPremiumTheme } from "@
 import { BFLY_COLORS, Button, CropModal, DecorPreview, Field, Icon, Input, Modal, Monogram, Placeholder, SectionHead, Select, Textarea, bflyHueShift, confirmDialog, mapEmbedUrl, mapSearchUrl, toast } from "@/ui/components.jsx";
 import { Home } from "@/pages/PublicPages.jsx";
 import { ADMIN_SESSION, AdminDashboard, AdminLogin, QRCanvas, downloadCSV, downloadQR, fmtDate, isAuthed } from "@/admin/core.jsx";
+import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // ============================================================================
-// admin-manage.jsx — RSVP table, media/guestbook moderation, quiz, QR, settings
+// admin/manage.jsx — RSVP table, media/guestbook moderation, quiz, QR, settings
 // + AdminApp shell (sidebar + routing between tabs)
 // ============================================================================
 
@@ -539,8 +540,10 @@ export function SettingsAdmin() {
       </button>
     );
   };
-  const normalThemes = Object.keys(THEMES).filter((k) => !isPremiumTheme(k));
-  const premiumThemes = Object.keys(THEMES).filter((k) => isPremiumTheme(k));
+  // Theme options are scoped to the active event type via the registry.
+  const allowed = themesForEvent(f.eventType || DEFAULT_EVENT_TYPE);
+  const normalThemes = allowed.filter((k) => THEMES[k] && !isPremiumTheme(k));
+  const premiumThemes = allowed.filter((k) => THEMES[k] && isPremiumTheme(k));
   const STABS = [["general", "General", "user"], ["appearance", "Theme", "grid"], ["venue", "Venue & Map", "pin"], ["photos", "Photos", "camera"], ["access", "Access", "check"]];
 
   return (
@@ -874,4 +877,3 @@ export function AdminApp() {
   );
 }
 
-Object.assign(window, { AdminApp });

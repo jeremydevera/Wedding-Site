@@ -12,6 +12,7 @@ export const STORE_KEY = "evermore_store_v3";
 // ---- Seed / default data ---------------------------------------------------
 export const DEFAULT_SETTINGS = {
   theme: "classic",
+  eventType: "wedding",
   partnerA: "Jeremy",
   partnerB: "Irish",
   // ISO date string for the wedding moment
@@ -288,4 +289,3 @@ export function useStore() {
   return Store.get();
 }
 
-Object.assign(window, { Store, useStore, uid });

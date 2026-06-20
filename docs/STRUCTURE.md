@@ -93,8 +93,36 @@ event types as data.
 - **Imports** use `@/…` (never deep relative `../../`).
 - **`ui/`** = generic and reusable; **`features/`** = one guest capability each;
   **`pages/`** = compositions of `ui` + `features`.
+- **No `window` globals.** Modules share code only through `@/` imports/exports.
 - Keep large files focused — when one grows past a few hundred lines doing
   several jobs, split it along the folder boundaries above (e.g. `social.jsx`
   → `features/guestbook.jsx` + `features/quiz.jsx`).
 - Data layer lives in `lib/store.jsx` today (localStorage mock) and is the single
   seam that swaps to Supabase later — features call the store, not storage directly.
+
+---
+
+## Event-type seam: what's wired
+
+`config/eventTypes.js` is **load-bearing**, not decorative:
+
+- **Nav** — `app/App.jsx` builds the visible nav from `hasSection(eventType, …)`.
+- **Theme picker** — `admin/manage.jsx` lists `themesForEvent(eventType)` rather
+  than every theme.
+- **Active type** — `store.jsx` `DEFAULT_SETTINGS.eventType` ("wedding").
+- A **dev-only guard** in `eventTypes.js` errors if any referenced theme key is
+  missing, so the registry can't silently drift.
+
+Still hardcoded (intentional, migrate per event type as needed): the page
+**copy** (e.g. "We're getting married") lives in the page components; move those
+strings to `eventType(key).terms` when bringing a new type online.
+
+## Known follow-ups (not yet done)
+
+- **Split `admin/manage.jsx`** (~880 lines, many jobs) into per-tab files under
+  `admin/`, keep `AdminApp` a thin shell, and move the reusable `ImageUploadField`
+  into `ui/` (a public page imports it today).
+- **Standardize filename casing** (mix of PascalCase / lowercase / kebab) and the
+  `.js` vs `.jsx` rule, then document it here.
+- **Per-file React hook imports** instead of the shared `const { useState … } = React`
+  line, so the linter can flag unused hooks.

@@ -6,7 +6,7 @@ import { Button, Countdown, FloatingDecor, Icon, Placeholder, SectionHead, mapDi
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // ============================================================================
-// pages-main.jsx — Home + content pages (Details, Story, Schedule, Venue, FAQ)
+// pages/PublicPages.jsx — Home + content pages (Details, Story, Schedule, Venue, FAQ)
 // ============================================================================
 
 export function HeroBg() {
@@ -538,4 +538,3 @@ export function VenuePage() {
   );
 }
 
-Object.assign(window, { Home, StoryPage, DetailsPage, SchedulePage, VenuePage, PageHero, ScheduleView, EnvelopeHero });
