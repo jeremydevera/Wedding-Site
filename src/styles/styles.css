@@ -471,7 +471,28 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .mod-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 4px 9px; border: 1px solid var(--line); border-radius: 100px; cursor: pointer; color: var(--muted); text-transform: capitalize; user-select: none; }
 .mod-pill input { margin: 0; accent-color: var(--accent); width: 13px; height: 13px; }
 .mod-pill--on { color: var(--ink); border-color: var(--accent); background: color-mix(in oklch, var(--accent) 12%, transparent); }
-.theme-cell { min-width: 160px; }
+.theme-cell { min-width: 170px; }
+
+/* Superadmin = standard neutral admin, decoupled from the event theme.
+   Remapping the design tokens flips the whole admin subtree to a clean
+   slate/black SaaS look regardless of which wedding theme is active. */
+.admin--sa {
+  --bg: #f6f7f9; --surface: #ffffff; --surface-2: #f1f5f9;
+  --ink: #0f172a; --ink-soft: #475569; --muted: #94a3b8; --line: #e6e9ef;
+  --accent: #111827; --accent-soft: #f1f5f9; --accent-ink: #ffffff; --gold: #64748b;
+  --radius: 10px;
+  --font-display: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+}
+.admin--sa .panel__title { font-weight: 600; letter-spacing: -0.01em; }
+.admin--sa .client-domain { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; }
+.admin--sa .tbl th { font-size: 11px; }
+
+/* sub-tabs separating Clients / Add client / Owner login */
+.sa-tabs { display: inline-flex; gap: 4px; background: var(--surface-2); padding: 4px; border-radius: 10px; margin-bottom: 22px; }
+.sa-tabs button { border: none; background: none; padding: 8px 16px; border-radius: 7px; font-family: var(--font-body); font-size: 14px; font-weight: 500; color: var(--ink-soft); cursor: pointer; transition: background .15s, color .15s; }
+.sa-tabs button:hover { color: var(--ink); }
+.sa-tabs button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(15,23,42,.08); }
 
 /* admin media grid */
 /* folder tabs (sub-nav within an admin tab) */

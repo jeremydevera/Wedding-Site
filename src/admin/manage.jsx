@@ -840,12 +840,19 @@ export function AdminApp() {
   const canArrange = settings.arrangeEnabled && isPremiumTheme(settings.theme);
   const startArrange = () => { try { sessionStorage.setItem("arrangeStart", "1"); } catch (e) {} go("home"); };
 
+  const isSuper = auth.role === "superadmin";
   return (
-    <div className="admin">
+    <div className={"admin" + (isSuper ? " admin--sa" : "")}>
       <aside className="admin__side">
         <div className="admin__brand">
-          <Monogram a={settings.partnerA} b={settings.partnerB} size={38} />
-          <div><div className="admin__brand-name">{settings.partnerA} & {settings.partnerB}</div><div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--muted)" }}>Admin</div></div>
+          {isSuper ? (
+            <div><div className="admin__brand-name">Evermore</div><div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--muted)" }}>Superadmin</div></div>
+          ) : (
+            <>
+              <Monogram a={settings.partnerA} b={settings.partnerB} size={38} />
+              <div><div className="admin__brand-name">{settings.partnerA} & {settings.partnerB}</div><div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--muted)" }}>Admin</div></div>
+            </>
+          )}
         </div>
         <nav className="admin__nav">
           {tabs.map((t) => (
