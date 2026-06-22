@@ -197,9 +197,6 @@ export function App() {
   const { settings } = useStore();
 
   React.useEffect(() => { loadClientData().catch((e) => console.error("load failed", e)); }, []);
-  if (Store.get().loading) {
-    return <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", color: "var(--ink-soft)" }}>Loading…</div>;
-  }
 
   // apply theme whenever theme/accent/fonts change
   useEffect(() => {
@@ -242,6 +239,12 @@ export function App() {
     }, 40);
     return () => { clearTimeout(t); if (App._cleanup) App._cleanup(); };
   }, [route]);
+
+  // Gate the render AFTER all hooks above (rules of hooks: hook count must be
+  // stable across renders — an early return between hooks crashes on hydrate).
+  if (Store.get().loading) {
+    return <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", color: "var(--ink-soft)" }}>Loading…</div>;
+  }
 
   const Page = ROUTES[route] || Home;
   const isAdmin = route === "admin";
