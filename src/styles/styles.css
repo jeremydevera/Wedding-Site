@@ -530,13 +530,13 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .sa-bar__track { height: 8px; background: var(--surface-2); border-radius: 100px; overflow: hidden; }
 .sa-bar__fill { height: 100%; background: var(--accent); border-radius: 100px; }
 
-/* Supabase-style dark sidebar + green accent */
-.admin--sa .admin__side { background: #1c1c1c; border-right-color: #2e2e2e; }
-.admin--sa .admin__side .admin__brand-name { color: #fafafa; }
-.admin--sa .admin__brand-name + div { color: #3ecf8e !important; }
-.admin--sa .admin__side .admin__navlink { color: #a1a1aa; }
-.admin--sa .admin__side .admin__navlink:hover { color: #fafafa; background: rgba(255,255,255,.06); }
-.admin--sa .admin__side .admin__navlink--active { background: rgba(62,207,142,.14); color: #3ecf8e; }
+/* Supabase product-nav panel: light, gray #ededed active (NOT green) — exact scraped tokens */
+.admin--sa .admin__side { background: #fbfbfb; border-right-color: #e7e7ea; }
+.admin--sa .admin__side .admin__brand-name { color: #171717; }
+.admin--sa .admin__brand-name + div { color: #525252 !important; }
+.admin--sa .admin__side .admin__navlink { color: #525252; padding: 8px 8px 8px 6px; border-radius: 6px; gap: 8px; font-size: 14px; }
+.admin--sa .admin__side .admin__navlink:hover { color: #171717; background: #f4f4f5; }
+.admin--sa .admin__side .admin__navlink--active { background: #ededed; color: #171717; font-weight: 600; }
 
 /* Clients as project-style cards (Supabase projects grid) */
 .sa-listhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
