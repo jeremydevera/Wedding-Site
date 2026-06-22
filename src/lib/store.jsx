@@ -122,6 +122,7 @@ export function defaultState() {
     quizSubs: [], // {id, name, score, total, answers, createdAt}
     clientId: null,
     loading: true,
+    auth: { ready: false, session: null, role: null, clientId: null, email: null },
   };
 }
 
@@ -180,6 +181,10 @@ export const Store = {
       loading: false,
     };
     emit(); // do NOT persist hydrated server data to localStorage
+  },
+  setAuth(auth) {
+    _state = { ..._state, auth: { ready: true, ...auth } };
+    emit(); // session is not persisted to localStorage; Supabase manages it
   },
   updateSettings(patch) {
     _state = { ..._state, settings: { ..._state.settings, ...patch } };
