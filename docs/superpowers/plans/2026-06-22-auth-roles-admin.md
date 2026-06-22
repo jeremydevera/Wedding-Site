@@ -117,6 +117,7 @@ import { visibleAdminTabs, canEnterAdmin } from "@/lib/roles.js";
 const TABS = [
   { key: "dashboard", label: "Dashboard" },
   { key: "guestbook", label: "Guestbook" },
+  { key: "media", label: "Media" },
   { key: "settings", label: "Settings" },
 ];
 
@@ -124,11 +125,13 @@ describe("visibleAdminTabs", () => {
   it("superadmin keeps all tabs + gains clients", () => {
     const keys = visibleAdminTabs("superadmin", TABS).map((t) => t.key);
     expect(keys).toContain("settings");
+    expect(keys).toContain("media");
     expect(keys).toContain("clients");
   });
-  it("owner loses settings and never sees clients", () => {
+  it("owner loses settings, media, and never sees clients", () => {
     const keys = visibleAdminTabs("owner", TABS).map((t) => t.key);
     expect(keys).not.toContain("settings");
+    expect(keys).not.toContain("media");
     expect(keys).not.toContain("clients");
     expect(keys).toContain("guestbook");
   });
@@ -158,8 +161,8 @@ Expected: FAIL — cannot resolve `@/lib/roles.js`.
 
 Create `src/lib/roles.js`:
 ```js
-// Settings + Clients are superadmin-only.
-const SUPERADMIN_ONLY = new Set(["settings"]);
+// Settings, Media + Clients are superadmin-only (clients also filtered below).
+const SUPERADMIN_ONLY = new Set(["settings", "media"]);
 
 export function visibleAdminTabs(role, allTabs) {
   if (role === "superadmin") {
@@ -612,7 +615,136 @@ git commit -m "feat: superadmin Clients dashboard (create client, assign theme, 
 
 ---
 
-### Task 10: End-to-end verification
+### Task 10: Per-client module flags (toggle modules on/off per client)
+
+Superadmin toggles modules per client (`clients.content.modules`, e.g. `{ guestbook:false }`). A disabled module is hidden from the public nav + its route is blocked, and from the owner's admin tabs. Superadmin always sees everything. Default = on (absent key ⇒ enabled).
+
+**Files:**
+- Modify: `src/lib/roles.js`
+- Test: `src/lib/__tests__/roles.test.js`
+- Modify: `src/app/App.jsx` (nav + route gating)
+- Modify: `src/admin/manage.jsx` (owner tab gating)
+- Modify: `src/admin/superadmin.jsx` (toggle UI)
+
+- [ ] **Step 1: Add the failing test for `moduleEnabled`**
+
+Append to `src/lib/__tests__/roles.test.js`:
+```js
+import { moduleEnabled } from "@/lib/roles.js";
+
+describe("moduleEnabled", () => {
+  it("defaults to on when no modules map or key absent", () => {
+    expect(moduleEnabled(undefined, "guestbook")).toBe(true);
+    expect(moduleEnabled({}, "quiz")).toBe(true);
+  });
+  it("respects explicit flags", () => {
+    expect(moduleEnabled({ quiz: false }, "quiz")).toBe(false);
+    expect(moduleEnabled({ quiz: false, guestbook: true }, "guestbook")).toBe(true);
+  });
+});
+```
+
+- [ ] **Step 2: Run, verify fail**
+
+Run: `npx vitest run src/lib/__tests__/roles.test.js`
+Expected: FAIL — `moduleEnabled` not exported.
+
+- [ ] **Step 3: Implement helper + owner module-tab filter**
+
+Add to `src/lib/roles.js`:
+```js
+// Per-client module flags. modules = { guestbook:false, quiz:true, ... }; absent key = on.
+export function moduleEnabled(modules, key) {
+  if (!modules || !(key in modules)) return true;
+  return !!modules[key];
+}
+
+// Admin tabs that correspond to a toggleable module (others — dashboard/qr — always show).
+const TAB_MODULE = { rsvps: "rsvp", guestbook: "guestbook", quiz: "quiz", schedule: "schedule" };
+
+// Filter already-role-gated tabs by the client's module flags (owners only; superadmin keeps all).
+export function tabsForClient(tabs, role, modules) {
+  if (role === "superadmin") return tabs;
+  return tabs.filter((t) => !TAB_MODULE[t.key] || moduleEnabled(modules, TAB_MODULE[t.key]));
+}
+```
+
+- [ ] **Step 4: Run, verify pass**
+
+Run: `npx vitest run src/lib/__tests__/roles.test.js`
+Expected: all passed.
+
+- [ ] **Step 5: Gate the public nav + routes in App.jsx**
+
+In `src/app/App.jsx`, import `moduleEnabled` and update `visibleNav` to also respect flags. Change its signature/body:
+```js
+import { hasSection } from "@/config/eventTypes.js";
+import { moduleEnabled } from "@/lib/roles.js";
+
+function visibleNav(eventType, modules) {
+  return NAV_LINKS.filter((l) => l.key === "home" || (hasSection(eventType, l.key) && moduleEnabled(modules, l.key)));
+}
+```
+Update the three `visibleNav(settings.eventType)` call sites to `visibleNav(settings.eventType, settings.modules)`. Then **block the route** for a disabled module — after `const Page = ROUTES[route] || Home;` add:
+```js
+  const routeBlocked = route !== "home" && route !== "admin" && !moduleEnabled(settings.modules, route);
+  const ActivePage = routeBlocked ? Home : Page;
+```
+and render `<ActivePage />` instead of `<Page />` in the non-admin branch (so guests can't reach a disabled module by typing its URL).
+
+- [ ] **Step 6: Gate owner admin tabs in manage.jsx**
+
+In `src/admin/manage.jsx`, import `tabsForClient` and apply it after the role filter in `AdminApp`:
+```js
+import { visibleAdminTabs, canEnterAdmin, tabsForClient } from "@/lib/roles.js";
+```
+```js
+  const roleTabs = visibleAdminTabs(auth.role, ADMIN_TABS);
+  const tabs = tabsForClient(roleTabs, auth.role, settings.modules);
+```
+(`settings.modules` is already in the store — `clientToState` spreads `content` into `settings`, so `content.modules` lands at `settings.modules`.)
+
+- [ ] **Step 7: Add module toggles to the superadmin dashboard**
+
+In `src/admin/superadmin.jsx`, add a per-client module toggle UI. Add the module list + a save handler:
+```js
+const MODULES = ["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"];
+
+async function toggleModule(c, key, on) {
+  const modules = { ...(c.content?.modules || {}), [key]: on };
+  const content = { ...(c.content || {}), modules };
+  const { error } = await supabase.from("clients").update({ content }).eq("id", c.id);
+  if (error) return toast("Update failed");
+  load();
+}
+```
+Render, per client row (or in an expandable panel), a checkbox per module:
+```jsx
+{MODULES.map((m) => (
+  <label key={m} style={{ marginRight: 12 }}>
+    <input type="checkbox"
+      checked={(c.content?.modules?.[m]) !== false}
+      onChange={(e) => toggleModule(c, m, e.target.checked)} /> {m}
+  </label>
+))}
+```
+(`!== false` makes absent default to checked/on.)
+
+- [ ] **Step 8: Verify build + tests**
+
+Run: `npm run build && npm test`
+Expected: build OK, tests pass.
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add src/lib/roles.js src/lib/__tests__/roles.test.js src/app/App.jsx src/admin/manage.jsx src/admin/superadmin.jsx
+git commit -m "feat: per-client module flags (hide module from owner admin + public site)"
+```
+
+---
+
+### Task 11: End-to-end verification
 
 - [ ] **Step 1: Superadmin path**
 
@@ -621,10 +753,12 @@ git commit -m "feat: superadmin Clients dashboard (create client, assign theme, 
 - In **Clients**: create a client `testclient` (wedding); assign it a theme; set an owner login (`owner@testclient` + a password).
 - Verify in Supabase: `clients` has `testclient`; `auth.users` has the owner; `profiles` row for the owner has `role='owner'` and `client_id` = testclient's id.
 
-- [ ] **Step 2: Owner path (scoping + hidden Settings)**
+- [ ] **Step 2: Owner path (scoping + hidden Settings/Media + module flags)**
 
-Open `/?client=testclient#/admin`, sign in as `owner@testclient`.
-- Expect: admin loads, **no Settings tab, no Clients tab**.
+As superadmin, in **Clients**, disable the **quiz** module for `testclient`. Then open `/?client=testclient#/admin`, sign in as `owner@testclient`.
+- Expect: admin loads, **no Settings tab, no Media tab, no Clients tab**, and **no Quiz tab** (module disabled).
+- Visit `/?client=testclient#/quiz` (public) → not shown in nav and the route falls back to Home (guests can't reach a disabled module).
+- Re-enable quiz as superadmin → Quiz tab + public quiz reappear.
 - Open `/?client=demo#/admin` while signed in as that owner → **"No access"** (owner is scoped to testclient).
 
 - [ ] **Step 3: Negative path**
@@ -639,7 +773,7 @@ Run: `npm run build && npm test` (all green). No code commit needed if Steps 1-3
 
 ## What this delivers / what's next
 
-**Delivered:** real Supabase Auth login; superadmin (you) with a universal login + full admin incl Settings + a Clients dashboard to create clients, assign themes, and create/reset each client's owner login; owners who log in only on their own subdomain and never see Settings/Clients. RLS enforces that only a superadmin can write `clients`.
+**Delivered:** real Supabase Auth login; superadmin (you) with a universal login + full admin (incl. **Settings** and **Media**, both superadmin-only) + a Clients dashboard to create clients, assign themes, create/reset each client's owner login, **and toggle which modules each client gets**; owners who log in only on their own subdomain, never see Settings/Media/Clients, and only see modules the superadmin enabled (a disabled module is hidden from their admin AND from the public site/nav/route). RLS enforces that only a superadmin can write `clients`.
 
 **Next — Phase 2b (separate plan):** wire owner-facing admin *writes* to Supabase (guestbook moderation, RSVP list/export, content + theme edits by owners) with owner RLS write policies scoped by `auth_client()`, and verify per-tenant isolation with a second client. Then Phase 3: media uploads → R2.
 
