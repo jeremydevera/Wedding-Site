@@ -12,9 +12,9 @@ const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 export const DIET_OPTIONS = ["None", "Vegetarian", "Vegan", "Gluten-free", "Halal", "Kosher", "Seafood allergy", "Nut allergy", "Other"];
 
 export function RSVPPage() {
-  const { settings, rsvps } = useStore();
+  const { settings } = useStore();
   const [form, setForm] = useState({
-    fullName: "", email: "", phone: "", status: "attending", count: 1,
+    fullName: "", phone: "", status: "attending", count: 1,
     plusOne: "", diet: "None", dietNotes: "", song: "", notes: "",
   });
   const [errors, setErrors] = useState({});
@@ -31,8 +31,6 @@ export function RSVPPage() {
   function validate() {
     const er = {};
     if (!form.fullName.trim()) er.fullName = "Please enter your name.";
-    if (!form.email.trim()) er.email = "Please enter your email.";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) er.email = "Please enter a valid email address.";
     if (attending) {
       const n = parseInt(form.count, 10);
       if (!n || n < 1) er.count = "Please enter how many will attend.";
@@ -47,11 +45,6 @@ export function RSVPPage() {
     e.preventDefault();
     const er = validate();
     if (Object.keys(er).length) { setErrors(er); return; }
-    const dupe = rsvps.find((r) => r.email.toLowerCase() === form.email.trim().toLowerCase());
-    if (dupe) {
-      setErrors({ email: "An RSVP using this email already exists. Contact the couple to make changes." });
-      return;
-    }
     Store.addRSVP({
       ...form,
       count: attending ? parseInt(form.count, 10) : 0,
@@ -95,14 +88,9 @@ export function RSVPPage() {
             <Field label="Full name" required error={errors.fullName} id="r-name">
               <Input id="r-name" value={form.fullName} onChange={set("fullName")} placeholder="Jane Doe" />
             </Field>
-            <div className="field-row field-row--2">
-              <Field label="Email" required error={errors.email} id="r-email">
-                <Input id="r-email" type="email" value={form.email} onChange={set("email")} placeholder="jane@email.com" />
-              </Field>
-              <Field label="Phone" hint="Optional" id="r-phone">
-                <Input id="r-phone" value={form.phone} onChange={set("phone")} placeholder="(555) 012-3456" />
-              </Field>
-            </div>
+            <Field label="Phone" hint="Optional" id="r-phone">
+              <Input id="r-phone" value={form.phone} onChange={set("phone")} placeholder="(555) 012-3456" />
+            </Field>
 
             <Field label="Will you attend?" required>
               <div className="pills">
