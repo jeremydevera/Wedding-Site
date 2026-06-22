@@ -20,18 +20,22 @@ export async function signIn(email, password) {
   if (error) throw error;
   const p = await profileFor(data.user.id);
   Store.setAuth({ session: data.session, role: p.role, clientId: p.client_id, email: data.user.email });
+  // keep the drag-arrange admin gate working (it reads this sessionStorage key)
+  try { sessionStorage.setItem("evermore_admin_session", "1"); } catch (e) {}
   return p;
 }
 
 export async function signOut() {
-  await supabase.auth.signOut();
+  // clear locally even if the network call fails, and never reject
+  try { await supabase.auth.signOut(); } catch (e) { /* ignore */ }
+  try { sessionStorage.removeItem("evermore_admin_session"); } catch (e) {}
   Store.setAuth({ session: null, role: null, clientId: null, email: null });
 }
 
 // Superadmin-only: create or reset a client's owner login (via Edge Function).
-export async function createOwner({ email, password, clientId }) {
+export async function createOwner({ email, password, client_id }) {
   const { data, error } = await supabase.functions.invoke("admin-create-owner", {
-    body: { email, password, client_id: clientId },
+    body: { email, password, client_id },
   });
   if (error) throw error;
   return data;

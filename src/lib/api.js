@@ -11,6 +11,7 @@ export async function loadClientData() {
     .from("clients").select("*").eq("subdomain", subdomain).eq("is_active", true).single();
   if (error || !client) {
     console.warn("[api] client not found for subdomain:", subdomain, error?.message);
+    await loadSession(); // always resolve auth so admin doesn't hang on the loading gate
     Store.hydrate({}); // clears loading; falls back to seed defaults
     return;
   }

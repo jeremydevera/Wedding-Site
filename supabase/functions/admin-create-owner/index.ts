@@ -24,9 +24,9 @@ Deno.serve(async (req) => {
   let userId = created?.user?.id;
   if (error) {
     // user may already exist — find and reset their password instead
-    const { data: list } = await admin.auth.admin.listUsers();
-    const existing = list.users.find((x) => x.email === email);
-    if (!existing) return new Response(JSON.stringify({ error: error.message }), { status: 400 });
+    const { data: list, error: listErr } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    const existing = list?.users?.find((x) => x.email === email);
+    if (listErr || !existing) return new Response(JSON.stringify({ error: listErr?.message || error.message }), { status: 400 });
     userId = existing.id;
     await admin.auth.admin.updateUserById(userId, { password });
   }
