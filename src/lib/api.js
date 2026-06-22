@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase.js";
 import { Store } from "@/lib/store.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { clientToState, rowToGuestbook, rsvpToRow, guestbookToRow, quizToRow } from "@/lib/mappers.js";
+import { loadSession } from "@/lib/auth.js";
 
 // Boot: load the active client + approved guestbook, hydrate the store cache.
 export async function loadClientData() {
@@ -20,6 +21,7 @@ export async function loadClientData() {
   if (gbErr) console.warn("[api] guestbook fetch failed:", gbErr.message);
   // only replace guestbook when the fetch succeeded — a failed query must not wipe it
   Store.hydrate({ ...state, ...(gb ? { guestbook: gb.map(rowToGuestbook) } : { guestbook: [] }) });
+  await loadSession();
 }
 
 export async function postRsvp(form) {
