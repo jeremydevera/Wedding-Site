@@ -509,6 +509,14 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .sa-bar__track { height: 8px; background: var(--surface-2); border-radius: 100px; overflow: hidden; }
 .sa-bar__fill { height: 100%; background: var(--accent); border-radius: 100px; }
 
+/* Blue sidebar — gives the superadmin console a clear blue identity */
+.admin--sa .admin__side { background: linear-gradient(180deg, #1e40af, #172e7c); border-right-color: rgba(255,255,255,.10); }
+.admin--sa .admin__side .admin__brand-name { color: #ffffff; }
+.admin--sa .admin__brand-name + div { color: #9cc0ff !important; }
+.admin--sa .admin__side .admin__navlink { color: #cdd9f7; }
+.admin--sa .admin__side .admin__navlink:hover { color: #ffffff; background: rgba(255,255,255,.08); }
+.admin--sa .admin__side .admin__navlink--active { background: rgba(255,255,255,.16); color: #ffffff; }
+
 /* admin media grid */
 /* folder tabs (sub-nav within an admin tab) */
 .folders--sticky { position: sticky; top: 62px; z-index: 9; background: var(--bg); padding-top: 14px; }
