@@ -12,3 +12,7 @@ build/
 
 # Bundled single-file export (regenerate as needed)
 *-standalone.html
+
+# local env (keys)
+.env
+.env.local
