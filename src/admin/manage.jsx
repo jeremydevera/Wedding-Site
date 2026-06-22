@@ -4,7 +4,10 @@ import { Store, useStore } from "@/lib/store.jsx";
 import { EG_TINTS, THEMES, THEME_FONTS, egTintGradient, isPremiumTheme } from "@/themes";
 import { BFLY_COLORS, Button, CropModal, DecorPreview, Field, Icon, Input, Modal, Monogram, Placeholder, SectionHead, Select, Textarea, bflyHueShift, confirmDialog, mapEmbedUrl, mapSearchUrl, toast } from "@/ui/components.jsx";
 import { Home } from "@/pages/PublicPages.jsx";
-import { ADMIN_SESSION, AdminDashboard, AdminLogin, QRCanvas, downloadCSV, downloadQR, fmtDate, isAuthed } from "@/admin/core.jsx";
+import { AdminDashboard, AdminLogin, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
+import { signOut } from "@/lib/auth.js";
+import { visibleAdminTabs, canEnterAdmin } from "@/lib/roles.js";
+import { ClientsAdmin } from "@/admin/superadmin.jsx";
 import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
@@ -814,16 +817,27 @@ export const ADMIN_TABS = [
 ];
 
 export function AdminApp() {
-  const { settings } = useStore();
-  const [authed, setAuthed] = useState(isAuthed());
+  const { settings, auth, clientId } = useStore();
   const [tab, setTab] = useState("dashboard");
 
-  if (!authed) return <AdminLogin onAuthed={() => setAuthed(true)} />;
+  if (!auth.ready) return <div style={{ minHeight: "60vh", display: "grid", placeItems: "center" }}>…</div>;
+  if (!auth.session) return <AdminLogin onAuthed={() => setTab("dashboard")} />;
+  const profile = { role: auth.role, clientId: auth.clientId };
+  if (!canEnterAdmin(profile, clientId)) {
+    return (
+      <div className="card card--pad-lg" style={{ maxWidth: 420, margin: "10vh auto", textAlign: "center" }}>
+        <h2>No access</h2>
+        <p style={{ color: "var(--ink-soft)" }}>This account can't manage this site.</p>
+        <Button variant="ghost" onClick={() => signOut()}>Sign out</Button>
+      </div>
+    );
+  }
+  const tabs = visibleAdminTabs(auth.role, ADMIN_TABS);
+  const activeTab = tabs.some((t) => t.key === tab) ? tab : "dashboard";
+  const title = (tabs.find((t) => t.key === activeTab) || { label: "Admin" }).label;
 
   const canArrange = settings.arrangeEnabled && isPremiumTheme(settings.theme);
   const startArrange = () => { try { sessionStorage.setItem("arrangeStart", "1"); } catch (e) {} go("home"); };
-
-  const title = ADMIN_TABS.find((t) => t.key === tab).label;
 
   return (
     <div className="admin">
@@ -833,8 +847,8 @@ export function AdminApp() {
           <div><div className="admin__brand-name">{settings.partnerA} & {settings.partnerB}</div><div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--muted)" }}>Admin</div></div>
         </div>
         <nav className="admin__nav">
-          {ADMIN_TABS.map((t) => (
-            <button key={t.key} className={"admin__navlink" + (tab === t.key ? " admin__navlink--active" : "")} onClick={() => setTab(t.key)}>
+          {tabs.map((t) => (
+            <button key={t.key} className={"admin__navlink" + (activeTab === t.key ? " admin__navlink--active" : "")} onClick={() => setTab(t.key)}>
               {Icon[t.icon]({})} {t.label}
             </button>
           ))}
@@ -845,13 +859,13 @@ export function AdminApp() {
             {Icon.grid({ style: { width: 16, height: 16 } })} Arrange Now
           </button>
         )}
-        <button className="admin__navlink" onClick={() => { sessionStorage.removeItem(ADMIN_SESSION); setAuthed(false); go("home"); }}>Sign out</button>
+        <button className="admin__navlink" onClick={() => signOut().then(() => go("home"))}>Sign out</button>
       </aside>
 
       <main className="admin__main">
         <div className="admin__mobilebar">
-          {ADMIN_TABS.map((t) => (
-            <button key={t.key} className={tab === t.key ? "on" : ""} onClick={() => setTab(t.key)}>{t.label}</button>
+          {tabs.map((t) => (
+            <button key={t.key} className={activeTab === t.key ? "on" : ""} onClick={() => setTab(t.key)}>{t.label}</button>
           ))}
         </div>
         <div className="admin__topbar">
@@ -859,18 +873,19 @@ export function AdminApp() {
           <div style={{ display: "flex", gap: 8 }}>
             <Button variant="ghost" size="sm" onClick={() => go("home")}>View site</Button>
             {canArrange && <Button variant="primary" size="sm" onClick={startArrange}>{Icon.grid({ style: { width: 14, height: 14 } })} Arrange Now</Button>}
-            <Button variant="ghost" size="sm" onClick={() => { sessionStorage.removeItem(ADMIN_SESSION); setAuthed(false); go("home"); }}>Sign out</Button>
+            <Button variant="ghost" size="sm" onClick={() => signOut().then(() => go("home"))}>Sign out</Button>
           </div>
         </div>
         <div className="admin__body">
-          {tab === "dashboard" && <AdminDashboard goTab={setTab} />}
-          {tab === "rsvps" && <RsvpsAdmin />}
-          {tab === "media" && <MediaAdmin />}
-          {tab === "guestbook" && <GuestbookAdmin />}
-          {tab === "schedule" && <ScheduleAdmin />}
-          {tab === "quiz" && <QuizAdmin />}
-          {tab === "qr" && <QrAdmin />}
-          {tab === "settings" && <SettingsAdmin />}
+          {activeTab === "dashboard" && <AdminDashboard goTab={setTab} />}
+          {activeTab === "rsvps" && <RsvpsAdmin />}
+          {activeTab === "media" && <MediaAdmin />}
+          {activeTab === "guestbook" && <GuestbookAdmin />}
+          {activeTab === "schedule" && <ScheduleAdmin />}
+          {activeTab === "quiz" && <QuizAdmin />}
+          {activeTab === "qr" && <QrAdmin />}
+          {activeTab === "settings" && <SettingsAdmin />}
+          {activeTab === "clients" && <ClientsAdmin />}
         </div>
       </main>
     </div>
