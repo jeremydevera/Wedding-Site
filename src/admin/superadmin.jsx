@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase.js";
 import { createOwner, updateOwnerEmail } from "@/lib/auth.js";
 import { THEMES } from "@/themes";
 import { themesForEvent } from "@/config/eventTypes.js";
-import { Button, Field, Icon, Input, Select, toast } from "@/ui/components.jsx";
+import { Button, Field, Icon, Input, Select, confirmDialog, toast } from "@/ui/components.jsx";
 const { useState, useEffect } = React;
 
 const MODULES = ["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"];
@@ -95,6 +95,25 @@ export function ClientsAdmin() {
     try { await createOwner({ email: c.owner_email, password: pw, client_id: c.id }); toast("Password reset"); }
     catch (e2) { edgeOrToast(e2); }
   }
+  async function changeType(c, event_type) {
+    const { error } = await supabase.from("clients").update({ event_type, template_key: themesForEvent(event_type)[0] }).eq("id", c.id);
+    if (error) return toast("Update failed");
+    toast("Type updated"); load();
+  }
+  async function renameClient(c) {
+    const next = window.prompt(`Rename subdomain for ${c.subdomain}:`, c.subdomain);
+    if (!next || !next.trim() || next.trim().toLowerCase() === c.subdomain) return;
+    const { error } = await supabase.from("clients").update({ subdomain: next.trim().toLowerCase() }).eq("id", c.id);
+    if (error) return toast("Rename failed: " + error.message);
+    toast("Subdomain updated"); load();
+  }
+  async function deleteClient(c) {
+    const ok = await confirmDialog({ title: "Delete client?", message: `Permanently delete “${c.subdomain}” and all its data (RSVPs, guestbook, quiz). This can't be undone.`, confirmLabel: "Delete", danger: true });
+    if (!ok) return;
+    const { error } = await supabase.from("clients").delete().eq("id", c.id);
+    if (error) return toast("Delete failed: " + error.message);
+    toast("Client deleted"); load();
+  }
 
   return (
     <div className="sa">
@@ -120,7 +139,11 @@ export function ClientsAdmin() {
                       <strong>{c.subdomain}</strong>
                       <div className="client-domain">{c.custom_domain || `${c.subdomain}.${PLATFORM_DOMAIN}`}</div>
                     </td>
-                    <td><span className="tag tag--hidden">{c.event_type}</span></td>
+                    <td className="theme-cell">
+                      <Select value={c.event_type} onChange={(e) => changeType(c, e.target.value)}>
+                        {["wedding", "birthday", "corporate"].map((t) => <option key={t} value={t}>{t}</option>)}
+                      </Select>
+                    </td>
                     <td className="theme-cell">
                       <Select value={c.template_key} onChange={(e) => assignTheme(c.id, e.target.value)}>
                         {themesForEvent(c.event_type).filter((k) => THEMES[k]).map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
@@ -153,6 +176,8 @@ export function ClientsAdmin() {
                       <div className="row-actions">
                         <a className="icon-btn" href={`/?client=${c.subdomain}&manage=1#/admin`} title="Open this client's admin">{Icon.grid({})}</a>
                         <a className="icon-btn" href={`/?client=${c.subdomain}`} target="_blank" rel="noreferrer" title="Open this client's site">{Icon.eye({})}</a>
+                        <button className="icon-btn" onClick={() => renameClient(c)} title="Rename subdomain">{Icon.edit({})}</button>
+                        <button className="icon-btn icon-btn--danger" onClick={() => deleteClient(c)} title="Delete client">{Icon.trash({})}</button>
                       </div>
                     </td>
                   </tr>
