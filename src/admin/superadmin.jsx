@@ -39,7 +39,12 @@ export function ClientsAdmin() {
     if (busy || !cred.client_id || !cred.email || !cred.password) return;
     setBusy(true);
     try { await createOwner(cred); toast("Owner login set"); setCred({ client_id: "", email: "", password: "" }); }
-    catch (e2) { toast("Failed: " + (e2.message || "error")); }
+    catch (e2) {
+      const msg = e2?.message || "error";
+      if (/failed to send|function not found|non-2xx|not found|fetch|edge/i.test(msg))
+        toast("Edge function not deployed yet. Deploy it: npx supabase functions deploy admin-create-owner — or add the owner in Supabase Auth manually.");
+      else toast("Failed: " + msg);
+    }
     finally { setBusy(false); }
   }
 
@@ -66,7 +71,7 @@ export function ClientsAdmin() {
       </form>
 
       <table className="admin-table" style={{ marginTop: 20, width: "100%" }}>
-        <thead><tr><th>Subdomain</th><th>Type</th><th>Theme</th><th>Modules</th></tr></thead>
+        <thead><tr><th>Subdomain</th><th>Type</th><th>Theme</th><th>Modules</th><th>Open</th></tr></thead>
         <tbody>
           {clients.map((c) => (
             <tr key={c.id}>
@@ -85,6 +90,10 @@ export function ClientsAdmin() {
                       onChange={(e) => toggleModule(c, m, e.target.checked)} /> {m}
                   </label>
                 ))}
+              </td>
+              <td style={{ whiteSpace: "nowrap" }}>
+                <Button size="sm" variant="ghost" onClick={() => { window.location.href = `/?client=${c.subdomain}#/admin`; }}>Open admin</Button>
+                <a href={`/?client=${c.subdomain}`} target="_blank" rel="noreferrer" style={{ marginLeft: 8 }}>site ↗</a>
               </td>
             </tr>
           ))}
