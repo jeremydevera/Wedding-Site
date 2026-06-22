@@ -2,6 +2,7 @@ import React from "react";
 import qrcode from "qrcode-generator";
 import { go } from "@/lib/nav.js";
 import { useStore } from "@/lib/store.jsx";
+import { signIn } from "@/lib/auth.js";
 import { Button, Field, Icon, Input, Monogram, Placeholder, toast } from "@/ui/components.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
@@ -10,8 +11,6 @@ const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 // ============================================================================
 
 export const ADMIN_SESSION = "evermore_admin_session";
-
-export function isAuthed() { return sessionStorage.getItem(ADMIN_SESSION) === "1"; }
 
 // CSV download helper
 export function downloadCSV(filename, rows) {
@@ -79,38 +78,29 @@ export function downloadQR(text, label) {
 
 // --- Login ------------------------------------------------------------------
 export function AdminLogin({ onAuthed }) {
-  const { settings } = useStore();
+  const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [err, setErr] = useState("");
-  const [show, setShow] = useState(false);
-
-  function submit(e) {
+  const [busy, setBusy] = useState(false);
+  async function submit(e) {
     e.preventDefault();
-    if (pw === settings.adminPassword) {
-      sessionStorage.setItem(ADMIN_SESSION, "1");
-      onAuthed();
-    } else {
-      setErr("Incorrect password. Please try again.");
-    }
+    if (busy) return;
+    setBusy(true); setErr("");
+    try { await signIn(email.trim(), pw); onAuthed && onAuthed(); }
+    catch (e2) { setErr("Wrong email or password."); }
+    finally { setBusy(false); }
   }
   return (
-    <div className="login">
-      <form className="login__card" onSubmit={submit}>
-        <Monogram a={settings.partnerA} b={settings.partnerB} size={56} />
-        <h1 className="login__title">Admin Sign In</h1>
-        <p className="login__sub">Manage RSVPs, media, and more.</p>
-        <Field label="Password" error={err} id="a-pw">
-          <div style={{ position: "relative" }}>
-            <Input id="a-pw" type={show ? "text" : "password"} value={pw} onChange={(e) => { setPw(e.target.value); setErr(""); }} placeholder="Enter admin password" autoFocus />
-            <button type="button" onClick={() => setShow((s) => !s)} className="icon-btn" style={{ position: "absolute", right: 8, top: 8, border: "none" }} aria-label="Toggle password">
-              {show ? Icon.eyeOff({}) : Icon.eye({})}
-            </button>
-          </div>
-        </Field>
-        <Button type="submit" variant="primary" size="lg" block>Sign in</Button>
-        <p style={{ marginTop: 18, fontSize: 12, color: "var(--muted)" }}>Demo password: <code>{settings.adminPassword}</code></p>
-        <button type="button" className="footer__admin" style={{ marginTop: 14 }} onClick={() => go("home")}>&larr; Back to website</button>
-      </form>
+    <div className="admin-login">
+      <div className="card card--pad-lg" style={{ maxWidth: 380, margin: "10vh auto" }}>
+        <h2 style={{ marginTop: 0 }}>Sign in</h2>
+        <form onSubmit={submit} noValidate>
+          <Field label="Email" id="a-email"><Input id="a-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com" /></Field>
+          <Field label="Password" id="a-pw" error={err}><Input id="a-pw" type="password" value={pw} onChange={(e) => setPw(e.target.value)} /></Field>
+          <Button type="submit" variant="primary" block disabled={busy}>{busy ? "Signing in…" : "Sign in"}</Button>
+        </form>
+        <button className="admin__navlink" style={{ marginTop: 14 }} onClick={() => go("home")}>← Back to website</button>
+      </div>
     </div>
   );
 }
