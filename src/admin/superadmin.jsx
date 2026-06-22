@@ -93,6 +93,7 @@ export function ClientsAdmin() {
   const [editing, setEditing] = useState(null);
   const [editForm, setEditForm] = useState({ subdomain: "", ownerEmail: "", ownerPassword: "" });
   const [busy, setBusy] = useState(false);
+  const [q, setQ] = useState("");
 
   async function load() {
     const { data } = await supabase.from("clients").select("*").order("created_at", { ascending: false });
@@ -196,6 +197,8 @@ export function ClientsAdmin() {
     toast("Client deleted"); load();
   }
 
+  const filtered = clients.filter((c) => c.subdomain.toLowerCase().includes(q.trim().toLowerCase()));
+
   return (
     <div className="sa">
       <div className="sa-tabs">
@@ -206,48 +209,43 @@ export function ClientsAdmin() {
 
       {view === "list" && (
         <div>
-          <div className="sa-listhead">
-            <div className="panel__title">Clients <span style={{ color: "var(--muted)", fontSize: 15 }}>({clients.length})</span></div>
-            <Button variant="primary" size="sm" onClick={() => setView("add")}>{Icon.check({})} New client</Button>
+          <div className="sa-toolbar">
+            <div className="sa-search">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search clients by subdomain…" /></div>
+            <Button variant="primary" size="sm" onClick={() => setView("add")}>{Icon.check({})} Add client</Button>
           </div>
-          {clients.length === 0 ? (
-            <div className="panel"><div className="panel__body" style={{ textAlign: "center", color: "var(--muted)", padding: 48 }}>No clients yet — use “Add client”.</div></div>
-          ) : (
-            <div className="sa-cards">
-              {clients.map((c) => (
-                <div className="sa-card" key={c.id}>
-                  <div className="sa-card__head">
-                    <div className="sa-card__name"><span className={"sa-dot" + (c.is_active ? "" : " sa-dot--off")} /> {c.subdomain}</div>
-                    <span className="tag tag--hidden">{c.event_type}</span>
-                  </div>
-                  <div className="sa-card__domain">{c.custom_domain || `${c.subdomain}.${PLATFORM_DOMAIN}`}</div>
-                  <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
-                    <Select value={c.event_type} onChange={(e) => changeType(c, e.target.value)}>
-                      {["wedding", "birthday", "corporate"].map((t) => <option key={t} value={t}>{t}</option>)}
-                    </Select>
-                    <Select value={c.template_key} onChange={(e) => assignTheme(c.id, e.target.value)}>
-                      {themesForEvent(c.event_type).filter((k) => THEMES[k]).map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
-                    </Select>
-                  </div>
-                  <div className="mod-toggles" style={{ marginTop: 12, maxWidth: "none" }}>
-                    {MODULES.map((m) => {
-                      const on = (c.content?.modules?.[m]) !== false;
-                      return <label key={m} className={"mod-pill" + (on ? " mod-pill--on" : "")}><input type="checkbox" checked={on} onChange={(e) => toggleModule(c, m, e.target.checked)} /> {m}</label>;
-                    })}
-                  </div>
-                  <div className="sa-card__owner">{c.owner_email || "no owner login"}</div>
-                  <div className="sa-card__foot">
-                    <div className="row-actions">
-                      <a className="icon-btn" href={`/?client=${c.subdomain}&manage=1#/admin`} title="Open admin">{Icon.grid({})}</a>
-                      <a className="icon-btn" href={`/?client=${c.subdomain}`} target="_blank" rel="noreferrer" title="Open site">{Icon.eye({})}</a>
-                      <button className="icon-btn" onClick={() => openEdit(c)} title="Edit">{Icon.edit({})}</button>
-                      <button className="icon-btn icon-btn--danger" onClick={() => deleteClient(c)} title="Delete">{Icon.trash({})}</button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+          <div className="panel" style={{ marginBottom: 10 }}>
+            <div className="panel__body--flush table-wrap">
+              <table className="tbl">
+                <thead><tr><th>Client</th><th>Type</th><th>Theme</th><th>Modules</th><th>Owner login</th><th>Actions</th></tr></thead>
+                <tbody>
+                  {filtered.map((c) => (
+                    <tr key={c.id}>
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                          <span className={"sa-dot" + (c.is_active ? "" : " sa-dot--off")} />
+                          <div><strong>{c.subdomain}</strong><div className="client-domain">{c.custom_domain || `${c.subdomain}.${PLATFORM_DOMAIN}`}</div></div>
+                        </div>
+                      </td>
+                      <td className="theme-cell"><Select value={c.event_type} onChange={(e) => changeType(c, e.target.value)}>{["wedding", "birthday", "corporate"].map((t) => <option key={t} value={t}>{t}</option>)}</Select></td>
+                      <td className="theme-cell"><Select value={c.template_key} onChange={(e) => assignTheme(c.id, e.target.value)}>{themesForEvent(c.event_type).filter((k) => THEMES[k]).map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}</Select></td>
+                      <td><div className="mod-toggles">{MODULES.map((m) => { const on = (c.content?.modules?.[m]) !== false; return <label key={m} className={"mod-pill" + (on ? " mod-pill--on" : "")}><input type="checkbox" checked={on} onChange={(e) => toggleModule(c, m, e.target.checked)} /> {m}</label>; })}</div></td>
+                      <td>{c.owner_email ? <span className="client-domain">{c.owner_email}</span> : <span style={{ color: "var(--muted)" }}>—</span>}</td>
+                      <td>
+                        <div className="row-actions">
+                          <a className="icon-btn" href={`/?client=${c.subdomain}&manage=1#/admin`} title="Open admin">{Icon.grid({})}</a>
+                          <a className="icon-btn" href={`/?client=${c.subdomain}`} target="_blank" rel="noreferrer" title="Open site">{Icon.eye({})}</a>
+                          <button className="icon-btn" onClick={() => openEdit(c)} title="Edit">{Icon.edit({})}</button>
+                          <button className="icon-btn icon-btn--danger" onClick={() => deleteClient(c)} title="Delete">{Icon.trash({})}</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {filtered.length === 0 && <tr><td colSpan={6} style={{ textAlign: "center", padding: 40, color: "var(--muted)" }}>{clients.length ? "No matches." : "No clients yet — use “Add client”."}</td></tr>}
+                </tbody>
+              </table>
             </div>
-          )}
+          </div>
+          <div className="sa-tablefoot">Total: {clients.length} client{clients.length === 1 ? "" : "s"}</div>
         </div>
       )}
 
