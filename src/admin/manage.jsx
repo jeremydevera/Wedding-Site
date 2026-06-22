@@ -6,7 +6,7 @@ import { BFLY_COLORS, Button, CropModal, DecorPreview, Field, Icon, Input, Modal
 import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { signOut } from "@/lib/auth.js";
-import { visibleAdminTabs, canEnterAdmin } from "@/lib/roles.js";
+import { visibleAdminTabs, canEnterAdmin, tabsForClient } from "@/lib/roles.js";
 import { ClientsAdmin } from "@/admin/superadmin.jsx";
 import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
@@ -832,7 +832,8 @@ export function AdminApp() {
       </div>
     );
   }
-  const tabs = visibleAdminTabs(auth.role, ADMIN_TABS);
+  const roleTabs = visibleAdminTabs(auth.role, ADMIN_TABS);
+  const tabs = tabsForClient(roleTabs, auth.role, settings.modules);
   const activeTab = tabs.some((t) => t.key === tab) ? tab : "dashboard";
   const title = (tabs.find((t) => t.key === activeTab) || { label: "Admin" }).label;
 

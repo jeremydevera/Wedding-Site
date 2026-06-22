@@ -6,6 +6,8 @@ import { themesForEvent } from "@/config/eventTypes.js";
 import { Button, Field, Input, Select, SectionHead, toast } from "@/ui/components.jsx";
 const { useState, useEffect } = React;
 
+const MODULES = ["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"];
+
 export function ClientsAdmin() {
   const [clients, setClients] = useState([]);
   const [form, setForm] = useState({ subdomain: "", event_type: "wedding", template_key: "classic" });
@@ -41,6 +43,14 @@ export function ClientsAdmin() {
     finally { setBusy(false); }
   }
 
+  async function toggleModule(c, key, on) {
+    const modules = { ...(c.content?.modules || {}), [key]: on };
+    const content = { ...(c.content || {}), modules };
+    const { error } = await supabase.from("clients").update({ content }).eq("id", c.id);
+    if (error) return toast("Update failed");
+    load();
+  }
+
   return (
     <div className="panel">
       <SectionHead eyebrow="Superadmin" title="Clients" />
@@ -56,7 +66,7 @@ export function ClientsAdmin() {
       </form>
 
       <table className="admin-table" style={{ marginTop: 20, width: "100%" }}>
-        <thead><tr><th>Subdomain</th><th>Type</th><th>Theme</th></tr></thead>
+        <thead><tr><th>Subdomain</th><th>Type</th><th>Theme</th><th>Modules</th></tr></thead>
         <tbody>
           {clients.map((c) => (
             <tr key={c.id}>
@@ -66,6 +76,15 @@ export function ClientsAdmin() {
                 <Select value={c.template_key} onChange={(e) => assignTheme(c.id, e.target.value)}>
                   {themesForEvent(c.event_type).filter((k) => THEMES[k]).map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
                 </Select>
+              </td>
+              <td>
+                {MODULES.map((m) => (
+                  <label key={m} style={{ marginRight: 12 }}>
+                    <input type="checkbox"
+                      checked={(c.content?.modules?.[m]) !== false}
+                      onChange={(e) => toggleModule(c, m, e.target.checked)} /> {m}
+                  </label>
+                ))}
               </td>
             </tr>
           ))}

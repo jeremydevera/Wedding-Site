@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { visibleAdminTabs, canEnterAdmin } from "@/lib/roles.js";
+import { visibleAdminTabs, canEnterAdmin, moduleEnabled } from "@/lib/roles.js";
 
 const TABS = [
   { key: "dashboard", label: "Dashboard" },
@@ -35,5 +35,16 @@ describe("canEnterAdmin", () => {
   it("guest/none cannot enter", () => {
     expect(canEnterAdmin({ role: "guest", clientId: null }, "c1")).toBe(false);
     expect(canEnterAdmin(null, "c1")).toBe(false);
+  });
+});
+
+describe("moduleEnabled", () => {
+  it("defaults to on when no modules map or key absent", () => {
+    expect(moduleEnabled(undefined, "guestbook")).toBe(true);
+    expect(moduleEnabled({}, "quiz")).toBe(true);
+  });
+  it("respects explicit flags", () => {
+    expect(moduleEnabled({ quiz: false }, "quiz")).toBe(false);
+    expect(moduleEnabled({ quiz: false, guestbook: true }, "guestbook")).toBe(true);
   });
 });

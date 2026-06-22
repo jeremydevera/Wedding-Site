@@ -12,6 +12,7 @@ import { GalleryPage, UploadPage, VideoMessagePage } from "@/features/media.jsx"
 import { GuestbookPage, QuizPage } from "@/features/social.jsx";
 import { AdminApp, ImageUploadField } from "@/admin/manage.jsx";
 import { hasSection } from "@/config/eventTypes.js";
+import { moduleEnabled } from "@/lib/roles.js";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // ============================================================================
@@ -38,8 +39,9 @@ export const NAV_LINKS = [
 
 // Nav links visible for the active event type (home always shows). Driven by
 // the event-type registry so adding a type (birthday, corporate) re-shapes nav.
-function visibleNav(eventType) {
-  return NAV_LINKS.filter((l) => l.key === "home" || hasSection(eventType, l.key));
+// Also filters by per-client module flags (absent key = on by default).
+function visibleNav(eventType, modules) {
+  return NAV_LINKS.filter((l) => l.key === "home" || (hasSection(eventType, l.key) && moduleEnabled(modules, l.key)));
 }
 
 
@@ -70,7 +72,7 @@ export function Nav({ route }) {
           <span className="nav__names">{settings.partnerA} <span className="amp">&amp;</span> {settings.partnerB}</span>
         </a>
         <div className="nav__links">
-          {visibleNav(settings.eventType).map((l) => (
+          {visibleNav(settings.eventType, settings.modules).map((l) => (
             <button key={l.key} className={"nav__link" + (route === l.key ? " nav__link--active" : "")} onClick={() => go(l.key)}>{l.label}</button>
           ))}
         </div>
@@ -88,7 +90,7 @@ export function Nav({ route }) {
               <Monogram a={settings.partnerA} b={settings.partnerB} size={40} />
               <button className="nav__burger" onClick={() => setDrawer(false)} aria-label="Close">{Icon.close({})}</button>
             </div>
-            {visibleNav(settings.eventType).map((l) => (
+            {visibleNav(settings.eventType, settings.modules).map((l) => (
               <button key={l.key} className={"drawer__link" + (route === l.key ? " drawer__link--active" : "")} onClick={() => { go(l.key); setDrawer(false); }}>{l.label}</button>
             ))}
             <button className="drawer__link" onClick={() => { go("upload"); setDrawer(false); }}>Share Photos</button>
@@ -112,7 +114,7 @@ export function Footer() {
         <div className="footer__names">{settings.partnerA} <span className="amp">&amp;</span> {settings.partnerB}</div>
         <div className="footer__hash">{settings.hashtag}</div>
         <div className="footer__links">
-          {visibleNav(settings.eventType).map((l) => <button key={l.key} onClick={() => go(l.key)}>{l.label}</button>)}
+          {visibleNav(settings.eventType, settings.modules).map((l) => <button key={l.key} onClick={() => go(l.key)}>{l.label}</button>)}
           <button onClick={() => go("upload")}>Upload</button>
         </div>
         <p className="footer__fine">{settings.weddingDateLabel} &middot; {settings.venueName}</p>
@@ -248,6 +250,8 @@ export function App() {
 
   const Page = ROUTES[route] || Home;
   const isAdmin = route === "admin";
+  const routeBlocked = route !== "home" && route !== "admin" && !moduleEnabled(settings.modules, route);
+  const ActivePage = routeBlocked ? Home : Page;
 
   return (
     <>
@@ -256,7 +260,7 @@ export function App() {
       ) : (
         <>
           <Nav route={route} />
-          <main key={route}><Page /></main>
+          <main key={route}><ActivePage /></main>
           <Footer />
           <FloatingDecor on={settings.decorOn && route === "home"} style={settings.decorStyle} butterflyStyle={settings.butterflyStyle} butterflyColor={settings.butterflyColor} butterflyFlight={settings.butterflyFlight} butterflyCount={settings.butterflyCount} />
         </>

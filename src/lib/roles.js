@@ -18,3 +18,18 @@ export function canEnterAdmin(profile, currentClientId) {
   if (profile.role === "owner") return !!currentClientId && profile.clientId === currentClientId;
   return false;
 }
+
+// Per-client module flags. modules = { guestbook:false, quiz:true, ... }; absent key = on.
+export function moduleEnabled(modules, key) {
+  if (!modules || !(key in modules)) return true;
+  return !!modules[key];
+}
+
+// Admin tabs that correspond to a toggleable module (others — dashboard/qr — always show).
+const TAB_MODULE = { rsvps: "rsvp", guestbook: "guestbook", quiz: "quiz", schedule: "schedule" };
+
+// Filter already-role-gated tabs by the client's module flags (owners only; superadmin keeps all).
+export function tabsForClient(tabs, role, modules) {
+  if (role === "superadmin") return tabs;
+  return tabs.filter((t) => !TAB_MODULE[t.key] || moduleEnabled(modules, TAB_MODULE[t.key]));
+}
