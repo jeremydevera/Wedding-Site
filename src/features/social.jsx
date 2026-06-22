@@ -1,6 +1,7 @@
 import React from "react";
 import { go } from "@/lib/nav.js";
 import { Store, useStore } from "@/lib/store.jsx";
+import { postGuestbook, postQuiz } from "@/lib/api.js";
 import { Button, Field, Icon, Input, Modal, SectionHead, Textarea, toast } from "@/ui/components.jsx";
 import { PageHero } from "@/pages/PublicPages.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
@@ -18,18 +19,21 @@ export function GuestbookPage() {
   const visible = guestbook.filter((g) => g.status === "visible");
   const set = (k) => (e) => { setForm((f) => ({ ...f, [k]: e.target.value })); setErrors((er) => ({ ...er, [k]: undefined })); };
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
     const er = {};
     if (!form.name.trim()) er.name = "Please enter your name.";
     if (!form.message.trim()) er.message = "Please write a short message.";
     if (form.message.length > 1000) er.message = "Please keep it under 1000 characters.";
     if (Object.keys(er).length) { setErrors(er); return; }
-    const auto = Store.get().settings.autoApproveGuestbook;
-    Store.addGuestbook({ ...form, status: auto ? "visible" : "pending" });
-    setForm({ name: "", relationship: "", message: "" });
-    setOpen(false);
-    toast(auto ? "Thank you for your message! \ud83d\udc95" : "Thank you! Your message will appear once the couple approves it.");
+    try {
+      const { status } = await postGuestbook({ name: form.name, relationship: form.relationship, message: form.message });
+      setForm({ name: "", relationship: "", message: "" });
+      setOpen(false);
+      toast(status === "approved" ? "Thank you for your message! \ud83d\udc95" : "Thank you! Your message will appear once the couple approves it.");
+    } catch (err) {
+      setErrors({ message: "Could not post right now. Please try again." });
+    }
   }
 
   return (
@@ -104,7 +108,7 @@ export function QuizPage() {
       else finish(next);
     }, 220);
   }
-  function finish(finalAnswers) {
+  async function finish(finalAnswers) {
     let score = 0;
     const detail = quiz.map((qq) => {
       const sel = finalAnswers[qq.id];
@@ -112,7 +116,11 @@ export function QuizPage() {
       if (correct) score++;
       return { questionId: qq.id, selected: sel, isCorrect: correct };
     });
-    Store.addQuizSub({ name: name.trim(), score, total, answers: detail });
+    try {
+      await postQuiz({ name: name.trim(), score, total, answers: detail });
+    } catch (err) {
+      console.error("Could not save quiz score.", err);
+    }
     setStage("result");
   }
 
