@@ -2,6 +2,7 @@ import React from "react";
 
 import { go } from "@/lib/nav.js";
 import { Store, useStore } from "@/lib/store.jsx";
+import { loadClientData } from "@/lib/api.js";
 import { FONT_OPTIONS, THEMES, THEME_FONTS, applyTheme } from "@/themes";
 import { Button, ConfirmHost, FloatingDecor, Icon, Monogram, ToastHost, confirmDialog, toast } from "@/ui/components.jsx";
 import { TweakButton, TweakColor, TweakSection, TweakSelect, TweakText, TweakToggle, TweaksPanel } from "@/ui/tweaks-panel.jsx";
@@ -194,6 +195,11 @@ export function THEME_DEFAULT_ACCENT(themeKey) {
 export function App() {
   const route = useRoute();
   const { settings } = useStore();
+
+  React.useEffect(() => { loadClientData().catch((e) => console.error("load failed", e)); }, []);
+  if (Store.get().loading) {
+    return <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", color: "var(--ink-soft)" }}>Loading…</div>;
+  }
 
   // apply theme whenever theme/accent/fonts change
   useEffect(() => {
