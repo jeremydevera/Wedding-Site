@@ -35,10 +35,10 @@ DB columns (from the SQL already run): `clients(id, subdomain, event_type, templ
 - Create: `vitest.config.js`
 - Create: `src/lib/__tests__/smoke.test.js`
 
-- [ ] **Step 1: Install Vitest**
+- [ ] **Step 1: Install Vitest + jsdom**
 
-Run: `npm i -D vitest`
-Expected: added to devDependencies.
+Run: `npm i -D vitest jsdom`
+Expected: both added to devDependencies. (jsdom provides `localStorage`/`window` so importing `store.jsx` — which calls `loadState()` at module load — doesn't throw under tests.)
 
 - [ ] **Step 2: Add test script**
 
@@ -57,7 +57,7 @@ import { fileURLToPath, URL } from "node:url";
 
 export default defineConfig({
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
-  test: { environment: "node", include: ["src/**/*.test.{js,jsx}"] },
+  test: { environment: "jsdom", include: ["src/**/*.test.{js,jsx}"] },
 });
 ```
 
