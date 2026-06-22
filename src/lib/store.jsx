@@ -120,6 +120,8 @@ export function defaultState() {
     rsvps: SEED_RSVPS,
     media: SEED_MEDIA, // {id, type:'photo'|'video', category, dataUrl, src, name, message, status, size, ratio, createdAt}
     quizSubs: [], // {id, name, score, total, answers, createdAt}
+    clientId: null,
+    loading: true,
   };
 }
 
@@ -166,6 +168,15 @@ export const Store = {
     _state = { ..._state, ...(typeof patch === "function" ? patch(_state) : patch) };
     persist();
     emit();
+  },
+  hydrate(patch) {
+    _state = {
+      ..._state,
+      ...patch,
+      settings: { ..._state.settings, ...(patch.settings || {}) },
+      loading: false,
+    };
+    emit(); // do NOT persist hydrated server data to localStorage
   },
   updateSettings(patch) {
     _state = { ..._state, settings: { ..._state.settings, ...patch } };
