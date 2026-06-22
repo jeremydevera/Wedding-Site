@@ -834,7 +834,7 @@ export function AdminApp() {
   }
   const roleTabs = visibleAdminTabs(auth.role, ADMIN_TABS);
   const tabs = tabsForClient(roleTabs, auth.role, settings.modules);
-  const activeTab = tabs.some((t) => t.key === tab) ? tab : "dashboard";
+  const activeTab = tabs.some((t) => t.key === tab) ? tab : (tabs[0]?.key || "dashboard");
   const title = (tabs.find((t) => t.key === activeTab) || { label: "Admin" }).label;
 
   const canArrange = settings.arrangeEnabled && isPremiumTheme(settings.theme);

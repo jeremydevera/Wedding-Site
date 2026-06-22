@@ -13,14 +13,12 @@ function navLabels(container) {
 describe("AdminApp rendered tab gating", () => {
   beforeEach(() => cleanup());
 
-  it("superadmin: hides rsvps/media/guestbook/schedule, shows Clients + Settings", () => {
+  it("superadmin: only the Clients tab (no Dashboard/Quiz/QR/Settings/etc.)", () => {
     Store.set({ clientId: "c1", loading: false });
     Store.setAuth({ session: { user: { email: "su@x" } }, role: "superadmin", clientId: null, email: "su@x" });
     const { container } = render(<AdminApp />);
-    const labels = navLabels(container).join(" | ");
-    expect(labels).not.toMatch(/RSVPs|Media|Guestbook|Schedule/);
-    expect(labels).toMatch(/Clients/);
-    expect(labels).toMatch(/Settings/);
+    const labels = navLabels(container);
+    expect(labels).toEqual(["Clients"]);
   });
 
   it("owner: shows operational tabs, hides Settings/Media/Clients", () => {

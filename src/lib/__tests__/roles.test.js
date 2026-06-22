@@ -9,12 +9,9 @@ const TABS = [
 ];
 
 describe("visibleAdminTabs", () => {
-  it("superadmin sees Settings + Clients but not the per-event operational tabs", () => {
+  it("superadmin sees ONLY the Clients tab", () => {
     const keys = visibleAdminTabs("superadmin", TABS).map((t) => t.key);
-    expect(keys).toContain("settings");
-    expect(keys).toContain("clients");
-    expect(keys).not.toContain("media");
-    expect(keys).not.toContain("guestbook");
+    expect(keys).toEqual(["clients"]);
   });
   it("owner loses settings, media, and never sees clients", () => {
     const keys = visibleAdminTabs("owner", TABS).map((t) => t.key);

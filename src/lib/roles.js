@@ -1,14 +1,10 @@
 // Settings, Media + Clients are owner-hidden (clients also filtered below).
 const SUPERADMIN_ONLY = new Set(["settings", "media"]);
-// Superadmin manages clients/users — not a single event's day-to-day operations,
-// so these per-event tabs are hidden from the superadmin view.
-const SUPERADMIN_HIDDEN = new Set(["rsvps", "media", "guestbook", "schedule"]);
 
 export function visibleAdminTabs(role, allTabs) {
   if (role === "superadmin") {
-    const kept = allTabs.filter((t) => !SUPERADMIN_HIDDEN.has(t.key));
-    const hasClients = kept.some((t) => t.key === "clients");
-    return hasClients ? kept : [...kept, { key: "clients", label: "Clients", icon: "grid" }];
+    // Superadmin only organizes clients — no per-event tabs at all.
+    return [{ key: "clients", label: "Clients", icon: "grid" }];
   }
   if (role === "owner") {
     return allTabs.filter((t) => !SUPERADMIN_ONLY.has(t.key) && t.key !== "clients");
