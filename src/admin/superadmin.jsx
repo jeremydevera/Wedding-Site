@@ -13,7 +13,7 @@ const PLATFORM_DOMAIN = "celebrate.app";
 export function ClientsAdmin() {
   const [view, setView] = useState("list"); // list | add | owner
   const [clients, setClients] = useState([]);
-  const [form, setForm] = useState({ subdomain: "", event_type: "wedding", template_key: "classic" });
+  const [form, setForm] = useState({ subdomain: "", event_type: "wedding", template_key: "classic", ownerEmail: "", ownerPassword: "" });
   const [cred, setCred] = useState({ client_id: "", email: "", password: "" });
   const [busy, setBusy] = useState(false);
 
@@ -27,11 +27,24 @@ export function ClientsAdmin() {
     e.preventDefault();
     if (busy || !form.subdomain.trim()) return;
     setBusy(true);
-    const { error } = await supabase.from("clients").insert({ ...form, subdomain: form.subdomain.trim().toLowerCase() });
+    const sub = form.subdomain.trim().toLowerCase();
+    const { data: created, error } = await supabase.from("clients")
+      .insert({ subdomain: sub, event_type: form.event_type, template_key: form.template_key })
+      .select().single();
+    if (error) { setBusy(false); return toast("Create failed: " + error.message); }
+    // provision the owner login in the same step (if email + password given)
+    if (form.ownerEmail.trim() && form.ownerPassword) {
+      try { await createOwner({ email: form.ownerEmail.trim(), password: form.ownerPassword, client_id: created.id }); toast("Client + owner login created"); }
+      catch (e2) {
+        const msg = e2?.message || "error";
+        if (/failed to send|function not found|non-2xx|not found|fetch|edge/i.test(msg))
+          toast("Client created — but owner login needs the edge function deployed (or add it manually).");
+        else toast("Client created — owner login failed: " + msg);
+      }
+    } else { toast("Client created"); }
     setBusy(false);
-    if (error) return toast("Create failed: " + error.message);
-    setForm({ subdomain: "", event_type: "wedding", template_key: "classic" });
-    toast("Client created"); await load(); setView("list");
+    setForm({ subdomain: "", event_type: "wedding", template_key: "classic", ownerEmail: "", ownerPassword: "" });
+    await load(); setView("list");
   }
   async function assignTheme(id, template_key) {
     const { error } = await supabase.from("clients").update({ template_key }).eq("id", id);
@@ -103,7 +116,7 @@ export function ClientsAdmin() {
                     </td>
                     <td>
                       <div className="row-actions">
-                        <a className="icon-btn" href={`/?client=${c.subdomain}#/admin`} title="Open this client's admin">{Icon.grid({})}</a>
+                        <a className="icon-btn" href={`/?client=${c.subdomain}&manage=1#/admin`} title="Open this client's admin">{Icon.grid({})}</a>
                         <a className="icon-btn" href={`/?client=${c.subdomain}`} target="_blank" rel="noreferrer" title="Open this client's site">{Icon.eye({})}</a>
                       </div>
                     </td>
@@ -130,6 +143,13 @@ export function ClientsAdmin() {
                 {["wedding", "birthday", "corporate"].map((t) => <option key={t} value={t}>{t}</option>)}
               </Select>
             </Field>
+            <div style={{ borderTop: "1px solid var(--line)", paddingTop: 16, marginTop: 2 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-soft)", marginBottom: 12 }}>Owner login</div>
+              <div style={{ display: "grid", gap: 16 }}>
+                <Field label="Owner email" id="c-oemail"><Input id="c-oemail" type="email" value={form.ownerEmail} onChange={(e) => setForm((f) => ({ ...f, ownerEmail: e.target.value }))} placeholder="owner@theirdomain" /></Field>
+                <Field label="Owner password" id="c-opw"><Input id="c-opw" value={form.ownerPassword} onChange={(e) => setForm((f) => ({ ...f, ownerPassword: e.target.value }))} placeholder="••••••••" /></Field>
+              </div>
+            </div>
             <div style={{ display: "flex", gap: 10 }}>
               <Button type="submit" variant="primary" disabled={busy}>Create client</Button>
               <Button type="button" variant="ghost" onClick={() => setView("list")}>Cancel</Button>

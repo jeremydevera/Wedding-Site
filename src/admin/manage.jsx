@@ -832,8 +832,12 @@ export function AdminApp() {
       </div>
     );
   }
-  const roleTabs = visibleAdminTabs(auth.role, ADMIN_TABS);
-  const tabs = tabsForClient(roleTabs, auth.role, settings.modules);
+  const _params = new URLSearchParams(window.location.search);
+  const managing = auth.role === "superadmin" && _params.get("manage") === "1";
+  const manageSub = _params.get("client") || "";
+  // superadmin "manage a client" shows that client's full event admin; otherwise role tabs
+  const roleTabs = managing ? ADMIN_TABS : visibleAdminTabs(auth.role, ADMIN_TABS);
+  const tabs = tabsForClient(roleTabs, managing ? "owner" : auth.role, settings.modules);
   const activeTab = tabs.some((t) => t.key === tab) ? tab : (tabs[0]?.key || "dashboard");
   const title = (tabs.find((t) => t.key === activeTab) || { label: "Admin" }).label;
 
@@ -877,8 +881,9 @@ export function AdminApp() {
           ))}
         </div>
         <div className="admin__topbar">
-          <div className="admin__title">{title}</div>
+          <div className="admin__title">{managing ? `Managing: ${manageSub}` : title}</div>
           <div style={{ display: "flex", gap: 8 }}>
+            {managing && <Button variant="ghost" size="sm" onClick={() => { window.location.href = `/?client=${manageSub}#/admin`; }}>{Icon.arrow({ style: { transform: "rotate(180deg)", width: 14, height: 14 } })} Clients</Button>}
             <Button variant="ghost" size="sm" onClick={() => go("home")}>View site</Button>
             {canArrange && <Button variant="primary" size="sm" onClick={startArrange}>{Icon.grid({ style: { width: 14, height: 14 } })} Arrange Now</Button>}
             <Button variant="ghost" size="sm" onClick={() => signOut().then(() => go("home"))}>Sign out</Button>
