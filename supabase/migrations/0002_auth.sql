@@ -1,3 +1,6 @@
+-- Owner login email shown in the superadmin Clients list (denormalized for display).
+alter table clients add column if not exists owner_email text;
+
 -- Auto-create a profile (default role 'guest') whenever an auth user is created.
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$

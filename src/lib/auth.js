@@ -32,10 +32,19 @@ export async function signOut() {
   Store.setAuth({ session: null, role: null, clientId: null, email: null });
 }
 
-// Superadmin-only: create or reset a client's owner login (via Edge Function).
+// Superadmin-only: create the owner, or reset an existing owner's password.
 export async function createOwner({ email, password, client_id }) {
   const { data, error } = await supabase.functions.invoke("admin-create-owner", {
     body: { email, password, client_id },
+  });
+  if (error) throw error;
+  return data;
+}
+
+// Superadmin-only: change an existing owner's login email.
+export async function updateOwnerEmail({ old_email, new_email }) {
+  const { data, error } = await supabase.functions.invoke("admin-create-owner", {
+    body: { action: "update_email", old_email, new_email },
   });
   if (error) throw error;
   return data;

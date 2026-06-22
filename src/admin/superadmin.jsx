@@ -1,6 +1,6 @@
 import React from "react";
 import { supabase } from "@/lib/supabase.js";
-import { createOwner } from "@/lib/auth.js";
+import { createOwner, updateOwnerEmail } from "@/lib/auth.js";
 import { THEMES } from "@/themes";
 import { themesForEvent } from "@/config/eventTypes.js";
 import { Button, Field, Icon, Input, Select, toast } from "@/ui/components.jsx";
@@ -34,8 +34,11 @@ export function ClientsAdmin() {
     if (error) { setBusy(false); return toast("Create failed: " + error.message); }
     // provision the owner login in the same step (if email + password given)
     if (form.ownerEmail.trim() && form.ownerPassword) {
-      try { await createOwner({ email: form.ownerEmail.trim(), password: form.ownerPassword, client_id: created.id }); toast("Client + owner login created"); }
-      catch (e2) {
+      try {
+        await createOwner({ email: form.ownerEmail.trim(), password: form.ownerPassword, client_id: created.id });
+        await supabase.from("clients").update({ owner_email: form.ownerEmail.trim() }).eq("id", created.id);
+        toast("Client + owner login created");
+      } catch (e2) {
         const msg = e2?.message || "error";
         if (/failed to send|function not found|non-2xx|not found|fetch|edge/i.test(msg))
           toast("Client created — but owner login needs the edge function deployed (or add it manually).");
@@ -58,18 +61,39 @@ export function ClientsAdmin() {
     if (error) return toast("Update failed");
     load();
   }
+  function edgeOrToast(e2) {
+    const msg = e2?.message || "error";
+    if (/failed to send|function not found|non-2xx|not found|fetch|edge/i.test(msg))
+      toast("Needs the edge function deployed (admin-create-owner) — or do it in Supabase Auth.");
+    else toast("Failed: " + msg);
+  }
   async function setOwner(e) {
     e.preventDefault();
     if (busy || !cred.client_id || !cred.email || !cred.password) return;
     setBusy(true);
-    try { await createOwner(cred); toast("Owner login set"); setCred({ client_id: "", email: "", password: "" }); }
-    catch (e2) {
-      const msg = e2?.message || "error";
-      if (/failed to send|function not found|non-2xx|not found|fetch|edge/i.test(msg))
-        toast("Edge function not deployed yet. Deploy admin-create-owner — or add the owner in Supabase Auth manually.");
-      else toast("Failed: " + msg);
-    }
+    try {
+      await createOwner(cred);
+      await supabase.from("clients").update({ owner_email: cred.email.trim() }).eq("id", cred.client_id);
+      toast("Owner login set"); setCred({ client_id: "", email: "", password: "" }); load();
+    } catch (e2) { edgeOrToast(e2); }
     finally { setBusy(false); }
+  }
+  // Edit the owner's login email (passwords are hashed — they can only be reset, never shown).
+  async function editEmail(c) {
+    const next = window.prompt(`New owner email for ${c.subdomain}:`, c.owner_email || "");
+    if (!next || !next.trim() || next.trim() === c.owner_email) return;
+    try {
+      if (c.owner_email) await updateOwnerEmail({ old_email: c.owner_email, new_email: next.trim() });
+      await supabase.from("clients").update({ owner_email: next.trim() }).eq("id", c.id);
+      toast("Owner email updated"); load();
+    } catch (e2) { edgeOrToast(e2); }
+  }
+  async function resetPassword(c) {
+    if (!c.owner_email) return toast("Set an owner login first (Owner login tab).");
+    const pw = window.prompt(`New password for ${c.owner_email}:`);
+    if (!pw) return;
+    try { await createOwner({ email: c.owner_email, password: pw, client_id: c.id }); toast("Password reset"); }
+    catch (e2) { edgeOrToast(e2); }
   }
 
   return (
@@ -88,7 +112,7 @@ export function ClientsAdmin() {
           </div>
           <div className="panel__body--flush table-wrap">
             <table className="tbl">
-              <thead><tr><th>Client</th><th>Type</th><th>Theme</th><th>Modules</th><th>Open</th></tr></thead>
+              <thead><tr><th>Client</th><th>Type</th><th>Theme</th><th>Modules</th><th>Owner login</th><th>Open</th></tr></thead>
               <tbody>
                 {clients.map((c) => (
                   <tr key={c.id}>
@@ -115,6 +139,17 @@ export function ClientsAdmin() {
                       </div>
                     </td>
                     <td>
+                      {c.owner_email ? (
+                        <div>
+                          <div className="client-domain">{c.owner_email}</div>
+                          <div className="row-actions" style={{ marginTop: 6 }}>
+                            <Button size="sm" variant="ghost" onClick={() => editEmail(c)}>Edit</Button>
+                            <Button size="sm" variant="ghost" onClick={() => resetPassword(c)}>Reset pw</Button>
+                          </div>
+                        </div>
+                      ) : <span style={{ color: "var(--muted)", fontSize: 13 }}>no login</span>}
+                    </td>
+                    <td>
                       <div className="row-actions">
                         <a className="icon-btn" href={`/?client=${c.subdomain}&manage=1#/admin`} title="Open this client's admin">{Icon.grid({})}</a>
                         <a className="icon-btn" href={`/?client=${c.subdomain}`} target="_blank" rel="noreferrer" title="Open this client's site">{Icon.eye({})}</a>
@@ -123,7 +158,7 @@ export function ClientsAdmin() {
                   </tr>
                 ))}
                 {clients.length === 0 && (
-                  <tr><td colSpan={5} style={{ textAlign: "center", padding: 48, color: "var(--muted)" }}>No clients yet — use “Add client”.</td></tr>
+                  <tr><td colSpan={6} style={{ textAlign: "center", padding: 48, color: "var(--muted)" }}>No clients yet — use “Add client”.</td></tr>
                 )}
               </tbody>
             </table>
