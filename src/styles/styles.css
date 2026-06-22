@@ -460,6 +460,19 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .seg button:last-child { border-right: none; }
 .seg button.on { background: var(--accent); color: var(--accent-ink); }
 
+/* Superadmin Clients dashboard */
+.clients-form { padding: 20px 22px; display: grid; grid-template-columns: 1fr; gap: 14px 18px; align-items: end; }
+@media (min-width: 720px) {
+  .clients-form--create { grid-template-columns: 2fr 1fr auto; }
+  .clients-form--owner { grid-template-columns: 1fr 1fr 1fr auto; }
+}
+.client-domain { font-size: 13px; color: var(--muted); }
+.mod-toggles { display: flex; flex-wrap: wrap; gap: 6px; max-width: 380px; }
+.mod-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 4px 9px; border: 1px solid var(--line); border-radius: 100px; cursor: pointer; color: var(--muted); text-transform: capitalize; user-select: none; }
+.mod-pill input { margin: 0; accent-color: var(--accent); width: 13px; height: 13px; }
+.mod-pill--on { color: var(--ink); border-color: var(--accent); background: color-mix(in oklch, var(--accent) 12%, transparent); }
+.theme-cell { min-width: 160px; }
+
 /* admin media grid */
 /* folder tabs (sub-nav within an admin tab) */
 .folders--sticky { position: sticky; top: 62px; z-index: 9; background: var(--bg); padding-top: 14px; }
