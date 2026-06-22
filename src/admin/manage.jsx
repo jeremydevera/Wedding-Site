@@ -850,7 +850,10 @@ export function AdminApp() {
       <aside className="admin__side">
         <div className="admin__brand">
           {isSuper ? (
-            <div><div className="admin__brand-name">Evermore</div><div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--muted)" }}>Superadmin</div></div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ width: 26, height: 26, borderRadius: 7, background: "#3ECF8E", color: "#04231a", display: "grid", placeItems: "center", fontWeight: 800, fontSize: 14, flex: "none" }}>E</span>
+              <div><div className="admin__brand-name">Evermore</div><div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--muted)" }}>Superadmin</div></div>
+            </div>
           ) : (
             <>
               <Monogram a={settings.partnerA} b={settings.partnerB} size={38} />
