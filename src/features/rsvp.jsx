@@ -1,6 +1,7 @@
 import React from "react";
 import { go } from "@/lib/nav.js";
 import { Store, useStore } from "@/lib/store.jsx";
+import { postRsvp } from "@/lib/api.js";
 import { Button, Field, Icon, Input, Select, Textarea } from "@/ui/components.jsx";
 import { PageHero } from "@/pages/PublicPages.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
@@ -41,16 +42,17 @@ export function RSVPPage() {
     return er;
   }
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
     const er = validate();
     if (Object.keys(er).length) { setErrors(er); return; }
-    Store.addRSVP({
-      ...form,
-      count: attending ? parseInt(form.count, 10) : 0,
-    });
-    setSubmitted(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    try {
+      await postRsvp({ ...form, count: attending ? parseInt(form.count, 10) : 0 });
+      setSubmitted(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      setErrors({ notes: "Could not submit right now. Please try again." });
+    }
   }
 
   if (submitted) {
