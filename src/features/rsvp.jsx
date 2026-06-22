@@ -20,6 +20,7 @@ export function RSVPPage() {
   });
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const set = (k) => (e) => {
     const v = e && e.target ? e.target.value : e;
@@ -44,14 +45,18 @@ export function RSVPPage() {
 
   async function submit(e) {
     e.preventDefault();
+    if (submitting) return;
     const er = validate();
     if (Object.keys(er).length) { setErrors(er); return; }
+    setSubmitting(true);
     try {
       await postRsvp({ ...form, count: attending ? parseInt(form.count, 10) : 0 });
       setSubmitted(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
       setErrors({ notes: "Could not submit right now. Please try again." });
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -139,7 +144,7 @@ export function RSVPPage() {
               <Textarea id="r-notes" value={form.notes} onChange={set("notes")} maxLength={1100} placeholder="Anything you'd like us to know?" />
             </Field>
 
-            <Button type="submit" variant="primary" size="lg" block>Send RSVP {Icon.arrow({})}</Button>
+            <Button type="submit" variant="primary" size="lg" block disabled={submitting}>{submitting ? "Sending…" : <>Send RSVP {Icon.arrow({})}</>}</Button>
           </form>
         </div>
       </section>

@@ -14,10 +14,12 @@ export async function loadClientData() {
     return;
   }
   const state = clientToState(client);
-  const { data: gb } = await supabase
+  const { data: gb, error: gbErr } = await supabase
     .from("guestbook").select("*").eq("client_id", client.id)
     .eq("status", "approved").order("created_at", { ascending: false });
-  Store.hydrate({ ...state, guestbook: (gb || []).map(rowToGuestbook) });
+  if (gbErr) console.warn("[api] guestbook fetch failed:", gbErr.message);
+  // only replace guestbook when the fetch succeeded — a failed query must not wipe it
+  Store.hydrate({ ...state, ...(gb ? { guestbook: gb.map(rowToGuestbook) } : { guestbook: [] }) });
 }
 
 export async function postRsvp(form) {

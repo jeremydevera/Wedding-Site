@@ -172,6 +172,9 @@ export const Store = {
   hydrate(patch) {
     _state = {
       ..._state,
+      // server-owned, per-tenant: reset on every boot so stale localStorage
+      // echoes / demo seeds from another client never bleed in
+      rsvps: [], quizSubs: [],
       ...patch,
       settings: { ..._state.settings, ...(patch.settings || {}) },
       loading: false,
@@ -194,7 +197,7 @@ export const Store = {
     emit();
   },
   addGuestbook(entry) {
-    _state = { ..._state, guestbook: [{ ...entry, id: uid(), status: entry.status || "visible", createdAt: Date.now() }, ..._state.guestbook] };
+    _state = { ..._state, guestbook: [{ ...entry, id: entry.id || uid(), status: entry.status || "visible", createdAt: entry.createdAt || Date.now() }, ..._state.guestbook] };
     persist();
     emit();
   },

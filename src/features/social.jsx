@@ -15,17 +15,20 @@ export function GuestbookPage() {
   const [form, setForm] = useState({ name: "", relationship: "", message: "" });
   const [errors, setErrors] = useState({});
   const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const visible = guestbook.filter((g) => g.status === "visible");
   const set = (k) => (e) => { setForm((f) => ({ ...f, [k]: e.target.value })); setErrors((er) => ({ ...er, [k]: undefined })); };
 
   async function submit(e) {
     e.preventDefault();
+    if (submitting) return;
     const er = {};
     if (!form.name.trim()) er.name = "Please enter your name.";
     if (!form.message.trim()) er.message = "Please write a short message.";
     if (form.message.length > 1000) er.message = "Please keep it under 1000 characters.";
     if (Object.keys(er).length) { setErrors(er); return; }
+    setSubmitting(true);
     try {
       const { status } = await postGuestbook({ name: form.name, relationship: form.relationship, message: form.message });
       setForm({ name: "", relationship: "", message: "" });
@@ -33,6 +36,8 @@ export function GuestbookPage() {
       toast(status === "approved" ? "Thank you for your message! \ud83d\udc95" : "Thank you! Your message will appear once the couple approves it.");
     } catch (err) {
       setErrors({ message: "Could not post right now. Please try again." });
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -76,7 +81,7 @@ export function GuestbookPage() {
           <Field label="Your message" required error={errors.message} hint={`${form.message.length}/1000`} id="g-msg">
             <Textarea id="g-msg" value={form.message} onChange={set("message")} maxLength={1100} placeholder="Wishing you both a lifetime of happiness…" style={{ minHeight: 130 }} />
           </Field>
-          <Button type="submit" variant="primary" block>Post message</Button>
+          <Button type="submit" variant="primary" block disabled={submitting}>{submitting ? "Posting…" : "Post message"}</Button>
         </form>
       </Modal>
     </div>
@@ -120,6 +125,7 @@ export function QuizPage() {
       await postQuiz({ name: name.trim(), score, total, answers: detail });
     } catch (err) {
       console.error("Could not save quiz score.", err);
+      toast("Score couldn't be saved, but here's how you did!");
     }
     setStage("result");
   }
