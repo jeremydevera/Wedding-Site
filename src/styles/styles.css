@@ -477,9 +477,9 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
    Remapping the design tokens flips the whole admin subtree to a clean
    slate/black SaaS look regardless of which wedding theme is active. */
 .admin--sa {
-  --bg: #f6f7f9; --surface: #ffffff; --surface-2: #f1f5f9;
-  --ink: #0f172a; --ink-soft: #475569; --muted: #94a3b8; --line: #e6e9ef;
-  --accent: #111827; --accent-soft: #f1f5f9; --accent-ink: #ffffff; --gold: #64748b;
+  --bg: #f4f7fc; --surface: #ffffff; --surface-2: #eef2fb;
+  --ink: #0f1f3d; --ink-soft: #475a80; --muted: #8a99b8; --line: #e2e8f4;
+  --accent: #2563eb; --accent-soft: #e7eefe; --accent-ink: #ffffff; --gold: #2563eb;
   --radius: 10px;
   --font-display: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --font-body: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
