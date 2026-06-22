@@ -511,9 +511,9 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 
 /* sub-tabs — exact Supabase product-nav item tokens (14px / #707070 → active #ededed bg + #171717 / 500, 6px radius, no shadow) */
 .sa-tabs { display: inline-flex; gap: 4px; background: none; padding: 0; border-radius: 0; margin-bottom: 22px; }
-.sa-tabs button { border: none; background: none; padding: 6px 10px; border-radius: 6px; font-family: var(--font-body); font-size: 14px; line-height: 20px; font-weight: 400; color: #707070; cursor: pointer; transition: background .12s, color .12s; }
+.sa-tabs button { border: none; background: none; padding: 3px 12px; border-radius: 6px; font-family: var(--font-body); font-size: 14px; line-height: 20px; font-weight: 400; color: #525252; cursor: pointer; transition: background .12s, color .12s; }
 .sa-tabs button:hover { background: #f4f4f5; color: #171717; }
-.sa-tabs button.on { background: #ededed; color: #171717; font-weight: 500; box-shadow: none; }
+.sa-tabs button.on { background: #ededed; color: #171717; font-weight: 600; box-shadow: none; }
 
 /* Superadmin overview dashboard */
 .sa-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: 14px; margin-bottom: 22px; }
