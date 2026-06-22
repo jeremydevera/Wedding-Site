@@ -874,7 +874,7 @@ export function AdminApp() {
             {Icon.grid({ style: { width: 16, height: 16 } })} Arrange Now
           </button>
         )}
-        <button className="admin__navlink" onClick={() => signOut().then(() => go("home"))}>Sign out</button>
+        {!isSuper && <button className="admin__navlink" onClick={() => signOut().then(() => go("home"))}>Sign out</button>}
       </aside>
 
       <main className="admin__main">
