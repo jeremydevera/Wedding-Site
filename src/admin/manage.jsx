@@ -7,7 +7,7 @@ import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { signOut } from "@/lib/auth.js";
 import { visibleAdminTabs, canEnterAdmin, tabsForClient } from "@/lib/roles.js";
-import { ClientsAdmin } from "@/admin/superadmin.jsx";
+import { ClientsAdmin, SuperOverview } from "@/admin/superadmin.jsx";
 import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
@@ -898,6 +898,7 @@ export function AdminApp() {
           {activeTab === "quiz" && <QuizAdmin />}
           {activeTab === "qr" && <QrAdmin />}
           {activeTab === "settings" && <SettingsAdmin />}
+          {activeTab === "overview" && <SuperOverview />}
           {activeTab === "clients" && <ClientsAdmin />}
         </div>
       </main>

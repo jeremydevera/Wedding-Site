@@ -13,12 +13,12 @@ function navLabels(container) {
 describe("AdminApp rendered tab gating", () => {
   beforeEach(() => cleanup());
 
-  it("superadmin: only the Clients tab (no Dashboard/Quiz/QR/Settings/etc.)", () => {
+  it("superadmin: Overview + Clients only (no per-event tabs)", () => {
     Store.set({ clientId: "c1", loading: false });
     Store.setAuth({ session: { user: { email: "su@x" } }, role: "superadmin", clientId: null, email: "su@x" });
     const { container } = render(<AdminApp />);
     const labels = navLabels(container);
-    expect(labels).toEqual(["Clients"]);
+    expect(labels).toEqual(["Overview", "Clients"]);
   });
 
   it("owner: shows operational tabs, hides Settings/Media/Clients", () => {

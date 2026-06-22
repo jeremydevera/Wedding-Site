@@ -3,8 +3,11 @@ const SUPERADMIN_ONLY = new Set(["settings", "media"]);
 
 export function visibleAdminTabs(role, allTabs) {
   if (role === "superadmin") {
-    // Superadmin only organizes clients — no per-event tabs at all.
-    return [{ key: "clients", label: "Clients", icon: "grid" }];
+    // Superadmin: a platform overview + client management (no per-event tabs).
+    return [
+      { key: "overview", label: "Overview", icon: "grid" },
+      { key: "clients", label: "Clients", icon: "user" },
+    ];
   }
   if (role === "owner") {
     return allTabs.filter((t) => !SUPERADMIN_ONLY.has(t.key) && t.key !== "clients");

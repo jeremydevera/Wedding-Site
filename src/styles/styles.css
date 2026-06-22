@@ -494,6 +494,21 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .sa-tabs button:hover { color: var(--ink); }
 .sa-tabs button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(15,23,42,.08); }
 
+/* Superadmin overview dashboard */
+.sa-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: 14px; margin-bottom: 22px; }
+.sa-stat { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; animation: saStat .4s ease both; }
+@keyframes saStat { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.sa-stat__label { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.sa-stat__value { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; margin-top: 8px; line-height: 1; font-variant-numeric: tabular-nums; }
+.sa-stat__sub { font-size: 12px; color: var(--ink-soft); margin-top: 7px; }
+.sa-grid2 { display: grid; grid-template-columns: 1fr; gap: 0; }
+@media (min-width: 920px) { .sa-grid2 { grid-template-columns: 1fr 1.4fr; gap: 20px; } .sa-grid2 > .panel { margin-bottom: 0; } }
+.sa-bar { margin-bottom: 14px; }
+.sa-bar:last-child { margin-bottom: 0; }
+.sa-bar__top { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+.sa-bar__track { height: 8px; background: var(--surface-2); border-radius: 100px; overflow: hidden; }
+.sa-bar__fill { height: 100%; background: var(--accent); border-radius: 100px; }
+
 /* admin media grid */
 /* folder tabs (sub-nav within an admin tab) */
 .folders--sticky { position: sticky; top: 62px; z-index: 9; background: var(--bg); padding-top: 14px; }

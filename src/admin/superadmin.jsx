@@ -10,6 +10,81 @@ const MODULES = ["story", "details", "schedule", "venue", "gallery", "guestbook"
 // Base domain client subdomains live under (rename when you register your platform domain).
 const PLATFORM_DOMAIN = "celebrate.app";
 
+export function SuperOverview() {
+  const [m, setM] = useState(null);
+  const [byType, setByType] = useState({});
+  const [recent, setRecent] = useState([]);
+  useEffect(() => {
+    (async () => {
+      const cnt = async (t) => { const { count } = await supabase.from(t).select("*", { count: "exact", head: true }); return count || 0; };
+      const { data } = await supabase.from("clients").select("id,subdomain,event_type,is_active,owner_email,created_at").order("created_at", { ascending: false });
+      const list = data || [];
+      const bt = {}; list.forEach((c) => { bt[c.event_type] = (bt[c.event_type] || 0) + 1; });
+      const [rsvps, guestbook, quiz] = await Promise.all([cnt("rsvps"), cnt("guestbook"), cnt("quiz_answers")]);
+      setByType(bt); setRecent(list.slice(0, 6));
+      setM({ clients: list.length, active: list.filter((c) => c.is_active).length, logins: list.filter((c) => c.owner_email).length, rsvps, guestbook, quiz });
+    })();
+  }, []);
+
+  const stats = m ? [
+    { label: "Clients", value: m.clients, sub: `${m.active} active` },
+    { label: "Owner logins", value: m.logins, sub: `${m.clients - m.logins} without login` },
+    { label: "RSVPs", value: m.rsvps, sub: "across all events" },
+    { label: "Guestbook", value: m.guestbook, sub: "messages" },
+    { label: "Quiz plays", value: m.quiz, sub: "submissions" },
+  ] : Array.from({ length: 5 }).map(() => ({ label: "—", value: "·", sub: "" }));
+  const typeTotal = Object.values(byType).reduce((a, b) => a + b, 0) || 1;
+
+  return (
+    <div>
+      <div className="sa-stats">
+        {stats.map((s, i) => (
+          <div key={i} className="sa-stat" style={{ animationDelay: `${i * 50}ms` }}>
+            <div className="sa-stat__label">{s.label}</div>
+            <div className="sa-stat__value">{s.value}</div>
+            <div className="sa-stat__sub">{s.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="sa-grid2">
+        <div className="panel">
+          <div className="panel__head"><div className="panel__title">By event type</div></div>
+          <div className="panel__body">
+            {Object.keys(byType).length === 0 && <div style={{ color: "var(--muted)" }}>No clients yet.</div>}
+            {Object.entries(byType).map(([t, n]) => (
+              <div key={t} className="sa-bar">
+                <div className="sa-bar__top"><span style={{ textTransform: "capitalize" }}>{t}</span><span style={{ color: "var(--muted)" }}>{n}</span></div>
+                <div className="sa-bar__track"><div className="sa-bar__fill" style={{ width: `${(n / typeTotal) * 100}%` }} /></div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="panel">
+          <div className="panel__head"><div className="panel__title">Recent clients</div></div>
+          <div className="panel__body--flush table-wrap">
+            <table className="tbl">
+              <thead><tr><th>Client</th><th>Type</th><th>Owner login</th><th></th></tr></thead>
+              <tbody>
+                {recent.map((c) => (
+                  <tr key={c.id}>
+                    <td><strong>{c.subdomain}</strong></td>
+                    <td><span className="tag tag--hidden">{c.event_type}</span></td>
+                    <td>{c.owner_email ? <span className="client-domain">{c.owner_email}</span> : <span style={{ color: "var(--muted)", fontSize: 13 }}>—</span>}</td>
+                    <td><a className="icon-btn" href={`/?client=${c.subdomain}&manage=1#/admin`} title="Open admin">{Icon.grid({})}</a></td>
+                  </tr>
+                ))}
+                {recent.length === 0 && <tr><td colSpan={4} style={{ textAlign: "center", padding: 32, color: "var(--muted)" }}>No clients yet.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ClientsAdmin() {
   const [view, setView] = useState("list"); // list | add | owner | edit
   const [clients, setClients] = useState([]);
