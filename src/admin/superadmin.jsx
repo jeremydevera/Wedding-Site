@@ -250,65 +250,111 @@ export function ClientsAdmin() {
       )}
 
       {view === "add" && (
-        <div className="panel" style={{ maxWidth: 560 }}>
-          <div className="panel__head"><div className="panel__title">Add a client</div></div>
-          <form onSubmit={createClient} className="panel__body" style={{ display: "grid", gap: 16 }}>
-            <Field label="Subdomain" id="c-sub" hint={`→ ${form.subdomain.trim() ? form.subdomain.trim().toLowerCase() : "name"}.${PLATFORM_DOMAIN}`}>
-              <Input id="c-sub" value={form.subdomain} onChange={(e) => setForm((f) => ({ ...f, subdomain: e.target.value }))} placeholder="johnandjane" />
-            </Field>
-            <Field label="Event type" id="c-evt">
-              <Select id="c-evt" value={form.event_type} onChange={(e) => setForm((f) => ({ ...f, event_type: e.target.value, template_key: themesForEvent(e.target.value)[0] }))}>
-                {["wedding", "birthday", "corporate"].map((t) => <option key={t} value={t}>{t}</option>)}
-              </Select>
-            </Field>
-            <div style={{ borderTop: "1px solid var(--line)", paddingTop: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-soft)", marginBottom: 12 }}>Owner login</div>
-              <div style={{ display: "grid", gap: 16 }}>
-                <Field label="Owner email" id="c-oemail"><Input id="c-oemail" type="email" value={form.ownerEmail} onChange={(e) => setForm((f) => ({ ...f, ownerEmail: e.target.value }))} placeholder="owner@theirdomain" /></Field>
-                <Field label="Owner password" id="c-opw"><Input id="c-opw" value={form.ownerPassword} onChange={(e) => setForm((f) => ({ ...f, ownerPassword: e.target.value }))} placeholder="••••••••" /></Field>
+        <div className="panel sa-form">
+          <div className="panel__head"><div><div className="panel__title">Add a client</div><div className="panel__sub">Provision a new client site and, optionally, its owner login.</div></div></div>
+          <form onSubmit={createClient} className="panel__body form-rows" style={{ paddingTop: 6, paddingBottom: 22 }}>
+            <div className="form-row">
+              <div className="form-row__head">
+                <div className="form-row__label">Project</div>
+                <div className="form-row__desc">The subdomain and event type for this client's site.</div>
+              </div>
+              <div className="form-row__fields">
+                <Field label="Subdomain" id="c-sub" hint={`→ ${form.subdomain.trim() ? form.subdomain.trim().toLowerCase() : "name"}.${PLATFORM_DOMAIN}`}>
+                  <Input id="c-sub" value={form.subdomain} onChange={(e) => setForm((f) => ({ ...f, subdomain: e.target.value }))} placeholder="johnandjane" />
+                </Field>
+                <Field label="Event type" id="c-evt">
+                  <Select id="c-evt" value={form.event_type} onChange={(e) => setForm((f) => ({ ...f, event_type: e.target.value, template_key: themesForEvent(e.target.value)[0] }))}>
+                    {["wedding", "birthday", "corporate"].map((t) => <option key={t} value={t}>{t}</option>)}
+                  </Select>
+                </Field>
               </div>
             </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <Button type="submit" variant="primary" disabled={busy}>Create client</Button>
+            <div className="form-row">
+              <div className="form-row__head">
+                <div className="form-row__label">Owner login</div>
+                <div className="form-row__desc">Credentials the client signs in with. Optional now — you can set them later.</div>
+              </div>
+              <div className="form-row__fields">
+                <div className="form-grid2">
+                  <Field label="Owner email" id="c-oemail"><Input id="c-oemail" type="email" value={form.ownerEmail} onChange={(e) => setForm((f) => ({ ...f, ownerEmail: e.target.value }))} placeholder="owner@theirdomain" /></Field>
+                  <Field label="Owner password" id="c-opw"><Input id="c-opw" value={form.ownerPassword} onChange={(e) => setForm((f) => ({ ...f, ownerPassword: e.target.value }))} placeholder="••••••••" /></Field>
+                </div>
+              </div>
+            </div>
+            <div className="form-foot">
               <Button type="button" variant="ghost" onClick={() => setView("list")}>Cancel</Button>
+              <Button type="submit" variant="primary" disabled={busy}>Create client</Button>
             </div>
           </form>
         </div>
       )}
 
       {view === "edit" && editing && (
-        <div className="panel" style={{ maxWidth: 560 }}>
-          <div className="panel__head"><div className="panel__title">Edit {editing.subdomain}</div></div>
-          <form onSubmit={saveEdit} className="panel__body" style={{ display: "grid", gap: 16 }}>
-            <Field label="Subdomain" id="e-sub"><Input id="e-sub" value={editForm.subdomain} onChange={(e) => setEditForm((f) => ({ ...f, subdomain: e.target.value }))} /></Field>
-            <div style={{ borderTop: "1px solid var(--line)", paddingTop: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-soft)", marginBottom: 12 }}>Owner login</div>
-              <div style={{ display: "grid", gap: 16 }}>
-                <Field label="Owner email" id="e-oemail"><Input id="e-oemail" type="email" value={editForm.ownerEmail} onChange={(e) => setEditForm((f) => ({ ...f, ownerEmail: e.target.value }))} placeholder="owner@theirdomain" /></Field>
-                <Field label="New password" id="e-opw" hint="Leave blank to keep the current password"><Input id="e-opw" value={editForm.ownerPassword} onChange={(e) => setEditForm((f) => ({ ...f, ownerPassword: e.target.value }))} placeholder="••••••••" /></Field>
+        <div className="panel sa-form">
+          <div className="panel__head"><div><div className="panel__title">Edit {editing.subdomain}</div><div className="panel__sub">Update the subdomain and owner login for this client.</div></div></div>
+          <form onSubmit={saveEdit} className="panel__body form-rows" style={{ paddingTop: 6, paddingBottom: 22 }}>
+            <div className="form-row">
+              <div className="form-row__head">
+                <div className="form-row__label">Project</div>
+                <div className="form-row__desc">The client's subdomain.</div>
+              </div>
+              <div className="form-row__fields">
+                <Field label="Subdomain" id="e-sub"><Input id="e-sub" value={editForm.subdomain} onChange={(e) => setEditForm((f) => ({ ...f, subdomain: e.target.value }))} /></Field>
               </div>
             </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <Button type="submit" variant="primary" disabled={busy}>Save changes</Button>
+            <div className="form-row">
+              <div className="form-row__head">
+                <div className="form-row__label">Owner login</div>
+                <div className="form-row__desc">Change the owner email or reset the password. Passwords can't be viewed.</div>
+              </div>
+              <div className="form-row__fields">
+                <div className="form-grid2">
+                  <Field label="Owner email" id="e-oemail"><Input id="e-oemail" type="email" value={editForm.ownerEmail} onChange={(e) => setEditForm((f) => ({ ...f, ownerEmail: e.target.value }))} placeholder="owner@theirdomain" /></Field>
+                  <Field label="New password" id="e-opw" hint="Leave blank to keep current"><Input id="e-opw" value={editForm.ownerPassword} onChange={(e) => setEditForm((f) => ({ ...f, ownerPassword: e.target.value }))} placeholder="••••••••" /></Field>
+                </div>
+              </div>
+            </div>
+            <div className="form-foot">
               <Button type="button" variant="ghost" onClick={() => { setEditing(null); setView("list"); }}>Cancel</Button>
+              <Button type="submit" variant="primary" disabled={busy}>Save changes</Button>
             </div>
           </form>
         </div>
       )}
 
       {view === "owner" && (
-        <div className="panel" style={{ maxWidth: 560 }}>
-          <div className="panel__head"><div className="panel__title">Set a client's owner login</div></div>
-          <form onSubmit={setOwner} className="panel__body" style={{ display: "grid", gap: 16 }}>
-            <Field label="Client" id="o-client">
-              <Select id="o-client" value={cred.client_id} onChange={(e) => setCred((c) => ({ ...c, client_id: e.target.value }))}>
-                <option value="">Select…</option>
-                {clients.map((c) => <option key={c.id} value={c.id}>{c.subdomain}</option>)}
-              </Select>
-            </Field>
-            <Field label="Owner email" id="o-email"><Input id="o-email" type="email" value={cred.email} onChange={(e) => setCred((c) => ({ ...c, email: e.target.value }))} placeholder="owner@theirdomain" /></Field>
-            <Field label="Password" id="o-pw"><Input id="o-pw" value={cred.password} onChange={(e) => setCred((c) => ({ ...c, password: e.target.value }))} placeholder="••••••••" /></Field>
-            <div><Button type="submit" variant="primary" disabled={busy}>Set owner login</Button></div>
+        <div className="panel sa-form">
+          <div className="panel__head"><div><div className="panel__title">Set a client's owner login</div><div className="panel__sub">Assign or reset the sign-in credentials for an existing client.</div></div></div>
+          <form onSubmit={setOwner} className="panel__body form-rows" style={{ paddingTop: 6, paddingBottom: 22 }}>
+            <div className="form-row">
+              <div className="form-row__head">
+                <div className="form-row__label">Client</div>
+                <div className="form-row__desc">Which client this login belongs to.</div>
+              </div>
+              <div className="form-row__fields">
+                <Field label="Client" id="o-client">
+                  <Select id="o-client" value={cred.client_id} onChange={(e) => setCred((c) => ({ ...c, client_id: e.target.value }))}>
+                    <option value="">Select…</option>
+                    {clients.map((c) => <option key={c.id} value={c.id}>{c.subdomain}</option>)}
+                  </Select>
+                </Field>
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-row__head">
+                <div className="form-row__label">Owner login</div>
+                <div className="form-row__desc">The email and password the client uses to sign in.</div>
+              </div>
+              <div className="form-row__fields">
+                <div className="form-grid2">
+                  <Field label="Owner email" id="o-email"><Input id="o-email" type="email" value={cred.email} onChange={(e) => setCred((c) => ({ ...c, email: e.target.value }))} placeholder="owner@theirdomain" /></Field>
+                  <Field label="Password" id="o-pw"><Input id="o-pw" value={cred.password} onChange={(e) => setCred((c) => ({ ...c, password: e.target.value }))} placeholder="••••••••" /></Field>
+                </div>
+              </div>
+            </div>
+            <div className="form-foot">
+              <Button type="submit" variant="primary" disabled={busy}>Set owner login</Button>
+            </div>
           </form>
         </div>
       )}
