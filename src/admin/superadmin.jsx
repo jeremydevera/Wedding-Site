@@ -8,7 +8,7 @@ const { useState, useEffect } = React;
 
 const MODULES = ["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"];
 // Base domain client subdomains live under (rename when you register your platform domain).
-const PLATFORM_DOMAIN = "celebrate.app";
+const PLATFORM_DOMAIN = "celebrately.us";
 
 export function SuperOverview() {
   const [m, setM] = useState(null);
