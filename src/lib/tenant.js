@@ -11,7 +11,7 @@ export function subdomainFromHost(hostname, search = "") {
     // project.pages.dev = 3 parts (no client); client.project.pages.dev = 4
     return parts.length >= 4 ? parts[0] : "demo";
   }
-  // custom domain: client.celebrate.app -> first label; bare apex -> demo
+  // custom domain: client.celebrately.us -> first label; bare apex -> demo
   return parts.length > 2 ? parts[0] : "demo";
 }
 

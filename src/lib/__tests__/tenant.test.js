@@ -14,7 +14,10 @@ describe("subdomainFromHost", () => {
   it("client.project.pages.dev (4 parts) -> client", () => {
     expect(subdomainFromHost("johnandjane.wedding-site.pages.dev", "")).toBe("johnandjane");
   });
-  it("custom domain client.celebrate.app -> client", () => {
-    expect(subdomainFromHost("johnandjane.celebrate.app", "")).toBe("johnandjane");
+  it("custom domain client.celebrately.us -> client", () => {
+    expect(subdomainFromHost("janandirish.celebrately.us", "")).toBe("janandirish");
+  });
+  it("bare platform apex (celebrately.us, 2 parts) -> demo", () => {
+    expect(subdomainFromHost("celebrately.us", "")).toBe("demo");
   });
 });
