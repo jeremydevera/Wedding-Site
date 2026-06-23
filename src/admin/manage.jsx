@@ -826,8 +826,8 @@ export function AdminApp() {
   // the DB so RSVPs / guestbook / quiz show up, not just this session's echoes.
   useEffect(() => {
     if (!auth.ready || !auth.session || !clientId) return;
-    const managing = auth.role === "superadmin" && new URLSearchParams(window.location.search).get("manage") === "1";
-    if (auth.role === "owner" || managing) loadAdminData();
+    // owner manages their own client; superadmin manages whatever client site they're on
+    if (auth.role === "owner" || auth.role === "superadmin") loadAdminData();
   }, [auth.ready, auth.session, auth.role, clientId]);
 
   if (!auth.ready) return <div style={{ minHeight: "60vh", display: "grid", placeItems: "center" }}>…</div>;
@@ -842,14 +842,21 @@ export function AdminApp() {
       </div>
     );
   }
-  const _params = new URLSearchParams(window.location.search);
-  const managing = auth.role === "superadmin" && _params.get("manage") === "1";
-  const manageSub = _params.get("client") || "";
-  // superadmin "manage a client" shows that client's full event admin; otherwise role tabs
-  const roleTabs = managing ? ADMIN_TABS : visibleAdminTabs(auth.role, ADMIN_TABS);
-  const tabs = tabsForClient(roleTabs, managing ? "owner" : auth.role, settings.modules);
+  const siteName = [settings.partnerA, settings.partnerB].filter(Boolean).join(" & ");
+  // Superadmin on a client site manages that client's full admin (Dashboard, Settings,
+  // RSVPs, …) AND keeps the platform console (Overview / Clients) in the same sidebar.
+  // Owners only ever see their own client's tabs.
+  let tabs;
+  if (auth.role === "superadmin") {
+    const platform = visibleAdminTabs("superadmin", ADMIN_TABS);               // Overview, Clients
+    const site = clientId ? tabsForClient(ADMIN_TABS, "owner", settings.modules) : []; // this client's admin
+    tabs = [...platform, ...site];
+  } else {
+    tabs = tabsForClient(visibleAdminTabs(auth.role, ADMIN_TABS), auth.role, settings.modules);
+  }
   const activeTab = tabs.some((t) => t.key === tab) ? tab : (tabs[0]?.key || "dashboard");
   const title = (tabs.find((t) => t.key === activeTab) || { label: "Admin" }).label;
+  const onPlatformTab = activeTab === "overview" || activeTab === "clients";
 
   const canArrange = settings.arrangeEnabled && isPremiumTheme(settings.theme);
   const startArrange = () => { try { sessionStorage.setItem("arrangeStart", "1"); } catch (e) {} go("home"); };
@@ -894,9 +901,8 @@ export function AdminApp() {
           ))}
         </div>
         <div className="admin__topbar">
-          <div className="admin__title">{managing ? `Managing: ${manageSub}` : title}</div>
+          <div className="admin__title">{title}{isSuper && !onPlatformTab && siteName ? <span className="admin__sitechip">{siteName}</span> : null}</div>
           <div style={{ display: "flex", gap: 8 }}>
-            {managing && <Button variant="ghost" size="sm" onClick={() => { window.location.href = `/?client=${manageSub}#/admin`; }}>{Icon.arrow({ style: { transform: "rotate(180deg)", width: 14, height: 14 } })} Clients</Button>}
             <Button variant="ghost" size="sm" onClick={() => go("home")}>View site</Button>
             {canArrange && <Button variant="primary" size="sm" onClick={startArrange}>{Icon.grid({ style: { width: 14, height: 14 } })} Arrange Now</Button>}
             <Button variant="ghost" size="sm" onClick={() => signOut().then(() => go("home"))}>Sign out</Button>

@@ -13,12 +13,21 @@ function navLabels(container) {
 describe("AdminApp rendered tab gating", () => {
   beforeEach(() => cleanup());
 
-  it("superadmin: Overview + Clients only (no per-event tabs)", () => {
+  it("superadmin on a client site: platform tabs + the client's full admin", () => {
     Store.set({ clientId: "c1", loading: false });
     Store.setAuth({ session: { user: { email: "su@x" } }, role: "superadmin", clientId: null, email: "su@x" });
     const { container } = render(<AdminApp />);
     const labels = navLabels(container);
-    expect(labels).toEqual(["Overview", "Clients"]);
+    // platform console first, then the current client's full admin (incl. Settings)
+    expect(labels.slice(0, 2)).toEqual(["Overview", "Clients"]);
+    expect(labels).toEqual(expect.arrayContaining(["Dashboard", "Settings", "Guestbook"]));
+  });
+
+  it("superadmin with no client loaded: platform console only", () => {
+    Store.set({ clientId: null, loading: false });
+    Store.setAuth({ session: { user: { email: "su@x" } }, role: "superadmin", clientId: null, email: "su@x" });
+    const { container } = render(<AdminApp />);
+    expect(navLabels(container)).toEqual(["Overview", "Clients"]);
   });
 
   it("owner: shows operational tabs, hides Settings/Media/Clients", () => {

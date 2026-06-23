@@ -432,6 +432,7 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .admin__main { flex: 1; min-width: 0; }
 .admin__topbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 30px; border-bottom: 1px solid var(--line); background: var(--surface); position: sticky; top: 0; z-index: 10; }
 .admin__title { font-family: var(--font-display); font-size: 26px; white-space: nowrap; }
+.admin__sitechip { display: inline-block; margin-left: 12px; font-family: var(--font-body); font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--accent-ink); background: var(--accent-soft); border: 1px solid var(--line); border-radius: 100px; padding: 3px 11px; vertical-align: middle; }
 .admin__body { padding: 30px; }
 .admin__mobilebar { display: none; }
 
