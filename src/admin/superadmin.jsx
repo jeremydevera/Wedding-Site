@@ -220,7 +220,7 @@ export function ClientsAdmin() {
           <div className="panel" style={{ marginBottom: 10 }}>
             <div className="panel__body--flush table-wrap">
               <table className="tbl tbl--clients">
-                <thead><tr><th>Client</th><th>Type</th><th>Theme</th><th>Modules</th><th>Owner login</th><th>Actions</th></tr></thead>
+                <thead><tr><th>Client</th><th>Type</th><th>Theme</th><th>Owner login</th><th>Actions</th></tr></thead>
                 <tbody>
                   {filtered.map((c) => (
                     <tr key={c.id}>
@@ -232,7 +232,6 @@ export function ClientsAdmin() {
                       </td>
                       <td className="theme-cell"><Select value={c.event_type} onChange={(e) => changeType(c, e.target.value)}>{["wedding", "birthday", "corporate"].map((t) => <option key={t} value={t}>{t}</option>)}</Select></td>
                       <td className="theme-cell"><Select value={c.template_key} onChange={(e) => assignTheme(c.id, e.target.value)}>{themesForEvent(c.event_type).filter((k) => THEMES[k]).map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}</Select></td>
-                      <td><div className="mod-toggles">{MODULES.map((m) => { const on = (c.content?.modules?.[m]) !== false; return <label key={m} className={"mod-pill" + (on ? " mod-pill--on" : "")}><input type="checkbox" checked={on} onChange={(e) => toggleModule(c, m, e.target.checked)} /> {m}</label>; })}</div></td>
                       <td>{c.owner_email ? <span className="client-domain">{c.owner_email}</span> : <span style={{ color: "var(--muted)" }}>—</span>}</td>
                       <td>
                         <div className="row-actions">
@@ -244,7 +243,7 @@ export function ClientsAdmin() {
                       </td>
                     </tr>
                   ))}
-                  {filtered.length === 0 && <tr><td colSpan={6} style={{ textAlign: "center", padding: 40, color: "var(--muted)" }}>{clients.length ? "No matches." : "No clients yet — use “Add client”."}</td></tr>}
+                  {filtered.length === 0 && <tr><td colSpan={5} style={{ textAlign: "center", padding: 40, color: "var(--muted)" }}>{clients.length ? "No matches." : "No clients yet — use “Add client”."}</td></tr>}
                 </tbody>
               </table>
             </div>

@@ -505,14 +505,12 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .admin--sa .tbl td { font-size: 13px; padding: 10px 12px; }
 .admin--sa .admin__body { padding: 22px 26px 48px; }
 /* Clients table: fixed columns so width spreads evenly (no dead gap before Owner login) */
-.admin--sa .tbl--clients { table-layout: fixed; width: 100%; min-width: 1180px; }
-.admin--sa .tbl--clients th:nth-child(1), .admin--sa .tbl--clients td:nth-child(1) { width: 15%; }
-.admin--sa .tbl--clients th:nth-child(2), .admin--sa .tbl--clients td:nth-child(2) { width: 12%; }
-.admin--sa .tbl--clients th:nth-child(3), .admin--sa .tbl--clients td:nth-child(3) { width: 17%; }
-.admin--sa .tbl--clients th:nth-child(4), .admin--sa .tbl--clients td:nth-child(4) { width: 30%; }
-.admin--sa .tbl--clients th:nth-child(5), .admin--sa .tbl--clients td:nth-child(5) { width: 13%; word-break: break-word; }
-.admin--sa .tbl--clients th:nth-child(6), .admin--sa .tbl--clients td:nth-child(6) { width: 13%; text-align: right; }
-.admin--sa .tbl--clients .mod-toggles { max-width: none; }
+.admin--sa .tbl--clients { table-layout: fixed; width: 100%; min-width: 900px; }
+.admin--sa .tbl--clients th:nth-child(1), .admin--sa .tbl--clients td:nth-child(1) { width: 21%; }
+.admin--sa .tbl--clients th:nth-child(2), .admin--sa .tbl--clients td:nth-child(2) { width: 13%; }
+.admin--sa .tbl--clients th:nth-child(3), .admin--sa .tbl--clients td:nth-child(3) { width: 23%; }
+.admin--sa .tbl--clients th:nth-child(4), .admin--sa .tbl--clients td:nth-child(4) { width: 27%; word-break: break-word; }
+.admin--sa .tbl--clients th:nth-child(5), .admin--sa .tbl--clients td:nth-child(5) { width: 16%; text-align: right; }
 .admin--sa .tbl--clients .row-actions { justify-content: flex-end; gap: 8px; flex-wrap: nowrap; }
 .admin--sa .tbl--clients .theme-cell .input { width: 100%; font-size: 13px; padding-right: 26px; }
 .admin--sa .tbl--clients .theme-cell .select { background-position: right 9px center; }
