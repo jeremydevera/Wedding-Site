@@ -438,13 +438,9 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .signin {
   position: fixed; inset: 0; overflow: auto; display: grid; grid-template-columns: 1fr;
   font-family: "Mulish", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --sg-bg: #ffffff; --sg-text: #171717; --sg-sub: #6b7280; --sg-label: #374151;
-  --sg-inbg: #ffffff; --sg-inbd: #dcdce0; --sg-back: #52525b; --sg-backbd: #e4e4e7;
+  --sg-bg: #171717; --sg-text: #fafafa; --sg-sub: #8b8b94; --sg-label: #ededed;
+  --sg-inbg: #1d1d1d; --sg-inbd: #393939; --sg-back: #a1a1aa; --sg-backbd: #2e2e2e;
   background: var(--sg-bg); color: var(--sg-text);
-}
-@media (prefers-color-scheme: dark) {
-  .signin { --sg-bg: #171717; --sg-text: #fafafa; --sg-sub: #8b8b94; --sg-label: #ededed;
-    --sg-inbg: #1d1d1d; --sg-inbd: #393939; --sg-back: #a1a1aa; --sg-backbd: #2e2e2e; }
 }
 @media (min-width: 860px) { .signin { grid-template-columns: minmax(0,1fr) minmax(0,1fr); } }
 
@@ -473,28 +469,19 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .signin__btn:hover { background: #1c9159; }
 .signin__btn:disabled { opacity: .65; cursor: default; }
 
-/* right panel: contribution-style heatmap (brand green), light/dark */
+/* right panel: real GitHub-contribution heatmap (column-major like GitHub), dark */
 .signin__art { position: relative; overflow: hidden; display: none; align-items: center; justify-content: center; padding: 24px;
-  background: linear-gradient(160deg, #f3f9f5 0%, #e3f2ea 50%, #cdebda 100%); }
+  background: linear-gradient(160deg, #0e1916 0%, #0d241b 55%, #0b2f22 100%); }
 @media (min-width: 860px) { .signin__art { display: flex; } }
-@media (prefers-color-scheme: dark) {
-  .signin__art { background: linear-gradient(160deg, #0e1916 0%, #0d241b 55%, #0b2f22 100%); }
-}
 .signin__artglow { position: absolute; inset: 0; background: radial-gradient(60% 50% at 65% 28%, rgba(62,207,142,.22), transparent 70%); }
 .signin__heatwrap { position: relative; z-index: 1; width: min(86%, 540px); }
-.signin__heat { display: grid; grid-template-columns: repeat(53, 1fr); grid-template-rows: repeat(7, 1fr); gap: 3px; }
-.signin__cell { aspect-ratio: 1; border-radius: 2px; background: rgba(20,40,30,.08); }
+.signin__heat { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 1fr); grid-auto-columns: 1fr; gap: 3px; }
+.signin__cell { aspect-ratio: 1; border-radius: 2px; background: rgba(255,255,255,.05); }
 .signin__cell--on { animation: sgCell .5s ease both; }
-.signin__cell.l1 { background: #9be9b8; } .signin__cell.l2 { background: #41c684; }
-.signin__cell.l3 { background: #2ea96a; } .signin__cell.l4 { background: #15814f; }
-.signin__heatcap { margin-top: 16px; font-size: 13px; color: rgba(20,40,30,.55); }
+.signin__cell.l1 { background: #0e4429; } .signin__cell.l2 { background: #006d32; }
+.signin__cell.l3 { background: #26a641; } .signin__cell.l4 { background: #39d353; }
+.signin__heatcap { margin-top: 16px; font-size: 13px; color: rgba(255,255,255,.55); }
 @keyframes sgCell { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-@media (prefers-color-scheme: dark) {
-  .signin__cell { background: rgba(255,255,255,.05); }
-  .signin__cell.l1 { background: #0e4429; } .signin__cell.l2 { background: #006d32; }
-  .signin__cell.l3 { background: #26a641; } .signin__cell.l4 { background: #39d353; }
-  .signin__heatcap { color: rgba(255,255,255,.5); }
-}
 @media (prefers-reduced-motion: reduce) { .signin__cell--on { animation: none; } }
 .admin__body { padding: 30px; }
 .admin__mobilebar { display: none; }

@@ -3,6 +3,7 @@ import qrcode from "qrcode-generator";
 import { go } from "@/lib/nav.js";
 import { useStore } from "@/lib/store.jsx";
 import { signIn } from "@/lib/auth.js";
+import { CONTRIB_TOTAL, CONTRIB_LEVELS } from "@/config/contributions.js";
 import { Button, Field, Icon, Input, Monogram, Placeholder, toast } from "@/ui/components.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
@@ -125,14 +126,12 @@ export function AdminLogin({ onAuthed }) {
         <div className="signin__artglow" />
         <div className="signin__heatwrap">
           <div className="signin__heat">
-            {Array.from({ length: 371 }).map((_, i) => {
-              const on = i > 0 && i % 9 === 0;            // 41 lit cells
-              const lvl = on ? ((i / 9) % 4) + 1 : 0;
-              return <span key={i} className={"signin__cell" + (on ? ` signin__cell--on l${lvl}` : "")}
-                style={on ? { animationDelay: `${(i % 53) * 0.02 + Math.floor(i / 53) * 0.02}s` } : undefined} />;
-            })}
+            {CONTRIB_LEVELS.map((lvl, i) => (
+              <span key={i} className={"signin__cell" + (lvl > 0 ? ` signin__cell--on l${lvl}` : "")}
+                style={lvl > 0 ? { animationDelay: `${Math.floor(i / 7) * 0.022}s` } : undefined} />
+            ))}
           </div>
-          <div className="signin__heatcap">41 contributions in the last year</div>
+          <div className="signin__heatcap">{CONTRIB_TOTAL} contributions in the last year</div>
         </div>
       </div>
     </div>
