@@ -1,7 +1,20 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Browser-invoked from the app's own domain → needs CORS + OPTIONS preflight.
+// Auth is enforced inside the function (caller must be a superadmin), so this is
+// deployed with verify_jwt disabled (otherwise the OPTIONS preflight is rejected).
+const cors = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 Deno.serve(async (req) => {
-  if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
+  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  const json = (o: unknown, status = 200) =>
+    new Response(JSON.stringify(o), { status, headers: { ...cors, "Content-Type": "application/json" } });
+  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+
   const authHeader = req.headers.get("Authorization") || "";
   const url = Deno.env.get("SUPABASE_URL")!;
   const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -10,13 +23,12 @@ Deno.serve(async (req) => {
   // 1. verify the CALLER is a superadmin (using their JWT)
   const caller = createClient(url, anon, { global: { headers: { Authorization: authHeader } } });
   const { data: u } = await caller.auth.getUser();
-  if (!u?.user) return new Response("Unauthorized", { status: 401 });
+  if (!u?.user) return json({ error: "Unauthorized" }, 401);
   const { data: prof } = await caller.from("profiles").select("role").eq("id", u.user.id).single();
-  if (prof?.role !== "superadmin") return new Response("Forbidden", { status: 403 });
+  if (prof?.role !== "superadmin") return json({ error: "Forbidden" }, 403);
 
   const admin = createClient(url, service);
   const body = await req.json();
-  const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { "Content-Type": "application/json" } });
 
   async function findByEmail(email: string) {
     const { data: list, error } = await admin.auth.admin.listUsers({ perPage: 1000 });
