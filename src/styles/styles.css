@@ -434,33 +434,63 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .admin__title { font-family: var(--font-display); font-size: 26px; white-space: nowrap; }
 .admin__sitechip { display: inline-block; margin-left: 12px; font-family: var(--font-body); font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--accent-ink); background: var(--accent-soft); border: 1px solid var(--line); border-radius: 100px; padding: 3px 11px; vertical-align: middle; }
 
-/* Sign-in screen — dark, centered single column, Evermore-branded */
-.signin { position: fixed; inset: 0; overflow: auto; background: #171717; color: #fafafa;
+/* Sign-in — split layout (form left, animated panel right), follows OS light/dark */
+.signin {
+  position: fixed; inset: 0; overflow: auto; display: grid; grid-template-columns: 1fr;
   font-family: "Mulish", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  display: flex; flex-direction: column; }
+  --sg-bg: #ffffff; --sg-text: #171717; --sg-sub: #6b7280; --sg-label: #374151;
+  --sg-inbg: #ffffff; --sg-inbd: #dcdce0; --sg-back: #52525b; --sg-backbd: #e4e4e7;
+  background: var(--sg-bg); color: var(--sg-text);
+}
+@media (prefers-color-scheme: dark) {
+  .signin { --sg-bg: #171717; --sg-text: #fafafa; --sg-sub: #8b8b94; --sg-label: #ededed;
+    --sg-inbg: #1d1d1d; --sg-inbd: #393939; --sg-back: #a1a1aa; --sg-backbd: #2e2e2e; }
+}
+@media (min-width: 860px) { .signin { grid-template-columns: minmax(0,1fr) minmax(0,1fr); } }
+
+.signin__pane { display: flex; flex-direction: column; background: var(--sg-bg); }
 .signin__top { display: flex; align-items: center; justify-content: space-between; padding: 22px 26px; }
-.signin__brand { display: flex; align-items: center; gap: 9px; font-size: 18px; font-weight: 700; letter-spacing: -.01em; }
-.signin__mark { width: 26px; height: 26px; border-radius: 7px; background: #3ECF8E; color: #04231a; display: grid; place-items: center; font-weight: 800; font-size: 14px; }
-.signin__back { background: none; border: 1px solid #2e2e2e; border-radius: 6px; color: #a1a1aa; font: inherit; font-size: 13px; padding: 6px 11px; cursor: pointer; }
-.signin__back:hover { color: #fafafa; border-color: #3f3f46; }
-.signin__center { flex: 1; display: flex; justify-content: center; align-items: flex-start; padding: 8vh 20px 48px; }
-.signin__form { width: 100%; max-width: 384px; }
-.signin__title { font-family: inherit; font-size: 30px; font-weight: 600; letter-spacing: -.025em; margin: 0 0 6px; color: #fafafa; }
-.signin__sub { margin: 0 0 30px; color: #8b8b94; font-size: 14px; }
+.signin__brand { display: flex; align-items: center; gap: 9px; }
+.signin__mark { width: 30px; height: 30px; border-radius: 8px; background: #3ECF8E; color: #04231a; display: grid; place-items: center; font-weight: 800; font-size: 16px; }
+.signin__back { background: none; border: 1px solid var(--sg-backbd); border-radius: 6px; color: var(--sg-back); font: inherit; font-size: 13px; padding: 6px 11px; cursor: pointer; }
+.signin__back:hover { color: var(--sg-text); }
+.signin__center { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 24px clamp(24px, 7vw, 72px) 64px; }
+.signin__form { width: 100%; max-width: 360px; margin: 0 auto; }
+.signin__title { font-family: inherit; font-size: 30px; font-weight: 600; letter-spacing: -.025em; margin: 0 0 6px; color: var(--sg-text); }
+.signin__sub { margin: 0 0 30px; color: var(--sg-sub); font-size: 14px; }
 .signin__field { margin-bottom: 16px; }
-.signin__field label { display: block; font-size: 14px; margin-bottom: 7px; color: #ededed; }
-.signin__field input { width: 100%; height: 38px; background: #1d1d1d; border: 1px solid #393939; border-radius: 6px; color: #fafafa; font: inherit; font-size: 14px; padding: 8px 12px; }
-.signin__field input::placeholder { color: #6b6b73; }
+.signin__field label { display: block; font-size: 14px; margin-bottom: 7px; color: var(--sg-label); }
+.signin__field input { width: 100%; height: 40px; background: var(--sg-inbg); border: 1px solid var(--sg-inbd); border-radius: 6px; color: var(--sg-text); font: inherit; font-size: 14px; padding: 8px 12px; }
+.signin__field input::placeholder { color: var(--sg-sub); opacity: .7; }
 .signin__field input:focus { outline: none; border-color: #3ECF8E; box-shadow: 0 0 0 2px rgba(62,207,142,.22); }
 .signin__pwwrap { position: relative; }
 .signin__pwwrap input { padding-right: 42px; }
-.signin__eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 30px; height: 30px; background: none; border: none; color: #8b8b94; cursor: pointer; }
-.signin__eye:hover { color: #fafafa; }
+.signin__eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 30px; height: 30px; background: none; border: none; color: var(--sg-sub); cursor: pointer; }
+.signin__eye:hover { color: var(--sg-text); }
 .signin__eye svg { width: 17px; height: 17px; }
-.signin__err { color: #f87171; font-size: 13px; margin-top: 8px; }
-.signin__btn { width: 100%; height: 42px; margin-top: 12px; background: #16794a; color: #fafafa; border: 1px solid rgba(62,207,142,.35); border-radius: 6px; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; transition: background .15s; }
+.signin__err { color: #e5484d; font-size: 13px; margin-top: 8px; }
+.signin__btn { width: 100%; height: 42px; margin-top: 12px; background: #16794a; color: #fff; border: 1px solid rgba(62,207,142,.35); border-radius: 6px; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; transition: background .15s; }
 .signin__btn:hover { background: #1c9159; }
 .signin__btn:disabled { opacity: .65; cursor: default; }
+
+/* right panel: soft celebratory animation (floating petals over a gradient) */
+.signin__art { position: relative; overflow: hidden; display: none;
+  background: linear-gradient(160deg, #f3f9f5 0%, #dcefe3 45%, #b7e4cb 100%); }
+@media (min-width: 860px) { .signin__art { display: block; } }
+@media (prefers-color-scheme: dark) {
+  .signin__art { background: linear-gradient(160deg, #102019 0%, #0e2c20 50%, #0b3a27 100%); }
+}
+.signin__artglow { position: absolute; inset: 0; background: radial-gradient(58% 48% at 68% 30%, rgba(62,207,142,.30), transparent 70%); }
+.signin__petal { position: absolute; bottom: -40px; border-radius: 70% 0 70% 0; background: rgba(62,207,142,.55);
+  animation-name: sgFloat; animation-timing-function: linear; animation-iteration-count: infinite; }
+@media (prefers-color-scheme: dark) { .signin__petal { background: rgba(120,231,173,.5); } }
+@keyframes sgFloat {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+  12% { opacity: .85; }
+  88% { opacity: .85; }
+  100% { transform: translateY(-108vh) rotate(420deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .signin__petal { display: none; } }
 .admin__body { padding: 30px; }
 .admin__mobilebar { display: none; }
 
