@@ -91,7 +91,7 @@ export function ClientsAdmin() {
   const [form, setForm] = useState({ subdomain: "", event_type: "wedding", template_key: "classic", ownerEmail: "", ownerPassword: "" });
   const [cred, setCred] = useState({ client_id: "", email: "", password: "" });
   const [editing, setEditing] = useState(null);
-  const [editForm, setEditForm] = useState({ subdomain: "", ownerEmail: "", ownerPassword: "" });
+  const [editForm, setEditForm] = useState({ subdomain: "", ownerEmail: "", ownerPassword: "", modules: {} });
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState("");
 
@@ -159,7 +159,7 @@ export function ClientsAdmin() {
 
   function openEdit(c) {
     setEditing(c);
-    setEditForm({ subdomain: c.subdomain, ownerEmail: c.owner_email || "", ownerPassword: "" });
+    setEditForm({ subdomain: c.subdomain, ownerEmail: c.owner_email || "", ownerPassword: "", modules: Object.fromEntries(MODULES.map((m) => [m, c.content?.modules?.[m] !== false])) });
     setView("edit");
   }
   async function saveEdit(e) {
@@ -170,6 +170,10 @@ export function ClientsAdmin() {
     const sub = editForm.subdomain.trim().toLowerCase();
     if (sub && sub !== editing.subdomain) {
       const { error } = await supabase.from("clients").update({ subdomain: sub }).eq("id", id);
+      if (error) { setBusy(false); return toast("Save failed: " + error.message); }
+    }
+    {
+      const { error } = await supabase.from("clients").update({ content: { ...(editing.content || {}), modules: editForm.modules } }).eq("id", id);
       if (error) { setBusy(false); return toast("Save failed: " + error.message); }
     }
     const email = editForm.ownerEmail.trim();
@@ -293,7 +297,7 @@ export function ClientsAdmin() {
 
       {view === "edit" && editing && (
         <div className="panel sa-form">
-          <div className="panel__head"><div><div className="panel__title">Edit {editing.subdomain}</div><div className="panel__sub">Update the subdomain and owner login for this client.</div></div></div>
+          <div className="panel__head"><div><div className="panel__title">Edit {editing.subdomain}</div><div className="panel__sub">Update the subdomain, modules, and owner login for this client.</div></div></div>
           <form onSubmit={saveEdit} className="panel__body form-rows" style={{ paddingTop: 6, paddingBottom: 22 }}>
             <div className="form-row">
               <div className="form-row__head">
@@ -302,6 +306,24 @@ export function ClientsAdmin() {
               </div>
               <div className="form-row__fields">
                 <Field label="Subdomain" id="e-sub"><Input id="e-sub" value={editForm.subdomain} onChange={(e) => setEditForm((f) => ({ ...f, subdomain: e.target.value }))} /></Field>
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-row__head">
+                <div className="form-row__label">Modules</div>
+                <div className="form-row__desc">Sections shown on this client's site. Toggle to enable or hide.</div>
+              </div>
+              <div className="form-row__fields">
+                <div className="mod-toggles mod-toggles--edit">
+                  {MODULES.map((m) => {
+                    const on = editForm.modules?.[m] !== false;
+                    return (
+                      <label key={m} className={"mod-pill" + (on ? " mod-pill--on" : "")}>
+                        <input type="checkbox" checked={on} onChange={(e) => setEditForm((f) => ({ ...f, modules: { ...f.modules, [m]: e.target.checked } }))} /> {m}
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
             </div>
             <div className="form-row">

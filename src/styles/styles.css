@@ -532,6 +532,8 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .form-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 560px) { .form-grid2 { grid-template-columns: 1fr; } }
 .form-foot { display: flex; justify-content: flex-end; gap: 10px; padding-top: 20px; }
+.mod-toggles--edit { max-width: none; gap: 8px; }
+.mod-toggles--edit .mod-pill { font-size: 13px; padding: 6px 12px; }
 .sa-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .sa-search { display: flex; align-items: center; gap: 8px; flex: 1; max-width: 360px; background: var(--surface); border: 1px solid #e2e2e2; border-radius: 6px; padding: 0 10px; height: 34px; }
 .sa-search svg { width: 15px; height: 15px; color: var(--muted); flex: none; }
