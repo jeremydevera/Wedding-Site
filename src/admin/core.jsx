@@ -125,13 +125,22 @@ export function AdminLogin({ onAuthed }) {
       <div className="signin__art" aria-hidden="true">
         <div className="signin__artglow" />
         <div className="signin__heatwrap">
-          <div className="signin__heat">
-            {CONTRIB_LEVELS.map((lvl, i) => (
-              <span key={i} className={"signin__cell" + (lvl > 0 ? ` signin__cell--on l${lvl}` : "")}
-                style={lvl > 0 ? { animationDelay: `${Math.floor(i / 7) * 0.022}s` } : undefined} />
-            ))}
+          <div className="signin__months">
+            {["Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun"].map((m, i) => <span key={i}>{m}</span>)}
           </div>
-          <div className="signin__heatcap">{CONTRIB_TOTAL} contributions in the last year</div>
+          <div className="signin__calrow">
+            <div className="signin__days"><span>Mon</span><span>Wed</span><span>Fri</span></div>
+            <div className="signin__heat">
+              {CONTRIB_LEVELS.map((lvl, i) => (
+                <span key={i} className={"signin__cell" + (lvl > 0 ? ` signin__cell--on l${lvl}` : "")}
+                  style={lvl > 0 ? { animationDelay: `${Math.floor(i / 7) * 0.022}s` } : undefined} />
+              ))}
+            </div>
+          </div>
+          <div className="signin__heatfoot">
+            <span className="signin__heatcap">{CONTRIB_TOTAL} contributions in the last year</span>
+            <span className="signin__legend">Less<i className="l0" /><i className="l1" /><i className="l2" /><i className="l3" /><i className="l4" />More</span>
+          </div>
         </div>
       </div>
     </div>
