@@ -17,7 +17,7 @@ describe("subdomainFromHost", () => {
   it("custom domain client.celebrately.us -> client", () => {
     expect(subdomainFromHost("janandirish.celebrately.us", "")).toBe("janandirish");
   });
-  it("bare platform apex (celebrately.us, 2 parts) -> demo", () => {
-    expect(subdomainFromHost("celebrately.us", "")).toBe("demo");
+  it("bare platform apex (celebrately.us, 2 parts) -> null (platform hub)", () => {
+    expect(subdomainFromHost("celebrately.us", "")).toBe(null);
   });
 });

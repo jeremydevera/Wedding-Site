@@ -7,6 +7,11 @@ import { loadSession } from "@/lib/auth.js";
 // Boot: load the active client + approved guestbook, hydrate the store cache.
 export async function loadClientData() {
   const subdomain = resolveSubdomain();
+  if (!subdomain) { // platform hub (bare apex) — no client site, just the admin login/console
+    await loadSession();
+    Store.hydrate({});
+    return;
+  }
   const { data: client, error } = await supabase
     .from("clients").select("*").eq("subdomain", subdomain).eq("is_active", true).single();
   if (error || !client) {

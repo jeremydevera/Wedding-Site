@@ -274,14 +274,16 @@ export function App() {
   }
 
   const Page = ROUTES[route] || Home;
-  const isAdmin = route === "admin";
+  // Platform hub (bare apex, no client): only the admin login/console — no public site.
+  const isHub = resolveSubdomain() === null;
+  const isAdmin = route === "admin" || isHub;
   const routeBlocked = route !== "home" && route !== "admin" && !moduleEnabled(settings.modules, route);
   const ActivePage = routeBlocked ? Home : Page;
 
   return (
     <>
       {isAdmin ? (
-        <Page />
+        <AdminApp />
       ) : (
         <>
           <Nav route={route} />
