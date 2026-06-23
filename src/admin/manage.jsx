@@ -7,6 +7,7 @@ import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { signOut } from "@/lib/auth.js";
 import { loadAdminData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb } from "@/lib/api.js";
+import { BRAND_NAME } from "@/config/site.js";
 import { visibleAdminTabs, canEnterAdmin, tabsForClient } from "@/lib/roles.js";
 import { ClientsAdmin, SuperOverview } from "@/admin/superadmin.jsx";
 import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
@@ -861,7 +862,7 @@ export function AdminApp() {
           {isSuper ? (
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ width: 26, height: 26, borderRadius: 7, background: "#3ECF8E", color: "#04231a", display: "grid", placeItems: "center", fontWeight: 800, fontSize: 14, flex: "none" }}>E</span>
-              <div><div className="admin__brand-name">Evermore</div><div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--muted)" }}>Superadmin</div></div>
+              <div><div className="admin__brand-name">{BRAND_NAME}</div><div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--muted)" }}>Superadmin</div></div>
             </div>
           ) : (
             <>

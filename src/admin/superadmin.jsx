@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase.js";
 import { createOwner, updateOwnerEmail } from "@/lib/auth.js";
 import { THEMES } from "@/themes";
 import { themesForEvent } from "@/config/eventTypes.js";
-import { PLATFORM_DOMAIN } from "@/config/site.js"; // platform domain → src/config/site.js (or VITE_PLATFORM_DOMAIN env)
+import { PLATFORM_DOMAIN, clientUrl, isValidSubdomain } from "@/config/site.js"; // platform config → src/config/site.js
 import { Button, Field, Icon, Input, Select, toast } from "@/ui/components.jsx";
 const { useState, useEffect } = React;
 
@@ -110,8 +110,9 @@ export function ClientsAdmin() {
   async function createClient(e) {
     e.preventDefault();
     if (busy || !form.subdomain.trim()) return;
-    setBusy(true);
     const sub = form.subdomain.trim().toLowerCase();
+    if (!isValidSubdomain(sub)) return toast("Invalid subdomain. Use lowercase letters, numbers, and hyphens — and not a reserved name (www, app, admin, demo…).");
+    setBusy(true);
     const { data: created, error } = await supabase.from("clients")
       .insert({ subdomain: sub, event_type: form.event_type, template_key: form.template_key }).select().single();
     if (error) { setBusy(false); return toast("Create failed: " + error.message); }
@@ -235,7 +236,7 @@ export function ClientsAdmin() {
                       <td>
                         <div className="row-actions">
                           <a className="icon-btn" href={`/?client=${c.subdomain}&manage=1#/admin`} title="Open admin">{Icon.grid({})}</a>
-                          <a className="icon-btn" href={`/?client=${c.subdomain}`} target="_blank" rel="noreferrer" title="Open site">{Icon.eye({})}</a>
+                          <a className="icon-btn" href={clientUrl(c.subdomain)} target="_blank" rel="noreferrer" title="Open live site">{Icon.eye({})}</a>
                           <button className="icon-btn" onClick={() => openEdit(c)} title="Edit">{Icon.edit({})}</button>
                           <button className="icon-btn icon-btn--danger" onClick={() => deleteClient(c)} title="Delete">{Icon.trash({})}</button>
                         </div>
