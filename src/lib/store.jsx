@@ -186,6 +186,17 @@ export const Store = {
     _state = { ..._state, auth: { ready: true, ...auth } };
     emit(); // session is not persisted to localStorage; Supabase manages it
   },
+  // Replace admin submission lists with rows loaded from Supabase (owner/superadmin
+  // admin views). Server-owned data — not persisted to localStorage.
+  setSubmissions({ rsvps, guestbook, quizSubs }) {
+    _state = {
+      ..._state,
+      ...(rsvps !== undefined ? { rsvps } : {}),
+      ...(guestbook !== undefined ? { guestbook } : {}),
+      ...(quizSubs !== undefined ? { quizSubs } : {}),
+    };
+    emit();
+  },
   updateSettings(patch) {
     _state = { ..._state, settings: { ..._state.settings, ...patch } };
     persist();

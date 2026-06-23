@@ -6,6 +6,7 @@ import { BFLY_COLORS, Button, CropModal, DecorPreview, Field, Icon, Input, Modal
 import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { signOut } from "@/lib/auth.js";
+import { loadAdminData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb } from "@/lib/api.js";
 import { visibleAdminTabs, canEnterAdmin, tabsForClient } from "@/lib/roles.js";
 import { ClientsAdmin, SuperOverview } from "@/admin/superadmin.jsx";
 import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
@@ -172,7 +173,7 @@ export function RsvpsAdmin() {
                   <td>
                     <div className="row-actions">
                       <button className="icon-btn" onClick={() => setDetail(r)} aria-label="View">{Icon.eye({})}</button>
-                      <button className="icon-btn icon-btn--danger" onClick={() => confirmDialog({ title: "Delete RSVP?", message: `Remove the RSVP from ${r.fullName}? This can't be undone.`, confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.deleteRSVP(r.id); })} aria-label="Delete">{Icon.trash({})}</button>
+                      <button className="icon-btn icon-btn--danger" onClick={() => confirmDialog({ title: "Delete RSVP?", message: `Remove the RSVP from ${r.fullName}? This can't be undone.`, confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) { Store.deleteRSVP(r.id); deleteRsvpDb(r.id).catch(() => toast("Couldn't delete on the server")); } })} aria-label="Delete">{Icon.trash({})}</button>
                     </div>
                   </td>
                 </tr>
@@ -320,9 +321,9 @@ export function GuestbookAdmin() {
                 <td>
                   <div className="row-actions">
                     {g.status === "visible"
-                      ? <button className="icon-btn" title="Hide" onClick={() => Store.setGuestbookStatus(g.id, "hidden")}>{Icon.eyeOff({})}</button>
-                      : <button className="icon-btn" title="Show" onClick={() => Store.setGuestbookStatus(g.id, "visible")}>{Icon.eye({})}</button>}
-                    <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete message?", message: "This permanently removes the guestbook entry.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.deleteGuestbook(g.id); })}>{Icon.trash({})}</button>
+                      ? <button className="icon-btn" title="Hide" onClick={() => { Store.setGuestbookStatus(g.id, "hidden"); setGuestbookStatusDb(g.id, "hidden").catch(() => toast("Couldn't update on the server")); }}>{Icon.eyeOff({})}</button>
+                      : <button className="icon-btn" title={g.status === "pending" ? "Approve" : "Show"} onClick={() => { Store.setGuestbookStatus(g.id, "visible"); setGuestbookStatusDb(g.id, "visible").catch(() => toast("Couldn't update on the server")); }}>{g.status === "pending" ? Icon.check({}) : Icon.eye({})}</button>}
+                    <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete message?", message: "This permanently removes the guestbook entry.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) { Store.deleteGuestbook(g.id); deleteGuestbookDb(g.id).catch(() => toast("Couldn't delete on the server")); } })}>{Icon.trash({})}</button>
                   </div>
                 </td>
               </tr>
@@ -819,6 +820,14 @@ export const ADMIN_TABS = [
 export function AdminApp() {
   const { settings, auth, clientId } = useStore();
   const [tab, setTab] = useState("dashboard");
+
+  // Owner (or superadmin managing a client) — load that client's submissions from
+  // the DB so RSVPs / guestbook / quiz show up, not just this session's echoes.
+  useEffect(() => {
+    if (!auth.ready || !auth.session || !clientId) return;
+    const managing = auth.role === "superadmin" && new URLSearchParams(window.location.search).get("manage") === "1";
+    if (auth.role === "owner" || managing) loadAdminData();
+  }, [auth.ready, auth.session, auth.role, clientId]);
 
   if (!auth.ready) return <div style={{ minHeight: "60vh", display: "grid", placeItems: "center" }}>…</div>;
   if (!auth.session) return <AdminLogin onAuthed={() => setTab("dashboard")} />;

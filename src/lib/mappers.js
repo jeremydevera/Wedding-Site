@@ -37,9 +37,29 @@ export function quizToRow(s, clientId) {
   return { client_id: clientId, name: s.name, score: s.score, total: s.total, answers: s.answers };
 }
 
+// DB guestbook status -> in-memory status. Public site shows only "visible"
+// (= approved), so pending/hidden stay off the live site even when the admin
+// has loaded every row.
+const GB_STATUS = { approved: "visible", hidden: "hidden", pending: "pending" };
 export function rowToGuestbook(row) {
   return {
     id: row.id, name: row.name, relationship: row.relationship, message: row.message,
-    status: "visible", createdAt: row.created_at ? Date.parse(row.created_at) : Date.now(),
+    status: GB_STATUS[row.status] || "visible",
+    createdAt: row.created_at ? Date.parse(row.created_at) : Date.now(),
+  };
+}
+
+export function rowToRsvp(row) {
+  return {
+    id: row.id, fullName: row.full_name, phone: row.phone, status: row.status, count: row.count,
+    plusOne: row.plus_one, diet: row.diet, dietNotes: row.diet_notes, song: row.song, notes: row.notes,
+    createdAt: row.created_at ? Date.parse(row.created_at) : Date.now(),
+  };
+}
+
+export function rowToQuizSub(row) {
+  return {
+    id: row.id, name: row.name, score: row.score, total: row.total, answers: row.answers,
+    createdAt: row.created_at ? Date.parse(row.created_at) : Date.now(),
   };
 }
