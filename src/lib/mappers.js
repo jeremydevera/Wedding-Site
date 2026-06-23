@@ -21,6 +21,19 @@ export function clientToState(client) {
   };
 }
 
+// Reverse of clientToState: in-memory store state -> a clients-row update.
+// Theme tokens + all settings live in `content`; `theme` column is kept empty so
+// it can't shadow content on reload (clientToState spreads `theme` after content).
+export function stateToClientRow(state) {
+  const { theme, eventType, ...rest } = state.settings || {};
+  return {
+    template_key: theme,
+    event_type: eventType,
+    theme: {},
+    content: { ...rest, schedule: state.schedule, story: state.story, faq: state.faq, quiz: state.quiz },
+  };
+}
+
 export function rsvpToRow(r, clientId) {
   return {
     client_id: clientId,

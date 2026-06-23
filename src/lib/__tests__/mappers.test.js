@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { DEFAULT_SETTINGS, SEED_SCHEDULE } from "@/lib/store.jsx";
-import { clientToState, rsvpToRow, guestbookToRow, quizToRow, rowToGuestbook, rowToRsvp, rowToQuizSub } from "@/lib/mappers.js";
+import { clientToState, stateToClientRow, rsvpToRow, guestbookToRow, quizToRow, rowToGuestbook, rowToRsvp, rowToQuizSub } from "@/lib/mappers.js";
 
 describe("clientToState", () => {
   it("maps template_key->settings.theme and event_type->eventType, falls back to defaults", () => {
@@ -22,6 +22,19 @@ describe("clientToState", () => {
     const st = clientToState({ id: "c1", subdomain: "d", event_type: "wedding", template_key: "classic",
       theme: {}, content: { schedule: [{ time: "1", title: "x", desc: "", loc: "" }] } });
     expect(st.schedule).toHaveLength(1);
+  });
+});
+
+describe("stateToClientRow (reverse of clientToState)", () => {
+  it("round-trips template_key / event_type / content + clears theme col", () => {
+    const row = { id: "c1", subdomain: "demo", event_type: "wedding", template_key: "glass",
+      theme: {}, content: { partnerA: "Al", partnerB: "Bo", schedule: [{ time: "1", title: "x", desc: "", loc: "" }] } };
+    const back = stateToClientRow(clientToState(row));
+    expect(back.template_key).toBe("glass");
+    expect(back.event_type).toBe("wedding");
+    expect(back.content.partnerA).toBe("Al");
+    expect(back.content.schedule).toHaveLength(1);
+    expect(back.theme).toEqual({}); // tokens live in content; column kept empty
   });
 });
 

@@ -2,7 +2,7 @@ import React from "react";
 
 import { go } from "@/lib/nav.js";
 import { Store, useStore } from "@/lib/store.jsx";
-import { loadClientData } from "@/lib/api.js";
+import { loadClientData, saveClientData } from "@/lib/api.js";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { FONT_OPTIONS, THEMES, THEME_FONTS, applyTheme } from "@/themes";
 import { Button, ConfirmHost, FloatingDecor, Icon, Monogram, ToastHost, confirmDialog, toast } from "@/ui/components.jsx";
@@ -68,7 +68,15 @@ export function Nav({ route }) {
   // Demo site (demo.<platform> / apex) is a theme showcase: swap the RSVP CTA for
   // a live theme picker so prospective clients can preview every design.
   const isDemo = resolveSubdomain() === "demo";
-  const pickTheme = (k) => Store.updateSettings({ theme: k, themeAccent: "", displayFont: THEME_FONTS[k].display, bodyFont: THEME_FONTS[k].body });
+  // Anyone can preview a theme via the dropdown (local only — reverts on refresh).
+  // A logged-in admin (superadmin/owner) picking one SAVES it as the site's theme.
+  const pickTheme = async (k) => {
+    Store.updateSettings({ theme: k, themeAccent: "", displayFont: THEME_FONTS[k].display, bodyFont: THEME_FONTS[k].body });
+    const role = Store.get().auth?.role;
+    if (role === "superadmin" || role === "owner") {
+      try { await saveClientData(); toast("Theme saved"); } catch (e) { toast("Couldn't save theme"); }
+    }
+  };
   const ThemePicker = ({ block }) => (
     <label className={"nav__themepick" + (block ? " nav__themepick--block" : "")}>
       <span className="nav__themepick-label">{block ? "Preview a theme" : "Theme"}</span>

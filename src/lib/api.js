@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase.js";
 import { Store } from "@/lib/store.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
-import { clientToState, rowToGuestbook, rowToRsvp, rowToQuizSub, rsvpToRow, guestbookToRow, quizToRow } from "@/lib/mappers.js";
+import { clientToState, stateToClientRow, rowToGuestbook, rowToRsvp, rowToQuizSub, rsvpToRow, guestbookToRow, quizToRow } from "@/lib/mappers.js";
 import { loadSession } from "@/lib/auth.js";
 
 // Boot: load the active client + approved guestbook, hydrate the store cache.
@@ -85,4 +85,14 @@ export async function deleteGuestbookDb(id) {
 export async function deleteRsvpDb(id) {
   const { error } = await supabase.from("rsvps").delete().eq("id", id);
   if (error) { console.warn("[api] rsvp delete failed:", error.message); throw error; }
+}
+
+// Persist the current client's settings + content (theme, names, schedule, story,
+// modules, …) back to Supabase. RLS lets the superadmin save any client and an
+// owner save their own.
+export async function saveClientData() {
+  const clientId = Store.get().clientId;
+  if (!clientId) throw new Error("No client loaded");
+  const { error } = await supabase.from("clients").update(stateToClientRow(Store.get())).eq("id", clientId);
+  if (error) { console.warn("[api] save failed:", error.message); throw error; }
 }

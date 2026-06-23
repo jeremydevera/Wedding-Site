@@ -6,7 +6,7 @@ import { BFLY_COLORS, Button, CropModal, DecorPreview, Field, Icon, Input, Modal
 import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { signOut } from "@/lib/auth.js";
-import { loadAdminData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb } from "@/lib/api.js";
+import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb } from "@/lib/api.js";
 import { BRAND_NAME } from "@/config/site.js";
 import { visibleAdminTabs, canEnterAdmin, tabsForClient } from "@/lib/roles.js";
 import { ClientsAdmin, SuperOverview } from "@/admin/superadmin.jsx";
@@ -821,6 +821,13 @@ export const ADMIN_TABS = [
 export function AdminApp() {
   const { settings, auth, clientId } = useStore();
   const [tab, setTab] = useState("dashboard");
+  const [saving, setSaving] = useState(false);
+  const saveChanges = async () => {
+    setSaving(true);
+    try { await saveClientData(); toast("Changes saved"); }
+    catch (e) { toast("Save failed: " + (e.message || "error")); }
+    finally { setSaving(false); }
+  };
 
   // Owner (or superadmin managing a client) — load that client's submissions from
   // the DB so RSVPs / guestbook / quiz show up, not just this session's echoes.
@@ -903,6 +910,7 @@ export function AdminApp() {
         <div className="admin__topbar">
           <div className="admin__title">{title}{isSuper && !onPlatformTab && siteName ? <span className="admin__sitechip">{siteName}</span> : null}</div>
           <div style={{ display: "flex", gap: 8 }}>
+            {clientId && !onPlatformTab && <Button variant="primary" size="sm" disabled={saving} onClick={saveChanges}>{saving ? "Saving…" : "Save changes"}</Button>}
             <Button variant="ghost" size="sm" onClick={() => go("home")}>View site</Button>
             {canArrange && <Button variant="primary" size="sm" onClick={startArrange}>{Icon.grid({ style: { width: 14, height: 14 } })} Arrange Now</Button>}
             <Button variant="ghost" size="sm" onClick={() => signOut().then(() => go("home"))}>Sign out</Button>
