@@ -103,6 +103,21 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 }
 .nav__burger svg { width: 22px; height: 22px; }
 
+/* Demo/showcase theme picker — replaces the RSVP CTA on the demo site */
+.nav__themepick { display: none; align-items: center; gap: 8px; }
+.nav__themepick-label { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.nav__themepick select {
+  appearance: none; -webkit-appearance: none; font-family: var(--font-body); font-size: 14px;
+  color: var(--ink); background-color: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 9px 32px 9px 13px; cursor: pointer; max-width: 220px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='m6 9 6 6 6-6' stroke='%23999' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 11px center;
+}
+.nav__themepick select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.nav__themepick--block { display: flex; flex-direction: column; align-items: stretch; gap: 9px; }
+.nav__themepick--block select { width: 100%; max-width: none; }
+@media (min-width: 940px) { .nav__themepick { display: inline-flex; } }
+
 .drawer { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; }
 .drawer__bg { position: absolute; inset: 0; background: rgba(0,0,0,.4); animation: fade .2s ease; }
 .drawer__panel {

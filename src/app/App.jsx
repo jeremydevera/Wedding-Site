@@ -3,6 +3,7 @@ import React from "react";
 import { go } from "@/lib/nav.js";
 import { Store, useStore } from "@/lib/store.jsx";
 import { loadClientData } from "@/lib/api.js";
+import { resolveSubdomain } from "@/lib/tenant.js";
 import { FONT_OPTIONS, THEMES, THEME_FONTS, applyTheme } from "@/themes";
 import { Button, ConfirmHost, FloatingDecor, Icon, Monogram, ToastHost, confirmDialog, toast } from "@/ui/components.jsx";
 import { TweakButton, TweakColor, TweakSection, TweakSelect, TweakText, TweakToggle, TweaksPanel } from "@/ui/tweaks-panel.jsx";
@@ -64,6 +65,18 @@ export function useRoute() {
 export function Nav({ route }) {
   const { settings } = useStore();
   const [drawer, setDrawer] = useState(false);
+  // Demo site (demo.<platform> / apex) is a theme showcase: swap the RSVP CTA for
+  // a live theme picker so prospective clients can preview every design.
+  const isDemo = resolveSubdomain() === "demo";
+  const pickTheme = (k) => Store.updateSettings({ theme: k, themeAccent: "", displayFont: THEME_FONTS[k].display, bodyFont: THEME_FONTS[k].body });
+  const ThemePicker = ({ block }) => (
+    <label className={"nav__themepick" + (block ? " nav__themepick--block" : "")}>
+      <span className="nav__themepick-label">{block ? "Preview a theme" : "Theme"}</span>
+      <select value={settings.theme} aria-label="Preview a theme" onChange={(e) => pickTheme(e.target.value)}>
+        {Object.keys(THEMES).map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
+      </select>
+    </label>
+  );
   return (
     <nav className="nav">
       <div className="container nav__inner">
@@ -77,7 +90,9 @@ export function Nav({ route }) {
           ))}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Button className="nav__cta" variant="primary" size="sm" onClick={() => go("rsvp")}>RSVP</Button>
+          {isDemo
+            ? <ThemePicker />
+            : <Button className="nav__cta" variant="primary" size="sm" onClick={() => go("rsvp")}>RSVP</Button>}
           <button className="nav__burger" onClick={() => setDrawer(true)} aria-label="Menu">{Icon.menu({})}</button>
         </div>
       </div>
@@ -96,7 +111,9 @@ export function Nav({ route }) {
             <button className="drawer__link" onClick={() => { go("upload"); setDrawer(false); }}>Share Photos</button>
             <button className="drawer__link" onClick={() => { go("video-message"); setDrawer(false); }}>Video Message</button>
             <div style={{ marginTop: 20 }}>
-              <Button variant="primary" block onClick={() => { go("rsvp"); setDrawer(false); }}>RSVP Now</Button>
+              {isDemo
+                ? <ThemePicker block />
+                : <Button variant="primary" block onClick={() => { go("rsvp"); setDrawer(false); }}>RSVP Now</Button>}
             </div>
           </div>
         </div>
