@@ -215,7 +215,7 @@ export function ClientsAdmin() {
           </div>
           <div className="panel" style={{ marginBottom: 10 }}>
             <div className="panel__body--flush table-wrap">
-              <table className="tbl">
+              <table className="tbl tbl--clients">
                 <thead><tr><th>Client</th><th>Type</th><th>Theme</th><th>Modules</th><th>Owner login</th><th>Actions</th></tr></thead>
                 <tbody>
                   {filtered.map((c) => (
