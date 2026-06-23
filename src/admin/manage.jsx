@@ -837,8 +837,10 @@ export function AdminApp() {
     if (auth.role === "owner" || auth.role === "superadmin") loadAdminData();
   }, [auth.ready, auth.session, auth.role, clientId]);
 
-  if (!auth.ready) return <div style={{ minHeight: "60vh", display: "grid", placeItems: "center" }}>…</div>;
-  if (!auth.session) return <AdminLogin onAuthed={() => setTab("dashboard")} />;
+  if (!auth.ready) return <div className="admin--sa" style={{ position: "fixed", inset: 0, background: "var(--bg)", display: "grid", placeItems: "center", color: "var(--ink-soft)" }}>…</div>;
+  // Login uses the neutral admin palette (not the client's wedding theme); fixed
+  // cover so the page's themed body never shows behind it.
+  if (!auth.session) return <div className="admin--sa" style={{ position: "fixed", inset: 0, overflow: "auto", background: "var(--bg)" }}><AdminLogin onAuthed={() => setTab("dashboard")} /></div>;
   const profile = { role: auth.role, clientId: auth.clientId };
   if (!canEnterAdmin(profile, clientId)) {
     return (
