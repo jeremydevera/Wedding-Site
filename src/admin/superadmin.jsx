@@ -3,12 +3,11 @@ import { supabase } from "@/lib/supabase.js";
 import { createOwner, updateOwnerEmail } from "@/lib/auth.js";
 import { THEMES } from "@/themes";
 import { themesForEvent } from "@/config/eventTypes.js";
+import { PLATFORM_DOMAIN } from "@/config/site.js"; // platform domain → src/config/site.js (or VITE_PLATFORM_DOMAIN env)
 import { Button, Field, Icon, Input, Select, toast } from "@/ui/components.jsx";
 const { useState, useEffect } = React;
 
 const MODULES = ["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"];
-// Base domain client subdomains live under (rename when you register your platform domain).
-const PLATFORM_DOMAIN = "celebrately.us";
 
 export function SuperOverview() {
   const [m, setM] = useState(null);
