@@ -473,24 +473,29 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .signin__btn:hover { background: #1c9159; }
 .signin__btn:disabled { opacity: .65; cursor: default; }
 
-/* right panel: soft celebratory animation (floating petals over a gradient) */
-.signin__art { position: relative; overflow: hidden; display: none;
-  background: linear-gradient(160deg, #f3f9f5 0%, #dcefe3 45%, #b7e4cb 100%); }
-@media (min-width: 860px) { .signin__art { display: block; } }
+/* right panel: contribution-style heatmap (brand green), light/dark */
+.signin__art { position: relative; overflow: hidden; display: none; align-items: center; justify-content: center; padding: 24px;
+  background: linear-gradient(160deg, #f3f9f5 0%, #e3f2ea 50%, #cdebda 100%); }
+@media (min-width: 860px) { .signin__art { display: flex; } }
 @media (prefers-color-scheme: dark) {
-  .signin__art { background: linear-gradient(160deg, #102019 0%, #0e2c20 50%, #0b3a27 100%); }
+  .signin__art { background: linear-gradient(160deg, #0e1916 0%, #0d241b 55%, #0b2f22 100%); }
 }
-.signin__artglow { position: absolute; inset: 0; background: radial-gradient(58% 48% at 68% 30%, rgba(62,207,142,.30), transparent 70%); }
-.signin__petal { position: absolute; bottom: -40px; border-radius: 70% 0 70% 0; background: rgba(62,207,142,.55);
-  animation-name: sgFloat; animation-timing-function: linear; animation-iteration-count: infinite; }
-@media (prefers-color-scheme: dark) { .signin__petal { background: rgba(120,231,173,.5); } }
-@keyframes sgFloat {
-  0% { transform: translateY(0) rotate(0deg); opacity: 0; }
-  12% { opacity: .85; }
-  88% { opacity: .85; }
-  100% { transform: translateY(-108vh) rotate(420deg); opacity: 0; }
+.signin__artglow { position: absolute; inset: 0; background: radial-gradient(60% 50% at 65% 28%, rgba(62,207,142,.22), transparent 70%); }
+.signin__heatwrap { position: relative; z-index: 1; width: min(86%, 540px); }
+.signin__heat { display: grid; grid-template-columns: repeat(53, 1fr); grid-template-rows: repeat(7, 1fr); gap: 3px; }
+.signin__cell { aspect-ratio: 1; border-radius: 2px; background: rgba(20,40,30,.08); }
+.signin__cell--on { animation: sgCell .5s ease both; }
+.signin__cell.l1 { background: #9be9b8; } .signin__cell.l2 { background: #41c684; }
+.signin__cell.l3 { background: #2ea96a; } .signin__cell.l4 { background: #15814f; }
+.signin__heatcap { margin-top: 16px; font-size: 13px; color: rgba(20,40,30,.55); }
+@keyframes sgCell { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@media (prefers-color-scheme: dark) {
+  .signin__cell { background: rgba(255,255,255,.05); }
+  .signin__cell.l1 { background: #0e4429; } .signin__cell.l2 { background: #006d32; }
+  .signin__cell.l3 { background: #26a641; } .signin__cell.l4 { background: #39d353; }
+  .signin__heatcap { color: rgba(255,255,255,.5); }
 }
-@media (prefers-reduced-motion: reduce) { .signin__petal { display: none; } }
+@media (prefers-reduced-motion: reduce) { .signin__cell--on { animation: none; } }
 .admin__body { padding: 30px; }
 .admin__mobilebar { display: none; }
 

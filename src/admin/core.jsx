@@ -123,13 +123,17 @@ export function AdminLogin({ onAuthed }) {
       </div>
       <div className="signin__art" aria-hidden="true">
         <div className="signin__artglow" />
-        {Array.from({ length: 16 }).map((_, i) => (
-          <span key={i} className="signin__petal" style={{
-            left: `${(i * 61) % 100}%`,
-            width: `${8 + (i % 4) * 4}px`, height: `${8 + (i % 4) * 4}px`,
-            animationDelay: `${(i * 0.7) % 9}s`, animationDuration: `${8 + (i % 6)}s`,
-          }} />
-        ))}
+        <div className="signin__heatwrap">
+          <div className="signin__heat">
+            {Array.from({ length: 371 }).map((_, i) => {
+              const on = i > 0 && i % 9 === 0;            // 41 lit cells
+              const lvl = on ? ((i / 9) % 4) + 1 : 0;
+              return <span key={i} className={"signin__cell" + (on ? ` signin__cell--on l${lvl}` : "")}
+                style={on ? { animationDelay: `${(i % 53) * 0.02 + Math.floor(i / 53) * 0.02}s` } : undefined} />;
+            })}
+          </div>
+          <div className="signin__heatcap">41 contributions in the last year</div>
+        </div>
       </div>
     </div>
   );
