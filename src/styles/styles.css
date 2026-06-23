@@ -433,6 +433,34 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .admin__topbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 30px; border-bottom: 1px solid var(--line); background: var(--surface); position: sticky; top: 0; z-index: 10; }
 .admin__title { font-family: var(--font-display); font-size: 26px; white-space: nowrap; }
 .admin__sitechip { display: inline-block; margin-left: 12px; font-family: var(--font-body); font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--accent-ink); background: var(--accent-soft); border: 1px solid var(--line); border-radius: 100px; padding: 3px 11px; vertical-align: middle; }
+
+/* Sign-in screen — dark, centered single column, Evermore-branded */
+.signin { position: fixed; inset: 0; overflow: auto; background: #171717; color: #fafafa;
+  font-family: "Mulish", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  display: flex; flex-direction: column; }
+.signin__top { display: flex; align-items: center; justify-content: space-between; padding: 22px 26px; }
+.signin__brand { display: flex; align-items: center; gap: 9px; font-size: 18px; font-weight: 700; letter-spacing: -.01em; }
+.signin__mark { width: 26px; height: 26px; border-radius: 7px; background: #3ECF8E; color: #04231a; display: grid; place-items: center; font-weight: 800; font-size: 14px; }
+.signin__back { background: none; border: 1px solid #2e2e2e; border-radius: 6px; color: #a1a1aa; font: inherit; font-size: 13px; padding: 6px 11px; cursor: pointer; }
+.signin__back:hover { color: #fafafa; border-color: #3f3f46; }
+.signin__center { flex: 1; display: flex; justify-content: center; align-items: flex-start; padding: 8vh 20px 48px; }
+.signin__form { width: 100%; max-width: 384px; }
+.signin__title { font-family: inherit; font-size: 30px; font-weight: 600; letter-spacing: -.025em; margin: 0 0 6px; color: #fafafa; }
+.signin__sub { margin: 0 0 30px; color: #8b8b94; font-size: 14px; }
+.signin__field { margin-bottom: 16px; }
+.signin__field label { display: block; font-size: 14px; margin-bottom: 7px; color: #ededed; }
+.signin__field input { width: 100%; height: 38px; background: #1d1d1d; border: 1px solid #393939; border-radius: 6px; color: #fafafa; font: inherit; font-size: 14px; padding: 8px 12px; }
+.signin__field input::placeholder { color: #6b6b73; }
+.signin__field input:focus { outline: none; border-color: #3ECF8E; box-shadow: 0 0 0 2px rgba(62,207,142,.22); }
+.signin__pwwrap { position: relative; }
+.signin__pwwrap input { padding-right: 42px; }
+.signin__eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 30px; height: 30px; background: none; border: none; color: #8b8b94; cursor: pointer; }
+.signin__eye:hover { color: #fafafa; }
+.signin__eye svg { width: 17px; height: 17px; }
+.signin__err { color: #f87171; font-size: 13px; margin-top: 8px; }
+.signin__btn { width: 100%; height: 42px; margin-top: 12px; background: #16794a; color: #fafafa; border: 1px solid rgba(62,207,142,.35); border-radius: 6px; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; transition: background .15s; }
+.signin__btn:hover { background: #1c9159; }
+.signin__btn:disabled { opacity: .65; cursor: default; }
 .admin__body { padding: 30px; }
 .admin__mobilebar { display: none; }
 

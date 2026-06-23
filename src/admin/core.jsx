@@ -90,16 +90,34 @@ export function AdminLogin({ onAuthed }) {
     catch (e2) { setErr("Wrong email or password."); }
     finally { setBusy(false); }
   }
+  const [showPw, setShowPw] = useState(false);
   return (
-    <div className="admin-login">
-      <div className="card card--pad-lg" style={{ maxWidth: 380, margin: "10vh auto" }}>
-        <h2 style={{ marginTop: 0 }}>Sign in</h2>
-        <form onSubmit={submit} noValidate>
-          <Field label="Email" id="a-email"><Input id="a-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com" /></Field>
-          <Field label="Password" id="a-pw" error={err}><Input id="a-pw" type="password" value={pw} onChange={(e) => setPw(e.target.value)} /></Field>
-          <Button type="submit" variant="primary" block disabled={busy}>{busy ? "Signing in…" : "Sign in"}</Button>
+    <div className="signin">
+      <header className="signin__top">
+        <div className="signin__brand"><span className="signin__mark">E</span> Evermore</div>
+        <button className="signin__back" onClick={() => go("home")}>← Back to website</button>
+      </header>
+      <div className="signin__center">
+        <form className="signin__form" onSubmit={submit} noValidate>
+          <h1 className="signin__title">Welcome back</h1>
+          <p className="signin__sub">Sign in to your account</p>
+
+          <div className="signin__field">
+            <label htmlFor="a-email">Email</label>
+            <input id="a-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+          </div>
+
+          <div className="signin__field">
+            <label htmlFor="a-pw">Password</label>
+            <div className="signin__pwwrap">
+              <input id="a-pw" type={showPw ? "text" : "password"} autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="••••••••" />
+              <button type="button" className="signin__eye" onClick={() => setShowPw((v) => !v)} aria-label={showPw ? "Hide password" : "Show password"}>{(showPw ? Icon.eyeOff : Icon.eye)({})}</button>
+            </div>
+            {err && <div className="signin__err">{err}</div>}
+          </div>
+
+          <button type="submit" className="signin__btn" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
         </form>
-        <button className="admin__navlink" style={{ marginTop: 14 }} onClick={() => go("home")}>← Back to website</button>
       </div>
     </div>
   );
