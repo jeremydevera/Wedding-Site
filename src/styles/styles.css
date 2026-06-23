@@ -438,11 +438,15 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .signin {
   position: fixed; inset: 0; overflow: auto; display: grid; grid-template-columns: 1fr;
   font-family: "Mulish", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --sg-bg: #171717; --sg-text: #fafafa; --sg-sub: #8b8b94; --sg-label: #ededed;
-  --sg-inbg: #1d1d1d; --sg-inbd: #393939; --sg-back: #a1a1aa; --sg-backbd: #2e2e2e;
+  --sg-bg: #ffffff; --sg-text: #171717; --sg-sub: #6b7280; --sg-label: #374151;
+  --sg-inbg: #ffffff; --sg-inbd: #dcdce0; --sg-back: #52525b; --sg-backbd: #e4e4e7;
   background: var(--sg-bg); color: var(--sg-text);
 }
-@media (min-width: 860px) { .signin { grid-template-columns: minmax(340px, 440px) 1fr; } }
+@media (prefers-color-scheme: dark) {
+  .signin { --sg-bg: #171717; --sg-text: #fafafa; --sg-sub: #8b8b94; --sg-label: #ededed;
+    --sg-inbg: #1d1d1d; --sg-inbd: #393939; --sg-back: #a1a1aa; --sg-backbd: #2e2e2e; }
+}
+@media (min-width: 860px) { .signin { grid-template-columns: minmax(0,1fr) minmax(0,1fr); } }
 
 .signin__pane { display: flex; flex-direction: column; background: var(--sg-bg); }
 .signin__top { display: flex; align-items: center; justify-content: space-between; padding: 22px 26px; }
@@ -469,29 +473,24 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .signin__btn:hover { background: #1c9159; }
 .signin__btn:disabled { opacity: .65; cursor: default; }
 
-/* right panel: real GitHub-contribution heatmap (column-major like GitHub), dark */
-.signin__art { position: relative; overflow: hidden; display: none; align-items: center; justify-content: center; padding: 24px;
-  background: linear-gradient(160deg, #0e1916 0%, #0d241b 55%, #0b2f22 100%); }
-@media (min-width: 860px) { .signin__art { display: flex; } }
-.signin__artglow { position: absolute; inset: 0; background: radial-gradient(60% 50% at 65% 28%, rgba(62,207,142,.22), transparent 70%); }
-.signin__heatwrap { position: relative; z-index: 1; width: min(96%, 940px); }
-.signin__months { display: flex; justify-content: space-between; margin: 0 0 7px 30px; font-size: 12px; color: rgba(255,255,255,.5); }
-.signin__calrow { display: flex; gap: 8px; align-items: stretch; }
-.signin__days { display: flex; flex-direction: column; justify-content: space-around; width: 22px; padding: 2px 0; font-size: 10px; color: rgba(255,255,255,.5); }
-.signin__heat { flex: 1; display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 1fr); grid-auto-columns: 1fr; gap: 4px; }
-.signin__cell { aspect-ratio: 1; border-radius: 3px; background: rgba(255,255,255,.05); }
-.signin__cell--on { animation: sgCell .5s ease both; }
-.signin__cell.l1 { background: #0e4429; } .signin__cell.l2 { background: #006d32; }
-.signin__cell.l3 { background: #26a641; } .signin__cell.l4 { background: #39d353; }
-.signin__heatfoot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 16px 0 0 30px; }
-.signin__heatcap { font-size: 13px; color: rgba(255,255,255,.6); }
-.signin__legend { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: rgba(255,255,255,.5); }
-.signin__legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
-.signin__legend i.l0 { background: rgba(255,255,255,.08); }
-.signin__legend i.l1 { background: #0e4429; } .signin__legend i.l2 { background: #006d32; }
-.signin__legend i.l3 { background: #26a641; } .signin__legend i.l4 { background: #39d353; }
-@keyframes sgCell { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .signin__cell--on { animation: none; } }
+/* right panel: soft celebratory animation (floating petals over a gradient) */
+.signin__art { position: relative; overflow: hidden; display: none;
+  background: linear-gradient(160deg, #f3f9f5 0%, #dcefe3 45%, #b7e4cb 100%); }
+@media (min-width: 860px) { .signin__art { display: block; } }
+@media (prefers-color-scheme: dark) {
+  .signin__art { background: linear-gradient(160deg, #102019 0%, #0e2c20 50%, #0b3a27 100%); }
+}
+.signin__artglow { position: absolute; inset: 0; background: radial-gradient(58% 48% at 68% 30%, rgba(62,207,142,.30), transparent 70%); }
+.signin__petal { position: absolute; bottom: -40px; border-radius: 70% 0 70% 0; background: rgba(62,207,142,.55);
+  animation-name: sgFloat; animation-timing-function: linear; animation-iteration-count: infinite; }
+@media (prefers-color-scheme: dark) { .signin__petal { background: rgba(120,231,173,.5); } }
+@keyframes sgFloat {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+  12% { opacity: .85; }
+  88% { opacity: .85; }
+  100% { transform: translateY(-108vh) rotate(420deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .signin__petal { display: none; } }
 .admin__body { padding: 30px; }
 .admin__mobilebar { display: none; }
 

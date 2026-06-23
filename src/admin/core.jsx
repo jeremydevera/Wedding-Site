@@ -3,7 +3,6 @@ import qrcode from "qrcode-generator";
 import { go } from "@/lib/nav.js";
 import { useStore } from "@/lib/store.jsx";
 import { signIn } from "@/lib/auth.js";
-import { CONTRIB_TOTAL, CONTRIB_LEVELS } from "@/config/contributions.js";
 import { Button, Field, Icon, Input, Monogram, Placeholder, toast } from "@/ui/components.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
@@ -124,24 +123,13 @@ export function AdminLogin({ onAuthed }) {
       </div>
       <div className="signin__art" aria-hidden="true">
         <div className="signin__artglow" />
-        <div className="signin__heatwrap">
-          <div className="signin__months">
-            {["Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun"].map((m, i) => <span key={i}>{m}</span>)}
-          </div>
-          <div className="signin__calrow">
-            <div className="signin__days"><span>Mon</span><span>Wed</span><span>Fri</span></div>
-            <div className="signin__heat">
-              {CONTRIB_LEVELS.map((lvl, i) => (
-                <span key={i} className={"signin__cell" + (lvl > 0 ? ` signin__cell--on l${lvl}` : "")}
-                  style={lvl > 0 ? { animationDelay: `${Math.floor(i / 7) * 0.022}s` } : undefined} />
-              ))}
-            </div>
-          </div>
-          <div className="signin__heatfoot">
-            <span className="signin__heatcap">{CONTRIB_TOTAL} contributions in the last year</span>
-            <span className="signin__legend">Less<i className="l0" /><i className="l1" /><i className="l2" /><i className="l3" /><i className="l4" />More</span>
-          </div>
-        </div>
+        {Array.from({ length: 16 }).map((_, i) => (
+          <span key={i} className="signin__petal" style={{
+            left: `${(i * 61) % 100}%`,
+            width: `${8 + (i % 4) * 4}px`, height: `${8 + (i % 4) * 4}px`,
+            animationDelay: `${(i * 0.7) % 9}s`, animationDuration: `${8 + (i % 6)}s`,
+          }} />
+        ))}
       </div>
     </div>
   );
