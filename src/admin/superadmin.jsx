@@ -259,14 +259,16 @@ export function ClientsAdmin() {
                 <div className="form-row__desc">The subdomain and event type for this client's site.</div>
               </div>
               <div className="form-row__fields">
-                <Field label="Subdomain" id="c-sub" hint={`→ ${form.subdomain.trim() ? form.subdomain.trim().toLowerCase() : "name"}.${PLATFORM_DOMAIN}`}>
-                  <Input id="c-sub" value={form.subdomain} onChange={(e) => setForm((f) => ({ ...f, subdomain: e.target.value }))} placeholder="johnandjane" />
-                </Field>
-                <Field label="Event type" id="c-evt">
-                  <Select id="c-evt" value={form.event_type} onChange={(e) => setForm((f) => ({ ...f, event_type: e.target.value, template_key: themesForEvent(e.target.value)[0] }))}>
-                    {["wedding", "birthday", "corporate"].map((t) => <option key={t} value={t}>{t}</option>)}
-                  </Select>
-                </Field>
+                <div className="form-grid2">
+                  <Field label="Subdomain" id="c-sub" hint={`→ ${form.subdomain.trim() ? form.subdomain.trim().toLowerCase() : "name"}.${PLATFORM_DOMAIN}`}>
+                    <Input id="c-sub" value={form.subdomain} onChange={(e) => setForm((f) => ({ ...f, subdomain: e.target.value }))} placeholder="johnandjane" />
+                  </Field>
+                  <Field label="Event type" id="c-evt">
+                    <Select id="c-evt" value={form.event_type} onChange={(e) => setForm((f) => ({ ...f, event_type: e.target.value, template_key: themesForEvent(e.target.value)[0] }))}>
+                      {["wedding", "birthday", "corporate"].map((t) => <option key={t} value={t}>{t}</option>)}
+                    </Select>
+                  </Field>
+                </div>
               </div>
             </div>
             <div className="form-row">

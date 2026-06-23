@@ -515,12 +515,13 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .admin--sa .tbl--clients .mod-toggles { max-width: none; }
 .admin--sa .tbl--clients .sa-card__domain { word-break: break-all; }
 /* Supabase-style two-column form: label+description left, fields right, footer actions */
-.sa-form { max-width: 880px; }
+/* full content width (no narrow cap) — fills the page like the Supabase billing layout */
+.sa-form { max-width: none; }
 .panel__sub { font-size: 13px; color: var(--muted); margin-top: 4px; font-family: var(--font-body); font-weight: 400; }
 .form-rows { display: block; }
 .form-row { display: grid; grid-template-columns: 1fr; gap: 8px; padding: 22px 0; border-bottom: 1px solid var(--line); }
 .form-row:first-child { padding-top: 6px; }
-@media (min-width: 720px) { .form-row { grid-template-columns: 230px minmax(0, 1fr); gap: 32px; } }
+@media (min-width: 720px) { .form-row { grid-template-columns: 280px minmax(0, 1fr); gap: 40px; } }
 .form-row__head .form-row__label { font-weight: 600; font-size: 14px; color: var(--ink); }
 .form-row__desc { font-size: 13px; color: var(--muted); margin-top: 4px; max-width: 36ch; line-height: 1.5; }
 .form-row__fields { display: grid; gap: 16px; align-content: start; }
