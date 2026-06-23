@@ -94,7 +94,7 @@ export function AdminLogin({ onAuthed }) {
   return (
     <div className="signin">
       <header className="signin__top">
-        <div className="signin__brand"><span className="signin__mark">E</span> Evermore</div>
+        <div className="signin__brand"><span className="signin__mark">E</span></div>
         <button className="signin__back" onClick={() => go("home")}>← Back to website</button>
       </header>
       <div className="signin__center">
