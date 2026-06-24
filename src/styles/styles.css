@@ -482,6 +482,11 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .signin__btn:disabled { opacity: .65; cursor: default; }
 
 .admin__body { padding: 30px; }
+/* Save bar lives in the content area (not the topbar), pinned to the bottom of
+   the viewport while you scroll the section you're editing. */
+.admin__savebar { position: sticky; bottom: 0; z-index: 5; display: flex; align-items: center; justify-content: flex-end; gap: 14px; margin-top: 28px; padding: 13px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: 0 -8px 18px -14px rgba(0,0,0,.4); }
+.admin__savehint { color: var(--muted); font-size: 13px; }
+@media (max-width: 560px) { .admin__savehint { display: none; } }
 .admin__mobilebar { display: none; }
 
 .stat-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; margin-bottom: 28px; }

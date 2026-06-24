@@ -940,7 +940,7 @@ export function AdminApp() {
             {Icon.grid({ style: { width: 16, height: 16 } })} Arrange Now
           </button>
         )}
-        {!isSuper && <button className="admin__navlink" onClick={() => signOut().then(() => go("home"))}>Sign out</button>}
+        <button className="admin__navlink" onClick={() => signOut().then(() => go("home"))}>{Icon.arrow({ style: { transform: "rotate(180deg)" } })} Sign out</button>
       </aside>
 
       <main className="admin__main">
@@ -949,12 +949,6 @@ export function AdminApp() {
           <div className="admin__topbar-left">
             <button className="admin__burger" onClick={() => setMenuOpen(true)} aria-label="Open menu">{Icon.menu({})}</button>
             <div className="admin__title">{title}{isSuper && !onPlatformTab && siteName ? <span className="admin__sitechip">{siteName}</span> : null}</div>
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            {clientId && !onPlatformTab && <Button variant="primary" size="sm" disabled={saving} onClick={saveChanges}>{saving ? "Saving…" : "Save changes"}</Button>}
-            <Button variant="ghost" size="sm" onClick={() => go("home")}>View site</Button>
-            {canArrange && <Button variant="primary" size="sm" onClick={startArrange}>{Icon.grid({ style: { width: 14, height: 14 } })} Arrange Now</Button>}
-            <Button variant="ghost" size="sm" onClick={() => signOut().then(() => go("home"))}>Sign out</Button>
           </div>
         </div>
         </div>
@@ -969,6 +963,12 @@ export function AdminApp() {
           {activeTab === "settings" && <SettingsAdmin />}
           {activeTab === "overview" && <SuperOverview />}
           {activeTab === "clients" && <ClientsAdmin />}
+          {clientId && !onPlatformTab && (
+            <div className="admin__savebar">
+              <span className="admin__savehint">Changes apply to your live site after you save.</span>
+              <Button variant="primary" disabled={saving} onClick={saveChanges}>{saving ? "Saving…" : "Save changes"}</Button>
+            </div>
+          )}
         </div>
       </main>
     </div>
