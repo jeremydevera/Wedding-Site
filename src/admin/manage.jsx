@@ -4,7 +4,7 @@ import { Store, useStore } from "@/lib/store.jsx";
 import { EG_TINTS, THEMES, THEME_FONTS, egTintGradient, isPremiumTheme } from "@/themes";
 import { BFLY_COLORS, Button, CropModal, DecorPreview, Field, Icon, Input, Modal, Monogram, Placeholder, SectionHead, Select, Textarea, bflyHueShift, confirmDialog, mapEmbedUrl, mapSearchUrl, toast } from "@/ui/components.jsx";
 import { Home } from "@/pages/PublicPages.jsx";
-import { AdminDashboard, AdminLogin, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
+import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { signOut } from "@/lib/auth.js";
 import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb } from "@/lib/api.js";
 import { BRAND_NAME } from "@/config/site.js";
@@ -892,7 +892,7 @@ export function AdminApp() {
         <div className="admin__brand">
           {isSuper ? (
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ width: 26, height: 26, borderRadius: 7, background: "#3ECF8E", color: "#04231a", display: "grid", placeItems: "center", fontWeight: 800, fontSize: 14, flex: "none" }}>E</span>
+              <Logo size={26} />
               <div><div className="admin__brand-name">{BRAND_NAME}</div><div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--muted)" }}>Superadmin</div></div>
             </div>
           ) : (

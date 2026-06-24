@@ -76,6 +76,22 @@ export function downloadQR(text, label) {
   toast("QR code downloaded");
 }
 
+// --- Brand logo (Cobalt) -----------------------------------------------------
+// Single source of truth for the Celebrately mark. Used in login + superadmin.
+// Same geometry as public/favicon.svg / the App Store icon — keep them in sync.
+export function Logo({ size = 30, className }) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 64 64"
+      role="img" aria-label="Celebrately" style={{ display: "block", flex: "none" }}>
+      <rect width="64" height="64" rx="16" fill="#1E5BD6" />
+      <path d="M12 40 C20 24 28 24 32 32 C36 40 44 40 52 26"
+        fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="round" />
+      <circle cx="15" cy="24" r="2" fill="#BCD6FF" />
+      <circle cx="50" cy="40" r="2" fill="#BCD6FF" />
+    </svg>
+  );
+}
+
 // --- Login ------------------------------------------------------------------
 export function AdminLogin({ onAuthed }) {
   const [email, setEmail] = useState("");
@@ -95,7 +111,7 @@ export function AdminLogin({ onAuthed }) {
     <div className="signin">
       <div className="signin__pane">
       <header className="signin__top">
-        <div className="signin__brand"><span className="signin__mark">E</span></div>
+        <div className="signin__brand"><Logo size={30} /><span className="signin__word">Celebrately</span></div>
         <button className="signin__back" onClick={() => go("home")}>← Back to website</button>
       </header>
       <div className="signin__center">

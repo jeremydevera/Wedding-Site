@@ -21,7 +21,7 @@
 export const PLATFORM_DOMAIN = import.meta.env.VITE_PLATFORM_DOMAIN || "celebrately.us";
 
 // BRAND_NAME — shown in the superadmin lockup. Change here (or VITE_BRAND_NAME) to rebrand.
-export const BRAND_NAME = import.meta.env.VITE_BRAND_NAME || "Evermore";
+export const BRAND_NAME = import.meta.env.VITE_BRAND_NAME || "Celebrately";
 
 // Build the public URL for a client site. Single place to change protocol/shape.
 export const clientUrl = (subdomain) => `https://${subdomain}.${PLATFORM_DOMAIN}`;
