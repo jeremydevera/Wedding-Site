@@ -7,6 +7,7 @@ import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { signOut } from "@/lib/auth.js";
 import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb } from "@/lib/api.js";
+import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
 import { visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel } from "@/lib/roles.js";
 import { ClientsAdmin, SuperOverview } from "@/admin/superadmin.jsx";
@@ -861,9 +862,15 @@ export function AdminApp() {
   const [tab, setTab] = useState("dashboard");
   const [menuOpen, setMenuOpen] = useState(false);   // mobile drawer
   const [saving, setSaving] = useState(false);
+  // Dirty tracking: Save stays disabled until the editable state diverges from
+  // what's saved — mirrors the Supabase settings Save button.
+  const snapshot = () => { try { return JSON.stringify(stateToClientRow(Store.get())); } catch (e) { return ""; } };
+  const savedRef = useRef(null);
+  useEffect(() => { savedRef.current = snapshot(); }, []);   // baseline once client data is loaded
+  const dirty = savedRef.current != null && snapshot() !== savedRef.current;
   const saveChanges = async () => {
     setSaving(true);
-    try { await saveClientData(); toast("Changes saved"); }
+    try { await saveClientData(); savedRef.current = snapshot(); toast("Changes saved"); }
     catch (e) { toast("Save failed: " + (e.message || "error")); }
     finally { setSaving(false); }
   };
@@ -965,8 +972,8 @@ export function AdminApp() {
           {activeTab === "clients" && <ClientsAdmin />}
           {clientId && ["settings", "schedule", "quiz"].includes(activeTab) && (
             <div className="admin__savebar">
-              <span className="admin__savehint">Changes apply to your live site after you save.</span>
-              <Button variant="primary" disabled={saving} onClick={saveChanges}>{saving ? "Saving…" : "Save changes"}</Button>
+              <span className="admin__savehint">{dirty ? "You have unsaved changes." : "Changes apply to your live site after you save."}</span>
+              <Button variant="primary" size="sm" disabled={saving || !dirty} onClick={saveChanges}>{saving ? "Saving…" : "Save changes"}</Button>
             </div>
           )}
         </div>
