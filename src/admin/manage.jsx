@@ -15,6 +15,19 @@ import { LocationPicker } from "@/ui/location-picker.jsx";
 import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
+// Save state shared from the AdminApp shell down to each section's footer, so the
+// Save button can live INSIDE the section card being edited (Supabase pattern).
+const AdminSaveCtx = React.createContext({ saving: false, dirty: false, save: () => {} });
+export function SaveFooter() {
+  const { saving, dirty, save } = React.useContext(AdminSaveCtx);
+  return (
+    <div className="panel__foot">
+      <span className="panel__foot-hint">{dirty ? "You have unsaved changes." : "Changes apply to your live site after you save."}</span>
+      <Button variant="primary" size="sm" disabled={saving || !dirty} onClick={save}>{saving ? "Saving…" : "Save changes"}</Button>
+    </div>
+  );
+}
+
 // ============================================================================
 // admin/manage.jsx — RSVP table, media/guestbook moderation, quiz, QR, settings
 // + AdminApp shell (sidebar + routing between tabs)
@@ -402,6 +415,7 @@ export function QuizAdmin() {
             </tbody>
           </table>
         </div>
+        <SaveFooter />
       </div>
       )}
 
@@ -536,6 +550,7 @@ export function ScheduleAdmin() {
         </div>
         <Button variant="ghost" onClick={addItem}>+ Add another moment</Button>
       </div>
+      <SaveFooter />
     </div>
   );
 }
@@ -593,6 +608,7 @@ export function SettingsAdmin() {
             <Field label="Hashtag" id="s-hash"><Input id="s-hash" value={f.hashtag} onChange={set("hashtag")} /></Field>
           </div>
         </div>
+        <SaveFooter />
       </div>)}
 
       {tab === "features" && (<div className="panel">
@@ -614,6 +630,7 @@ export function SettingsAdmin() {
             })}
           </div>
         </div>
+        <SaveFooter />
       </div>)}
 
       {tab === "venue" && (<div className="panel">
@@ -639,6 +656,7 @@ export function SettingsAdmin() {
           </div>
           <Field label="Dress code" id="s-dc"><Input id="s-dc" value={f.dressCode} onChange={set("dressCode")} /></Field>
         </div>
+        <SaveFooter />
       </div>)}
 
       {tab === "appearance" && (<><div className="panel">
@@ -804,6 +822,7 @@ export function SettingsAdmin() {
             <DecorPreview style={f.decorStyle} butterflyStyle={f.butterflyStyle} butterflyColor={f.butterflyColor} butterflyCount={f.butterflyCount} butterflyFlight={f.butterflyFlight} />
           </div>
         </div>
+        <SaveFooter />
       </div></>)}
 
       {tab === "photos" && (<div className="panel">
@@ -819,6 +838,7 @@ export function SettingsAdmin() {
           </div>
           <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 16 }}>Photos save automatically.</p>
         </div>
+        <SaveFooter />
       </div>)}
 
       {tab === "access" && (<><div className="panel">
@@ -840,6 +860,7 @@ export function SettingsAdmin() {
 
       <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", flexWrap: "wrap" }}>
         <Button variant="ghost" onClick={() => confirmDialog({ title: "Reset all demo data?", message: "RSVPs, media, guestbook, quiz and settings return to defaults. This can't be undone.", confirmLabel: "Reset everything", danger: true }).then((ok) => { if (ok) { Store.resetAll(); toast("Demo data reset"); } })}>Reset demo data</Button>
+        <SaveFooter />
       </div></>)}
     </div>
   );
@@ -960,6 +981,7 @@ export function AdminApp() {
         </div>
         </div>
         <div className="admin__body">
+          <AdminSaveCtx.Provider value={{ saving, dirty, save: saveChanges }}>
           {activeTab === "dashboard" && <AdminDashboard goTab={setTab} />}
           {activeTab === "rsvps" && <RsvpsAdmin />}
           {activeTab === "media" && <MediaAdmin />}
@@ -970,12 +992,7 @@ export function AdminApp() {
           {activeTab === "settings" && <SettingsAdmin />}
           {activeTab === "overview" && <SuperOverview />}
           {activeTab === "clients" && <ClientsAdmin />}
-          {clientId && ["settings", "schedule", "quiz"].includes(activeTab) && (
-            <div className="admin__savebar">
-              <span className="admin__savehint">{dirty ? "You have unsaved changes." : "Changes apply to your live site after you save."}</span>
-              <Button variant="primary" size="sm" disabled={saving || !dirty} onClick={saveChanges}>{saving ? "Saving…" : "Save changes"}</Button>
-            </div>
-          )}
+          </AdminSaveCtx.Provider>
         </div>
       </main>
     </div>
