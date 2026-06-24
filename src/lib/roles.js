@@ -25,7 +25,7 @@ export function canEnterAdmin(profile, currentClientId) {
 // Platform-wide kill switch: modules disabled for EVERYONE, regardless of
 // per-client flags or event-type sections. "Off for now" features live here —
 // empty the set to bring one back. Hides the nav link + blocks the route.
-export const DISABLED_MODULES = new Set(["gallery"]);
+export const DISABLED_MODULES = new Set(["gallery", "upload", "video-message"]);
 
 // Client-facing labels for module keys — how each section reads to a guest
 // (matches the public nav / RSVP CTA wording). Used by the admin module toggles

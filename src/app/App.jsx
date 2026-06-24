@@ -119,7 +119,7 @@ export function Nav({ route }) {
               <button key={l.key} className={"drawer__link" + (route === l.key ? " drawer__link--active" : "")} onClick={() => { go(l.key); setDrawer(false); }}>{l.label}</button>
             ))}
             {moduleEnabled(settings.modules, "gallery") && <button className="drawer__link" onClick={() => { go("upload"); setDrawer(false); }}>Share Photos</button>}
-            {settings.uploadsEnabled && <button className="drawer__link" onClick={() => { go("video-message"); setDrawer(false); }}>Video Message</button>}
+            {settings.uploadsEnabled && moduleEnabled(settings.modules, "video-message") && <button className="drawer__link" onClick={() => { go("video-message"); setDrawer(false); }}>Video Message</button>}
             <div style={{ marginTop: 20 }}>
               {isDemo
                 ? <ThemePicker block />
