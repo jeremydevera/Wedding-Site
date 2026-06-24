@@ -10,6 +10,7 @@ import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb,
 import { BRAND_NAME } from "@/config/site.js";
 import { visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES } from "@/lib/roles.js";
 import { ClientsAdmin, SuperOverview } from "@/admin/superadmin.jsx";
+import { LocationPicker } from "@/ui/location-picker.jsx";
 import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
@@ -583,11 +584,15 @@ export function SettingsAdmin() {
         <div className="panel__body">
           <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>Turn sections of this site on or off — disabled ones are hidden from guests and the menu. Click <strong>Save changes</strong> to apply.</p>
           <div className="mod-toggles mod-toggles--edit">
-            {["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"].filter((m) => !DISABLED_MODULES.has(m)).map((m) => {
-              const on = f.modules?.[m] !== false;
+            {["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"].map((m) => {
+              const locked = DISABLED_MODULES.has(m);          // pending feature: show but can't enable
+              const on = !locked && f.modules?.[m] !== false;
               return (
-                <label key={m} className={"mod-pill" + (on ? " mod-pill--on" : "")}>
-                  <input type="checkbox" checked={on} onChange={(e) => Store.updateSettings({ modules: { ...(f.modules || {}), [m]: e.target.checked } })} /> {m}
+                <label key={m} className={"mod-pill" + (on ? " mod-pill--on" : "") + (locked ? " mod-pill--locked" : "")}
+                  title={locked ? "Pending — feature not available yet" : undefined}>
+                  <input type="checkbox" checked={on} disabled={locked}
+                    onChange={(e) => Store.updateSettings({ modules: { ...(f.modules || {}), [m]: e.target.checked } })} /> {m}
+                  {locked && <span className="mod-pill__pending">Pending</span>}
                 </label>
               );
             })}
@@ -600,17 +605,18 @@ export function SettingsAdmin() {
         <div className="panel__body">
           <Field label="Venue name" id="s-vn"><Input id="s-vn" value={f.venueName} onChange={set("venueName")} /></Field>
           <Field label="Venue address" id="s-va"><Input id="s-va" value={f.venueAddress} onChange={set("venueAddress")} /></Field>
-          <Field label="Google Map location" hint="Search & pin on Google Maps, then paste the place name, address, or the full map link here. Saves automatically." id="s-map"><Input id="s-map" value={f.mapQuery} onChange={set("mapQuery")} placeholder="e.g. The Hartwell Estate, Hudson Valley NY — or paste a Google Maps link" /></Field>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: -6, marginBottom: 12 }}>
-            <Button variant="primary" size="sm" onClick={() => window.open(mapSearchUrl(f.mapQuery || f.venueAddress), "_blank")}>{Icon.pin({})} Open Google Maps to pin location</Button>
-            {f.mapQuery && <Button variant="ghost" size="sm" onClick={() => setKey("mapQuery", "")}>Clear</Button>}
+          <Field label="Map location" hint="Type to search a place or address, then click the map or drag the pin to the exact spot. Saves automatically." id="s-map">
+            <LocationPicker
+              value={f.mapQuery}
+              lat={f.mapLat}
+              lng={f.mapLng}
+              onChange={({ query, lat, lng }) => Store.updateSettings({ mapQuery: query, mapLat: lat, mapLng: lng })}
+            />
+          </Field>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 8, marginBottom: 12 }}>
+            <Button variant="ghost" size="sm" onClick={() => window.open(mapSearchUrl(f.mapQuery || f.venueAddress), "_blank")}>{Icon.pin({})} Open in Google Maps</Button>
+            {(f.mapQuery || f.mapLat != null) && <Button variant="ghost" size="sm" onClick={() => Store.updateSettings({ mapQuery: "", mapLat: undefined, mapLng: undefined })}>Clear pin</Button>}
           </div>
-          {(f.mapQuery || f.venueAddress) && (
-            <div style={{ borderRadius: "var(--radius)", overflow: "hidden", border: "1px solid var(--line)", marginBottom: 6 }}>
-              <iframe title="Map preview" src={mapEmbedUrl(f.mapQuery || f.venueAddress)} style={{ width: "100%", height: 220, border: 0, display: "block" }} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
-            </div>
-          )}
-          <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Tip: in Google Maps, search your venue → right-click the exact spot → copy the address (or coordinates), then paste it above. The preview and the public Venue page update instantly.</p>
           <div className="field-row field-row--2">
             <Field label="Ceremony time" id="s-ct"><Input id="s-ct" value={f.ceremonyTime} onChange={set("ceremonyTime")} /></Field>
             <Field label="Reception time" id="s-rt"><Input id="s-rt" value={f.receptionTime} onChange={set("receptionTime")} /></Field>
