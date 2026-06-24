@@ -382,7 +382,7 @@ export function DetailsPage() {
               <div className="info-card__icon">{Icon.rings({})}</div>
               <h3>The Ceremony</h3>
               <p className="lead-line">{s.ceremonyTime} &middot; {s.venueName}</p>
-              <p>{s.venueAddress}. Please be seated 10 minutes before we begin. The ceremony will be unplugged \u2014 be fully present with us.</p>
+              <p>{s.venueAddress}. Please be seated 10 minutes before we begin. The ceremony will be unplugged — be fully present with us.</p>
             </div>
             <div className="card card--pad-lg info-card">
               <div className="info-card__icon">{Icon.heart({})}</div>
@@ -507,8 +507,8 @@ export function VenuePage() {
   const { settings } = useStore();
   const s = settings;
   const query = (s.mapQuery && s.mapQuery.trim()) || s.venueAddress;
-  const mapUrl = mapEmbedUrl(query);
-  const dirUrl = mapDirUrl(query);
+  const mapUrl = mapEmbedUrl(query, s.mapLat, s.mapLng);
+  const dirUrl = mapDirUrl(query, s.mapLat, s.mapLng);
   return (
     <div className="fade-up">
       <PageHero eyebrow="Venue & Map" title={s.venueName} lead={s.venueAddress} />

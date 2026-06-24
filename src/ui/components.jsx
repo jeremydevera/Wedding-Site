@@ -264,8 +264,13 @@ export function mapResolveQuery(q) {
   if (place) return decodeURIComponent(place[1].replace(/\+/g, " "));
   return q;
 }
-export function mapEmbedUrl(q) { return "https://www.google.com/maps?q=" + encodeURIComponent(mapResolveQuery(q)) + "&output=embed"; }
-export function mapDirUrl(q) { return "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(mapResolveQuery(q)); }
+// A precise "lat,lng" string when both coords are real numbers, else "".
+export function mapCoordStr(lat, lng) {
+  return (lat !== "" && lat != null && lng !== "" && lng != null && Number.isFinite(parseFloat(lat)) && Number.isFinite(parseFloat(lng)))
+    ? parseFloat(lat) + "," + parseFloat(lng) : "";
+}
+export function mapEmbedUrl(q, lat, lng) { return "https://www.google.com/maps?q=" + encodeURIComponent(mapCoordStr(lat, lng) || mapResolveQuery(q)) + "&output=embed"; }
+export function mapDirUrl(q, lat, lng) { return "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(mapCoordStr(lat, lng) || mapResolveQuery(q)); }
 export function mapSearchUrl(q) { return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent((q || "").trim() || "wedding venue"); }
 
 // --- Countdown to a date ----------------------------------------------------
