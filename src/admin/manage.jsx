@@ -548,7 +548,7 @@ export function ScheduleAdmin() {
             </div>
           ))}
         </div>
-        <Button variant="ghost" onClick={addItem}>+ Add another moment</Button>
+        <div className="sched-add"><Button variant="ghost" block onClick={addItem}>+ Add another moment</Button></div>
       </div>
       <SaveFooter />
     </div>
