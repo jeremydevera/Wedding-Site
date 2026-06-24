@@ -443,6 +443,17 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
   background: var(--sg-bg); color: var(--sg-text);
 }
 
+/* Client subdomain: login adopts the client's active theme (vars from :root) */
+.signin--themed {
+  font-family: var(--font-body);
+  --sg-bg: var(--bg); --sg-text: var(--ink); --sg-sub: var(--muted); --sg-label: var(--ink-soft);
+  --sg-inbg: var(--surface); --sg-inbd: var(--line); --sg-back: var(--muted); --sg-backbd: var(--line);
+}
+.signin--themed .signin__word, .signin--themed .signin__title { font-family: var(--font-display); color: var(--ink); }
+.signin--themed .signin__field input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 28%, transparent); }
+.signin--themed .signin__btn { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.signin--themed .signin__btn:hover { background: var(--accent); filter: brightness(1.08); }
+
 .signin__pane { display: flex; flex-direction: column; background: var(--sg-bg); }
 .signin__top { display: flex; align-items: center; justify-content: space-between; padding: 22px 26px; }
 .signin__brand { display: flex; align-items: center; gap: 9px; }

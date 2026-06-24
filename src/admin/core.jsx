@@ -1,6 +1,7 @@
 import React from "react";
 import qrcode from "qrcode-generator";
 import { go } from "@/lib/nav.js";
+import { resolveSubdomain } from "@/lib/tenant.js";
 import { useStore } from "@/lib/store.jsx";
 import { signIn } from "@/lib/auth.js";
 import { Button, Field, Icon, Input, Monogram, Placeholder, toast } from "@/ui/components.jsx";
@@ -94,6 +95,10 @@ export function Logo({ size = 30, className }) {
 
 // --- Login ------------------------------------------------------------------
 export function AdminLogin({ onAuthed }) {
+  const store = useStore();
+  const settings = store.settings || {};
+  const sub = resolveSubdomain();   // null on apex platform hub
+  const isClient = !!sub;           // client subdomain -> their theme + initials
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [err, setErr] = useState("");
@@ -108,10 +113,17 @@ export function AdminLogin({ onAuthed }) {
   }
   const [showPw, setShowPw] = useState(false);
   return (
-    <div className="signin">
+    <div className={"signin" + (isClient ? " signin--themed" : "")}>
       <div className="signin__pane">
       <header className="signin__top">
-        <div className="signin__brand"><Logo size={30} /><span className="signin__word">Celebrately</span></div>
+        {isClient ? (
+          <div className="signin__brand">
+            <Monogram a={settings.partnerA} b={settings.partnerB} size={34} />
+            <span className="signin__word">{settings.partnerA} <span className="amp">&amp;</span> {settings.partnerB}</span>
+          </div>
+        ) : (
+          <div className="signin__brand"><Logo size={30} /><span className="signin__word">Celebrately</span></div>
+        )}
         <button className="signin__back" onClick={() => go("home")}>← Back to website</button>
       </header>
       <div className="signin__center">
