@@ -210,7 +210,7 @@ export function LocationPicker({ value, lat, lng, onChange }) {
         )}
       </div>
       <div className="lp__map" ref={elRef} />
-      <p className="lp__hint">{Icon.pin({})} Click the map or drag the pin to set the exact spot. Saves automatically.</p>
+      <p className="lp__hint">{Icon.pin({})} Click the map or drag the pin to set the exact spot.</p>
     </div>
   );
 }

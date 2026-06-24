@@ -524,7 +524,7 @@ export function ScheduleAdmin() {
         <Button variant="primary" size="sm" onClick={addItem}>+ Add item</Button>
       </div>
       <div className="panel__body">
-        <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 0, marginBottom: 22 }}>Build your day as a timeline — edit times and details inline, reorder with the arrows. Everything saves automatically.</p>
+        <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 0, marginBottom: 22 }}>Build your day as a timeline — edit times and details inline, reorder with the arrows. Click <strong>Save changes</strong> to publish to your live site.</p>
         {schedule.length === 0 && <p style={{ color: "var(--muted)", textAlign: "center", padding: "30px 0" }}>No schedule items yet — add your first moment below.</p>}
         <div className="sched-edit">
           {schedule.map((item, i) => (
@@ -638,7 +638,7 @@ export function SettingsAdmin() {
         <div className="panel__body">
           <Field label="Venue name" id="s-vn"><Input id="s-vn" value={f.venueName} onChange={set("venueName")} /></Field>
           <Field label="Venue address" id="s-va"><Input id="s-va" value={f.venueAddress} onChange={set("venueAddress")} /></Field>
-          <Field label="Map location" hint="Type to search a place or address, then click the map or drag the pin to the exact spot. Saves automatically." id="s-map">
+          <Field label="Map location" hint="Type to search a place or address, then click the map or drag the pin to the exact spot. Click Save changes to publish." id="s-map">
             <LocationPicker
               value={f.mapQuery}
               lat={f.mapLat}
@@ -660,7 +660,7 @@ export function SettingsAdmin() {
       </div>)}
 
       {tab === "appearance" && (<><div className="panel">
-        <div className="panel__head"><div className="panel__title">Theme</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Pick a look — applies instantly</span></div>
+        <div className="panel__head"><div className="panel__title">Theme</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Preview updates instantly — Save changes to publish</span></div>
         <div className="panel__body">
           <span className="field__label" style={{ display: "block", margin: "0 0 8px" }}>Home preview</span>
           <div className="theme-prev">
