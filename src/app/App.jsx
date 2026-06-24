@@ -86,6 +86,7 @@ export function Nav({ route }) {
     </label>
   );
   return (
+    <>
     <nav className="nav">
       <div className="container nav__inner">
         <a className="nav__brand" onClick={() => go("home")}>
@@ -104,6 +105,7 @@ export function Nav({ route }) {
           <button className="nav__burger" onClick={() => setDrawer(true)} aria-label="Menu">{Icon.menu({})}</button>
         </div>
       </div>
+      </nav>
 
       {drawer && (
         <div className="drawer">
@@ -126,7 +128,7 @@ export function Nav({ route }) {
           </div>
         </div>
       )}
-    </nav>
+    </>
   );
 }
 
