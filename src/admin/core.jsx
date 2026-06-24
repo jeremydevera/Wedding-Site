@@ -121,16 +121,6 @@ export function AdminLogin({ onAuthed }) {
         </form>
       </div>
       </div>
-      <div className="signin__art" aria-hidden="true">
-        <div className="signin__artglow" />
-        {Array.from({ length: 16 }).map((_, i) => (
-          <span key={i} className="signin__petal" style={{
-            left: `${(i * 61) % 100}%`,
-            width: `${8 + (i % 4) * 4}px`, height: `${8 + (i % 4) * 4}px`,
-            animationDelay: `${(i * 0.7) % 9}s`, animationDuration: `${8 + (i % 6)}s`,
-          }} />
-        ))}
-      </div>
     </div>
   );
 }

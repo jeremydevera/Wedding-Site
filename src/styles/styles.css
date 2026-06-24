@@ -446,7 +446,6 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
   .signin { --sg-bg: #171717; --sg-text: #fafafa; --sg-sub: #8b8b94; --sg-label: #ededed;
     --sg-inbg: #1d1d1d; --sg-inbd: #393939; --sg-back: #a1a1aa; --sg-backbd: #2e2e2e; }
 }
-@media (min-width: 860px) { .signin { grid-template-columns: minmax(0,1fr) minmax(0,1fr); } }
 
 .signin__pane { display: flex; flex-direction: column; background: var(--sg-bg); }
 .signin__top { display: flex; align-items: center; justify-content: space-between; padding: 22px 26px; }
@@ -473,24 +472,6 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .signin__btn:hover { background: #1c9159; }
 .signin__btn:disabled { opacity: .65; cursor: default; }
 
-/* right panel: soft celebratory animation (floating petals over a gradient) */
-.signin__art { position: relative; overflow: hidden; display: none;
-  background: linear-gradient(160deg, #f3f9f5 0%, #dcefe3 45%, #b7e4cb 100%); }
-@media (min-width: 860px) { .signin__art { display: block; } }
-@media (prefers-color-scheme: dark) {
-  .signin__art { background: linear-gradient(160deg, #102019 0%, #0e2c20 50%, #0b3a27 100%); }
-}
-.signin__artglow { position: absolute; inset: 0; background: radial-gradient(58% 48% at 68% 30%, rgba(62,207,142,.30), transparent 70%); }
-.signin__petal { position: absolute; bottom: -40px; border-radius: 70% 0 70% 0; background: rgba(62,207,142,.55);
-  animation-name: sgFloat; animation-timing-function: linear; animation-iteration-count: infinite; }
-@media (prefers-color-scheme: dark) { .signin__petal { background: rgba(120,231,173,.5); } }
-@keyframes sgFloat {
-  0% { transform: translateY(0) rotate(0deg); opacity: 0; }
-  12% { opacity: .85; }
-  88% { opacity: .85; }
-  100% { transform: translateY(-108vh) rotate(420deg); opacity: 0; }
-}
-@media (prefers-reduced-motion: reduce) { .signin__petal { display: none; } }
 .admin__body { padding: 30px; }
 .admin__mobilebar { display: none; }
 
