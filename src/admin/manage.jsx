@@ -291,9 +291,18 @@ export function MediaAdmin() {
 }
 
 export function GuestbookAdmin() {
-  const { guestbook } = useStore();
+  const { guestbook, settings } = useStore();
   const [q, setQ] = useState("");
-  const filtered = guestbook.filter((g) => !q || g.name.toLowerCase().includes(q.toLowerCase()));
+  const [view, setView] = useState("published");
+  // Moderation on = guest messages wait for approval (auto-approve turned off).
+  const moderation = settings?.autoApproveGuestbook === false;
+
+  const bySearch = guestbook.filter((g) => !q || g.name.toLowerCase().includes(q.toLowerCase()));
+  const pendingCount = bySearch.filter((g) => g.status === "pending").length;
+  const publishedCount = bySearch.length - pendingCount;
+  // With moderation: split into Published (visible/hidden) vs Pending approval.
+  const filtered = !moderation ? bySearch
+    : bySearch.filter((g) => view === "pending" ? g.status === "pending" : g.status !== "pending");
 
   function exportCsv() {
     const rows = [["Guest Name", "Message", "Relationship", "Status", "Submitted"],
@@ -306,6 +315,12 @@ export function GuestbookAdmin() {
       <div className="panel__head">
         <div className="panel__title">Guestbook <span style={{ color: "var(--muted)", fontSize: 15 }}>({filtered.length})</span></div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          {moderation && (
+            <div className="seg">
+              <button className={view === "published" ? "on" : ""} onClick={() => setView("published")}>Published ({publishedCount})</button>
+              <button className={view === "pending" ? "on" : ""} onClick={() => setView("pending")}>Pending approval ({pendingCount})</button>
+            </div>
+          )}
           <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name" /></div>
           <Button variant="primary" size="sm" onClick={exportCsv}>{Icon.download({})} Export</Button>
         </div>
@@ -330,7 +345,7 @@ export function GuestbookAdmin() {
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && <tr><td colSpan={5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No messages.</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>{moderation && view === "pending" ? "Nothing awaiting approval." : "No messages."}</td></tr>}
           </tbody>
         </table>
       </div>
