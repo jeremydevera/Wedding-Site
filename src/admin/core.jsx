@@ -183,20 +183,6 @@ export function AdminDashboard({ goTab }) {
 
         <div style={{ display: "grid", gap: 24, gridTemplateColumns: "1fr" }} className="dash-2col">
           <div className="panel">
-            <div className="panel__head"><div className="panel__title">Latest Uploads</div><Button variant="ghost" size="sm" onClick={() => goTab("media")}>Manage</Button></div>
-            <div className="panel__body">
-              {recentMedia.length === 0 ? <p style={{ color: "var(--muted)", margin: 0 }}>No uploads yet.</p> : (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
-                  {recentMedia.map((m) => (
-                    <div key={m.id} className="amedia__media" style={{ borderRadius: "var(--radius)", border: "1px solid var(--line)" }}>
-                      {m.dataUrl ? <img src={m.dataUrl} alt="" /> : <Placeholder label={m.type} ratio="1" />}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="panel">
             <div className="panel__head"><div className="panel__title">Recent Messages</div><Button variant="ghost" size="sm" onClick={() => goTab("guestbook")}>Moderate</Button></div>
             <div className="panel__body">
               {recentGb.length === 0 ? <p style={{ color: "var(--muted)", margin: 0 }}>No messages yet.</p> : recentGb.map((g) => (

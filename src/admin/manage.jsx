@@ -831,7 +831,6 @@ export const ADMIN_TABS = [
   { key: "guestbook", label: "Guestbook", icon: "book" },
   { key: "schedule", label: "Schedule", icon: "calendar" },
   { key: "quiz", label: "Quiz", icon: "quiz" },
-  { key: "qr", label: "QR Codes", icon: "qr" },
   { key: "settings", label: "Settings", icon: "user" },
 ];
 
