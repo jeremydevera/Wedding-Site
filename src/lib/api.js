@@ -39,15 +39,20 @@ export async function postRsvp(form) {
 
 export async function postGuestbook(entry) {
   const clientId = Store.get().clientId;
-  // status is decided server-side by the guestbook_set_status trigger (honors the
-  // client's auto-approve), so the inserted value here is just a placeholder.
-  const { data, error } = await supabase
-    .from("guestbook").insert(guestbookToRow(entry, clientId, "pending")).select().single();
+  if (!clientId) throw new Error("No client loaded");
+  // The guestbook_set_status trigger decides the final status from the client's
+  // autoApproveGuestbook flag (default false). We can't read the row back —
+  // anon RLS only allows reading approved rows, so a `.select()` on a pending
+  // insert errors even though the insert succeeded. Mirror the trigger instead.
+  const auto = Store.get().settings?.autoApproveGuestbook === true;
+  const status = auto ? "approved" : "pending";
+  const { error } = await supabase.from("guestbook").insert(guestbookToRow(entry, clientId, status));
   if (error) throw error;
-  if (data.status === "approved") {
-    Store.addGuestbook({ ...entry, id: data.id, status: "visible" });
+  if (status === "approved") {
+    const id = (globalThis.crypto && crypto.randomUUID) ? crypto.randomUUID() : `tmp_${Date.now()}`;
+    Store.addGuestbook({ ...entry, id, status: "visible" });
   }
-  return { status: data.status };
+  return { status };
 }
 
 export async function postQuiz(sub) {
