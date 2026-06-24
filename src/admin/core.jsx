@@ -2,6 +2,7 @@ import React from "react";
 import qrcode from "qrcode-generator";
 import { go } from "@/lib/nav.js";
 import { resolveSubdomain } from "@/lib/tenant.js";
+import { DISABLED_MODULES } from "@/lib/roles.js";
 import { useStore } from "@/lib/store.jsx";
 import { signIn } from "@/lib/auth.js";
 import { Button, Field, Icon, Input, Monogram, Placeholder, toast } from "@/ui/components.jsx";
@@ -161,11 +162,15 @@ export function AdminDashboard({ goTab }) {
   const photos = media.filter((m) => m.type === "photo" && m.category === "gallery");
   const videos = media.filter((m) => m.type === "video");
   const pendingMedia = media.filter((m) => m.status === "pending");
+  // Photos/Videos belong to the shelved gallery feature — hide their cards too.
+  const mediaShelved = DISABLED_MODULES.has("gallery");
   const stats = [
     { label: "RSVPs", value: rsvps.length, sub: `${attending.length} attending`, tab: "rsvps" },
     { label: "Guest Count", value: guestCount, sub: "people coming", tab: "rsvps" },
-    { label: "Photos", value: photos.length, sub: pendingMedia.length ? `${pendingMedia.length} to review` : "all clear", tab: "media" },
-    { label: "Videos", value: videos.length, sub: "uploaded", tab: "media" },
+    ...(mediaShelved ? [] : [
+      { label: "Photos", value: photos.length, sub: pendingMedia.length ? `${pendingMedia.length} to review` : "all clear", tab: "media" },
+      { label: "Videos", value: videos.length, sub: "uploaded", tab: "media" },
+    ]),
     { label: "Guestbook", value: guestbook.length, sub: "messages", tab: "guestbook" },
     { label: "Quiz Plays", value: quizSubs.length, sub: "submissions", tab: "quiz" },
   ];
