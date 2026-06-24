@@ -6,8 +6,13 @@ const { useState, useEffect, useRef, useCallback } = React;
 
 // ============================================================================
 // location-picker.jsx — venue location picker for the admin Settings → Venue.
-// Type to search (OpenStreetMap / Nominatim autocomplete, no API key) and pin
+// Type to search (Photon / Komoot autocomplete, OSM data, no API key) and pin
 // the exact spot on an interactive Leaflet map (click or drag the marker).
+//
+// Why Photon and not Nominatim: Nominatim's public server sends NO
+// Access-Control-Allow-Origin header, so browser fetch() is blocked by CORS and
+// the dropdown stays silently empty. Photon (photon.komoot.io) returns
+// `Access-Control-Allow-Origin: *`, is built for as-you-type search, and is free.
 //
 // Emits onChange({ query, lat, lng }):
 //   query — human-readable label (also kept in settings.mapQuery, shown publicly)
@@ -26,10 +31,37 @@ const PIN_ICON = L.divIcon({
 // Default view when nothing is pinned yet (Lipa, Batangas — the seed venue).
 const DEFAULT_CENTER = [14.1647, 121.1413];
 
-const NOMINATIM = "https://nominatim.openstreetmap.org";
+const PHOTON = "https://photon.komoot.io";
 
 function isNum(n) {
   return n !== "" && n != null && Number.isFinite(parseFloat(n));
+}
+
+// Build a readable, de-duplicated label from a Photon feature's properties.
+function photonLabel(p) {
+  const street = [p.housenumber, p.street].filter(Boolean).join(" ").trim();
+  const parts = [p.name, street, p.district, p.city, p.state, p.country];
+  const seen = new Set();
+  return parts
+    .filter(Boolean)
+    .filter((x) => { const k = x.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; })
+    .join(", ");
+}
+
+// Photon GeoJSON -> normalized result rows { id, label, lat, lon }, de-duped by label.
+function normalizePhoton(data) {
+  const feats = (data && Array.isArray(data.features)) ? data.features : [];
+  const out = [];
+  const seen = new Set();
+  for (const f of feats) {
+    const c = f.geometry && f.geometry.coordinates;
+    if (!c || c.length < 2) continue;
+    const label = photonLabel(f.properties || {});
+    if (!label || seen.has(label)) continue;
+    seen.add(label);
+    out.push({ id: `${f.properties.osm_type || ""}${f.properties.osm_id || label}`, label, lat: c[1], lon: c[0] });
+  }
+  return out;
 }
 
 export function LocationPicker({ value, lat, lng, onChange }) {
@@ -58,12 +90,12 @@ export function LocationPicker({ value, lat, lng, onChange }) {
   const reverseGeocode = useCallback(async (la, lo) => {
     emit(text || "", la, lo); // emit coords immediately; refine label below
     try {
-      const r = await fetch(`${NOMINATIM}/reverse?format=jsonv2&lat=${la}&lon=${lo}&addressdetails=1`, {
+      const r = await fetch(`${PHOTON}/reverse?lat=${la}&lon=${lo}&lang=en`, {
         headers: { Accept: "application/json" },
       });
       if (!r.ok) return;
-      const data = await r.json();
-      const name = data.display_name;
+      const rows = normalizePhoton(await r.json());
+      const name = rows[0] && rows[0].label;
       if (name) { setText(name); emit(name, la, lo); }
     } catch (e) { /* keep coords even if naming fails */ }
   }, [emit, text]);
@@ -111,26 +143,28 @@ export function LocationPicker({ value, lat, lng, onChange }) {
       try {
         if (abortRef.current) abortRef.current.abort();
         const ctrl = new AbortController(); abortRef.current = ctrl;
-        const r = await fetch(`${NOMINATIM}/search?format=jsonv2&q=${encodeURIComponent(q)}&limit=6&addressdetails=1`, {
+        // Bias toward what the operator is currently looking at for local relevance.
+        const c = mapRef.current && mapRef.current.getCenter();
+        const bias = c ? `&lat=${c.lat}&lon=${c.lng}` : "";
+        const r = await fetch(`${PHOTON}/api/?q=${encodeURIComponent(q)}&limit=6&lang=en${bias}`, {
           headers: { Accept: "application/json" }, signal: ctrl.signal,
         });
-        const data = await r.json();
-        setResults(Array.isArray(data) ? data : []);
+        const rows = normalizePhoton(await r.json());
+        setResults(rows);
         setOpen(true); setActive(-1);
       } catch (e) {
         if (e.name !== "AbortError") { setResults([]); }
       } finally { setLoading(false); }
-    }, 400);
+    }, 350);
     return () => clearTimeout(debounceRef.current);
   }, [text]);
 
   function pick(r) {
     selectingRef.current = true;
-    const la = parseFloat(r.lat), lo = parseFloat(r.lon);
-    setText(r.display_name);
+    setText(r.label);
     setResults([]); setOpen(false); setActive(-1);
-    placePin(la, lo, { zoom: 16 });
-    emit(r.display_name, la, lo);
+    placePin(r.lat, r.lon, { zoom: 16 });
+    emit(r.label, r.lat, r.lon);
   }
 
   function onKeyDown(e) {
@@ -161,7 +195,7 @@ export function LocationPicker({ value, lat, lng, onChange }) {
           <ul className="lp__results" role="listbox">
             {results.map((r, i) => (
               <li
-                key={r.place_id}
+                key={r.id}
                 role="option"
                 aria-selected={i === active}
                 className={"lp__result" + (i === active ? " lp__result--active" : "")}
@@ -169,7 +203,7 @@ export function LocationPicker({ value, lat, lng, onChange }) {
                 onMouseEnter={() => setActive(i)}
               >
                 <span className="lp__result-pin">{Icon.pin({})}</span>
-                <span className="lp__result-txt">{r.display_name}</span>
+                <span className="lp__result-txt">{r.label}</span>
               </li>
             ))}
           </ul>
