@@ -856,10 +856,6 @@ export function SettingsAdmin() {
           <AdminToggle label="Allow guest uploads" desc="Master switch for the photo/video upload pages." checked={f.uploadsEnabled} onChange={(v) => setKey("uploadsEnabled", v)} />
           <AdminToggle label="Show public gallery" desc="Hide the gallery from guests entirely if you prefer." checked={f.galleryEnabled} onChange={(v) => setKey("galleryEnabled", v)} />
         </div>
-      </div>
-
-      <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", flexWrap: "wrap" }}>
-        <Button variant="ghost" onClick={() => confirmDialog({ title: "Reset all demo data?", message: "RSVPs, media, guestbook, quiz and settings return to defaults. This can't be undone.", confirmLabel: "Reset everything", danger: true }).then((ok) => { if (ok) { Store.resetAll(); toast("Demo data reset"); } })}>Reset demo data</Button>
         <SaveFooter />
       </div></>)}
     </div>
