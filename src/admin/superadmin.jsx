@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase.js";
 import { createOwner, updateOwnerEmail } from "@/lib/auth.js";
 import { THEMES } from "@/themes";
 import { themesForEvent } from "@/config/eventTypes.js";
+import { moduleLabel } from "@/lib/roles.js";
 import { PLATFORM_DOMAIN, clientUrl, isValidSubdomain } from "@/config/site.js"; // platform config → src/config/site.js
 import { Button, Field, Icon, Input, Select, toast } from "@/ui/components.jsx";
 const { useState, useEffect } = React;
@@ -317,7 +318,7 @@ export function ClientsAdmin() {
                     const on = editForm.modules?.[m] !== false;
                     return (
                       <label key={m} className={"mod-pill" + (on ? " mod-pill--on" : "")}>
-                        <input type="checkbox" checked={on} onChange={(e) => setEditForm((f) => ({ ...f, modules: { ...f.modules, [m]: e.target.checked } }))} /> {m}
+                        <input type="checkbox" checked={on} onChange={(e) => setEditForm((f) => ({ ...f, modules: { ...f.modules, [m]: e.target.checked } }))} /> {moduleLabel(m)}
                       </label>
                     );
                   })}

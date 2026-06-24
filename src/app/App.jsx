@@ -118,8 +118,8 @@ export function Nav({ route }) {
             {visibleNav(settings.eventType, settings.modules).map((l) => (
               <button key={l.key} className={"drawer__link" + (route === l.key ? " drawer__link--active" : "")} onClick={() => { go(l.key); setDrawer(false); }}>{l.label}</button>
             ))}
-            <button className="drawer__link" onClick={() => { go("upload"); setDrawer(false); }}>Share Photos</button>
-            <button className="drawer__link" onClick={() => { go("video-message"); setDrawer(false); }}>Video Message</button>
+            {moduleEnabled(settings.modules, "gallery") && <button className="drawer__link" onClick={() => { go("upload"); setDrawer(false); }}>Share Photos</button>}
+            {settings.uploadsEnabled && <button className="drawer__link" onClick={() => { go("video-message"); setDrawer(false); }}>Video Message</button>}
             <div style={{ marginTop: 20 }}>
               {isDemo
                 ? <ThemePicker block />
@@ -142,7 +142,7 @@ export function Footer() {
         <div className="footer__hash">{settings.hashtag}</div>
         <div className="footer__links">
           {visibleNav(settings.eventType, settings.modules).map((l) => <button key={l.key} onClick={() => go(l.key)}>{l.label}</button>)}
-          <button onClick={() => go("upload")}>Upload</button>
+          {moduleEnabled(settings.modules, "gallery") && <button onClick={() => go("upload")}>Upload</button>}
         </div>
         <p className="footer__fine">{settings.weddingDateLabel} &middot; {settings.venueName}</p>
         <button className="footer__admin" onClick={() => go("admin")}>Admin sign in</button>

@@ -8,7 +8,7 @@ import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fm
 import { signOut } from "@/lib/auth.js";
 import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb } from "@/lib/api.js";
 import { BRAND_NAME } from "@/config/site.js";
-import { visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES } from "@/lib/roles.js";
+import { visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel } from "@/lib/roles.js";
 import { ClientsAdmin, SuperOverview } from "@/admin/superadmin.jsx";
 import { LocationPicker } from "@/ui/location-picker.jsx";
 import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
@@ -591,7 +591,7 @@ export function SettingsAdmin() {
                 <label key={m} className={"mod-pill" + (on ? " mod-pill--on" : "") + (locked ? " mod-pill--locked" : "")}
                   title={locked ? "Pending — feature not available yet" : undefined}>
                   <input type="checkbox" checked={on} disabled={locked}
-                    onChange={(e) => Store.updateSettings({ modules: { ...(f.modules || {}), [m]: e.target.checked } })} /> {m}
+                    onChange={(e) => Store.updateSettings({ modules: { ...(f.modules || {}), [m]: e.target.checked } })} /> {moduleLabel(m)}
                   {locked && <span className="mod-pill__pending">Pending</span>}
                 </label>
               );

@@ -27,6 +27,23 @@ export function canEnterAdmin(profile, currentClientId) {
 // empty the set to bring one back. Hides the nav link + blocks the route.
 export const DISABLED_MODULES = new Set(["gallery"]);
 
+// Client-facing labels for module keys — how each section reads to a guest
+// (matches the public nav / RSVP CTA wording). Used by the admin module toggles
+// so the operator sees what the guest sees, not the raw key.
+export const MODULE_LABELS = {
+  story: "Our Story",
+  details: "Details",
+  schedule: "Schedule",
+  venue: "Venue",
+  gallery: "Gallery",
+  guestbook: "Guestbook",
+  quiz: "Quiz",
+  rsvp: "RSVP",
+};
+export function moduleLabel(key) {
+  return MODULE_LABELS[key] || (key ? key.charAt(0).toUpperCase() + key.slice(1) : key);
+}
+
 // Per-client module flags. modules = { guestbook:false, quiz:true, ... }; absent key = on.
 export function moduleEnabled(modules, key) {
   if (DISABLED_MODULES.has(key)) return false;   // global "off for now"
