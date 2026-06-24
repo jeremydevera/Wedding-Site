@@ -722,11 +722,23 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 @media (max-width: 860px) {
   .admin { flex-direction: column; }
   .admin__side { display: none; }
-  .admin__mobilebar { display: flex; gap: 6px; overflow-x: auto; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--surface); position: sticky; top: 0; z-index: 10; }
+  /* mobilebar + topbar share ONE sticky header so they can't overlap on scroll */
+  .admin__head { position: sticky; top: 0; z-index: 10; background: var(--surface); }
+  .admin__mobilebar { display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--surface); position: static; }
   .admin__mobilebar button { white-space: nowrap; background: none; border: 1px solid var(--line); border-radius: 100px; padding: 8px 14px; font-size: 13px; color: var(--ink-soft); font-family: var(--font-body); cursor: pointer; }
   .admin__mobilebar button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
   .admin__body { padding: 18px; }
-  .admin__topbar { padding: 14px 18px; }
+  /* topbar must wrap: title + up to 4 action buttons can't sit on one phone row */
+  .admin__topbar { position: static; padding: 12px 16px; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .admin__topbar > div:last-child { flex-wrap: wrap; }
+  .admin__title { font-size: 20px; white-space: normal; }
+  .admin--sa .admin__title { font-size: 22px; }
+  .admin__sitechip { margin-left: 0; }
+}
+@media (max-width: 420px) {
+  /* tightest phones: action buttons share the row full-width, two-up */
+  .admin__topbar > div:last-child { width: 100%; }
+  .admin__topbar > div:last-child > .btn { flex: 1 1 44%; justify-content: center; }
 }
 
 /* --- Tweaks panel skin (host provides shell) -------------------------------*/

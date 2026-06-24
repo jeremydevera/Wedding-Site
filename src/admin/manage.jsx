@@ -941,6 +941,7 @@ export function AdminApp() {
       </aside>
 
       <main className="admin__main">
+        <div className="admin__head">
         <div className="admin__mobilebar">
           {tabs.map((t) => (
             <button key={t.key} className={activeTab === t.key ? "on" : ""} onClick={() => setTab(t.key)}>{t.label}</button>
@@ -954,6 +955,7 @@ export function AdminApp() {
             {canArrange && <Button variant="primary" size="sm" onClick={startArrange}>{Icon.grid({ style: { width: 14, height: 14 } })} Arrange Now</Button>}
             <Button variant="ghost" size="sm" onClick={() => signOut().then(() => go("home"))}>Sign out</Button>
           </div>
+        </div>
         </div>
         <div className="admin__body">
           {activeTab === "dashboard" && <AdminDashboard goTab={setTab} />}
