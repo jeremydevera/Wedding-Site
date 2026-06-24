@@ -854,7 +854,7 @@ export function AdminApp() {
     if (auth.role === "owner" || auth.role === "superadmin") loadAdminData();
   }, [auth.ready, auth.session, auth.role, clientId]);
 
-  if (!auth.ready) return <div style={{ position: "fixed", inset: 0, background: "#171717", color: "#8b8b94", display: "grid", placeItems: "center" }}>…</div>;
+  if (!auth.ready) return <div style={{ position: "fixed", inset: 0, background: "#ffffff", color: "#6b7280", display: "grid", placeItems: "center" }}>…</div>;
   // AdminLogin renders its own full-screen dark sign-in (theme-independent).
   if (!auth.session) return <AdminLogin onAuthed={() => setTab("dashboard")} />;
   const profile = { role: auth.role, clientId: auth.clientId };

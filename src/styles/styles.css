@@ -442,10 +442,6 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
   --sg-inbg: #ffffff; --sg-inbd: #dcdce0; --sg-back: #52525b; --sg-backbd: #e4e4e7;
   background: var(--sg-bg); color: var(--sg-text);
 }
-@media (prefers-color-scheme: dark) {
-  .signin { --sg-bg: #171717; --sg-text: #fafafa; --sg-sub: #8b8b94; --sg-label: #ededed;
-    --sg-inbg: #1d1d1d; --sg-inbd: #393939; --sg-back: #a1a1aa; --sg-backbd: #2e2e2e; }
-}
 
 .signin__pane { display: flex; flex-direction: column; background: var(--sg-bg); }
 .signin__top { display: flex; align-items: center; justify-content: space-between; padding: 22px 26px; }
