@@ -859,6 +859,7 @@ export const ADMIN_TABS = [
 export function AdminApp() {
   const { settings, auth, clientId } = useStore();
   const [tab, setTab] = useState("dashboard");
+  const [menuOpen, setMenuOpen] = useState(false);   // mobile drawer
   const [saving, setSaving] = useState(false);
   const saveChanges = async () => {
     setSaving(true);
@@ -910,7 +911,9 @@ export function AdminApp() {
   const isSuper = auth.role === "superadmin";
   return (
     <div className={"admin" + (isSuper ? " admin--sa" : "")}>
-      <aside className="admin__side">
+      {menuOpen && <div className="admin__overlay" onClick={() => setMenuOpen(false)} />}
+      <aside className={"admin__side" + (menuOpen ? " admin__side--open" : "")}>
+        <button className="admin__drawer-close" onClick={() => setMenuOpen(false)} aria-label="Close menu">{Icon.close({})}</button>
         <div className="admin__brand">
           {isSuper ? (
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -926,7 +929,7 @@ export function AdminApp() {
         </div>
         <nav className="admin__nav">
           {tabs.map((t) => (
-            <button key={t.key} className={"admin__navlink" + (activeTab === t.key ? " admin__navlink--active" : "")} onClick={() => setTab(t.key)}>
+            <button key={t.key} className={"admin__navlink" + (activeTab === t.key ? " admin__navlink--active" : "")} onClick={() => { setTab(t.key); setMenuOpen(false); }}>
               {Icon[t.icon]({})} {t.label}
             </button>
           ))}
@@ -942,13 +945,11 @@ export function AdminApp() {
 
       <main className="admin__main">
         <div className="admin__head">
-        <div className="admin__mobilebar">
-          {tabs.map((t) => (
-            <button key={t.key} className={activeTab === t.key ? "on" : ""} onClick={() => setTab(t.key)}>{t.label}</button>
-          ))}
-        </div>
         <div className="admin__topbar">
-          <div className="admin__title">{title}{isSuper && !onPlatformTab && siteName ? <span className="admin__sitechip">{siteName}</span> : null}</div>
+          <div className="admin__topbar-left">
+            <button className="admin__burger" onClick={() => setMenuOpen(true)} aria-label="Open menu">{Icon.menu({})}</button>
+            <div className="admin__title">{title}{isSuper && !onPlatformTab && siteName ? <span className="admin__sitechip">{siteName}</span> : null}</div>
+          </div>
           <div style={{ display: "flex", gap: 8 }}>
             {clientId && !onPlatformTab && <Button variant="primary" size="sm" disabled={saving} onClick={saveChanges}>{saving ? "Saving…" : "Save changes"}</Button>}
             <Button variant="ghost" size="sm" onClick={() => go("home")}>View site</Button>
