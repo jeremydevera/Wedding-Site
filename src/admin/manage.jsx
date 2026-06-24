@@ -963,7 +963,7 @@ export function AdminApp() {
           {activeTab === "settings" && <SettingsAdmin />}
           {activeTab === "overview" && <SuperOverview />}
           {activeTab === "clients" && <ClientsAdmin />}
-          {clientId && !onPlatformTab && (
+          {clientId && ["settings", "schedule", "quiz"].includes(activeTab) && (
             <div className="admin__savebar">
               <span className="admin__savehint">Changes apply to your live site after you save.</span>
               <Button variant="primary" disabled={saving} onClick={saveChanges}>{saving ? "Saving…" : "Save changes"}</Button>

@@ -482,10 +482,10 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .signin__btn:disabled { opacity: .65; cursor: default; }
 
 .admin__body { padding: 30px; }
-/* Save bar lives at the foot of the section you're editing (Supabase-style):
-   a divider, helper text on the left, button on the right — NOT sticky; it
-   scrolls with the content. */
-.admin__savebar { display: flex; align-items: center; gap: 14px; margin-top: 24px; padding: 16px 0 4px; border-top: 1px solid var(--line); }
+/* Save footer for editable sections (Supabase-style): a bordered card footer
+   with helper text on the left, button on the right. NOT sticky — scrolls with
+   the content, and only on tabs that actually edit content. */
+.admin__savebar { display: flex; align-items: center; gap: 14px; margin-top: 20px; padding: 14px 22px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
 .admin__savehint { color: var(--muted); font-size: 13px; margin-right: auto; }
 @media (max-width: 560px) { .admin__savehint { display: none; } .admin__savebar .btn { flex: 1; justify-content: center; } }
 .admin__mobilebar { display: none; }
