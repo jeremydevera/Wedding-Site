@@ -71,7 +71,7 @@ export function SuperOverview() {
                     <td><strong>{c.subdomain}</strong></td>
                     <td><span className="tag tag--hidden">{c.event_type}</span></td>
                     <td>{c.owner_email ? <span className="client-domain">{c.owner_email}</span> : <span style={{ color: "var(--muted)", fontSize: 13 }}>—</span>}</td>
-                    <td><a className="icon-btn" href={`/?client=${c.subdomain}&manage=1#/admin`} title="Open admin">{Icon.grid({})}</a></td>
+                    <td><a className="icon-btn" href={`/admin?client=${c.subdomain}`} title="Open admin">{Icon.grid({})}</a></td>
                   </tr>
                 ))}
                 {recent.length === 0 && <tr><td colSpan={4} style={{ textAlign: "center", padding: 32, color: "var(--muted)" }}>No clients yet.</td></tr>}
@@ -234,7 +234,7 @@ export function ClientsAdmin() {
                       <td>{c.owner_email ? <span className="client-domain">{c.owner_email}</span> : <span style={{ color: "var(--muted)" }}>—</span>}</td>
                       <td>
                         <div className="row-actions">
-                          <a className="icon-btn" href={`/?client=${c.subdomain}&manage=1#/admin`} title="Open admin">{Icon.grid({})}</a>
+                          <a className="icon-btn" href={`/admin?client=${c.subdomain}`} title="Open admin">{Icon.grid({})}</a>
                           <a className="icon-btn" href={clientUrl(c.subdomain)} target="_blank" rel="noreferrer" title="Open live site">{Icon.eye({})}</a>
                           <button className="icon-btn" onClick={() => openEdit(c)} title="Edit">{Icon.edit({})}</button>
                           <button className="icon-btn icon-btn--danger" onClick={() => deleteClient(c)} title="Delete">{Icon.trash({})}</button>

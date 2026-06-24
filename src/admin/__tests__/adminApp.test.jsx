@@ -13,14 +13,15 @@ function navLabels(container) {
 describe("AdminApp rendered tab gating", () => {
   beforeEach(() => cleanup());
 
-  it("superadmin on a client site: platform tabs + the client's full admin", () => {
+  it("superadmin on a client site: that client's full admin only (no platform tabs)", () => {
     Store.set({ clientId: "c1", loading: false });
     Store.setAuth({ session: { user: { email: "su@x" } }, role: "superadmin", clientId: null, email: "su@x" });
     const { container } = render(<AdminApp />);
     const labels = navLabels(container);
-    // platform console first, then the current client's full admin (incl. Settings)
-    expect(labels.slice(0, 2)).toEqual(["Overview", "Clients"]);
+    // it's their website — full client admin incl. Settings, but NO Overview/Clients
     expect(labels).toEqual(expect.arrayContaining(["Dashboard", "Settings", "Guestbook"]));
+    expect(labels).not.toContain("Overview");
+    expect(labels).not.toContain("Clients");
   });
 
   it("superadmin with no client loaded: platform console only", () => {

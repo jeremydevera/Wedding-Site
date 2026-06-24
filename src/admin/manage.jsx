@@ -432,17 +432,17 @@ export function QuizAdmin() {
 }
 
 export const QR_TARGETS = [
-  { key: "home", label: "Main Website", path: "#/home" },
-  { key: "rsvp", label: "RSVP", path: "#/rsvp" },
-  { key: "upload", label: "Photo / Video Upload", path: "#/upload" },
-  { key: "gallery", label: "Gallery", path: "#/gallery" },
-  { key: "guestbook", label: "Guestbook", path: "#/guestbook" },
-  { key: "quiz", label: "Couple Quiz", path: "#/quiz" },
-  { key: "video-message", label: "Video Message", path: "#/video-message" },
+  { key: "home", label: "Main Website", path: "/home" },
+  { key: "rsvp", label: "RSVP", path: "/rsvp" },
+  { key: "upload", label: "Photo / Video Upload", path: "/upload" },
+  { key: "gallery", label: "Gallery", path: "/gallery" },
+  { key: "guestbook", label: "Guestbook", path: "/guestbook" },
+  { key: "quiz", label: "Couple Quiz", path: "/quiz" },
+  { key: "video-message", label: "Video Message", path: "/video-message" },
 ];
 
 export function QrAdmin() {
-  const base = window.location.origin + window.location.pathname;
+  const base = window.location.origin;
   return (
     <div className="panel">
       <div className="panel__head"><div className="panel__title">QR Codes</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Print on signage, table cards & invites</span></div>
@@ -549,7 +549,7 @@ export function SettingsAdmin() {
   const allowed = themesForEvent(f.eventType || DEFAULT_EVENT_TYPE);
   const normalThemes = allowed.filter((k) => THEMES[k] && !isPremiumTheme(k));
   const premiumThemes = allowed.filter((k) => THEMES[k] && isPremiumTheme(k));
-  const STABS = [["general", "General", "user"], ["appearance", "Theme", "grid"], ["venue", "Venue & Map", "pin"], ["photos", "Photos", "camera"], ["access", "Access", "check"]];
+  const STABS = [["general", "General", "user"], ["features", "Features", "check"], ["appearance", "Theme", "grid"], ["venue", "Venue & Map", "pin"], ["photos", "Photos", "camera"], ["access", "Access", "check"]];
 
   return (
     <div>
@@ -574,6 +574,23 @@ export function SettingsAdmin() {
           <div className="field-row field-row--2">
             <Field label="RSVP deadline" id="s-rsvp"><Input id="s-rsvp" value={f.rsvpDeadline} onChange={set("rsvpDeadline")} /></Field>
             <Field label="Hashtag" id="s-hash"><Input id="s-hash" value={f.hashtag} onChange={set("hashtag")} /></Field>
+          </div>
+        </div>
+      </div>)}
+
+      {tab === "features" && (<div className="panel">
+        <div className="panel__head"><div className="panel__title">Features</div></div>
+        <div className="panel__body">
+          <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>Turn sections of this site on or off — disabled ones are hidden from guests and the menu. Click <strong>Save changes</strong> to apply.</p>
+          <div className="mod-toggles mod-toggles--edit">
+            {["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"].map((m) => {
+              const on = f.modules?.[m] !== false;
+              return (
+                <label key={m} className={"mod-pill" + (on ? " mod-pill--on" : "")}>
+                  <input type="checkbox" checked={on} onChange={(e) => Store.updateSettings({ modules: { ...(f.modules || {}), [m]: e.target.checked } })} /> {m}
+                </label>
+              );
+            })}
           </div>
         </div>
       </div>)}
@@ -856,9 +873,9 @@ export function AdminApp() {
   // Owners only ever see their own client's tabs.
   let tabs;
   if (auth.role === "superadmin") {
-    const platform = visibleAdminTabs("superadmin", ADMIN_TABS);               // Overview, Clients
-    const site = clientId ? tabsForClient(ADMIN_TABS, "owner", settings.modules) : []; // this client's admin
-    tabs = [...platform, ...site];
+    // On a client subdomain (clientId set) → that client's full admin ONLY — it's their
+    // website. On the apex hub (no client) → the platform console (Overview / Clients).
+    tabs = clientId ? tabsForClient(ADMIN_TABS, "owner", settings.modules) : visibleAdminTabs("superadmin", ADMIN_TABS);
   } else {
     tabs = tabsForClient(visibleAdminTabs(auth.role, ADMIN_TABS), auth.role, settings.modules);
   }

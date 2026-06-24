@@ -48,15 +48,15 @@ function visibleNav(eventType, modules) {
 
 export function useRoute() {
   const parse = () => {
-    const h = (window.location.hash || "#/home").replace(/^#\/?/, "");
-    const key = h.split(/[/?]/)[0] || "home";
+    const key = window.location.pathname.replace(/^\/+/, "").split(/[/?]/)[0] || "home";
     return ROUTES[key] ? key : "home";
   };
   const [route, setRoute] = useState(parse());
   useEffect(() => {
-    const onHash = () => { setRoute(parse()); window.scrollTo({ top: 0 }); };
-    window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
+    const onNav = () => { setRoute(parse()); window.scrollTo({ top: 0 }); };
+    window.addEventListener("popstate", onNav); // back/forward
+    window.addEventListener("nav", onNav);      // go() pushState
+    return () => { window.removeEventListener("popstate", onNav); window.removeEventListener("nav", onNav); };
   }, []);
   return route;
 }
