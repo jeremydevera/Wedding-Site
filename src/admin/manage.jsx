@@ -8,7 +8,7 @@ import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fm
 import { signOut } from "@/lib/auth.js";
 import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb } from "@/lib/api.js";
 import { BRAND_NAME } from "@/config/site.js";
-import { visibleAdminTabs, canEnterAdmin, tabsForClient } from "@/lib/roles.js";
+import { visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES } from "@/lib/roles.js";
 import { ClientsAdmin, SuperOverview } from "@/admin/superadmin.jsx";
 import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
@@ -583,7 +583,7 @@ export function SettingsAdmin() {
         <div className="panel__body">
           <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>Turn sections of this site on or off — disabled ones are hidden from guests and the menu. Click <strong>Save changes</strong> to apply.</p>
           <div className="mod-toggles mod-toggles--edit">
-            {["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"].map((m) => {
+            {["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"].filter((m) => !DISABLED_MODULES.has(m)).map((m) => {
               const on = f.modules?.[m] !== false;
               return (
                 <label key={m} className={"mod-pill" + (on ? " mod-pill--on" : "")}>
@@ -827,7 +827,8 @@ export function SettingsAdmin() {
 export const ADMIN_TABS = [
   { key: "dashboard", label: "Dashboard", icon: "grid" },
   { key: "rsvps", label: "RSVPs", icon: "check" },
-  { key: "media", label: "Media", icon: "camera" },
+  // Media/Gallery shelved for now — re-add when gallery ships (see DISABLED_MODULES).
+  // { key: "media", label: "Media", icon: "camera" },
   { key: "guestbook", label: "Guestbook", icon: "book" },
   { key: "schedule", label: "Schedule", icon: "calendar" },
   { key: "quiz", label: "Quiz", icon: "quiz" },

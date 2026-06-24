@@ -22,8 +22,14 @@ export function canEnterAdmin(profile, currentClientId) {
   return false;
 }
 
+// Platform-wide kill switch: modules disabled for EVERYONE, regardless of
+// per-client flags or event-type sections. "Off for now" features live here —
+// empty the set to bring one back. Hides the nav link + blocks the route.
+export const DISABLED_MODULES = new Set(["gallery"]);
+
 // Per-client module flags. modules = { guestbook:false, quiz:true, ... }; absent key = on.
 export function moduleEnabled(modules, key) {
+  if (DISABLED_MODULES.has(key)) return false;   // global "off for now"
   if (!modules || !(key in modules)) return true;
   return !!modules[key];
 }
