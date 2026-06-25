@@ -652,6 +652,12 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 /* Settings sub-section divider (e.g. "Venue info cards" within the Venue tab) */
 .settings-subhead { font-family: var(--font-display); font-size: 18px; color: var(--ink); margin: 22px 0 2px; padding-top: 18px; border-top: 1px solid var(--line); }
 
+/* Venue info-card editor (admin → Venue & Map) */
+.venue-cards-edit { display: flex; flex-direction: column; gap: 12px; margin-top: 6px; }
+.venue-card-edit { padding: 14px; }
+.venue-card-edit__top { display: flex; align-items: center; gap: 10px; }
+.venue-card-edit__top .input { flex: 1; font-weight: 600; }
+
 /* sub-tabs — exact Supabase product-nav item tokens (14px / #707070 → active #ededed bg + #171717 / 500, 6px radius, no shadow) */
 .sa-tabs { display: inline-flex; gap: 4px; background: none; padding: 0; border-radius: 0; margin-bottom: 22px; }
 .sa-tabs button { border: none; background: none; padding: 3px 12px; border-radius: 6px; font-family: var(--font-body); font-size: 14px; line-height: 20px; font-weight: 400; color: #525252; cursor: pointer; transition: background .12s, color .12s; }

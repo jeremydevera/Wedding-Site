@@ -543,8 +543,9 @@ export function SchedulePage() {
 }
 
 export function VenuePage() {
-  const { settings } = useStore();
+  const { settings, venueCards } = useStore();
   const s = settings;
+  const cards = (venueCards || []).filter((c) => (c.d || "").trim() || (c.t || "").trim());
   const query = (s.mapQuery && s.mapQuery.trim()) || s.venueAddress;
   const mapUrl = mapEmbedUrl(query, s.mapLat, s.mapLng);
   const dirUrl = mapDirUrl(query, s.mapLat, s.mapLng);
@@ -559,18 +560,16 @@ export function VenuePage() {
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 44 }}>
             <Button variant="primary" size="lg" onClick={() => window.open(dirUrl, "_blank")}>{Icon.pin({})} Get Directions</Button>
           </div>
+          {cards.length > 0 && (
           <div className="info-grid info-grid--3">
-            {[
-              { t: "Parking", d: s.venueParking },
-              { t: "Arrival", d: s.venueArrival },
-              { t: "Weather", d: s.venueWeather },
-            ].filter((n) => (n.d || "").trim()).map((n, i) => (
+            {cards.map((n, i) => (
               <div className="card info-card" key={i}>
                 <h3>{n.t}</h3>
                 <p>{n.d}</p>
               </div>
             ))}
           </div>
+          )}
         </div>
       </section>
     </div>

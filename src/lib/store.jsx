@@ -26,10 +26,6 @@ export const DEFAULT_SETTINGS = {
   ceremonyTime: "3:00 PM",
   receptionTime: "5:30 PM",
   dressCode: "Garden formal \u2014 think soft suits and flowing dresses.",
-  // Venue info cards (editable in admin -> Venue & Map). Stored in clients.content jsonb.
-  venueParking: "Complimentary valet and self-parking available at the rear entrance from 2:00 PM.",
-  venueArrival: "Please arrive by 2:30 PM. The ceremony begins promptly \u2014 plan to be seated early.",
-  venueWeather: "The ceremony is outdoors \u2014 bring a light layer for the evening breeze.",
   rsvpDeadline: "August 15, 2026",
   hashtag: "#JeremyAndIrish2026",
   adminPassword: "wedding",
@@ -78,6 +74,14 @@ export const SEED_FAQ = [
   { q: "Can I take photos?", a: "We're having an unplugged ceremony, but please photograph everything afterward and upload it here!" },
 ];
 
+// Venue info cards — the cards shown under the map on the Venue page.
+// Editable in admin (title + description), add/remove/reorder. Persisted to clients.content.
+export const SEED_VENUE_CARDS = [
+  { t: "Parking", d: "Complimentary valet and self-parking available at the rear entrance from 2:00 PM." },
+  { t: "Arrival", d: "Please arrive by 2:30 PM. The ceremony begins promptly — plan to be seated early." },
+  { t: "Weather", d: "The ceremony is outdoors — bring a light layer for the evening breeze." },
+];
+
 export const SEED_QUIZ = [
   { id: "q1", type: "multiple_choice", q: "Where did the couple first meet?", options: ["A coffee shop", "A bookshop", "A wedding", "Online"], answer: 1 },
   { id: "q2", type: "multiple_choice", q: "Which city was their first trip together?", options: ["Paris", "Rome", "Lisbon", "Tokyo"], answer: 2 },
@@ -117,6 +121,7 @@ export function defaultState() {
     story: SEED_STORY,
     faq: SEED_FAQ,
     quiz: SEED_QUIZ,
+    venueCards: SEED_VENUE_CARDS,
     guestbook: SEED_GUESTBOOK,
     rsvps: SEED_RSVPS,
     media: SEED_MEDIA, // {id, type:'photo'|'video', category, dataUrl, src, name, message, status, size, ratio, createdAt}
@@ -299,6 +304,25 @@ export const Store = {
     if (index < 0 || j < 0 || j >= arr.length) return;
     [arr[index], arr[j]] = [arr[j], arr[index]];
     _state = { ..._state, schedule: arr };
+    persist();
+    emit();
+  },
+  updateVenueCards(venueCards) {
+    _state = { ..._state, venueCards };
+    persist();
+    emit();
+  },
+  updateVenueCard(index, patch) {
+    _state = { ..._state, venueCards: (_state.venueCards || []).map((c, i) => (i === index ? { ...c, ...patch } : c)) };
+    persist();
+    emit();
+  },
+  moveVenueCard(index, dir) {
+    const arr = [...(_state.venueCards || [])];
+    const j = index + dir;
+    if (index < 0 || j < 0 || j >= arr.length) return;
+    [arr[index], arr[j]] = [arr[j], arr[index]];
+    _state = { ..._state, venueCards: arr };
     persist();
     emit();
   },

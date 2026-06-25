@@ -1,10 +1,23 @@
-import { DEFAULT_SETTINGS, SEED_SCHEDULE, SEED_STORY, SEED_FAQ, SEED_QUIZ } from "@/lib/store.jsx";
+import { DEFAULT_SETTINGS, SEED_SCHEDULE, SEED_STORY, SEED_FAQ, SEED_QUIZ, SEED_VENUE_CARDS } from "@/lib/store.jsx";
+
+// Build the venue-cards array from a client's content. Prefer the new
+// `venueCards` array; fall back to the legacy flat keys (venueParking/Arrival/
+// Weather) saved before cards were dynamic; else the seed defaults.
+function venueCardsFrom(content) {
+  if (Array.isArray(content.venueCards)) return content.venueCards;
+  const legacy = [
+    ["Parking", content.venueParking],
+    ["Arrival", content.venueArrival],
+    ["Weather", content.venueWeather],
+  ].filter(([, d]) => d != null).map(([t, d]) => ({ t, d }));
+  return legacy.length ? legacy : SEED_VENUE_CARDS;
+}
 
 // clients row -> the in-memory store state shape
 export function clientToState(client) {
   const content = client.content || {};
   const theme = client.theme || {};
-  const { schedule, story, faq, quiz, ...contentRest } = content;
+  const { schedule, story, faq, quiz, venueCards, venueParking, venueArrival, venueWeather, ...contentRest } = content;
   return {
     clientId: client.id,
     settings: {
@@ -18,6 +31,7 @@ export function clientToState(client) {
     story: story || SEED_STORY,
     faq: faq || SEED_FAQ,
     quiz: quiz || SEED_QUIZ,
+    venueCards: venueCardsFrom(content),
   };
 }
 
@@ -30,7 +44,7 @@ export function stateToClientRow(state) {
     template_key: theme,
     event_type: eventType,
     theme: {},
-    content: { ...rest, schedule: state.schedule, story: state.story, faq: state.faq, quiz: state.quiz },
+    content: { ...rest, schedule: state.schedule, story: state.story, faq: state.faq, quiz: state.quiz, venueCards: state.venueCards },
   };
 }
 

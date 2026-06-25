@@ -566,7 +566,7 @@ export function ScheduleAdmin() {
 }
 
 export function SettingsAdmin() {
-  const { settings, story } = useStore();
+  const { settings, story, venueCards } = useStore();
   const f = settings;
   const set = (k) => (e) => Store.updateSettings({ [k]: e.target && e.target.type === "checkbox" ? e.target.checked : e.target.value });
   const setKey = (k, v) => Store.updateSettings({ [k]: v });
@@ -667,10 +667,25 @@ export function SettingsAdmin() {
           <Field label="Dress code" id="s-dc"><Input id="s-dc" value={f.dressCode} onChange={set("dressCode")} /></Field>
 
           <div className="settings-subhead">Venue info cards</div>
-          <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>The three cards shown under the map on the Venue page. Leave one blank to hide that card.</p>
-          <Field label="Parking" id="s-vpark"><Textarea id="s-vpark" value={f.venueParking} onChange={set("venueParking")} placeholder="Where guests park, valet, drop-off…" /></Field>
-          <Field label="Arrival" id="s-varr"><Textarea id="s-varr" value={f.venueArrival} onChange={set("venueArrival")} placeholder="When to arrive, seating timing…" /></Field>
-          <Field label="Weather" id="s-vwx"><Textarea id="s-vwx" value={f.venueWeather} onChange={set("venueWeather")} placeholder="What to expect / what to bring…" /></Field>
+          <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>The cards shown under the map on the Venue page. Edit the title and text, reorder with the arrows, delete, or add your own. A blank card is hidden from guests.</p>
+          <div className="venue-cards-edit">
+            {(venueCards || []).map((c, i) => (
+              <div className="card venue-card-edit" key={i}>
+                <div className="venue-card-edit__top">
+                  <Input value={c.t || ""} onChange={(e) => Store.updateVenueCard(i, { t: e.target.value })} placeholder="Title — e.g. Parking" aria-label="Card title" />
+                  <div className="row-actions">
+                    <button type="button" className="icon-btn" title="Move up" onClick={() => Store.moveVenueCard(i, -1)} disabled={i === 0}>↑</button>
+                    <button type="button" className="icon-btn" title="Move down" onClick={() => Store.moveVenueCard(i, 1)} disabled={i === (venueCards.length - 1)}>↓</button>
+                    <button type="button" className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete card?", message: "This removes the card from the Venue page.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.updateVenueCards(venueCards.filter((_, j) => j !== i)); })}>{Icon.trash({})}</button>
+                  </div>
+                </div>
+                <Textarea value={c.d || ""} onChange={(e) => Store.updateVenueCard(i, { d: e.target.value })} style={{ minHeight: 60, marginTop: 10 }} placeholder="Description guests will see" aria-label="Card description" />
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <Button variant="ghost" block onClick={() => Store.updateVenueCards([...(venueCards || []), { t: "New card", d: "" }])}>+ Add card</Button>
+          </div>
         </div>
         <SaveFooter />
       </div>)}
