@@ -735,9 +735,15 @@ export function SettingsAdmin() {
       <div className="panel">
         <div className="panel__head"><div className="panel__title">Title Size</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Size of &ldquo;A Love Letter From&rdquo; + your names on the cover</span></div>
         <div className="panel__body">
-          <Field label={`Title size — ${f.envTitleSize == null ? 4.5 : f.envTitleSize}`} id="s-envtitle" hint="Scales with screen width; larger value = bigger cover text">
+          <Field label={`Title size — ${f.envTitleSize == null ? 4.5 : f.envTitleSize}`} id="s-envtitle" hint="Scales with screen width; larger value = bigger cover text. Save changes, then view the site to see it.">
             <input id="s-envtitle" type="range" min="3" max="8" step="0.25" value={f.envTitleSize == null ? 4.5 : f.envTitleSize} onChange={(e) => setKey("envTitleSize", parseFloat(e.target.value))} style={{ width: "100%", accentColor: "var(--accent)" }} />
           </Field>
+          {(() => { const ts = f.envTitleSize == null ? 4.5 : f.envTitleSize; const px = Math.round(ts / 4.5 * 19); return (
+            <div style={{ marginTop: 14, background: "#3a4a2a", borderRadius: 8, padding: "26px 16px", textAlign: "center", color: "#f3ebdb", fontFamily: "'Cormorant Garamond', Georgia, serif", overflow: "hidden" }}>
+              <div style={{ fontVariant: "small-caps", letterSpacing: ".08em", fontSize: px, lineHeight: 1.3 }}>A Love Letter From</div>
+              <div style={{ fontVariant: "small-caps", letterSpacing: ".08em", fontSize: px, lineHeight: 1.3, marginTop: 4 }}>{f.partnerA || "Partner"} &amp; {f.partnerB || "Partner"}</div>
+            </div>
+          ); })()}
         </div>
       </div>
       )}
