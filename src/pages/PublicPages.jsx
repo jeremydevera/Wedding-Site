@@ -54,9 +54,13 @@ export function EnvelopeHero() {
   const artRef = React.useRef(null);
   const triggerReady = React.useCallback(() => setReady(true), []);
   React.useEffect(() => {
-    const img = artRef.current;
-    if (img && img.complete && img.naturalWidth) triggerReady();
-  }, [triggerReady]);
+    // Flip ready a couple frames after mount so the hidden text paints first, then
+    // the type-on plays — independent of the image cache, so it runs on desktop
+    // too (a cached image used to flip ready before first paint, skipping it).
+    let r1, r2;
+    r1 = requestAnimationFrame(() => { r2 = requestAnimationFrame(() => setReady(true)); });
+    return () => { cancelAnimationFrame(r1); cancelAnimationFrame(r2); };
+  }, []);
   // Type-on reveal via Web Animations API. Crucially, ON FINISH we clear the
   // clip-path entirely so the resting state is unclipped — otherwise a browser
   // that clamps the negative end-inset to 0 shaves the last glyph ("m" in "From").
@@ -69,6 +73,11 @@ export function EnvelopeHero() {
       const el = root.querySelector(sel);
       if (!el) return;
       if (reduce || !el.animate) { el.style.clipPath = "none"; return; }
+      // Force the hidden start + reflow so the reveal ALWAYS plays — otherwise a
+      // cached image (instant on desktop) flips ready before first paint and the
+      // animation gets skipped.
+      el.style.clipPath = "inset(-18% 100% -18% 0)";
+      void el.offsetWidth;
       const anim = el.animate(
         [{ clipPath: "inset(-18% 100% -18% 0)" }, { clipPath: "inset(-18% 0% -18% 0)" }],
         { duration: dur, delay, easing: `steps(${count})`, fill: "forwards" }
@@ -290,7 +299,8 @@ export function Home() {
       {/* COUNTDOWN (envelope theme — the hero is replaced by the envelope) */}
       {s.theme === "envelope" && (
         <section className="block eg-celebrate" id="home-countdown" style={{ textAlign: "center", paddingBottom: 96 }}>
-          <FloatingDecor on style="petals" />
+          {/* Olive Envelope ships with drifting leaves by default — not user-configurable. */}
+          <FloatingDecor on style="leaves" />
           <div className="container container--narrow">
             <div className="eyebrow eyebrow--solo" style={{ justifyContent: "center" }}>{s.tagline}</div>
             <h2 style={{ fontSize: "clamp(28px,4.6vw,44px)", margin: "16px 0 14px", color: "var(--ink)" }}>
