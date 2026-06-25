@@ -58,7 +58,7 @@ export function GuestbookPage() {
                 <div className="gb-card" key={g.id}>
                   <div className="gb-card__quote" aria-hidden="true">&ldquo;</div>
                   <p className="gb-card__msg">{g.message}</p>
-                  <div className="gb-card__by">&mdash;&nbsp;{g.name}</div>
+                  <div className="gb-card__by">{g.name}</div>
                   {g.relationship && <div className="gb-card__rel">{g.relationship}</div>}
                 </div>
               ))}
