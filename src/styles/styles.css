@@ -1122,9 +1122,9 @@ html:has(body.env-sealed) { overflow: hidden; }
 /* cover hero is much larger than the contain wrap, so scale its overlay text down + keep the cue on-screen */
 /* cqw is sized off max(142vw,215vh); on tall/narrow phones the 215vh term blows
    the overlay text past the viewport (clips "…From"). Cap against vw so it fits. */
-.eg-sealed .inv-lf-label { font-size: min(1.85cqw, 7vw); }
-.eg-sealed .inv-lf-names { font-size: min(1.85cqw, 7vw); }
-.eg-sealed .inv-open-cue { font-size: min(1.7cqw, 6vw); top: 75%; }
+.eg-sealed .inv-lf-label { font-size: min(1.85cqw, 5.5vw); }
+.eg-sealed .inv-lf-names { font-size: min(1.85cqw, 5.5vw); }
+.eg-sealed .inv-open-cue { font-size: min(1.7cqw, 5vw); top: 75%; }
 .eg-open { width: min(1140px, 100vw, 105vh); flex: none; transition: width .6s ease; }
 .eg-cue {
   position: absolute; left: 50%;
