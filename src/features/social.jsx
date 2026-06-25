@@ -10,6 +10,16 @@ const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 // social.jsx — Guestbook + Couple Quiz
 // ============================================================================
 
+// Vary each guestbook card's attribution alignment (left / center / right) for a
+// scattered, hand-pinned feel — deterministic per entry so it never reshuffles.
+const GB_ALIGN = ["left", "center", "right"];
+function gbAlign(id) {
+  const s = String(id);
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return GB_ALIGN[h % 3];
+}
+
 export function GuestbookPage() {
   const { guestbook } = useStore();
   const [form, setForm] = useState({ name: "", relationship: "", message: "" });
@@ -54,14 +64,17 @@ export function GuestbookPage() {
             <div className="gal-empty"><p style={{ fontFamily: "var(--font-display)", fontSize: 24 }}>No messages yet — be the first!</p></div>
           ) : (
             <div className="gb-grid">
-              {visible.map((g) => (
+              {visible.map((g) => {
+                const align = gbAlign(g.id);
+                return (
                 <div className="gb-card" key={g.id}>
                   <div className="gb-card__quote" aria-hidden="true">&ldquo;</div>
                   <p className="gb-card__msg">{g.message}</p>
-                  <div className="gb-card__by">{g.name}</div>
-                  {g.relationship && <div className="gb-card__rel">{g.relationship}</div>}
+                  <div className="gb-card__by" style={{ textAlign: align }}>&mdash;&nbsp;{g.name}</div>
+                  {g.relationship && <div className="gb-card__rel" style={{ textAlign: align }}>{g.relationship}</div>}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
