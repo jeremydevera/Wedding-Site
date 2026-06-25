@@ -465,6 +465,8 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .admin__main { flex: 1; min-width: 0; }
 .admin__topbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 30px; border-bottom: 1px solid var(--line); background: var(--surface); position: sticky; top: 0; z-index: 10; }
 .admin__title { font-family: var(--font-display); font-size: 26px; white-space: nowrap; }
+/* Client (owner) header title is smaller than the superadmin's. */
+.admin:not(.admin--sa) .admin__title { font-size: 20px; }
 .admin__topbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .admin__burger, .admin__overlay, .admin__drawer-close { display: none; }
 .admin__sitechip { display: inline-block; margin-left: 12px; font-family: var(--font-body); font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--accent-ink); background: var(--accent-soft); border: 1px solid var(--line); border-radius: 100px; padding: 3px 11px; vertical-align: middle; }
@@ -815,6 +817,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
   .admin__topbar > div:last-child { flex-wrap: wrap; }
   .admin__title { font-size: 20px; white-space: normal; }
   .admin--sa .admin__title { font-size: 22px; }
+  .admin:not(.admin--sa) .admin__title { font-size: 16px; }
   /* Client (owner) drawer header: couple names can be long — shrink + allow wrap. */
   .admin:not(.admin--sa) .admin__brand-name { font-size: 14px; white-space: normal; line-height: 1.2; }
   .admin__sitechip { margin-left: 0; }
