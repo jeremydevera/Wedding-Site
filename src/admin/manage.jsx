@@ -741,8 +741,8 @@ export function SettingsAdmin() {
             const sc = (f.envTitleSize != null && f.envTitleSize >= 1 && f.envTitleSize <= 10) ? f.envTitleSize : 5;
             const px = Math.round(9 + (sc - 1) / 9 * 30); // indicative preview only — real size scales with the envelope
             return (<>
-              <Field label={`Title size — ${sc} / 10`} id="s-envtitle" hint="Scales with the envelope — bigger on a wide/maximized screen, smaller on a phone, always in proportion. Save changes, then view the site.">
-                <input id="s-envtitle" type="range" min="1" max="10" step="1" value={sc} onChange={(e) => setKey("envTitleSize", parseInt(e.target.value, 10))} style={{ width: "100%", accentColor: "var(--accent)" }} />
+              <Field label={`Title size — ${sc.toFixed(1)} / 10`} id="s-envtitle" hint="Scales with the envelope — bigger on a wide/maximized screen, smaller on a phone, always in proportion. Save changes, then view the site.">
+                <input id="s-envtitle" type="range" min="1" max="10" step="0.1" value={sc} onChange={(e) => setKey("envTitleSize", parseFloat(e.target.value))} style={{ width: "100%", accentColor: "var(--accent)" }} />
               </Field>
               <div style={{ marginTop: 14, background: "#3a4a2a", borderRadius: 8, padding: "26px 16px", textAlign: "center", color: "#f3ebdb", fontFamily: "'Cormorant Garamond', Georgia, serif", overflow: "hidden" }}>
                 <div style={{ fontVariant: "small-caps", letterSpacing: ".08em", fontSize: px, lineHeight: 1.3 }}>A Love Letter From</div>
