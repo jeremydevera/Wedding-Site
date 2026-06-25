@@ -57,7 +57,27 @@ export function EnvelopeHero() {
     const img = artRef.current;
     if (img && img.complete && img.naturalWidth) triggerReady();
   }, [triggerReady]);
-  // Type-on animation removed for now — text shows statically (see CSS).
+  // Type-on reveal via Web Animations API. Crucially, ON FINISH we clear the
+  // clip-path entirely so the resting state is unclipped — otherwise a browser
+  // that clamps the negative end-inset to 0 shaves the last glyph ("m" in "From").
+  React.useEffect(() => {
+    if (!ready) return;
+    const root = artRef.current && artRef.current.closest(".inv-sealed-wrap");
+    if (!root) return;
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const type = (sel, count, dur, delay) => {
+      const el = root.querySelector(sel);
+      if (!el) return;
+      if (reduce || !el.animate) { el.style.clipPath = "none"; return; }
+      const anim = el.animate(
+        [{ clipPath: "inset(-18% 100% -18% 0)" }, { clipPath: "inset(-18% 0% -18% 0)" }],
+        { duration: dur, delay, easing: `steps(${count})`, fill: "forwards" }
+      );
+      anim.onfinish = () => { el.style.clipPath = "none"; anim.cancel(); }; // cancel so forwards-fill can't override the unclipped resting state
+    };
+    type(".inv-lf-label", 18, 900, 300);
+    type(".inv-lf-type", 14, 1100, 1300);
+  }, [ready]);
   React.useEffect(() => {
     if (!open) {
       document.body.style.overflow = "hidden";

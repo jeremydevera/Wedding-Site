@@ -1027,9 +1027,11 @@ body.env-sealed .decor { display: none; }
 .inv-letter-from { display: flex; flex-direction: column; align-items: center; }
 .inv-lf-names { font-family: "Cormorant Garamond", Georgia, serif; font-variant: small-caps; letter-spacing: .18em; }
 
-/* Type-on animation removed for now — label + names show statically (no clip). */
-.inv-lf-label { position: relative; display: inline-block; white-space: nowrap; }
-.inv-lf-type { position: relative; display: inline-block; white-space: nowrap; }
+/* Type-on reveal: start hidden (clip from the right). JS (WAAPI) animates the
+   reveal, then CLEARS the clip-path on finish — so the resting state has no clip
+   and a browser clamping the negative end-inset can't shave the last glyph. */
+.inv-lf-label { position: relative; display: inline-block; white-space: nowrap; clip-path: inset(-18% 100% -18% 0); }
+.inv-lf-type { position: relative; display: inline-block; white-space: nowrap; clip-path: inset(-14% 100% -14% 0); }
 
 @keyframes lfType { to { clip-path: inset(-18% -2% -18% -2%); } }
 @keyframes lfNib  { from { left: 0; } to { left: 100%; } }
