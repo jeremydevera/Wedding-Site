@@ -913,7 +913,6 @@ export function AdminApp() {
       </div>
     );
   }
-  const siteName = [settings.partnerA, settings.partnerB].filter(Boolean).join(" & ");
   // Superadmin on a client site manages that client's full admin (Dashboard, Settings,
   // RSVPs, …) AND keeps the platform console (Overview / Clients) in the same sidebar.
   // Owners only ever see their own client's tabs.
@@ -972,7 +971,7 @@ export function AdminApp() {
         <div className="admin__topbar">
           <div className="admin__topbar-left">
             <button className="admin__burger" onClick={() => setMenuOpen(true)} aria-label="Open menu">{Icon.menu({})}</button>
-            <div className="admin__title">{title}{isSuper && !onPlatformTab && siteName ? <span className="admin__sitechip">{siteName}</span> : null}</div>
+            <div className="admin__title">{title}</div>
           </div>
         </div>
         </div>
