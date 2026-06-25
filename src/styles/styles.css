@@ -87,6 +87,8 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .nav__brand { display: flex; align-items: center; gap: 12px; text-decoration: none; cursor: pointer; min-width: 0; flex: 0 1 auto; }
 .nav__names { font-family: var(--font-display); font-size: 21px; color: var(--ink); white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .nav__names .amp { color: var(--accent); font-style: italic; }
+/* Phones: drop the couple names beside the logo — keep just the monogram + burger */
+@media (max-width: 640px) { .nav__names { display: none; } }
 .nav__links { display: none; align-items: center; gap: 6px; }
 .nav__link {
   font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500;
