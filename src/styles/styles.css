@@ -1037,10 +1037,9 @@ body.env-sealed .decor { display: none; }
 @keyframes lfNib  { from { left: 0; } to { left: 100%; } }
 @keyframes lfBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 @keyframes lfHide { to { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) {
-  .inv-lf-label, .inv-lf-type { clip-path: none !important; animation: none !important; }
-  .inv-lf-label::after, .inv-lf-type::after { display: none !important; }
-}
+/* Note: the cover title type-on is intentionally EXEMPT from prefers-reduced-motion
+   (owner's choice) — it's a gentle text wipe, and all other motion (bg zoom, heart,
+   decorations) still respects the setting. So no reduce-motion override here. */
 .inv-heart-text {
   position: absolute; left: 46%; top: 45%; transform: translate(-50%, -50%);
   width: 80%; text-align: center; color: #f6ecdf;

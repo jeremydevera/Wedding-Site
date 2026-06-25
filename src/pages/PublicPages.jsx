@@ -75,11 +75,12 @@ export function EnvelopeHero() {
     if (!ready) return;
     const root = artRef.current && artRef.current.closest(".inv-sealed-wrap");
     if (!root) return;
-    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // The cover type-on is exempt from prefers-reduced-motion by design (owner's
+    // choice) — it's a gentle text wipe; other motion still respects the setting.
     const type = (sel, count, dur, delay) => {
       const el = root.querySelector(sel);
       if (!el) return;
-      if (reduce || !el.animate) { el.style.clipPath = "none"; return; }
+      if (!el.animate) { el.style.clipPath = "none"; return; }
       // Force the hidden start + reflow so the reveal ALWAYS plays — otherwise a
       // cached image (instant on desktop) flips ready before first paint and the
       // animation gets skipped.
