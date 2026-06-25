@@ -4,7 +4,7 @@ import { go } from "@/lib/nav.js";
 import { Store, useStore } from "@/lib/store.jsx";
 import { loadClientData, saveClientData } from "@/lib/api.js";
 import { resolveSubdomain } from "@/lib/tenant.js";
-import { FONT_OPTIONS, THEMES, THEME_FONTS, applyTheme } from "@/themes";
+import { FONT_OPTIONS, THEMES, THEME_FONTS, applyTheme, isPremiumTheme } from "@/themes";
 import { Button, ConfirmHost, FloatingDecor, Icon, Monogram, ToastHost, confirmDialog, toast } from "@/ui/components.jsx";
 import { TweakButton, TweakColor, TweakSection, TweakSelect, TweakText, TweakToggle, TweaksPanel } from "@/ui/tweaks-panel.jsx";
 import { DetailsPage, Home, SchedulePage, StoryPage, VenuePage } from "@/pages/PublicPages.jsx";
@@ -81,7 +81,12 @@ export function Nav({ route }) {
     <label className={"nav__themepick" + (block ? " nav__themepick--block" : "")}>
       <span className="nav__themepick-label">{block ? "Preview a theme" : "Theme"}</span>
       <select value={settings.theme} aria-label="Preview a theme" onChange={(e) => pickTheme(e.target.value)}>
-        {Object.keys(THEMES).map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
+        <optgroup label="Themes">
+          {Object.keys(THEMES).filter((k) => !isPremiumTheme(k)).map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
+        </optgroup>
+        <optgroup label="✦ Premium">
+          {Object.keys(THEMES).filter((k) => isPremiumTheme(k)).map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
+        </optgroup>
       </select>
     </label>
   );
