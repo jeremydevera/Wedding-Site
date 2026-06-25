@@ -1168,9 +1168,9 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    drop the min() line entirely, so without this they'd inherit a huge font and
    clip the text. The min() then refines where cqw is supported. */
 /* Single line for the names (no wrap), sized to fit the viewport. */
-.eg-sealed .inv-lf-label { font-size: 5.5vw; font-size: min(2.2cqw, 5.5vw); letter-spacing: .08em; }
-.eg-sealed .inv-lf-names { font-size: 5.5vw; font-size: min(2.2cqw, 5.5vw); }
-.eg-sealed .inv-open-cue { font-size: 4.5vw; font-size: min(1.9cqw, 4.5vw); top: 75%; }
+.eg-sealed .inv-lf-label { font-size: 4.5vw; font-size: min(1.85cqw, 4.5vw); letter-spacing: .08em; }
+.eg-sealed .inv-lf-names { font-size: 4.5vw; font-size: min(1.85cqw, 4.5vw); }
+.eg-sealed .inv-open-cue { font-size: 3.8vw; font-size: min(1.6cqw, 3.8vw); top: 75%; }
 .eg-open { width: min(1140px, 100vw, 105vh); flex: none; transition: width .6s ease; }
 .eg-cue {
   position: absolute; left: 50%;
