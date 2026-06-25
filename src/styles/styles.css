@@ -1059,12 +1059,13 @@ body.env-sealed .decor { display: none; }
 /* Blinking type cursor (nib) — tracks the reveal edge, then hides. Runs in sync
    with the WAAPI reveal (both start on .is-ready). opacity:0 by default so it
    never shows statically when the animation doesn't run. */
-.inv-lf-label::after, .inv-lf-type::after {
+/* Single type cursor — on the label only. The names reveal without a cursor
+   (a cursor on the wrapped 2-line names rendered as a tall double bar). */
+.inv-lf-label::after {
   content: ""; position: absolute; top: 10%; bottom: 10%; left: 0; width: .07em;
   background: #f3ebdb; border-radius: 1px; box-shadow: 0 0 4px rgba(243,235,219,.45); opacity: 0;
 }
 .is-ready .inv-lf-label::after { animation: lfNib 0.9s steps(18) .3s both, lfBlink .4s step-end .3s infinite, lfHide 1ms linear 1.25s forwards; }
-.is-ready .inv-lf-type::after { animation: lfNib 1.1s steps(14) 1.3s both, lfBlink .4s step-end 1.3s infinite, lfHide 1ms linear 2.45s forwards; }
 
 @keyframes lfType { to { clip-path: inset(-18% -2% -18% -2%); } }
 @keyframes lfNib  { from { left: 0; } to { left: 100%; } }
