@@ -201,16 +201,13 @@ export function TweaksContent() {
       <TweakText label="Hashtag" value={s.hashtag} onChange={(v) => upd({ hashtag: v })} />
       <TweakText label="Welcome line" value={s.welcome} onChange={(v) => upd({ welcome: v })} />
 
+      {s.theme !== "envelope" && (<>
       <TweakSection label="Home" />
       <TweakToggle label="Floating decorations" value={s.decorOn} onChange={(v) => upd({ decorOn: v })} />
       <TweakSelect label="Decoration" value={s.decorStyle}
-        options={[{ value: "petals", label: "Petals" }, { value: "butterflies", label: "Butterflies (GIF)" }, { value: "hearts", label: "Hearts" }, { value: "fireflies", label: "Fireflies" }, { value: "leaves", label: "Leaves" }, { value: "confetti", label: "Confetti" }]}
+        options={[{ value: "petals", label: "Petals" }, { value: "hearts", label: "Hearts" }, { value: "fireflies", label: "Fireflies" }, { value: "leaves", label: "Leaves" }, { value: "confetti", label: "Confetti" }, { value: "snow", label: "Snow" }, { value: "bubbles", label: "Bubbles" }, { value: "sparkles", label: "Sparkles" }, { value: "orbs", label: "Bokeh orbs" }, { value: "balloons", label: "Balloons" }]}
         onChange={(v) => upd({ decorStyle: v })} />
-      {s.decorStyle === "butterflies" && (
-        <TweakSelect label="Butterfly look" value={s.butterflyStyle}
-          options={[{ value: "fullcolor", label: "Full colour" }, { value: "assorted", label: "Assorted" }, { value: "faded", label: "Faded" }]}
-          onChange={(v) => upd({ butterflyStyle: v })} />
-      )}
+      </>)}
 
       <TweakSection label="Data" />
       <div className="twk-row">
@@ -296,7 +293,7 @@ export function App() {
           <Nav route={route} />
           <main key={route}><ActivePage /></main>
           <Footer />
-          <FloatingDecor on={settings.decorOn && route === "home"} style={settings.decorStyle} butterflyStyle={settings.butterflyStyle} butterflyColor={settings.butterflyColor} butterflyFlight={settings.butterflyFlight} butterflyCount={settings.butterflyCount} />
+          <FloatingDecor on={settings.decorOn && route === "home" && settings.theme !== "envelope"} style={settings.decorStyle} />
         </>
       )}
       <ToastHost />

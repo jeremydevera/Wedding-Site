@@ -338,36 +338,9 @@ export const Icon = {
 };
 
 // --- Floating home decorations (toggleable) --------------------------------
-// Butterfly colour is approximated by hue-rotating the base (blue ~210°) glyph.
-export const BFLY_BASE_HUE = 210;
-export function hexToHue(hex) {
-  hex = String(hex || "").replace("#", "");
-  if (hex.length === 3) hex = hex.replace(/./g, (c) => c + c);
-  const r = parseInt(hex.slice(0, 2), 16) / 255, g = parseInt(hex.slice(2, 4), 16) / 255, b = parseInt(hex.slice(4, 6), 16) / 255;
-  if ([r, g, b].some(Number.isNaN)) return BFLY_BASE_HUE;
-  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
-  let h = 0;
-  if (d === 0) h = 0;
-  else if (max === r) h = ((g - b) / d) % 6;
-  else if (max === g) h = (b - r) / d + 2;
-  else h = (r - g) / d + 4;
-  h *= 60; if (h < 0) h += 360;
-  return h;
-}
-export function bflyHueShift(hex) { return Math.round(hexToHue(hex) - BFLY_BASE_HUE); }
-export const BFLY_COLORS = [
-  { hex: "#5aa9e6", name: "Blue" },
-  { hex: "#8e7bd6", name: "Violet" },
-  { hex: "#e67ea9", name: "Pink" },
-  { hex: "#e8745a", name: "Coral" },
-  { hex: "#e8b54a", name: "Gold" },
-  { hex: "#5fae7e", name: "Green" },
-];
 export function decorGlyph(style) {
   const a = { fill: "currentColor" };
   switch (style) {
-    case "butterflies":
-      return <span className="decor__bfly">🦋</span>;
     case "hearts":
       return (
         <svg viewBox="0 0 24 24" className="decor__svg">
@@ -380,45 +353,48 @@ export function decorGlyph(style) {
       return <span className="decor__leaf" />;
     case "confetti":
       return <span className="decor__conf" />;
+    case "snow":
+      return <span className="decor__snow" />;
+    case "bubbles":
+      return <span className="decor__bubble" />;
+    case "sparkles":
+      return <span className="decor__spark" />;
+    case "orbs":
+      return <span className="decor__orb" />;
+    case "balloons":
+      return <span className="decor__balloon">🎈</span>;
     case "fireflies":
     default:
       return <span className="decor__fly" />;
   }
 }
 
-export function FloatingDecor({ on, style, butterflyStyle, butterflyColor, butterflyFlight, butterflyCount }) {
+export function FloatingDecor({ on, style }) {
   const active = on && style && style !== "none";
-  const baseCount = style === "fireflies" ? 20 : style === "confetti" ? 28 : style === "petals" || style === "leaves" ? 18 : 12;
-  const count = style === "butterflies" ? Math.max(1, Math.min(40, Math.round(butterflyCount || 12))) : baseCount;
-  const flight = butterflyFlight || "flutter";
-  const durFactor = flight === "calm" ? 1.7 : flight === "energetic" ? 0.55 : 1;
-  const amp = flight === "calm" ? 0.5 : flight === "energetic" ? 1.5 : 1;
-  const colorShift = bflyHueShift(butterflyColor || "#5aa9e6");
+  const baseCount = style === "fireflies" ? 20 : style === "confetti" ? 28 : style === "snow" ? 26 : style === "sparkles" ? 22 : style === "bubbles" ? 16 : style === "orbs" ? 12 : style === "balloons" ? 9 : style === "petals" || style === "leaves" ? 18 : 12;
+  const count = baseCount;
   const items = useMemo(() => {
     if (!active) return [];
     return Array.from({ length: count }).map(() => ({
       left: Math.random() * 100,
       top: 6 + Math.random() * 80,
-      dir: ["n", "s", "e", "w"][Math.floor(Math.random() * 4)],
       delay: -Math.random() * 18,
-      dur: (9 + Math.random() * 13) * durFactor,
+      dur: (9 + Math.random() * 13),
       sc: 0.55 + Math.random() * 0.95,
       sway: (Math.random() * 2 - 1).toFixed(2),
       hue: Math.random() > 0.5 ? "a" : "b",
       chue: Math.floor(Math.random() * 330),
     }));
-  }, [active, style, count, durFactor]);
+  }, [active, style, count]);
   if (!active) return null;
 
-  const isB = style === "butterflies";
   return (
-    <div className={"decor decor--" + style + (isB ? " decor--bfly-" + (butterflyStyle || "fullcolor") + " decor--fly-" + flight : "")} aria-hidden="true">
+    <div className={"decor decor--" + style} aria-hidden="true">
       {items.map((it, i) => {
-        const hueDeg = (isB && butterflyStyle === "assorted") ? it.chue : colorShift;
-        const st = { left: it.left + "%", animationDelay: it.delay + "s", animationDuration: it.dur + "s", "--sc": it.sc, "--sway": it.sway + "", "--hue": hueDeg + "deg", "--amp": amp };
-        if (isB) st.top = it.top + "%";
+        const hueDeg = style === "balloons" ? it.chue : 0;
+        const st = { left: it.left + "%", animationDelay: it.delay + "s", animationDuration: it.dur + "s", "--sc": it.sc, "--sway": it.sway + "", "--hue": hueDeg + "deg" };
         return (
-          <span key={i} className={"decor__item decor__item--" + it.hue + (isB ? " bfdir-" + it.dir : "")} style={st}>
+          <span key={i} className={"decor__item decor__item--" + it.hue} style={st}>
             {decorGlyph(style)}
           </span>
         );
@@ -428,27 +404,23 @@ export function FloatingDecor({ on, style, butterflyStyle, butterflyColor, butte
 }
 
 // Small contained preview of a decoration (for the admin settings panel)
-export function DecorPreview({ style, butterflyStyle, butterflyColor, butterflyCount, butterflyFlight }) {
-  const isB = style === "butterflies";
-  const n = isB ? Math.max(1, Math.min(24, Math.round(butterflyCount || 12))) : 5;
-  const flight = butterflyFlight || "flutter";
-  const durF = flight === "calm" ? 1.7 : flight === "energetic" ? 0.5 : 1;
-  const colorShift = bflyHueShift(butterflyColor || "#5aa9e6");
+export function DecorPreview({ style }) {
+  const n = 5;
   const items = useMemo(() => Array.from({ length: n }).map(() => ({
     left: 5 + Math.random() * 88,
     top: 8 + Math.random() * 74,
     delay: -(Math.random() * 4).toFixed(2),
-    dur: ((isB ? 2.8 : 3.4) + Math.random() * 2) * durF,
+    dur: (3.4 + Math.random() * 2),
     sc: 0.65 + Math.random() * 0.7,
     sway: (Math.random() * 2 - 1).toFixed(2),
     chue: Math.floor(Math.random() * 330),
-  })), [n, style, durF]);
+  })), [n, style]);
   if (!style || style === "none") return null;
-  const cls = "decor-preview decor--" + style + (isB ? " decor--bfly-" + (butterflyStyle || "fullcolor") + " decor--fly-" + flight : "");
+  const cls = "decor-preview decor--" + style;
   return (
     <div className={cls} aria-hidden="true">
       {items.map((it, i) => {
-        const hueDeg = (isB && butterflyStyle === "assorted") ? it.chue : colorShift;
+        const hueDeg = style === "balloons" ? it.chue : 0;
         return (
           <span key={i} className="decor-preview__item" style={{ left: it.left + "%", top: it.top + "%", animationDelay: it.delay + "s", animationDuration: it.dur + "s", "--sc": it.sc, "--hue": hueDeg + "deg", "--sway": it.sway }}>
             {decorGlyph(style)}
