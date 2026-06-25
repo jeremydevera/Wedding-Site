@@ -57,23 +57,7 @@ export function EnvelopeHero() {
     const img = artRef.current;
     if (img && img.complete && img.naturalWidth) triggerReady();
   }, [triggerReady]);
-  // Drive the type-on with the Web Animations API once ready. CSS-class gating was
-  // unreliable across theme switches (a cached envelope image lets React reuse the
-  // finished nodes, so the CSS animation never replays). WAAPI runs deterministically
-  // every time `ready` flips — the .is-ready CSS now only drives the cursor nib.
-  React.useEffect(() => {
-    if (!ready) return;
-    const root = artRef.current && artRef.current.closest(".inv-sealed-wrap");
-    if (!root) return;
-    const hidden = "inset(-18% 100% -18% -2%)", shown = "inset(-18% -2% -18% -2%)";
-    const type = (sel, count, dur, delay) => {
-      const el = root.querySelector(sel);
-      if (el && el.animate) el.animate([{ clipPath: hidden }, { clipPath: shown }],
-        { duration: dur, delay, easing: `steps(${count})`, fill: "both" });
-    };
-    type(".inv-lf-label", 18, 900, 300);
-    type(".inv-lf-type", 14, 1100, 1300);
-  }, [ready]);
+  // Type-on animation removed for now — text shows statically (see CSS).
   React.useEffect(() => {
     if (!open) {
       document.body.style.overflow = "hidden";
