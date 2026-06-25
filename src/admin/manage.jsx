@@ -21,8 +21,8 @@ const AdminSaveCtx = React.createContext({ saving: false, dirty: false, save: ()
 export function SaveFooter() {
   const { saving, dirty, save } = React.useContext(AdminSaveCtx);
   return (
-    <div className="panel__foot">
-      <span className="panel__foot-hint">{dirty ? "You have unsaved changes." : "Changes apply to your live site after you save."}</span>
+    <div className="admin__savebar">
+      <span className="admin__savebar-hint">{dirty ? "You have unsaved changes." : "Changes apply to your live site after you save."}</span>
       <Button variant="primary" size="sm" disabled={saving || !dirty} onClick={save}>{saving ? "Saving…" : "Save changes"}</Button>
     </div>
   );
@@ -415,7 +415,6 @@ export function QuizAdmin() {
             </tbody>
           </table>
         </div>
-        <SaveFooter />
       </div>
       )}
 
@@ -550,7 +549,6 @@ export function ScheduleAdmin() {
         </div>
         <div className="sched-add"><Button variant="ghost" block onClick={addItem}>+ Add another moment</Button></div>
       </div>
-      <SaveFooter />
     </div>
   );
 }
@@ -608,7 +606,6 @@ export function SettingsAdmin() {
             <Field label="Hashtag" id="s-hash"><Input id="s-hash" value={f.hashtag} onChange={set("hashtag")} /></Field>
           </div>
         </div>
-        <SaveFooter />
       </div>)}
 
       {tab === "features" && (<div className="panel">
@@ -630,7 +627,6 @@ export function SettingsAdmin() {
             })}
           </div>
         </div>
-        <SaveFooter />
       </div>)}
 
       {tab === "venue" && (<div className="panel">
@@ -656,7 +652,6 @@ export function SettingsAdmin() {
           </div>
           <Field label="Dress code" id="s-dc"><Input id="s-dc" value={f.dressCode} onChange={set("dressCode")} /></Field>
         </div>
-        <SaveFooter />
       </div>)}
 
       {tab === "appearance" && (<><div className="panel">
@@ -809,7 +804,6 @@ export function SettingsAdmin() {
             <DecorPreview style={f.decorStyle} />
           </div>
         </div>
-        <SaveFooter />
       </div>
       )}</>)}
 
@@ -826,7 +820,6 @@ export function SettingsAdmin() {
           </div>
           <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 16 }}>Photos save automatically.</p>
         </div>
-        <SaveFooter />
       </div>)}
 
       {tab === "access" && (<><div className="panel">
@@ -844,7 +837,6 @@ export function SettingsAdmin() {
           <AdminToggle label="Allow guest uploads" desc="Master switch for the photo/video upload pages." checked={f.uploadsEnabled} onChange={(v) => setKey("uploadsEnabled", v)} />
           <AdminToggle label="Show public gallery" desc="Hide the gallery from guests entirely if you prefer." checked={f.galleryEnabled} onChange={(v) => setKey("galleryEnabled", v)} />
         </div>
-        <SaveFooter />
       </div></>)}
     </div>
   );
@@ -975,6 +967,7 @@ export function AdminApp() {
           {activeTab === "settings" && <SettingsAdmin />}
           {activeTab === "overview" && <SuperOverview />}
           {activeTab === "clients" && <ClientsAdmin />}
+          {clientId && ["settings", "schedule", "quiz"].includes(activeTab) && <SaveFooter />}
           </AdminSaveCtx.Provider>
         </div>
       </main>
