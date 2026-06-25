@@ -759,8 +759,8 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
   .admin__side { display: flex; position: fixed; top: 0; left: 0; height: 100vh; height: 100dvh; width: 272px; max-width: 84vw; transform: translate3d(-100%, 0, 0); transition: transform .26s ease; z-index: 60; box-shadow: 0 0 44px rgba(0,0,0,.28); overflow-y: auto; -webkit-overflow-scrolling: touch; will-change: transform; }
   .admin__side--open { transform: translate3d(0, 0, 0); }
   .admin__overlay { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.42); z-index: 55; }
-  .admin__drawer-close { display: inline-flex; align-items: center; justify-content: center; position: absolute; top: 14px; right: 12px; padding: 4px; background: none; border: none; color: var(--ink-soft); cursor: pointer; }
-  .admin__drawer-close svg { width: 22px; height: 22px; }
+  .admin__drawer-close { display: inline-flex; align-items: center; justify-content: center; position: absolute; top: 8px; right: 8px; width: 48px; height: 48px; padding: 0; background: none; border: none; color: var(--ink-soft); cursor: pointer; z-index: 2; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  .admin__drawer-close svg { width: 22px; height: 22px; pointer-events: none; }
   .admin--sa .admin__drawer-close { color: #fafafa; }
   .admin__burger { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex: none; background: none; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   .admin__burger svg { width: 20px; height: 20px; pointer-events: none; }
@@ -1143,9 +1143,9 @@ html:has(body.env-sealed) { overflow: hidden; }
 /* vw value first as a fallback: browsers without container-query units (cqw)
    drop the min() line entirely, so without this they'd inherit a huge font and
    clip the text. The min() then refines where cqw is supported. */
-.eg-sealed .inv-lf-label { font-size: 5.5vw; font-size: min(1.85cqw, 5.5vw); letter-spacing: .1em; }
-.eg-sealed .inv-lf-names { font-size: 5.5vw; font-size: min(1.85cqw, 5.5vw); }
-.eg-sealed .inv-open-cue { font-size: 5vw; font-size: min(1.7cqw, 5vw); top: 75%; }
+.eg-sealed .inv-lf-label { font-size: 4.5vw; font-size: min(1.85cqw, 4.5vw); letter-spacing: .08em; }
+.eg-sealed .inv-lf-names { font-size: 4.5vw; font-size: min(1.85cqw, 4.5vw); }
+.eg-sealed .inv-open-cue { font-size: 4vw; font-size: min(1.7cqw, 4vw); top: 75%; }
 .eg-open { width: min(1140px, 100vw, 105vh); flex: none; transition: width .6s ease; }
 .eg-cue {
   position: absolute; left: 50%;
