@@ -89,7 +89,8 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 }
 .nav__inner { display: flex; align-items: center; justify-content: space-between; height: 70px; gap: 16px; }
 .nav__brand { display: flex; align-items: center; gap: 12px; text-decoration: none; cursor: pointer; min-width: 0; flex: 0 1 auto; }
-.nav__names { font-family: var(--font-display); font-size: 21px; color: var(--ink); white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* Logo-only header: couple names are hidden beside the monogram on all sizes. */
+.nav__names { display: none; font-family: var(--font-display); font-size: 21px; color: var(--ink); white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .nav__names .amp { color: var(--accent); font-style: italic; }
 /* Phones: drop the couple names beside the logo — keep just the monogram + burger */
 @media (max-width: 640px) { .nav__names { display: none; } }
@@ -814,6 +815,8 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
   .admin__topbar > div:last-child { flex-wrap: wrap; }
   .admin__title { font-size: 20px; white-space: normal; }
   .admin--sa .admin__title { font-size: 22px; }
+  /* Client (owner) drawer header: couple names can be long — shrink + allow wrap. */
+  .admin:not(.admin--sa) .admin__brand-name { font-size: 14px; white-space: normal; line-height: 1.2; }
   .admin__sitechip { margin-left: 0; }
 }
 @media (max-width: 420px) {
