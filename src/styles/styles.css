@@ -824,10 +824,14 @@ body.env-sealed .decor { display: none; }
 @keyframes bgifPan { from { object-position: 42% 38%; } to { object-position: 58% 62%; } }
 .decor-preview .decor__bgif { object-fit: contain; }
 .decor__svg { width: clamp(28px, 3.4vw, 64px); height: clamp(28px, 3.4vw, 64px); display: block; opacity: 0.55; transform: scale(var(--sc, 1)); }
-/* fall + sway (petals, leaves, hearts, butterflies, confetti) */
+/* fall + sway (petals, leaves, hearts, butterflies, confetti, snow, sparkles) */
 .decor--petals .decor__item, .decor--leaves .decor__item, .decor--hearts .decor__item,
-.decor--confetti .decor__item {
+.decor--confetti .decor__item, .decor--snow .decor__item, .decor--sparkles .decor__item {
   animation-name: decorFall; animation-timing-function: linear; animation-iteration-count: infinite;
+}
+/* rise (fireflies, bubbles, orbs, balloons) */
+.decor--bubbles .decor__item, .decor--orbs .decor__item, .decor--balloons .decor__item {
+  animation-name: decorRise; bottom: -6%; top: auto;
 }
 @keyframes decorFall {
   0%   { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
@@ -888,6 +892,22 @@ body.env-sealed .decor { display: none; }
 .decor__leaf { display: block; width: clamp(18px, 2vw, 38px); height: clamp(10px, 1.1vw, 22px); background: color-mix(in oklch, var(--accent) 78%, white); border-radius: 0 100% 0 100%; opacity: 0.55; transform: scale(var(--sc, 1)); }
 .decor__conf { display: block; width: clamp(9px, 1vw, 18px); height: clamp(9px, 1vw, 18px); background: var(--accent); border-radius: 2px; opacity: 0.7; transform: scale(var(--sc, 1)); }
 .decor__item--b .decor__conf { background: var(--gold); }
+/* snow — small soft white dots, falling */
+.decor__snow { display: block; width: clamp(6px, .8vw, 13px); height: clamp(6px, .8vw, 13px); border-radius: 50%; background: #fff; opacity: 0.85; box-shadow: 0 0 6px rgba(255,255,255,.7); transform: scale(var(--sc, 1)); }
+/* bubbles — translucent rising orbs with a highlight */
+.decor__bubble { display: block; width: clamp(12px, 1.6vw, 30px); height: clamp(12px, 1.6vw, 30px); border-radius: 50%; background: radial-gradient(circle at 32% 30%, rgba(255,255,255,.9), rgba(255,255,255,.1) 42%, rgba(255,255,255,0) 60%); border: 1px solid rgba(255,255,255,.45); opacity: 0.6; transform: scale(var(--sc, 1)); }
+/* sparkles — four-point star that twinkles while drifting down */
+.decor__spark { display: block; width: clamp(10px, 1.3vw, 22px); height: clamp(10px, 1.3vw, 22px); background: currentColor; opacity: 0.85; transform: scale(var(--sc, 1)); clip-path: polygon(50% 0%, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0% 50%, 39% 39%); animation: sparkTwinkle 1.8s ease-in-out infinite; }
+@keyframes sparkTwinkle {
+  0%, 100% { opacity: 0.15; transform: scale(calc(var(--sc, 1) * 0.45)) rotate(0deg); }
+  50%      { opacity: 0.95; transform: scale(var(--sc, 1)) rotate(45deg); }
+}
+/* bokeh orbs — soft glowing circles that rise and pulse */
+.decor__orb { display: block; width: clamp(14px, 2.4vw, 46px); height: clamp(14px, 2.4vw, 46px); border-radius: 50%; background: radial-gradient(circle at 50% 50%, color-mix(in oklch, var(--accent) 60%, white) 0%, transparent 70%); filter: blur(1px); opacity: 0.5; transform: scale(var(--sc, 1)); animation: orbPulse 3s ease-in-out infinite; }
+.decor__item--b .decor__orb { background: radial-gradient(circle at 50% 50%, color-mix(in oklch, var(--gold) 60%, white) 0%, transparent 70%); }
+@keyframes orbPulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.6; } }
+/* balloons — emoji, rising slowly; per-item hue varies the colour */
+.decor__balloon { display: block; font-size: clamp(24px, 3vw, 54px); line-height: 1; filter: hue-rotate(var(--hue, 0deg)) drop-shadow(0 3px 4px rgba(0,0,0,.15)); }
 
 /* contained decoration preview (admin settings) */
 .decor-preview { position: relative; height: 150px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface-2); overflow: hidden; }
@@ -901,7 +921,8 @@ body.env-sealed .decor { display: none; }
   100% { transform: translate(0,0); }
 }
 .decor-preview .decor__bfly { font-size: 34px; }
-.decor-preview .decor__petal, .decor-preview .decor__leaf, .decor-preview .decor__conf, .decor-preview .decor__fly { transform: scale(1.5); }
+.decor-preview .decor__balloon { font-size: 30px; }
+.decor-preview .decor__petal, .decor-preview .decor__leaf, .decor-preview .decor__conf, .decor-preview .decor__fly, .decor-preview .decor__snow, .decor-preview .decor__bubble, .decor-preview .decor__spark, .decor-preview .decor__orb { transform: scale(1.5); }
 
 /* image upload field (vertical, no overlap) + crop modal */
 .imgup { display: flex; flex-direction: column; gap: 10px; max-width: 240px; }
@@ -1145,8 +1166,12 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* vw value first as a fallback: browsers without container-query units (cqw)
    drop the min() line entirely, so without this they'd inherit a huge font and
    clip the text. The min() then refines where cqw is supported. */
-.eg-sealed .inv-lf-label { font-size: 5.5vw; font-size: min(2.2cqw, 5.5vw); letter-spacing: .08em; }
-.eg-sealed .inv-lf-names { font-size: 5.5vw; font-size: min(2.2cqw, 5.5vw); }
+/* Keep the cover text inside a centered band; long names WRAP to a new line
+   instead of crossing the edges. Bigger now that wrapping prevents clipping. */
+.eg-sealed .inv-letter-from { width: auto; max-width: 80vw; text-align: center; }
+.eg-sealed .inv-lf-label { font-size: 7vw; font-size: min(2.8cqw, 7vw); letter-spacing: .06em; max-width: 80vw; }
+.eg-sealed .inv-lf-names { font-size: 7vw; font-size: min(2.8cqw, 7vw); max-width: 80vw; line-height: 1.25; }
+.eg-sealed .inv-lf-type { white-space: normal; }
 .eg-sealed .inv-open-cue { font-size: 4.5vw; font-size: min(1.9cqw, 4.5vw); top: 75%; }
 .eg-open { width: min(1140px, 100vw, 105vh); flex: none; transition: width .6s ease; }
 .eg-cue {
