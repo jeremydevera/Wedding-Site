@@ -5,7 +5,11 @@
    ============================================================================ */
 
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; overflow-x: clip; }
+/* Belt-and-suspenders: never allow sideways scrolling site-wide. overflow-x:clip
+   (not hidden) keeps the viewport the scroll container so position:sticky still
+   works. Anything wider than the screen is clipped, not scrollable-to. */
+body { overflow-x: clip; }
 body {
   margin: 0;
   background: var(--bg);
