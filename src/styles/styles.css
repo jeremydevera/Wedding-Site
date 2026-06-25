@@ -1198,7 +1198,10 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* ── Venue location picker (admin Settings → Venue) ─────────────────────── */
-.lp { display: block; }
+/* isolate: confine the picker's internal z-indexes (search z1200 / results z1300)
+   to their own stacking context so they can't paint over the sticky settings
+   tabs (z9). The whole map block then scrolls behind the tabs. */
+.lp { display: block; isolation: isolate; }
 .lp__searchwrap { position: relative; z-index: 1200; }
 .lp__searchicon {
   position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
