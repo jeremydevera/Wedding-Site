@@ -2,7 +2,8 @@ import React from "react";
 import { go } from "@/lib/nav.js";
 import { Store, useStore } from "@/lib/store.jsx";
 import { EG_TINTS, THEMES, THEME_FONTS, egTintGradient, isPremiumTheme } from "@/themes";
-import { Button, CropModal, DecorPreview, Field, Icon, Input, Modal, Monogram, Placeholder, SectionHead, Select, Textarea, confirmDialog, mapEmbedUrl, mapSearchUrl, toast } from "@/ui/components.jsx";
+import { Button, CropModal, DecorPreview, FallingFx, Field, Icon, Input, Modal, Monogram, Pager, Placeholder, SectionHead, Select, Textarea, confirmDialog, mapEmbedUrl, mapSearchUrl, toast, usePaged } from "@/ui/components.jsx";
+import { FX_LIST } from "@/lib/falling-fx.js";
 import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { signOut } from "@/lib/auth.js";
@@ -152,6 +153,7 @@ export function RsvpsAdmin() {
     }
     return true;
   });
+  const pg = usePaged(filtered, 20);
 
   function exportCsv() {
     const header = ["Full Name", "Email", "Phone", "Status", "Guests", "Plus-One Names", "Dietary", "Dietary Notes", "Song Request", "Notes", "Submitted"];
@@ -178,7 +180,7 @@ export function RsvpsAdmin() {
           <table className="tbl">
             <thead><tr><th>Name</th><th>Contact</th><th>Status</th><th>Guests</th><th>Dietary</th><th>Submitted</th><th></th></tr></thead>
             <tbody>
-              {filtered.map((r) => (
+              {pg.pageItems.map((r) => (
                 <tr key={r.id}>
                   <td><strong>{r.fullName}</strong>{r.plusOne && <div style={{ fontSize: 13, color: "var(--muted)" }}>+ {r.plusOne}</div>}</td>
                   <td><div>{r.email}</div>{r.phone && <div style={{ fontSize: 13, color: "var(--muted)" }}>{r.phone}</div>}</td>
@@ -198,6 +200,7 @@ export function RsvpsAdmin() {
             </tbody>
           </table>
         </div>
+        <Pager page={pg.page} totalPages={pg.totalPages} total={pg.total} perPage={pg.perPage} start={pg.start} onPage={pg.setPage} noun="RSVPs" />
       </div>
 
       <Modal open={!!detail} onClose={() => setDetail(null)} label="RSVP detail">
@@ -317,6 +320,7 @@ export function GuestbookAdmin() {
   // With moderation: split into Published (visible/hidden) vs Pending approval.
   const filtered = !moderation ? bySearch
     : bySearch.filter((g) => view === "pending" ? g.status === "pending" : g.status !== "pending");
+  const pg = usePaged(filtered, 20);
 
   function exportCsv() {
     const rows = [["Guest Name", "Message", "Relationship", "Status", "Submitted"],
@@ -343,7 +347,7 @@ export function GuestbookAdmin() {
         <table className="tbl">
           <thead><tr><th>Guest</th><th>Message</th><th>Status</th><th>Date</th><th></th></tr></thead>
           <tbody>
-            {filtered.map((g) => (
+            {pg.pageItems.map((g) => (
               <tr key={g.id} style={{ opacity: g.status === "hidden" ? 0.5 : 1 }}>
                 <td><strong>{g.name}</strong>{g.relationship && <div style={{ fontSize: 13, color: "var(--muted)" }}>{g.relationship}</div>}</td>
                 <td style={{ maxWidth: 420 }}>{g.message}</td>
@@ -363,6 +367,7 @@ export function GuestbookAdmin() {
           </tbody>
         </table>
       </div>
+      <Pager page={pg.page} totalPages={pg.totalPages} total={pg.total} perPage={pg.perPage} start={pg.start} onPage={pg.setPage} noun="messages" />
     </div>
   );
 }
@@ -373,6 +378,7 @@ export function QuizAdmin() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const sorted = [...quizSubs].sort((a, b) => b.score - a.score);
+  const lb = usePaged(sorted, 20);
   const openNew = () => { setEditing(null); setEditorOpen(true); };
   const openEdit = (q) => { setEditing(q); setEditorOpen(true); };
   const [tab, setTab] = useState("leaderboard");
@@ -426,19 +432,23 @@ export function QuizAdmin() {
           <table className="tbl">
             <thead><tr><th>#</th><th>Guest</th><th>Score</th><th>Played</th><th></th></tr></thead>
             <tbody>
-              {sorted.map((s, i) => (
+              {lb.pageItems.map((s, i) => {
+                const rank = lb.start + i + 1;
+                return (
                 <tr key={s.id}>
-                  <td style={{ fontFamily: "var(--font-display)", fontSize: 20, color: i < 3 ? "var(--accent)" : "var(--muted)" }}>{i + 1}</td>
+                  <td style={{ fontFamily: "var(--font-display)", fontSize: 20, color: rank <= 3 ? "var(--accent)" : "var(--muted)" }}>{rank}</td>
                   <td><strong>{s.name}</strong></td>
                   <td><strong>{s.score}</strong> / {s.total}</td>
                   <td style={{ color: "var(--muted)" }}>{fmtDate(s.createdAt)}</td>
                   <td><button className="icon-btn" onClick={() => setOpen(s)}>{Icon.eye({})}</button></td>
                 </tr>
-              ))}
+                );
+              })}
               {quizSubs.length === 0 && <tr><td colSpan={5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No one has played yet.</td></tr>}
             </tbody>
           </table>
         </div>
+        <Pager page={lb.page} totalPages={lb.totalPages} total={lb.total} perPage={lb.perPage} start={lb.start} onPage={lb.setPage} noun="plays" />
       </div>
       )}
       <Modal open={!!open} onClose={() => setOpen(null)} label="Quiz answers">
@@ -811,11 +821,14 @@ export function SettingsAdmin() {
               <option value="sparkles">Sparkles</option>
               <option value="orbs">Bokeh orbs</option>
               <option value="balloons">Floating balloons</option>
+              {FX_LIST.map((e) => (<option key={e.id} value={"fx-" + e.id}>{e.title}</option>))}
             </Select>
           </Field>
           <div style={{ marginTop: 4 }}>
             <span className="field__label" style={{ display: "block", marginBottom: 7 }}>Preview</span>
-            <DecorPreview style={f.decorStyle} />
+            {String(f.decorStyle).startsWith("fx-")
+              ? <FallingFx id={f.decorStyle.slice(3)} preview />
+              : <DecorPreview style={f.decorStyle} />}
           </div>
         </div>
         <SaveFooter />

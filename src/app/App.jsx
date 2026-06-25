@@ -5,7 +5,8 @@ import { Store, useStore } from "@/lib/store.jsx";
 import { loadClientData, saveClientData } from "@/lib/api.js";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { FONT_OPTIONS, THEMES, THEME_FONTS, applyTheme, isPremiumTheme } from "@/themes";
-import { Button, ConfirmHost, FloatingDecor, Icon, Monogram, ToastHost, confirmDialog, toast } from "@/ui/components.jsx";
+import { Button, ConfirmHost, FallingFx, FloatingDecor, Icon, Monogram, ToastHost, confirmDialog, toast } from "@/ui/components.jsx";
+import { FX_LIST } from "@/lib/falling-fx.js";
 import { TweakButton, TweakColor, TweakSection, TweakSelect, TweakText, TweakToggle, TweaksPanel } from "@/ui/tweaks-panel.jsx";
 import { DetailsPage, Home, SchedulePage, StoryPage, VenuePage } from "@/pages/PublicPages.jsx";
 import { RSVPPage } from "@/features/rsvp.jsx";
@@ -205,7 +206,7 @@ export function TweaksContent() {
       <TweakSection label="Home" />
       <TweakToggle label="Floating decorations" value={s.decorOn} onChange={(v) => upd({ decorOn: v })} />
       <TweakSelect label="Decoration" value={s.decorStyle}
-        options={[{ value: "petals", label: "Petals" }, { value: "hearts", label: "Hearts" }, { value: "fireflies", label: "Fireflies" }, { value: "leaves", label: "Leaves" }, { value: "confetti", label: "Confetti" }, { value: "snow", label: "Snow" }, { value: "bubbles", label: "Bubbles" }, { value: "sparkles", label: "Sparkles" }, { value: "orbs", label: "Bokeh orbs" }, { value: "balloons", label: "Balloons" }]}
+        options={[{ value: "petals", label: "Petals" }, { value: "hearts", label: "Hearts" }, { value: "fireflies", label: "Fireflies" }, { value: "leaves", label: "Leaves" }, { value: "confetti", label: "Confetti" }, { value: "snow", label: "Snow" }, { value: "bubbles", label: "Bubbles" }, { value: "sparkles", label: "Sparkles" }, { value: "orbs", label: "Bokeh orbs" }, { value: "balloons", label: "Balloons" }, ...FX_LIST.map((e) => ({ value: "fx-" + e.id, label: e.title }))]}
         onChange={(v) => upd({ decorStyle: v })} />
       </>)}
 
@@ -293,7 +294,11 @@ export function App() {
           <Nav route={route} />
           <main key={route}><ActivePage /></main>
           <Footer />
-          <FloatingDecor on={settings.decorOn && route === "home" && settings.theme !== "envelope"} style={settings.decorStyle} />
+          {settings.decorOn && route === "home" && settings.theme !== "envelope" && (
+            String(settings.decorStyle).startsWith("fx-")
+              ? <FallingFx id={settings.decorStyle.slice(3)} />
+              : <FloatingDecor on style={settings.decorStyle} />
+          )}
         </>
       )}
       <ToastHost />

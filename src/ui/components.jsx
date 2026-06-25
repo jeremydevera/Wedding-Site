@@ -1,5 +1,6 @@
 import React from "react";
 import { uid } from "@/lib/store.jsx";
+import { FX_CSS, FX_MOUNTS } from "@/lib/falling-fx.js";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // ============================================================================
@@ -65,6 +66,41 @@ export function Textarea(props) {
 }
 export function Select({ children, ...props }) {
   return <select className={"input select " + (props.className || "")} {...props}>{children}</select>;
+}
+
+// --- Pagination -------------------------------------------------------------
+// Client-side pager for admin lists. Pass the full (already-filtered) array;
+// get back the current page's slice + controls. Page auto-clamps when the list
+// shrinks (e.g. after a search/filter change or a delete) so you never land on
+// an empty page past the end.
+export function usePaged(items, perPage = 20) {
+  const list = items || [];
+  const total = list.length;
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  const [page, setPage] = useState(1);
+  useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * perPage;
+  const pageItems = list.slice(start, start + perPage);
+  return { page: safePage, setPage, pageItems, totalPages, total, perPage, start };
+}
+
+export function Pager({ page, totalPages, total, onPage, perPage = 20, start = 0, noun = "rows" }) {
+  if (total === 0) return null;
+  const from = start + 1;
+  const to = Math.min(start + perPage, total);
+  return (
+    <div className="pager">
+      <span className="pager__info">{from}–{to} of {total} {noun}</span>
+      {totalPages > 1 && (
+        <div className="pager__nav">
+          <button className="pager__btn" disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Previous page">‹ Prev</button>
+          <span className="pager__page">Page {page} / {totalPages}</span>
+          <button className="pager__btn" disabled={page >= totalPages} onClick={() => onPage(page + 1)} aria-label="Next page">Next ›</button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // --- Section header ---------------------------------------------------------
@@ -367,6 +403,31 @@ export function decorGlyph(style) {
     default:
       return <span className="decor__fly" />;
   }
+}
+
+// Polished gallery effects (see src/lib/falling-fx.js) used as "fx-*" decorations.
+// CSS is injected once; each effect builds its own particles into the stage element.
+let _fxCssInjected = false;
+function ensureFxCss() {
+  if (_fxCssInjected || typeof document === "undefined") return;
+  const el = document.createElement("style");
+  el.id = "falling-fx-css";
+  el.textContent = FX_CSS;
+  document.head.appendChild(el);
+  _fxCssInjected = true;
+}
+export function FallingFx({ id, preview }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    ensureFxCss();
+    const stage = ref.current;
+    if (!stage) return;
+    const mount = FX_MOUNTS[id];
+    stage.innerHTML = "";
+    if (mount) { try { mount(stage); } catch (e) { /* decorative only — never break the page */ } }
+    return () => { if (stage) stage.innerHTML = ""; };
+  }, [id]);
+  return <div ref={ref} className={(preview ? "decor-preview " : "decor ") + "fx fx-" + id} aria-hidden="true" />;
 }
 
 export function FloatingDecor({ on, style }) {
