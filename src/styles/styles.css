@@ -375,7 +375,7 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .gb-card__quote { font-family: var(--font-display); font-size: 38px; line-height: 1; color: var(--accent-soft); margin-bottom: 8px; }
 .gb-card__msg { font-family: var(--font-display); font-size: 18px; line-height: 1.65; color: var(--ink); font-style: italic; margin: 0; }
 .gb-card__by { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); font-family: var(--font-body); font-size: 14px; font-weight: 600; color: var(--ink); letter-spacing: 0.01em; }
-.gb-card__rel { font-weight: 400; color: var(--muted); }
+.gb-card__rel { font-weight: 400; font-size: 13px; color: var(--muted); margin-top: 3px; }
 
 /* --- Quiz ------------------------------------------------------------------*/
 .quiz-progress { height: 4px; background: var(--surface-2); border-radius: 100px; margin-bottom: 30px; overflow: hidden; }
