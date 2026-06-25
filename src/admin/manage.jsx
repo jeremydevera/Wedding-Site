@@ -739,7 +739,7 @@ export function SettingsAdmin() {
         <div className="panel__body">
           {(() => {
             const sc = (f.envTitleSize != null && f.envTitleSize >= 1 && f.envTitleSize <= 10) ? f.envTitleSize : 5;
-            const px = Math.round(14 + (sc - 1) / 9 * 26); // indicative preview only — real size scales with the envelope
+            const px = Math.round(9 + (sc - 1) / 9 * 30); // indicative preview only — real size scales with the envelope
             return (<>
               <Field label={`Title size — ${sc} / 10`} id="s-envtitle" hint="Scales with the envelope — bigger on a wide/maximized screen, smaller on a phone, always in proportion. Save changes, then view the site.">
                 <input id="s-envtitle" type="range" min="1" max="10" step="1" value={sc} onChange={(e) => setKey("envTitleSize", parseInt(e.target.value, 10))} style={{ width: "100%", accentColor: "var(--accent)" }} />

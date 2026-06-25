@@ -43,7 +43,7 @@ export function egTintVars(s) {
   // falls back to the default 5.
   const t = s.envTitleSize;
   const scale = (t != null && t >= 1 && t <= 10) ? t : 5;
-  const titleCqw = (1.4 + (scale - 1) / 9 * 2.0).toFixed(3); // scale 1→1.4cqw, 5→2.29, 10→3.4
+  const titleCqw = (0.9 + (scale - 1) / 9 * 2.7).toFixed(3); // scale 1→0.9cqw (small), 5→2.1, 10→3.6
   return { "--eg-tint": open, "--eg-tint-sealed": sealed, "--eg-tint-grad": egTintGradient(s.envTintColor || "olive"), "--eg-title-cqw": titleCqw };
 }
 
