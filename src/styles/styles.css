@@ -84,8 +84,8 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
   border-bottom: 1px solid color-mix(in oklch, var(--line) 70%, transparent);
 }
 .nav__inner { display: flex; align-items: center; justify-content: space-between; height: 70px; gap: 16px; }
-.nav__brand { display: flex; align-items: center; gap: 12px; text-decoration: none; cursor: pointer; }
-.nav__names { font-family: var(--font-display); font-size: 21px; color: var(--ink); white-space: nowrap; }
+.nav__brand { display: flex; align-items: center; gap: 12px; text-decoration: none; cursor: pointer; min-width: 0; flex: 0 1 auto; }
+.nav__names { font-family: var(--font-display); font-size: 21px; color: var(--ink); white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .nav__names .amp { color: var(--accent); font-style: italic; }
 .nav__links { display: none; align-items: center; gap: 6px; }
 .nav__link {
@@ -100,8 +100,10 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .nav__burger {
   display: inline-flex; background: none; border: 1px solid var(--line); border-radius: var(--radius);
   padding: 8px; cursor: pointer; color: var(--ink);
+  /* stay a fixed, top-stacked tap target so long names can't overflow onto it */
+  flex: none; position: relative; z-index: 1; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
-.nav__burger svg { width: 22px; height: 22px; }
+.nav__burger svg { width: 22px; height: 22px; pointer-events: none; }
 
 /* Demo/showcase theme picker — replaces the RSVP CTA on the demo site */
 .nav__themepick { display: none; align-items: center; gap: 8px; }
@@ -1138,9 +1140,12 @@ html:has(body.env-sealed) { overflow: hidden; }
 /* cover hero is much larger than the contain wrap, so scale its overlay text down + keep the cue on-screen */
 /* cqw is sized off max(142vw,215vh); on tall/narrow phones the 215vh term blows
    the overlay text past the viewport (clips "…From"). Cap against vw so it fits. */
-.eg-sealed .inv-lf-label { font-size: min(1.85cqw, 5.5vw); letter-spacing: .1em; }
-.eg-sealed .inv-lf-names { font-size: min(1.85cqw, 5.5vw); }
-.eg-sealed .inv-open-cue { font-size: min(1.7cqw, 5vw); top: 75%; }
+/* vw value first as a fallback: browsers without container-query units (cqw)
+   drop the min() line entirely, so without this they'd inherit a huge font and
+   clip the text. The min() then refines where cqw is supported. */
+.eg-sealed .inv-lf-label { font-size: 5.5vw; font-size: min(1.85cqw, 5.5vw); letter-spacing: .1em; }
+.eg-sealed .inv-lf-names { font-size: 5.5vw; font-size: min(1.85cqw, 5.5vw); }
+.eg-sealed .inv-open-cue { font-size: 5vw; font-size: min(1.7cqw, 5vw); top: 75%; }
 .eg-open { width: min(1140px, 100vw, 105vh); flex: none; transition: width .6s ease; }
 .eg-cue {
   position: absolute; left: 50%;
