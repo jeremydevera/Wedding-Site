@@ -681,6 +681,14 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 /* admin media grid */
 /* folder tabs (sub-nav within an admin tab) */
 .folders--sticky { position: sticky; top: 62px; z-index: 9; background: var(--bg); padding-top: 14px; }
+/* Opaque backing around the pinned tab strip so scrolled content can't show
+   through. ::before bridges UP to the sticky header (covers the band above the
+   tabs when the topbar goes position:static on narrow widths); ::after covers
+   the transparent 24px margin BELOW. Kept at z-index 9 — beneath the topbar (10)
+   and the mobile header (30) — so the header always paints over the bridge where
+   they overlap, while content (z auto) stays hidden behind it. */
+.folders--sticky::before { content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 220px; background: var(--bg); }
+.folders--sticky::after { content: ""; position: absolute; left: 0; right: 0; top: calc(100% + 1px); height: 24px; background: var(--bg); }
 @media (max-width: 860px) { .folders--sticky { top: 52px; } }
 .folders { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
 .folder { background: var(--surface-2); border: 1px solid var(--line); border-bottom: none; border-radius: var(--radius) var(--radius) 0 0; padding: 11px 20px; cursor: pointer; font-family: var(--font-body); font-size: 14px; color: var(--ink-soft); position: relative; top: 1px; display: inline-flex; align-items: center; gap: 8px; }
