@@ -232,6 +232,15 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .input::placeholder { color: var(--muted); }
 .textarea { resize: vertical; min-height: 100px; line-height: 1.55; }
 .select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='m6 9 6 6 6-6' stroke='%23999' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 13px center; padding-right: 38px; }
+/* iOS Safari auto-zooms when a focused field's font-size is < 16px. Several
+   controls (admin, sign-in, search, table cells) are 13–14px — pin every text
+   field to 16px on small screens so tapping never zooms. Pinch-zoom stays
+   available (we don't touch the viewport meta). */
+@media (max-width: 820px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select { font-size: 16px !important; }
+}
 .field-row { display: grid; grid-template-columns: 1fr; gap: 0 18px; }
 @media (min-width: 640px) { .field-row--2 { grid-template-columns: 1fr 1fr; } }
 
