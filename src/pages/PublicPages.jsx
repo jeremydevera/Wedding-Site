@@ -37,7 +37,7 @@ export function egTintVars(s) {
   const on = s.envTintOn !== false;
   const open = on ? Math.max(0, Math.min(100, s.envTint == null ? 55 : s.envTint)) / 100 : 0;
   const sealed = on ? Math.min(1, open + 0.35) : 0;
-  return { "--eg-tint": open, "--eg-tint-sealed": sealed, "--eg-tint-grad": egTintGradient(s.envTintColor || "olive") };
+  return { "--eg-tint": open, "--eg-tint-sealed": sealed, "--eg-tint-grad": egTintGradient(s.envTintColor || "olive"), "--eg-title-vw": s.envTitleSize == null ? 4.5 : s.envTitleSize };
 }
 
 export function EnvelopeHero() {

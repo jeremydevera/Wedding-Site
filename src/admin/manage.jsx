@@ -2,7 +2,7 @@ import React from "react";
 import { go } from "@/lib/nav.js";
 import { Store, useStore } from "@/lib/store.jsx";
 import { EG_TINTS, THEMES, THEME_FONTS, egTintGradient, isPremiumTheme } from "@/themes";
-import { BFLY_COLORS, Button, CropModal, DecorPreview, Field, Icon, Input, Modal, Monogram, Placeholder, SectionHead, Select, Textarea, bflyHueShift, confirmDialog, mapEmbedUrl, mapSearchUrl, toast } from "@/ui/components.jsx";
+import { Button, CropModal, DecorPreview, Field, Icon, Input, Modal, Monogram, Placeholder, SectionHead, Select, Textarea, confirmDialog, mapEmbedUrl, mapSearchUrl, toast } from "@/ui/components.jsx";
 import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { signOut } from "@/lib/auth.js";
@@ -733,6 +733,17 @@ export function SettingsAdmin() {
 
       {f.theme === "envelope" && (
       <div className="panel">
+        <div className="panel__head"><div className="panel__title">Title Size</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Size of &ldquo;A Love Letter From&rdquo; + your names on the cover</span></div>
+        <div className="panel__body">
+          <Field label={`Title size — ${f.envTitleSize == null ? 4.5 : f.envTitleSize}`} id="s-envtitle" hint="Scales with screen width; larger value = bigger cover text">
+            <input id="s-envtitle" type="range" min="3" max="8" step="0.25" value={f.envTitleSize == null ? 4.5 : f.envTitleSize} onChange={(e) => setKey("envTitleSize", parseFloat(e.target.value))} style={{ width: "100%", accentColor: "var(--accent)" }} />
+          </Field>
+        </div>
+      </div>
+      )}
+
+      {f.theme === "envelope" && (
+      <div className="panel">
         <div className="panel__head"><div className="panel__title">Envelope Background</div><span style={{ color: "var(--muted)", fontSize: 14 }}>The photo behind the envelope on the opening screen</span></div>
         <div className="panel__body">
           <div style={{ display: "flex", gap: 28, alignItems: "flex-start", flexWrap: "wrap" }}>
@@ -768,6 +779,7 @@ export function SettingsAdmin() {
       </div>
       )}
 
+      {f.theme !== "envelope" && (
       <div className="panel">
         <div className="panel__head"><div className="panel__title">Home Decorations</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Floating animations on the home hero</span></div>
         <div className="panel__body">
@@ -775,55 +787,25 @@ export function SettingsAdmin() {
           <Field label="Decoration style" id="s-decor" hint="Pick the motif that floats across your hero">
             <Select id="s-decor" value={f.decorStyle} onChange={set("decorStyle")} disabled={!f.decorOn}>
               <option value="petals">Falling petals</option>
-              <option value="butterflies">Butterflies (animated GIF)</option>
               <option value="hearts">Hearts</option>
               <option value="fireflies">Fireflies</option>
               <option value="leaves">Drifting leaves</option>
               <option value="confetti">Confetti</option>
+              <option value="snow">Falling snow</option>
+              <option value="bubbles">Rising bubbles</option>
+              <option value="sparkles">Sparkles</option>
+              <option value="orbs">Bokeh orbs</option>
+              <option value="balloons">Floating balloons</option>
             </Select>
           </Field>
-          {f.decorStyle === "butterflies" && (
-            <div>
-              <Field label="Butterfly look" id="s-bfly" hint="Single picks one colour below; assorted mixes many.">
-                <Select id="s-bfly" value={f.butterflyStyle} onChange={set("butterflyStyle")} disabled={!f.decorOn}>
-                  <option value="fullcolor">Single colour</option>
-                  <option value="assorted">Assorted colours</option>
-                  <option value="faded">Faded / subtle</option>
-                </Select>
-              </Field>
-              {f.butterflyStyle !== "assorted" && (
-                <Field label="Butterfly colour">
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    {BFLY_COLORS.map((c) => (
-                      <button key={c.hex} type="button" title={c.name} onClick={() => setKey("butterflyColor", c.hex)} aria-pressed={f.butterflyColor === c.hex}
-                        style={{ width: 48, height: 42, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 25, lineHeight: 1, cursor: "pointer", background: "var(--surface)", border: "1.5px solid " + (f.butterflyColor === c.hex ? "var(--accent)" : "var(--line)"), borderRadius: "var(--radius)", boxShadow: f.butterflyColor === c.hex ? "0 0 0 1px var(--accent)" : "none" }}>
-                        <span style={{ filter: `hue-rotate(${bflyHueShift(c.hex)}deg) saturate(1.2)` }}>🦋</span>
-                      </button>
-                    ))}
-                  </div>
-                </Field>
-              )}
-              <div className="field-row field-row--2">
-                <Field label="Flight behaviour" id="s-flight">
-                  <Select id="s-flight" value={f.butterflyFlight} onChange={set("butterflyFlight")} disabled={!f.decorOn}>
-                    <option value="calm">Calm &amp; gentle</option>
-                    <option value="flutter">Fluttery</option>
-                    <option value="energetic">Energetic</option>
-                  </Select>
-                </Field>
-                <Field label={`How many butterflies — ${f.butterflyCount || 12}`} id="s-count">
-                  <input id="s-count" type="range" min="4" max="24" step="1" value={f.butterflyCount || 12} disabled={!f.decorOn} onChange={(e) => setKey("butterflyCount", parseInt(e.target.value, 10))} style={{ width: "100%", accentColor: "var(--accent)", marginTop: 12 }} />
-                </Field>
-              </div>
-            </div>
-          )}
           <div style={{ marginTop: 4 }}>
             <span className="field__label" style={{ display: "block", marginBottom: 7 }}>Preview</span>
-            <DecorPreview style={f.decorStyle} butterflyStyle={f.butterflyStyle} butterflyColor={f.butterflyColor} butterflyCount={f.butterflyCount} butterflyFlight={f.butterflyFlight} />
+            <DecorPreview style={f.decorStyle} />
           </div>
         </div>
         <SaveFooter />
-      </div></>)}
+      </div>
+      )}</>)}
 
       {tab === "photos" && (<div className="panel">
         <div className="panel__head"><div className="panel__title">Home &amp; Story Photos</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Upload your own — replaces the samples</span></div>

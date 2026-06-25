@@ -824,7 +824,7 @@ body.env-sealed .decor { display: none; }
 @keyframes bgifPan { from { object-position: 42% 38%; } to { object-position: 58% 62%; } }
 .decor-preview .decor__bgif { object-fit: contain; }
 .decor__svg { width: clamp(28px, 3.4vw, 64px); height: clamp(28px, 3.4vw, 64px); display: block; opacity: 0.55; transform: scale(var(--sc, 1)); }
-/* fall + sway (petals, leaves, hearts, butterflies, confetti, snow, sparkles) */
+/* fall + sway (petals, leaves, hearts, confetti, snow, sparkles) */
 .decor--petals .decor__item, .decor--leaves .decor__item, .decor--hearts .decor__item,
 .decor--confetti .decor__item, .decor--snow .decor__item, .decor--sparkles .decor__item {
   animation-name: decorFall; animation-timing-function: linear; animation-iteration-count: infinite;
@@ -838,47 +838,6 @@ body.env-sealed .decor { display: none; }
   8%   { opacity: 0.85; }
   92%  { opacity: 0.85; }
   100% { transform: translateY(108vh) translateX(calc(var(--sway, 0) * 90px)) rotate(calc(var(--sway, 1) * 320deg)); opacity: 0; }
-}
-.decor--butterflies .decor__item { animation-timing-function: ease-in-out; animation-iteration-count: infinite; top: 0; bottom: auto; }
-.decor--butterflies .bfdir-n { animation-name: flyN; }
-.decor--butterflies .bfdir-s { animation-name: flyS; }
-.decor--butterflies .bfdir-e { animation-name: flyE; }
-.decor--butterflies .bfdir-w { animation-name: flyW; }
-.decor--butterflies .decor__bfly { display: block; font-size: clamp(22px, 2.6vw, 50px); line-height: 1; filter: hue-rotate(var(--hue, 0deg)) saturate(1.15) drop-shadow(0 2px 4px rgba(0,0,0,.18)); animation: butterflyFlap .3s ease-in-out infinite; }
-.decor--bfly-faded .decor__bfly { opacity: 0.4; }
-.decor--fly-calm .decor__bfly { animation-duration: .5s; }
-.decor--fly-energetic .decor__bfly { animation-duration: .16s; }
-@keyframes flyN {
-  0%   { transform: translate(0, 72vh) rotate(-5deg); opacity: 0; }
-  10%  { opacity: 0.85; }
-  50%  { transform: translate(calc(var(--sway,0) * var(--amp,1) * 60px), 4vh) rotate(6deg); }
-  90%  { opacity: 0.85; }
-  100% { transform: translate(0, -72vh) rotate(-4deg); opacity: 0; }
-}
-@keyframes flyS {
-  0%   { transform: translate(0, -72vh) rotate(5deg); opacity: 0; }
-  10%  { opacity: 0.85; }
-  50%  { transform: translate(calc(var(--sway,0) * var(--amp,1) * 60px), -4vh) rotate(-6deg); }
-  90%  { opacity: 0.85; }
-  100% { transform: translate(0, 72vh) rotate(4deg); opacity: 0; }
-}
-@keyframes flyE {
-  0%   { transform: translate(-85vw, 0) rotate(3deg); opacity: 0; }
-  10%  { opacity: 0.85; }
-  50%  { transform: translate(0, calc(var(--sway,0) * var(--amp,1) * 60px)) rotate(-3deg); }
-  90%  { opacity: 0.85; }
-  100% { transform: translate(85vw, 0) rotate(3deg); opacity: 0; }
-}
-@keyframes flyW {
-  0%   { transform: translate(85vw, 0) rotate(-3deg); opacity: 0; }
-  10%  { opacity: 0.85; }
-  50%  { transform: translate(0, calc(var(--sway,0) * var(--amp,1) * 60px)) rotate(3deg); }
-  90%  { opacity: 0.85; }
-  100% { transform: translate(-85vw, 0) rotate(-3deg); opacity: 0; }
-}
-@keyframes butterflyFlap {
-  0%, 100% { transform: scale(var(--sc,1)) perspective(90px) rotateY(0deg); }
-  50%      { transform: scale(var(--sc,1)) perspective(90px) rotateY(72deg); }
 }
 .decor--fireflies .decor__item { animation-name: decorRise; bottom: -6%; top: auto; }
 @keyframes decorRise {
@@ -920,7 +879,6 @@ body.env-sealed .decor { display: none; }
   75%  { transform: translate(calc(var(--sway,0) * 16px), -8px); }
   100% { transform: translate(0,0); }
 }
-.decor-preview .decor__bfly { font-size: 34px; }
 .decor-preview .decor__balloon { font-size: 30px; }
 .decor-preview .decor__petal, .decor-preview .decor__leaf, .decor-preview .decor__conf, .decor-preview .decor__fly, .decor-preview .decor__snow, .decor-preview .decor__bubble, .decor-preview .decor__spark, .decor-preview .decor__orb { transform: scale(1.5); }
 
@@ -1168,8 +1126,9 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    drop the min() line entirely, so without this they'd inherit a huge font and
    clip the text. The min() then refines where cqw is supported. */
 /* Single line for the names (no wrap), sized to fit the viewport. */
-.eg-sealed .inv-lf-label { font-size: 4.5vw; font-size: min(1.85cqw, 4.5vw); letter-spacing: .08em; }
-.eg-sealed .inv-lf-names { font-size: 4.5vw; font-size: min(1.85cqw, 4.5vw); }
+/* cover text size is admin-controlled via --eg-title-vw (Settings -> Title Size) */
+.eg-sealed .inv-lf-label { font-size: 4.5vw; font-size: calc(var(--eg-title-vw, 4.5) * 1vw); letter-spacing: .08em; }
+.eg-sealed .inv-lf-names { font-size: 4.5vw; font-size: calc(var(--eg-title-vw, 4.5) * 1vw); }
 .eg-sealed .inv-open-cue { font-size: 3.8vw; font-size: min(1.6cqw, 3.8vw); top: 75%; }
 .eg-open { width: min(1140px, 100vw, 105vh); flex: none; transition: width .6s ease; }
 .eg-cue {
