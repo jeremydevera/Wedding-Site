@@ -718,6 +718,7 @@ export function SettingsAdmin() {
             </div>
           )}
         </div>
+        <SaveFooter />
       </div>
 
       {f.theme === "envelope" && (
@@ -728,6 +729,7 @@ export function SettingsAdmin() {
             value={f.frameImage} onChange={(v) => setKey("frameImage", v)} />
           <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 10, maxWidth: 360 }}>A square photo of the two of you works best. Leave empty to keep the default animated frame.</p>
         </div>
+        <SaveFooter />
       </div>
       )}
 
@@ -745,6 +747,7 @@ export function SettingsAdmin() {
             </div>
           ); })()}
         </div>
+        <SaveFooter />
       </div>
       )}
 
@@ -782,6 +785,7 @@ export function SettingsAdmin() {
             </div>
           </div>
         </div>
+        <SaveFooter />
       </div>
       )}
 
