@@ -371,10 +371,12 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .gb-grid { columns: 1; column-gap: 22px; }
 @media (min-width: 680px) { .gb-grid { columns: 2; } }
 @media (min-width: 1000px) { .gb-grid { columns: 3; } }
-.gb-card { break-inside: avoid; margin-bottom: 22px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 26px 22px; position: relative; }
-.gb-card__quote { font-family: var(--font-display); font-size: 38px; line-height: 1; color: var(--accent-soft); margin-bottom: 8px; }
-.gb-card__msg { font-family: var(--font-display); font-size: 18px; line-height: 1.65; color: var(--ink); font-style: italic; margin: 0; }
-.gb-card__by { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); font-family: var(--font-body); font-size: 15px; font-weight: 600; color: var(--ink); letter-spacing: 0.01em; }
+.gb-card { break-inside: avoid; margin-bottom: 22px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 24px; position: relative; }
+/* Decorative quote sits absolute (no layout height) so short notes stay compact
+   instead of reserving a tall empty line above the message. */
+.gb-card__quote { position: absolute; top: 12px; left: 22px; font-family: var(--font-display); font-size: 46px; line-height: 1; color: var(--accent-soft); user-select: none; }
+.gb-card__msg { font-family: var(--font-display); font-size: 18px; line-height: 1.6; color: var(--ink); font-style: italic; margin: 0; padding-top: 20px; }
+.gb-card__by { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); font-family: var(--font-body); font-size: 15px; font-weight: 600; color: var(--ink); letter-spacing: 0.01em; }
 .gb-card__rel { font-weight: 400; font-size: 12px; color: var(--muted); margin-top: 2px; }
 
 /* --- Quiz ------------------------------------------------------------------*/
