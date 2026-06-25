@@ -737,15 +737,20 @@ export function SettingsAdmin() {
       <div className="panel">
         <div className="panel__head"><div className="panel__title">Title Size</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Size of &ldquo;A Love Letter From&rdquo; + your names on the cover</span></div>
         <div className="panel__body">
-          <Field label={`Title size — ${(f.envTitleSize == null || f.envTitleSize < 16) ? 28 : f.envTitleSize}px`} id="s-envtitle" hint="Fixed size — the title stays exactly this big on every screen and doesn't shrink when the window is resized. Save changes, then view the site.">
-            <input id="s-envtitle" type="range" min="16" max="34" step="1" value={(f.envTitleSize == null || f.envTitleSize < 16) ? 28 : f.envTitleSize} onChange={(e) => setKey("envTitleSize", parseInt(e.target.value, 10))} style={{ width: "100%", accentColor: "var(--accent)" }} />
-          </Field>
-          {(() => { const px = (f.envTitleSize == null || f.envTitleSize < 16) ? 28 : Math.min(34, f.envTitleSize); return (
-            <div style={{ marginTop: 14, background: "#3a4a2a", borderRadius: 8, padding: "26px 16px", textAlign: "center", color: "#f3ebdb", fontFamily: "'Cormorant Garamond', Georgia, serif", overflow: "hidden" }}>
-              <div style={{ fontVariant: "small-caps", letterSpacing: ".08em", fontSize: px, lineHeight: 1.3 }}>A Love Letter From</div>
-              <div style={{ fontVariant: "small-caps", letterSpacing: ".08em", fontSize: px, lineHeight: 1.3, marginTop: 4 }}>{f.partnerA || "Partner"} &amp; {f.partnerB || "Partner"}</div>
-            </div>
-          ); })()}
+          {(() => {
+            const sc = (f.envTitleSize != null && f.envTitleSize >= 1 && f.envTitleSize <= 10) ? f.envTitleSize : 5;
+            const px = Math.round(14 + (sc - 1) / 9 * 26); // indicative preview only — real size scales with the envelope
+            return (<>
+              <Field label={`Title size — ${sc} / 10`} id="s-envtitle" hint="Scales with the envelope — bigger on a wide/maximized screen, smaller on a phone, always in proportion. Save changes, then view the site.">
+                <input id="s-envtitle" type="range" min="1" max="10" step="1" value={sc} onChange={(e) => setKey("envTitleSize", parseInt(e.target.value, 10))} style={{ width: "100%", accentColor: "var(--accent)" }} />
+              </Field>
+              <div style={{ marginTop: 14, background: "#3a4a2a", borderRadius: 8, padding: "26px 16px", textAlign: "center", color: "#f3ebdb", fontFamily: "'Cormorant Garamond', Georgia, serif", overflow: "hidden" }}>
+                <div style={{ fontVariant: "small-caps", letterSpacing: ".08em", fontSize: px, lineHeight: 1.3 }}>A Love Letter From</div>
+                <div style={{ fontVariant: "small-caps", letterSpacing: ".08em", fontSize: px, lineHeight: 1.3, marginTop: 4 }}>{f.partnerA || "Partner"} &amp; {f.partnerB || "Partner"}</div>
+                <div style={{ fontFamily: "system-ui, sans-serif", fontSize: 11, opacity: .7, marginTop: 12, fontVariant: "normal", letterSpacing: 0 }}>Preview only — actual size scales with the screen</div>
+              </div>
+            </>);
+          })()}
         </div>
         <SaveFooter />
       </div>

@@ -37,11 +37,14 @@ export function egTintVars(s) {
   const on = s.envTintOn !== false;
   const open = on ? Math.max(0, Math.min(100, s.envTint == null ? 55 : s.envTint)) / 100 : 0;
   const sealed = on ? Math.min(1, open + 0.35) : 0;
-  // Title size is now a fixed pixel value (16–34). Legacy rows stored a vw scale
-  // (1–8); treat anything below the px floor as "unset" so it falls back to 28.
+  // Title size is a 1–10 scale that maps to a cqw fraction of the envelope width,
+  // so the cover title scales with the envelope (bigger on larger screens).
+  // Legacy rows stored other units (vw ~1–8, px ~16–34); anything outside 1–10
+  // falls back to the default 5.
   const t = s.envTitleSize;
-  const titlePx = (t == null || t < 16) ? 28 : Math.min(34, t);
-  return { "--eg-tint": open, "--eg-tint-sealed": sealed, "--eg-tint-grad": egTintGradient(s.envTintColor || "olive"), "--eg-title-px": titlePx };
+  const scale = (t != null && t >= 1 && t <= 10) ? t : 5;
+  const titleCqw = (1.4 + (scale - 1) / 9 * 2.0).toFixed(3); // scale 1→1.4cqw, 5→2.29, 10→3.4
+  return { "--eg-tint": open, "--eg-tint-sealed": sealed, "--eg-tint-grad": egTintGradient(s.envTintColor || "olive"), "--eg-title-cqw": titleCqw };
 }
 
 export function EnvelopeHero() {

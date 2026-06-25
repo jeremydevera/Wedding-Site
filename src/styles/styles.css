@@ -1126,11 +1126,13 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    drop the min() line entirely, so without this they'd inherit a huge font and
    clip the text. The min() then refines where cqw is supported. */
 /* Single line for the names (no wrap), sized to fit the viewport. */
-/* cover text size is admin-controlled via --eg-title-px (Settings -> Title Size).
-   FIXED pixels — does NOT scale with viewport, so the title stays the exact size
-   the couple set, on every screen and when the window is resized. */
-.eg-sealed .inv-lf-label { font-size: 28px; font-size: calc(var(--eg-title-px, 28) * 1px); letter-spacing: .08em; }
-.eg-sealed .inv-lf-names { font-size: 28px; font-size: calc(var(--eg-title-px, 28) * 1px); }
+/* cover text size is admin-controlled via --eg-title-cqw (Settings -> Title Size).
+   cqw is a fraction of the envelope width (max(142vw,215vh)), so the title grows
+   WITH the envelope — bigger on a maximized/large screen, smaller on a small one.
+   vw fallback first (browsers without cqw); the min() caps it against viewport
+   width so the longest line ("…From") can't clip on a tall/narrow phone. */
+.eg-sealed .inv-lf-label { font-size: 6vw; font-size: min(calc(var(--eg-title-cqw, 2.3) * 1cqw), 8.5vw); letter-spacing: .08em; }
+.eg-sealed .inv-lf-names { font-size: 6vw; font-size: min(calc(var(--eg-title-cqw, 2.3) * 1cqw), 8.5vw); }
 .eg-sealed .inv-open-cue { font-size: 3.8vw; font-size: min(1.6cqw, 3.8vw); top: 75%; }
 .eg-open { width: min(1140px, 100vw, 105vh); flex: none; transition: width .6s ease; }
 .eg-cue {

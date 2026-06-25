@@ -39,7 +39,7 @@ export const DEFAULT_SETTINGS = {
   envTintOn: true,
   envTint: 55,
   envTintColor: "olive",
-  envTitleSize: 28, // fixed px for the envelope cover title (16–34); doesn't scale with viewport
+  envTitleSize: 5, // envelope cover title size, 1–10 scale; maps to a cqw fraction that scales with the envelope
   arrangeEnabled: false,
   mapQuery: "Lipa, Batangas, Philippines",
   decorOn: false,
