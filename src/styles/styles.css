@@ -376,15 +376,19 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
    instead of reserving a tall empty line above the message. */
 .gb-card__quote { position: absolute; top: 12px; left: 22px; font-family: var(--font-display); font-size: 46px; line-height: 1; color: var(--accent-soft); user-select: none; }
 .gb-card__msg { font-family: var(--font-display); font-size: 18px; line-height: 1.6; color: var(--ink); font-style: italic; margin: 0; padding-top: 20px; }
-.gb-card__by { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); font-family: var(--font-body); font-size: 15px; font-weight: 600; color: var(--ink); letter-spacing: 0.01em; }
+/* Attribution: em-dash hangs to the left; name + relationship stack and stay
+   aligned to each other in the column beside it. */
+.gb-card__attr { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; align-items: baseline; gap: .35em; }
+.gb-card__dash { flex: none; font-family: var(--font-body); font-size: 15px; font-weight: 600; color: var(--ink); }
+.gb-card__by { font-family: var(--font-body); font-size: 15px; font-weight: 600; color: var(--ink); letter-spacing: 0.01em; }
 .gb-card__rel { font-weight: 400; font-size: 12px; color: var(--muted); margin-top: 2px; }
-/* Scattered attribution alignment (set per-card from the message id) */
-.gb-card--left   .gb-card__by, .gb-card--left   .gb-card__rel { text-align: left; }
-.gb-card--center .gb-card__by, .gb-card--center .gb-card__rel { text-align: center; }
-.gb-card--right  .gb-card__by, .gb-card--right  .gb-card__rel { text-align: right; }
+/* Scattered alignment — moves the whole [— name/rel] unit; name+rel stay aligned */
+.gb-card--left   .gb-card__attr { justify-content: flex-start; }
+.gb-card--center .gb-card__attr { justify-content: center; }
+.gb-card--right  .gb-card__attr { justify-content: flex-end; }
 /* On phones, short notes (1-2 lines) read better left-aligned — overrides above */
 @media (max-width: 640px) {
-  .gb-card--short .gb-card__by, .gb-card--short .gb-card__rel { text-align: left; }
+  .gb-card--short .gb-card__attr { justify-content: flex-start; }
 }
 
 /* --- Quiz ------------------------------------------------------------------*/
@@ -1068,6 +1072,8 @@ body.env-sealed .decor { display: none; }
 .eg-hero {
   position: relative; min-height: 100vh; overflow: hidden;
   display: flex; align-items: center; justify-content: center;
+  /* stop iOS double-tap-to-zoom on the tappable cover (which magnifies + clips the text) */
+  touch-action: manipulation;
 }
 /* while sealed: full-screen envelope, no nav, and NO scrolling until opened.
    position:fixed is the only reliable scroll lock on iOS Safari (overflow:hidden
