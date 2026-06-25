@@ -376,8 +376,8 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
    instead of reserving a tall empty line above the message. */
 .gb-card__quote { position: absolute; top: 12px; left: 22px; font-family: var(--font-display); font-size: 46px; line-height: 1; color: var(--accent-soft); user-select: none; }
 .gb-card__msg { font-family: var(--font-display); font-size: 18px; line-height: 1.6; color: var(--ink); font-style: italic; margin: 0; padding-top: 20px; }
-.gb-card__by { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); font-family: var(--font-body); font-size: 15px; font-weight: 600; color: var(--ink); letter-spacing: 0.01em; }
-.gb-card__rel { font-weight: 400; font-size: 12px; color: var(--muted); margin-top: 2px; }
+.gb-card__by { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); font-family: var(--font-body); font-size: 15px; font-weight: 600; color: var(--ink); letter-spacing: 0.01em; text-align: right; }
+.gb-card__rel { font-weight: 400; font-size: 12px; color: var(--muted); margin-top: 2px; text-align: right; }
 
 /* --- Quiz ------------------------------------------------------------------*/
 .quiz-progress { height: 4px; background: var(--surface-2); border-radius: 100px; margin-bottom: 30px; overflow: hidden; }
@@ -738,10 +738,12 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 
 @media (max-width: 860px) {
   .admin { flex-direction: column; }
-  .admin__head { position: sticky; top: 0; z-index: 10; background: var(--surface); }
-  /* sidebar becomes an off-canvas drawer toggled by the hamburger */
-  .admin__side { display: flex; position: fixed; top: 0; left: 0; height: 100vh; height: 100dvh; width: 272px; max-width: 84vw; transform: translateX(-100%); transition: transform .26s ease; z-index: 60; box-shadow: 0 0 44px rgba(0,0,0,.28); overflow-y: auto; }
-  .admin__side--open { transform: translateX(0); }
+  .admin__head { position: -webkit-sticky; position: sticky; top: 0; z-index: 30; background: var(--surface); }
+  /* sidebar becomes an off-canvas drawer toggled by the hamburger.
+     translate3d + will-change promote it to its own layer so iOS Safari repaints
+     the off-screen fixed element reliably (plain translateX sometimes won't show). */
+  .admin__side { display: flex; position: fixed; top: 0; left: 0; height: 100vh; height: 100dvh; width: 272px; max-width: 84vw; transform: translate3d(-100%, 0, 0); transition: transform .26s ease; z-index: 60; box-shadow: 0 0 44px rgba(0,0,0,.28); overflow-y: auto; -webkit-overflow-scrolling: touch; will-change: transform; }
+  .admin__side--open { transform: translate3d(0, 0, 0); }
   .admin__overlay { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.42); z-index: 55; }
   .admin__drawer-close { display: inline-flex; align-items: center; justify-content: center; position: absolute; top: 14px; right: 12px; padding: 4px; background: none; border: none; color: var(--ink-soft); cursor: pointer; }
   .admin__drawer-close svg { width: 22px; height: 22px; }
@@ -1017,8 +1019,8 @@ body.env-sealed .decor { display: none; }
   background: #f3ebdb; border-radius: 1px; box-shadow: 0 0 4px rgba(243,235,219,.45);
   opacity: 0;
 }
-.is-ready .inv-lf-label { animation: lfType 0.9s steps(23) .3s forwards; }
-.is-ready .inv-lf-label::after { animation: lfNib 0.9s steps(23) .3s both, lfBlink .4s step-end .3s infinite, lfHide 1ms linear 1.25s forwards; }
+.is-ready .inv-lf-label { animation: lfType 0.9s steps(18) .3s forwards; }
+.is-ready .inv-lf-label::after { animation: lfNib 0.9s steps(18) .3s both, lfBlink .4s step-end .3s infinite, lfHide 1ms linear 1.25s forwards; }
 
 .inv-lf-type { position: relative; display: inline-block; white-space: nowrap; clip-path: inset(-14% 100% -14% -2%); }
 .inv-lf-type::after {
@@ -1122,7 +1124,7 @@ html:has(body.env-sealed) { overflow: hidden; }
 /* cover hero is much larger than the contain wrap, so scale its overlay text down + keep the cue on-screen */
 /* cqw is sized off max(142vw,215vh); on tall/narrow phones the 215vh term blows
    the overlay text past the viewport (clips "…From"). Cap against vw so it fits. */
-.eg-sealed .inv-lf-label { font-size: min(1.85cqw, 5.5vw); }
+.eg-sealed .inv-lf-label { font-size: min(1.85cqw, 5.5vw); letter-spacing: .1em; }
 .eg-sealed .inv-lf-names { font-size: min(1.85cqw, 5.5vw); }
 .eg-sealed .inv-open-cue { font-size: min(1.7cqw, 5vw); top: 75%; }
 .eg-open { width: min(1140px, 100vw, 105vh); flex: none; transition: width .6s ease; }

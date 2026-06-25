@@ -71,7 +71,7 @@ export function EnvelopeHero() {
       if (el && el.animate) el.animate([{ clipPath: hidden }, { clipPath: shown }],
         { duration: dur, delay, easing: `steps(${count})`, fill: "both" });
     };
-    type(".inv-lf-label", 23, 900, 300);
+    type(".inv-lf-label", 18, 900, 300);
     type(".inv-lf-type", 14, 1100, 1300);
   }, [ready]);
   React.useEffect(() => {
@@ -141,7 +141,7 @@ export function EnvelopeHero() {
           <div className={"inv-sealed-wrap eg-sealed" + (ready ? " is-ready" : "")}>
             <img ref={artRef} className="inv-sealed-art" src="/assets/invite/env-closed.webp" alt="Sealed olive envelope with lace trim and wax seal" onLoad={triggerReady} />
             <div className="inv-letter-from">
-              <span className="inv-lf-label">A Very Love Letter From</span>
+              <span className="inv-lf-label">A Love Letter From</span>
               <span className="inv-lf-names"><span className="inv-lf-type">{s.partnerA} &amp; {s.partnerB}</span></span>
             </div>
             <button className="inv-seal-hotspot" type="button" aria-label="Open the invitation" onClick={() => setOpen(true)} />
@@ -201,7 +201,7 @@ export function EnvelopeInvite() {
         <div className="inv-sealed-wrap">
           <img className="inv-sealed-art" src="/assets/invite/env-closed.webp" alt="Sealed olive envelope with lace trim and wax seal" />
           <div className="inv-letter-from">
-            <span className="inv-lf-label">A Very Love Letter From</span>
+            <span className="inv-lf-label">A Love Letter From</span>
             <span className="inv-lf-names"><span className="inv-lf-type">{s.partnerA} &amp; {s.partnerB}</span></span>
           </div>
           <button className="inv-seal-hotspot" type="button" aria-label="Open the invitation" onClick={() => setOpen(true)} />
