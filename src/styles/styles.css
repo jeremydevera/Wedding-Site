@@ -1126,9 +1126,11 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    drop the min() line entirely, so without this they'd inherit a huge font and
    clip the text. The min() then refines where cqw is supported. */
 /* Single line for the names (no wrap), sized to fit the viewport. */
-/* cover text size is admin-controlled via --eg-title-vw (Settings -> Title Size) */
-.eg-sealed .inv-lf-label { font-size: 4.5vw; font-size: calc(var(--eg-title-vw, 4.5) * 1vw); letter-spacing: .08em; }
-.eg-sealed .inv-lf-names { font-size: 4.5vw; font-size: calc(var(--eg-title-vw, 4.5) * 1vw); }
+/* cover text size is admin-controlled via --eg-title-px (Settings -> Title Size).
+   FIXED pixels — does NOT scale with viewport, so the title stays the exact size
+   the couple set, on every screen and when the window is resized. */
+.eg-sealed .inv-lf-label { font-size: 28px; font-size: calc(var(--eg-title-px, 28) * 1px); letter-spacing: .08em; }
+.eg-sealed .inv-lf-names { font-size: 28px; font-size: calc(var(--eg-title-px, 28) * 1px); }
 .eg-sealed .inv-open-cue { font-size: 3.8vw; font-size: min(1.6cqw, 3.8vw); top: 75%; }
 .eg-open { width: min(1140px, 100vw, 105vh); flex: none; transition: width .6s ease; }
 .eg-cue {

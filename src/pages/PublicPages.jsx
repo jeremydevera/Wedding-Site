@@ -37,7 +37,11 @@ export function egTintVars(s) {
   const on = s.envTintOn !== false;
   const open = on ? Math.max(0, Math.min(100, s.envTint == null ? 55 : s.envTint)) / 100 : 0;
   const sealed = on ? Math.min(1, open + 0.35) : 0;
-  return { "--eg-tint": open, "--eg-tint-sealed": sealed, "--eg-tint-grad": egTintGradient(s.envTintColor || "olive"), "--eg-title-vw": s.envTitleSize == null ? 4.5 : s.envTitleSize };
+  // Title size is now a fixed pixel value (16–34). Legacy rows stored a vw scale
+  // (1–8); treat anything below the px floor as "unset" so it falls back to 28.
+  const t = s.envTitleSize;
+  const titlePx = (t == null || t < 16) ? 28 : Math.min(34, t);
+  return { "--eg-tint": open, "--eg-tint-sealed": sealed, "--eg-tint-grad": egTintGradient(s.envTintColor || "olive"), "--eg-title-px": titlePx };
 }
 
 export function EnvelopeHero() {
