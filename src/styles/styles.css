@@ -1168,11 +1168,11 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    clip the text. The min() then refines where cqw is supported. */
 /* Keep the cover text inside a centered band; long names WRAP to a new line
    instead of crossing the edges. Bigger now that wrapping prevents clipping. */
-.eg-sealed .inv-letter-from { width: auto; max-width: 80vw; text-align: center; }
-.eg-sealed .inv-lf-label { font-size: 7vw; font-size: min(2.8cqw, 7vw); letter-spacing: .06em; max-width: 80vw; }
-.eg-sealed .inv-lf-names { font-size: 7vw; font-size: min(2.8cqw, 7vw); max-width: 80vw; line-height: 1.25; }
+.eg-sealed .inv-letter-from { width: auto; max-width: min(80vw, 600px); text-align: center; }
+.eg-sealed .inv-lf-label { font-size: min(7vw, 44px); font-size: min(2.8cqw, 7vw, 44px); letter-spacing: .06em; max-width: 100%; }
+.eg-sealed .inv-lf-names { font-size: min(7vw, 44px); font-size: min(2.8cqw, 7vw, 44px); letter-spacing: .08em; max-width: 100%; line-height: 1.25; }
 .eg-sealed .inv-lf-type { white-space: normal; }
-.eg-sealed .inv-open-cue { font-size: 4.5vw; font-size: min(1.9cqw, 4.5vw); top: 75%; }
+.eg-sealed .inv-open-cue { font-size: min(4.5vw, 26px); font-size: min(1.9cqw, 4.5vw, 26px); top: 75%; }
 .eg-open { width: min(1140px, 100vw, 105vh); flex: none; transition: width .6s ease; }
 .eg-cue {
   position: absolute; left: 50%;
