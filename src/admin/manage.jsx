@@ -970,7 +970,7 @@ export function AdminApp() {
         <div className="admin__head">
         <div className="admin__topbar">
           <div className="admin__topbar-left">
-            <button className="admin__burger" onClick={() => setMenuOpen(true)} aria-label="Open menu">{Icon.menu({})}</button>
+            <button type="button" className="admin__burger" onClick={() => setMenuOpen((o) => !o)} aria-label="Menu" aria-expanded={menuOpen}>{Icon.menu({})}</button>
             <div className="admin__title">{title}</div>
           </div>
         </div>
