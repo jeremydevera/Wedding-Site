@@ -1114,9 +1114,11 @@ body.env-sealed .nav { display: none; }
 @keyframes egIntroRule { from { opacity: 0; width: 0; } to { opacity: .9; width: min(70%, 280px); } }
 .eg-sealed { width: max(142vw, 215vh); flex: none; }
 /* cover hero is much larger than the contain wrap, so scale its overlay text down + keep the cue on-screen */
-.eg-sealed .inv-lf-label { font-size: 1.85cqw; }
-.eg-sealed .inv-lf-names { font-size: 1.85cqw; }
-.eg-sealed .inv-open-cue { font-size: 1.7cqw; top: 75%; }
+/* cqw is sized off max(142vw,215vh); on tall/narrow phones the 215vh term blows
+   the overlay text past the viewport (clips "…From"). Cap against vw so it fits. */
+.eg-sealed .inv-lf-label { font-size: min(1.85cqw, 7vw); }
+.eg-sealed .inv-lf-names { font-size: min(1.85cqw, 7vw); }
+.eg-sealed .inv-open-cue { font-size: min(1.7cqw, 6vw); top: 75%; }
 .eg-open { width: min(1140px, 100vw, 105vh); flex: none; transition: width .6s ease; }
 .eg-cue {
   position: absolute; left: 50%;
