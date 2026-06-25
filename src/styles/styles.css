@@ -1057,8 +1057,12 @@ body.env-sealed .decor { display: none; }
   position: relative; min-height: 100vh; overflow: hidden;
   display: flex; align-items: center; justify-content: center;
 }
-/* while sealed: full-screen envelope, no nav */
+/* while sealed: full-screen envelope, no nav, and NO scrolling until opened.
+   position:fixed is the only reliable scroll lock on iOS Safari (overflow:hidden
+   alone doesn't hold). The envelope is the first screen, so pinning at top:0 is fine. */
 body.env-sealed .nav { display: none; }
+body.env-sealed { position: fixed; inset: 0; width: 100%; overflow: hidden; overscroll-behavior: none; }
+html:has(body.env-sealed) { overflow: hidden; }
 .eg-bg {
   position: absolute; inset: 0; z-index: 0;
   background: url("/assets/invite/bg-wedding.jpg") center 46% / cover no-repeat;
