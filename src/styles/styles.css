@@ -458,9 +458,10 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .admin__brand { display: flex; align-items: center; gap: 10px; padding: 6px 8px 22px; }
 .admin__brand > div { min-width: 0; }
 .admin__brand-name { font-family: var(--font-display); font-size: 19px; white-space: nowrap; }
-/* Client (owner) couple names can be long — shrink + wrap so they fit the 240px
-   sidebar instead of overflowing/clipping. (Superadmin brand is short.) */
-.admin:not(.admin--sa) .admin__brand-name { font-size: 15px; white-space: normal; line-height: 1.2; overflow-wrap: anywhere; }
+/* Client (owner) couple names can be long — shrink and keep to ONE line,
+   truncating with an ellipsis so they never overflow the 240px sidebar.
+   (Superadmin brand is short.) */
+.admin:not(.admin--sa) .admin__brand-name { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .admin__nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
 .admin__navlink { display: flex; align-items: center; gap: 11px; padding: 11px 12px; border-radius: var(--radius); background: none; border: none; cursor: pointer; color: var(--ink-soft); font-family: var(--font-body); font-size: 14px; text-align: left; width: 100%; white-space: nowrap; }
 .admin__navlink svg { width: 18px; height: 18px; }
@@ -823,7 +824,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
   .admin--sa .admin__title { font-size: 22px; }
   .admin:not(.admin--sa) .admin__title { font-size: 16px; }
   /* Client (owner) drawer header: couple names can be long — shrink + allow wrap. */
-  .admin:not(.admin--sa) .admin__brand-name { font-size: 14px; white-space: normal; line-height: 1.2; }
+  .admin:not(.admin--sa) .admin__brand-name { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .admin__sitechip { margin-left: 0; }
 }
 @media (max-width: 420px) {
