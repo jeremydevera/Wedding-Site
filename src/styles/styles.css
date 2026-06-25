@@ -1017,8 +1017,8 @@ body.env-sealed .decor { display: none; }
   background: #f3ebdb; border-radius: 1px; box-shadow: 0 0 4px rgba(243,235,219,.45);
   opacity: 0;
 }
-.is-ready .inv-lf-label { animation: lfType 0.9s steps(18) .3s forwards; }
-.is-ready .inv-lf-label::after { animation: lfNib 0.9s steps(18) .3s both, lfBlink .4s step-end .3s infinite, lfHide 1ms linear 1.25s forwards; }
+.is-ready .inv-lf-label { animation: lfType 0.9s steps(23) .3s forwards; }
+.is-ready .inv-lf-label::after { animation: lfNib 0.9s steps(23) .3s both, lfBlink .4s step-end .3s infinite, lfHide 1ms linear 1.25s forwards; }
 
 .inv-lf-type { position: relative; display: inline-block; white-space: nowrap; clip-path: inset(-14% 100% -14% -2%); }
 .inv-lf-type::after {
