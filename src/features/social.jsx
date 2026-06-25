@@ -66,12 +66,13 @@ export function GuestbookPage() {
             <div className="gb-grid">
               {visible.map((g) => {
                 const align = gbAlign(g.id);
+                const short = (g.message || "").length <= 70; // ~1-2 lines on mobile
                 return (
-                <div className="gb-card" key={g.id}>
+                <div className={"gb-card gb-card--" + align + (short ? " gb-card--short" : "")} key={g.id}>
                   <div className="gb-card__quote" aria-hidden="true">&ldquo;</div>
                   <p className="gb-card__msg">{g.message}</p>
-                  <div className="gb-card__by" style={{ textAlign: align }}>&mdash;&nbsp;{g.name}</div>
-                  {g.relationship && <div className="gb-card__rel" style={{ textAlign: align }}>{g.relationship}</div>}
+                  <div className="gb-card__by">&mdash;&nbsp;{g.name}</div>
+                  {g.relationship && <div className="gb-card__rel">{g.relationship}</div>}
                 </div>
                 );
               })}
