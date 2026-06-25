@@ -26,6 +26,10 @@ export const DEFAULT_SETTINGS = {
   ceremonyTime: "3:00 PM",
   receptionTime: "5:30 PM",
   dressCode: "Garden formal \u2014 think soft suits and flowing dresses.",
+  // Venue info cards (editable in admin -> Venue & Map). Stored in clients.content jsonb.
+  venueParking: "Complimentary valet and self-parking available at the rear entrance from 2:00 PM.",
+  venueArrival: "Please arrive by 2:30 PM. The ceremony begins promptly \u2014 plan to be seated early.",
+  venueWeather: "The ceremony is outdoors \u2014 bring a light layer for the evening breeze.",
   rsvpDeadline: "August 15, 2026",
   hashtag: "#JeremyAndIrish2026",
   adminPassword: "wedding",

@@ -5,7 +5,7 @@ import { THEMES } from "@/themes";
 import { themesForEvent } from "@/config/eventTypes.js";
 import { moduleLabel } from "@/lib/roles.js";
 import { PLATFORM_DOMAIN, clientUrl, isValidSubdomain } from "@/config/site.js"; // platform config → src/config/site.js
-import { Button, Field, Icon, Input, Select, toast } from "@/ui/components.jsx";
+import { Button, Field, Icon, Input, Pager, Select, toast, usePaged } from "@/ui/components.jsx";
 const { useState, useEffect } = React;
 
 const MODULES = ["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"];
@@ -203,6 +203,7 @@ export function ClientsAdmin() {
   }
 
   const filtered = clients.filter((c) => c.subdomain.toLowerCase().includes(q.trim().toLowerCase()));
+  const pg = usePaged(filtered, 20);
 
   return (
     <div className="sa">
@@ -223,7 +224,7 @@ export function ClientsAdmin() {
               <table className="tbl tbl--clients">
                 <thead><tr><th>Client</th><th>Theme</th><th>Owner login</th><th>Actions</th></tr></thead>
                 <tbody>
-                  {filtered.map((c) => (
+                  {pg.pageItems.map((c) => (
                     <tr key={c.id}>
                       <td>
                         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
@@ -247,6 +248,7 @@ export function ClientsAdmin() {
                 </tbody>
               </table>
             </div>
+            <Pager page={pg.page} totalPages={pg.totalPages} total={pg.total} perPage={pg.perPage} start={pg.start} onPage={pg.setPage} noun="clients" />
           </div>
           <div className="sa-tablefoot">Total: {clients.length} client{clients.length === 1 ? "" : "s"}</div>
         </div>

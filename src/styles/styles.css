@@ -636,6 +636,18 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .sa-search input { border: none; outline: none; background: none; font: inherit; font-size: 14px; width: 100%; color: var(--ink); }
 .sa-tablefoot { font-size: 12px; color: var(--muted); padding: 6px 2px; }
 
+/* Pager — client-side pagination footer for admin lists (20 rows/page) */
+.pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 14px; border-top: 1px solid var(--line); }
+.pager__info { font-size: 13px; color: var(--muted); }
+.pager__nav { display: inline-flex; align-items: center; gap: 8px; }
+.pager__page { font-size: 13px; color: var(--ink-soft); min-width: 84px; text-align: center; }
+.pager__btn { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 12px; cursor: pointer; font-family: var(--font-body); font-size: 13px; color: var(--ink); }
+.pager__btn:hover:not(:disabled) { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.pager__btn:disabled { opacity: 0.4; cursor: default; }
+
+/* Settings sub-section divider (e.g. "Venue info cards" within the Venue tab) */
+.settings-subhead { font-family: var(--font-display); font-size: 18px; color: var(--ink); margin: 22px 0 2px; padding-top: 18px; border-top: 1px solid var(--line); }
+
 /* sub-tabs — exact Supabase product-nav item tokens (14px / #707070 → active #ededed bg + #171717 / 500, 6px radius, no shadow) */
 .sa-tabs { display: inline-flex; gap: 4px; background: none; padding: 0; border-radius: 0; margin-bottom: 22px; }
 .sa-tabs button { border: none; background: none; padding: 3px 12px; border-radius: 6px; font-family: var(--font-body); font-size: 14px; line-height: 20px; font-weight: 400; color: #525252; cursor: pointer; transition: background .12s, color .12s; }
@@ -762,7 +774,9 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .login__sub { color: var(--muted); margin-bottom: 28px; }
 
 @media (max-width: 860px) {
-  .admin { flex-direction: column; }
+  /* Lock the admin to vertical scroll only. overflow-x: clip (not hidden) so it
+     doesn't become a scroll container and break the sticky topbar/tab strip. */
+  .admin { flex-direction: column; overflow-x: clip; max-width: 100%; }
   .admin__head { position: -webkit-sticky; position: sticky; top: 0; z-index: 30; background: var(--surface); }
   /* sidebar becomes an off-canvas drawer toggled by the hamburger.
      translate3d + will-change promote it to its own layer so iOS Safari repaints

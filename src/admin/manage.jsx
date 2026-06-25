@@ -665,6 +665,12 @@ export function SettingsAdmin() {
             <Field label="Reception time" id="s-rt"><Input id="s-rt" value={f.receptionTime} onChange={set("receptionTime")} /></Field>
           </div>
           <Field label="Dress code" id="s-dc"><Input id="s-dc" value={f.dressCode} onChange={set("dressCode")} /></Field>
+
+          <div className="settings-subhead">Venue info cards</div>
+          <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>The three cards shown under the map on the Venue page. Leave one blank to hide that card.</p>
+          <Field label="Parking" id="s-vpark"><Textarea id="s-vpark" value={f.venueParking} onChange={set("venueParking")} placeholder="Where guests park, valet, drop-off…" /></Field>
+          <Field label="Arrival" id="s-varr"><Textarea id="s-varr" value={f.venueArrival} onChange={set("venueArrival")} placeholder="When to arrive, seating timing…" /></Field>
+          <Field label="Weather" id="s-vwx"><Textarea id="s-vwx" value={f.venueWeather} onChange={set("venueWeather")} placeholder="What to expect / what to bring…" /></Field>
         </div>
         <SaveFooter />
       </div>)}

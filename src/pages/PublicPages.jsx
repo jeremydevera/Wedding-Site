@@ -561,10 +561,10 @@ export function VenuePage() {
           </div>
           <div className="info-grid info-grid--3">
             {[
-              { t: "Parking", d: "Complimentary valet and self-parking available at the rear entrance from 2:00 PM." },
-              { t: "Arrival", d: "Please arrive by 2:30 PM. The ceremony begins promptly at " + s.ceremonyTime + "." },
-              { t: "Weather", d: "The ceremony is outdoors \u2014 bring a light layer for the evening breeze." },
-            ].map((n, i) => (
+              { t: "Parking", d: s.venueParking },
+              { t: "Arrival", d: s.venueArrival },
+              { t: "Weather", d: s.venueWeather },
+            ].filter((n) => (n.d || "").trim()).map((n, i) => (
               <div className="card info-card" key={i}>
                 <h3>{n.t}</h3>
                 <p>{n.d}</p>
