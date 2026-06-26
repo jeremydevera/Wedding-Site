@@ -963,6 +963,12 @@ export function AdminApp() {
   const startArrange = () => { try { sessionStorage.setItem("arrangeStart", "1"); } catch (e) {} go("home"); };
 
   const isSuper = auth.role === "superadmin";
+  // Superadmin "Open admin" enters a client via the ?client= override (on the apex
+  // hub). That override is sticky (go() preserves the query), so without an escape
+  // the superadmin gets trapped in the client and loses the platform console — even
+  // after signing out. exitToConsole drops the override with a clean reload.
+  const clientOverride = new URLSearchParams(window.location.search).get("client");
+  const exitToConsole = () => window.location.assign("/");
   return (
     <div className={"admin" + (isSuper ? " admin--sa" : "")}>
       {menuOpen && <div className="admin__overlay" onClick={() => setMenuOpen(false)} />}
@@ -988,13 +994,16 @@ export function AdminApp() {
             </button>
           ))}
         </nav>
+        {isSuper && clientOverride && (
+          <button className="admin__navlink" onClick={exitToConsole}>{Icon.arrow({ style: { transform: "rotate(180deg)" } })} Back to clients</button>
+        )}
         <button className="admin__navlink" onClick={() => go("home")}>{Icon.arrow({ style: { transform: "rotate(180deg)" } })} View website</button>
         {canArrange && (
           <button className="admin__navlink" onClick={startArrange} style={{ color: "#7a5b12", fontWeight: 700 }}>
             {Icon.grid({ style: { width: 16, height: 16 } })} Arrange Now
           </button>
         )}
-        <button className="admin__navlink" onClick={() => signOut().then(() => go("home"))}>{Icon.arrow({ style: { transform: "rotate(180deg)" } })} Sign out</button>
+        <button className="admin__navlink" onClick={() => signOut().then(() => { if (clientOverride) exitToConsole(); else go("home"); })}>{Icon.arrow({ style: { transform: "rotate(180deg)" } })} Sign out</button>
       </aside>
 
       <main className="admin__main">
