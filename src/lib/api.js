@@ -9,7 +9,7 @@ export async function loadClientData() {
   const subdomain = resolveSubdomain();
   if (!subdomain) { // platform hub (bare apex) — no client site, just the admin login/console
     await loadSession();
-    Store.hydrate({});
+    Store.hydrate({ clientId: null, notFound: false }); // no client context on the hub
     return;
   }
   const { data: client, error } = await supabase
@@ -19,7 +19,7 @@ export async function loadClientData() {
     await loadSession(); // always resolve auth so admin doesn't hang on the loading gate
     // No active client for this subdomain (deleted / never existed / deactivated).
     // Flag it so the app shows an "unavailable" page instead of seed content.
-    Store.hydrate({ notFound: true });
+    Store.hydrate({ clientId: null, notFound: true });
     return;
   }
   const state = clientToState(client);

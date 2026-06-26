@@ -147,6 +147,13 @@ export function loadState() {
       ...base,
       ...parsed,
       settings: { ...base.settings, ...(parsed.settings || {}) },
+      // Identity / tenant / session are SERVER-derived every boot — never restore
+      // them from localStorage. A persisted clientId would otherwise keep a
+      // superadmin "inside" the last client they edited, even on the apex hub.
+      clientId: null,
+      notFound: false,
+      loading: true,
+      auth: { ready: false, session: null, role: null, clientId: null, email: null },
     };
   } catch (e) {
     return defaultState();
