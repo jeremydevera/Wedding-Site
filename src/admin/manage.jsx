@@ -384,14 +384,14 @@ export function QuizAdmin() {
   const lb = usePaged(sorted, 20);
   const openNew = () => { setEditing(null); setEditorOpen(true); };
   const openEdit = (q) => { setEditing(q); setEditorOpen(true); };
-  const [tab, setTab] = useState("leaderboard");
+  const [tab, setTab] = useState("questions");
   const [moved, setMoved] = useState(null);
   const doMove = (id, dir) => { setMoved({ id, dir }); Store.moveQuizQuestion(id, dir); setTimeout(() => setMoved(null), 480); };
   return (
     <div>
       <div className="folders">
-        <button className={"folder" + (tab === "leaderboard" ? " folder--active" : "")} onClick={() => setTab("leaderboard")}>{Icon.grid({})} Leaderboard</button>
         <button className={"folder" + (tab === "questions" ? " folder--active" : "")} onClick={() => setTab("questions")}>{Icon.quiz({})} Questions</button>
+        <button className={"folder" + (tab === "leaderboard" ? " folder--active" : "")} onClick={() => setTab("leaderboard")}>{Icon.grid({})} Leaderboard</button>
       </div>
 
       {tab === "questions" && (
