@@ -89,14 +89,31 @@ export function Pager({ page, totalPages, total, onPage, perPage = 20, start = 0
   if (total === 0) return null;
   const from = start + 1;
   const to = Math.min(start + perPage, total);
+  // Numbered page buttons, windowed with ellipses when there are many pages:
+  // always show first + last, plus current ±1.
+  const nums = [];
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) nums.push(i);
+  } else {
+    const lo = Math.max(2, page - 1), hi = Math.min(totalPages - 1, page + 1);
+    nums.push(1);
+    if (lo > 2) nums.push("…");
+    for (let i = lo; i <= hi; i++) nums.push(i);
+    if (hi < totalPages - 1) nums.push("…");
+    nums.push(totalPages);
+  }
   return (
     <div className="pager">
       <span className="pager__info">{from}–{to} of {total} {noun}</span>
       {totalPages > 1 && (
         <div className="pager__nav">
-          <button className="pager__btn" disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Previous page">‹ Prev</button>
-          <span className="pager__page">Page {page} / {totalPages}</span>
-          <button className="pager__btn" disabled={page >= totalPages} onClick={() => onPage(page + 1)} aria-label="Next page">Next ›</button>
+          <button className="pager__btn" disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Previous page">‹</button>
+          {nums.map((n, i) => n === "…"
+            ? <span key={"gap" + i} className="pager__ellipsis" aria-hidden="true">…</span>
+            : <button key={n} className={"pager__num" + (n === page ? " pager__num--active" : "")}
+                aria-label={"Page " + n} aria-current={n === page ? "page" : undefined} onClick={() => onPage(n)}>{n}</button>
+          )}
+          <button className="pager__btn" disabled={page >= totalPages} onClick={() => onPage(page + 1)} aria-label="Next page">›</button>
         </div>
       )}
     </div>

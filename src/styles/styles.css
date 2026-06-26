@@ -684,6 +684,10 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .pager__info { font-size: 13px; color: var(--muted); }
 .pager__nav { display: inline-flex; align-items: center; gap: 8px; }
 .pager__page { font-size: 13px; color: var(--ink-soft); min-width: 84px; text-align: center; }
+.pager__num { min-width: 32px; height: 32px; padding: 0 8px; display: inline-flex; align-items: center; justify-content: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer; font-family: var(--font-body); font-size: 13px; color: var(--ink); }
+.pager__num:hover { background: var(--surface-2); border-color: #d4d4d8; }
+.pager__num--active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.pager__ellipsis { color: var(--muted); padding: 0 2px; font-size: 13px; }
 .pager__btn { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 12px; cursor: pointer; font-family: var(--font-body); font-size: 13px; color: var(--ink); }
 .pager__btn:hover:not(:disabled) { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .pager__btn:disabled { opacity: 0.4; cursor: default; }
