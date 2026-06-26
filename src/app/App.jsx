@@ -131,7 +131,7 @@ export function Nav({ route }) {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {isDemo
-            ? <><ThemePicker /><DecorPicker /></>
+            ? <><ThemePicker />{!isPremiumTheme(settings.theme) && <DecorPicker />}</>
             : <Button className="nav__cta" variant="primary" size="sm" onClick={() => go("rsvp")}>RSVP</Button>}
           <button className="nav__burger" onClick={() => setDrawer(true)} aria-label="Menu">{Icon.menu({})}</button>
         </div>
@@ -153,7 +153,7 @@ export function Nav({ route }) {
             {settings.uploadsEnabled && moduleEnabled(settings.modules, "video-message") && <button className="drawer__link" onClick={() => { go("video-message"); setDrawer(false); }}>Video Message</button>}
             <div style={{ marginTop: 20 }}>
               {isDemo
-                ? <div style={{ display: "flex", flexDirection: "column", gap: 12 }}><ThemePicker block /><DecorPicker block /></div>
+                ? <div style={{ display: "flex", flexDirection: "column", gap: 12 }}><ThemePicker block />{!isPremiumTheme(settings.theme) && <DecorPicker block />}</div>
                 : <Button variant="primary" block onClick={() => { go("rsvp"); setDrawer(false); }}>RSVP Now</Button>}
             </div>
           </div>
