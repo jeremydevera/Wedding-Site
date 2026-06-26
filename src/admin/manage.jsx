@@ -523,6 +523,7 @@ export function AdminToggle({ checked, onChange, label, desc }) {
 // Add / edit a single schedule moment (modal — mirrors QuestionEditor).
 export function ScheduleEditor({ open, index, item, onClose }) {
   const { schedule } = useStore();
+  const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const blank = { time: "", title: "", desc: "", loc: "" };
   const [f, setF] = useState(blank);
   useEffect(() => {
@@ -531,11 +532,14 @@ export function ScheduleEditor({ open, index, item, onClose }) {
   }, [item, open]);
   const isEdit = index != null && index >= 0;
 
-  function save() {
+  async function save() {
     if (!f.title.trim()) { toast("Please enter a title.", "err"); return; }
     const payload = { time: f.time.trim(), title: f.title.trim(), desc: f.desc.trim(), loc: f.loc.trim() };
     if (isEdit) Store.updateScheduleItem(index, payload);
     else Store.updateSchedule([...schedule, payload]);
+    // Persist to the DB right away so the edit survives a refresh (mirrors the
+    // quiz editor) — no separate "Save changes" click needed.
+    await persistChanges();
     toast(isEdit ? "Moment updated" : "Moment added");
     onClose();
   }
