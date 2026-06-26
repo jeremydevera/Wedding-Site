@@ -565,8 +565,79 @@ export function ScheduleAdmin() {
   );
 }
 
+export function DetailsAdmin() {
+  const { settings, detailCards, faq } = useStore();
+  const f = settings;
+  return (
+    <div className="panel">
+      <div className="panel__head"><div className="panel__title">Details Page</div></div>
+      <div className="panel__body">
+        <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 0, marginBottom: 18 }}>Everything on the public Details page. Edit inline, reorder with the arrows, add or remove. Click <strong>Save changes</strong> to publish.</p>
+        <div className="field-row field-row--2">
+          <Field label="Ceremony time" id="d-ct"><Input id="d-ct" value={f.ceremonyTime} onChange={(e) => Store.updateSettings({ ceremonyTime: e.target.value })} /></Field>
+          <Field label="Reception time" id="d-rt"><Input id="d-rt" value={f.receptionTime} onChange={(e) => Store.updateSettings({ receptionTime: e.target.value })} /></Field>
+        </div>
+        <Field label="Dress code" id="d-dc"><Input id="d-dc" value={f.dressCode} onChange={(e) => Store.updateSettings({ dressCode: e.target.value })} /></Field>
+
+        <div className="settings-subhead">Details page tiles</div>
+        <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>The info tiles on the Details page (Ceremony, Reception, etc.). Edit the title and text, pick an icon, reorder, delete, or add your own. A blank tile is hidden from guests.</p>
+        <div className="venue-cards-edit">
+          {(detailCards || []).map((c, i) => (
+            <div className="card venue-card-edit" key={i}>
+              <div className="venue-card-edit__top">
+                <Input value={c.title || ""} onChange={(e) => Store.updateDetailCard(i, { title: e.target.value })} placeholder="Title — e.g. The Ceremony" aria-label="Tile title" />
+                <div className="row-actions">
+                  <Select value={c.icon || "rings"} onChange={(e) => Store.updateDetailCard(i, { icon: e.target.value })} aria-label="Tile icon" style={{ width: 124 }}>
+                    <option value="rings">Rings</option>
+                    <option value="heart">Heart</option>
+                    <option value="user">Person</option>
+                    <option value="pin">Location</option>
+                    <option value="calendar">Calendar</option>
+                    <option value="camera">Camera</option>
+                    <option value="book">Book</option>
+                    <option value="quiz">Question</option>
+                  </Select>
+                  <button type="button" className="icon-btn" title="Move up" onClick={() => Store.moveDetailCard(i, -1)} disabled={i === 0}>↑</button>
+                  <button type="button" className="icon-btn" title="Move down" onClick={() => Store.moveDetailCard(i, 1)} disabled={i === ((detailCards || []).length - 1)}>↓</button>
+                  <button type="button" className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete tile?", message: "This removes it from the Details page.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.updateDetailCards(detailCards.filter((_, j) => j !== i)); })}>{Icon.trash({})}</button>
+                </div>
+              </div>
+              <Textarea value={c.body || ""} onChange={(e) => Store.updateDetailCard(i, { body: e.target.value })} style={{ minHeight: 60, marginTop: 10 }} placeholder="What guests will read" aria-label="Tile text" />
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <Button variant="ghost" block onClick={() => Store.updateDetailCards([...(detailCards || []), { icon: "rings", title: "New tile", body: "" }])}>+ Add tile</Button>
+        </div>
+
+        <div className="settings-subhead">Frequently asked questions</div>
+        <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>The FAQ shown on the Details page. Edit each question and answer, reorder with the arrows, delete, or add your own. A blank question is hidden from guests.</p>
+        <div className="venue-cards-edit">
+          {(faq || []).map((item, i) => (
+            <div className="card venue-card-edit" key={i}>
+              <div className="venue-card-edit__top">
+                <Input value={item.q || ""} onChange={(e) => Store.updateFaqItem(i, { q: e.target.value })} placeholder="Question — e.g. What time should I arrive?" aria-label="FAQ question" />
+                <div className="row-actions">
+                  <button type="button" className="icon-btn" title="Move up" onClick={() => Store.moveFaq(i, -1)} disabled={i === 0}>↑</button>
+                  <button type="button" className="icon-btn" title="Move down" onClick={() => Store.moveFaq(i, 1)} disabled={i === ((faq || []).length - 1)}>↓</button>
+                  <button type="button" className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete question?", message: "This removes it from the Details page FAQ.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.updateFaq((faq || []).filter((_, j) => j !== i)); })}>{Icon.trash({})}</button>
+                </div>
+              </div>
+              <Textarea value={item.a || ""} onChange={(e) => Store.updateFaqItem(i, { a: e.target.value })} style={{ minHeight: 60, marginTop: 10 }} placeholder="Answer guests will see" aria-label="FAQ answer" />
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <Button variant="ghost" block onClick={() => Store.updateFaq([...(faq || []), { q: "New question", a: "" }])}>+ Add question</Button>
+        </div>
+      </div>
+      <SaveFooter />
+    </div>
+  );
+}
+
 export function SettingsAdmin() {
-  const { settings, story, venueCards, faq, detailCards } = useStore();
+  const { settings, story, venueCards } = useStore();
   const f = settings;
   const set = (k) => (e) => Store.updateSettings({ [k]: e.target && e.target.type === "checkbox" ? e.target.checked : e.target.value });
   const setKey = (k, v) => Store.updateSettings({ [k]: v });
@@ -644,7 +715,7 @@ export function SettingsAdmin() {
       </div>)}
 
       {tab === "venue" && (<div className="panel">
-        <div className="panel__head"><div className="panel__title">Venue</div></div>
+        <div className="panel__head"><div className="panel__title">Venue &amp; Map</div></div>
         <div className="panel__body">
           <Field label="Venue name" id="s-vn"><Input id="s-vn" value={f.venueName} onChange={set("venueName")} /></Field>
           <Field label="Venue address" id="s-va"><Input id="s-va" value={f.venueAddress} onChange={set("venueAddress")} /></Field>
@@ -659,42 +730,6 @@ export function SettingsAdmin() {
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 8, marginBottom: 12 }}>
             <Button variant="ghost" size="sm" onClick={() => window.open(mapSearchUrl(f.mapQuery || f.venueAddress), "_blank")}>{Icon.pin({})} Open in Google Maps</Button>
             {(f.mapQuery || f.mapLat != null) && <Button variant="ghost" size="sm" onClick={() => Store.updateSettings({ mapQuery: "", mapLat: undefined, mapLng: undefined })}>Clear pin</Button>}
-          </div>
-          <div className="field-row field-row--2">
-            <Field label="Ceremony time" id="s-ct"><Input id="s-ct" value={f.ceremonyTime} onChange={set("ceremonyTime")} /></Field>
-            <Field label="Reception time" id="s-rt"><Input id="s-rt" value={f.receptionTime} onChange={set("receptionTime")} /></Field>
-          </div>
-          <Field label="Dress code" id="s-dc"><Input id="s-dc" value={f.dressCode} onChange={set("dressCode")} /></Field>
-
-          <div className="settings-subhead">Details page tiles</div>
-          <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>The info tiles on the Details page (Ceremony, Reception, etc.). Edit the title and text, pick an icon, reorder, delete, or add your own. A blank tile is hidden from guests.</p>
-          <div className="venue-cards-edit">
-            {(detailCards || []).map((c, i) => (
-              <div className="card venue-card-edit" key={i}>
-                <div className="venue-card-edit__top">
-                  <Input value={c.title || ""} onChange={(e) => Store.updateDetailCard(i, { title: e.target.value })} placeholder="Title — e.g. The Ceremony" aria-label="Tile title" />
-                  <div className="row-actions">
-                    <Select value={c.icon || "rings"} onChange={(e) => Store.updateDetailCard(i, { icon: e.target.value })} aria-label="Tile icon" style={{ width: 124 }}>
-                      <option value="rings">Rings</option>
-                      <option value="heart">Heart</option>
-                      <option value="user">Person</option>
-                      <option value="pin">Location</option>
-                      <option value="calendar">Calendar</option>
-                      <option value="camera">Camera</option>
-                      <option value="book">Book</option>
-                      <option value="quiz">Question</option>
-                    </Select>
-                    <button type="button" className="icon-btn" title="Move up" onClick={() => Store.moveDetailCard(i, -1)} disabled={i === 0}>↑</button>
-                    <button type="button" className="icon-btn" title="Move down" onClick={() => Store.moveDetailCard(i, 1)} disabled={i === ((detailCards || []).length - 1)}>↓</button>
-                    <button type="button" className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete tile?", message: "This removes it from the Details page.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.updateDetailCards(detailCards.filter((_, j) => j !== i)); })}>{Icon.trash({})}</button>
-                  </div>
-                </div>
-                <Textarea value={c.body || ""} onChange={(e) => Store.updateDetailCard(i, { body: e.target.value })} style={{ minHeight: 60, marginTop: 10 }} placeholder="What guests will read" aria-label="Tile text" />
-              </div>
-            ))}
-          </div>
-          <div style={{ marginTop: 12 }}>
-            <Button variant="ghost" block onClick={() => Store.updateDetailCards([...(detailCards || []), { icon: "rings", title: "New tile", body: "" }])}>+ Add tile</Button>
           </div>
 
           <div className="settings-subhead">Venue info cards</div>
@@ -716,27 +751,6 @@ export function SettingsAdmin() {
           </div>
           <div style={{ marginTop: 12 }}>
             <Button variant="ghost" block onClick={() => Store.updateVenueCards([...(venueCards || []), { t: "New card", d: "" }])}>+ Add card</Button>
-          </div>
-
-          <div className="settings-subhead">Frequently asked questions</div>
-          <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>The FAQ shown on the Details page. Edit each question and answer, reorder with the arrows, delete, or add your own. A blank question is hidden from guests.</p>
-          <div className="venue-cards-edit">
-            {(faq || []).map((item, i) => (
-              <div className="card venue-card-edit" key={i}>
-                <div className="venue-card-edit__top">
-                  <Input value={item.q || ""} onChange={(e) => Store.updateFaqItem(i, { q: e.target.value })} placeholder="Question — e.g. What time should I arrive?" aria-label="FAQ question" />
-                  <div className="row-actions">
-                    <button type="button" className="icon-btn" title="Move up" onClick={() => Store.moveFaq(i, -1)} disabled={i === 0}>↑</button>
-                    <button type="button" className="icon-btn" title="Move down" onClick={() => Store.moveFaq(i, 1)} disabled={i === ((faq || []).length - 1)}>↓</button>
-                    <button type="button" className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete question?", message: "This removes it from the Details page FAQ.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.updateFaq((faq || []).filter((_, j) => j !== i)); })}>{Icon.trash({})}</button>
-                  </div>
-                </div>
-                <Textarea value={item.a || ""} onChange={(e) => Store.updateFaqItem(i, { a: e.target.value })} style={{ minHeight: 60, marginTop: 10 }} placeholder="Answer guests will see" aria-label="FAQ answer" />
-              </div>
-            ))}
-          </div>
-          <div style={{ marginTop: 12 }}>
-            <Button variant="ghost" block onClick={() => Store.updateFaq([...(faq || []), { q: "New question", a: "" }])}>+ Add question</Button>
           </div>
         </div>
         <SaveFooter />
@@ -954,6 +968,7 @@ export const ADMIN_TABS = [
   { key: "guestbook", label: "Guestbook", icon: "book" },
   { key: "schedule", label: "Schedule", icon: "calendar" },
   { key: "quiz", label: "Quiz", icon: "quiz" },
+  { key: "details", label: "Details", icon: "rings" },
   { key: "settings", label: "Settings", icon: "user" },
 ];
 
@@ -1075,6 +1090,7 @@ export function AdminApp() {
           {activeTab === "guestbook" && <GuestbookAdmin />}
           {activeTab === "schedule" && <ScheduleAdmin />}
           {activeTab === "quiz" && <QuizAdmin />}
+          {activeTab === "details" && <DetailsAdmin />}
           {activeTab === "qr" && <QrAdmin />}
           {activeTab === "settings" && <SettingsAdmin />}
           {activeTab === "overview" && <SuperOverview />}

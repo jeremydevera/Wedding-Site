@@ -52,7 +52,7 @@ export function moduleEnabled(modules, key) {
 }
 
 // Admin tabs that correspond to a toggleable module (others — dashboard/qr — always show).
-const TAB_MODULE = { rsvps: "rsvp", guestbook: "guestbook", quiz: "quiz", schedule: "schedule" };
+const TAB_MODULE = { rsvps: "rsvp", guestbook: "guestbook", quiz: "quiz", schedule: "schedule", details: "details" };
 
 // Filter already-role-gated tabs by the client's module flags (owners only; superadmin keeps all).
 export function tabsForClient(tabs, role, modules) {
