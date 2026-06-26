@@ -517,50 +517,85 @@ export function AdminToggle({ checked, onChange, label, desc }) {
   );
 }
 
+// Add / edit a single schedule moment (modal — mirrors QuestionEditor).
+export function ScheduleEditor({ open, index, item, onClose }) {
+  const { schedule } = useStore();
+  const blank = { time: "", title: "", desc: "", loc: "" };
+  const [f, setF] = useState(blank);
+  useEffect(() => {
+    if (item) setF({ time: item.time || "", title: item.title || "", desc: item.desc || "", loc: item.loc || "" });
+    else setF(blank);
+  }, [item, open]);
+  const isEdit = index != null && index >= 0;
+
+  function save() {
+    if (!f.title.trim()) { toast("Please enter a title.", "err"); return; }
+    const payload = { time: f.time.trim(), title: f.title.trim(), desc: f.desc.trim(), loc: f.loc.trim() };
+    if (isEdit) Store.updateScheduleItem(index, payload);
+    else Store.updateSchedule([...schedule, payload]);
+    toast(isEdit ? "Moment updated" : "Moment added");
+    onClose();
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} label="Schedule item">
+      <SectionHead eyebrow="Wedding Day Schedule" title={isEdit ? "Edit moment" : "New moment"} />
+      <div className="field-row field-row--2">
+        <Field label="Time" id="se-time"><Input id="se-time" value={f.time} onChange={(e) => setF((p) => ({ ...p, time: e.target.value }))} placeholder="3:00 PM" /></Field>
+        <Field label="Location" id="se-loc"><Input id="se-loc" value={f.loc} onChange={(e) => setF((p) => ({ ...p, loc: e.target.value }))} placeholder="e.g. Garden Terrace" /></Field>
+      </div>
+      <Field label="Title" required id="se-title"><Input id="se-title" value={f.title} onChange={(e) => setF((p) => ({ ...p, title: e.target.value }))} placeholder="e.g. Ceremony" /></Field>
+      <Field label="Description" id="se-desc" hint="A short line guests will see under the title"><Textarea id="se-desc" value={f.desc} onChange={(e) => setF((p) => ({ ...p, desc: e.target.value }))} placeholder="Welcome drinks on the south lawn." style={{ minHeight: 80 }} /></Field>
+      <div style={{ display: "flex", gap: 12, marginTop: 8, justifyContent: "flex-end" }}>
+        <Button variant="ghost" onClick={onClose}>Cancel</Button>
+        <Button variant="primary" onClick={save}>{isEdit ? "Save moment" : "Add moment"}</Button>
+      </div>
+    </Modal>
+  );
+}
+
 export function ScheduleAdmin() {
   const { schedule } = useStore();
-  const addItem = () => {
-    Store.updateSchedule([...schedule, { time: "", title: "New moment", desc: "", loc: "" }]);
-    setTimeout(() => {
-      const rows = document.querySelectorAll(".sched-edit__row");
-      const last = rows[rows.length - 1];
-      if (last) { const r = last.getBoundingClientRect(); window.scrollBy({ top: r.top - 150, behavior: "smooth" }); }
-    }, 90);
-  };
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [moved, setMoved] = useState(null);
+  const openNew = () => { setEditingIndex(null); setEditorOpen(true); };
+  const openEdit = (i) => { setEditingIndex(i); setEditorOpen(true); };
+  const doMove = (i, dir) => { setMoved({ i, dir }); Store.moveSchedule(i, dir); setTimeout(() => setMoved(null), 480); };
+  const editingItem = editingIndex != null ? schedule[editingIndex] : null;
   return (
-      <div className="panel">
+    <div className="panel">
       <div className="panel__head">
         <div className="panel__title">Wedding Day Schedule <span style={{ color: "var(--muted)", fontSize: 15 }}>({schedule.length})</span></div>
-        <Button variant="primary" size="sm" onClick={addItem}>+ Add item</Button>
+        <Button variant="primary" size="sm" onClick={openNew}>+ Add item</Button>
       </div>
-      <div className="panel__body">
-        <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 0, marginBottom: 22 }}>Build your day as a timeline — edit times and details inline, reorder with the arrows. Click <strong>Save changes</strong> to publish to your live site.</p>
-        {schedule.length === 0 && <p style={{ color: "var(--muted)", textAlign: "center", padding: "30px 0" }}>No schedule items yet — add your first moment below.</p>}
-        <div className="sched-edit">
-          {schedule.map((item, i) => (
-            <div key={i} className="sched-edit__row">
-              <div className="sched-edit__rail"><span className="sched-edit__dot">{i + 1}</span></div>
-              <div className="sched-edit__card">
-                <div className="sched-edit__top">
-                  <input className="sched-edit__time" value={item.time} onChange={(e) => Store.updateScheduleItem(i, { time: e.target.value })} placeholder="3:00 PM" aria-label="Time" />
+      <div className="panel__body--flush table-wrap">
+        <table className="tbl">
+          <thead><tr><th>#</th><th>Time</th><th>Title</th><th>Description</th><th>Location</th><th></th></tr></thead>
+          <tbody>
+            {schedule.map((item, i) => (
+              <tr key={i} className={moved && moved.i === i ? "q-row--moved q-row--moved-" + (moved.dir < 0 ? "up" : "down") : ""}>
+                <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--muted)" }}>{i + 1}</td>
+                <td style={{ whiteSpace: "nowrap" }}>{item.time || "—"}</td>
+                <td><strong>{item.title}</strong></td>
+                <td style={{ maxWidth: 360, color: "var(--ink-soft)" }}>{item.desc}</td>
+                <td style={{ color: "var(--muted)" }}>{item.loc || "—"}</td>
+                <td>
                   <div className="row-actions">
-                    <button className="icon-btn" title="Move up" onClick={() => Store.moveSchedule(i, -1)} disabled={i === 0}>↑</button>
-                    <button className="icon-btn" title="Move down" onClick={() => Store.moveSchedule(i, 1)} disabled={i === schedule.length - 1}>↓</button>
+                    <button className="icon-btn" title="Move up" onClick={() => doMove(i, -1)} disabled={i === 0}>↑</button>
+                    <button className="icon-btn" title="Move down" onClick={() => doMove(i, 1)} disabled={i === schedule.length - 1}>↓</button>
+                    <button className="icon-btn" title="Edit moment" onClick={() => openEdit(i)}>{Icon.edit({})}</button>
                     <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete schedule item?", message: "This removes it from the wedding-day timeline.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.updateSchedule(schedule.filter((_, j) => j !== i)); })}>{Icon.trash({})}</button>
                   </div>
-                </div>
-                <input className="sched-edit__title" value={item.title} onChange={(e) => Store.updateScheduleItem(i, { title: e.target.value })} placeholder="Title — e.g. Ceremony" aria-label="Title" />
-                <Textarea value={item.desc} onChange={(e) => Store.updateScheduleItem(i, { desc: e.target.value })} style={{ minHeight: 52 }} placeholder="A short description guests will see" />
-                <div style={{ marginTop: 10 }}>
-                  <Input value={item.loc || ""} onChange={(e) => Store.updateScheduleItem(i, { loc: e.target.value })} placeholder="Location (optional)" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="sched-add"><Button variant="ghost" block onClick={addItem}>+ Add another moment</Button></div>
+                </td>
+              </tr>
+            ))}
+            {schedule.length === 0 && <tr><td colSpan={6} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No schedule items yet. Add your first moment.</td></tr>}
+          </tbody>
+        </table>
       </div>
       <SaveFooter />
+      <ScheduleEditor open={editorOpen} index={editingIndex} item={editingItem} onClose={() => setEditorOpen(false)} />
     </div>
   );
 }
