@@ -838,6 +838,8 @@ export function VenueAdmin() {
   const [cardIndex, setCardIndex] = useState(null);
   const openCard = (i) => { setCardIndex(i); setCardOpen(true); };
   const cards = venueCards || [];
+  const { save: persistChanges } = React.useContext(AdminSaveCtx);
+  const cardDrag = useDragReorder((from, to) => Store.updateVenueCards(moveItem(cards, from, to)), persistChanges);
   return (
     <div>
       <div className="folders">
@@ -876,24 +878,23 @@ export function VenueAdmin() {
         </div>
         <div className="panel__body--flush table-wrap">
           <table className="tbl">
-            <thead><tr><th>#</th><th>Title</th><th>Description</th><th></th></tr></thead>
+            <thead><tr><th aria-label="Reorder"></th><th>#</th><th>Title</th><th>Description</th><th></th></tr></thead>
             <tbody>
               {cards.map((c, i) => (
-                <tr key={i}>
+                <tr key={i} data-ri={i} className={"q-row" + (cardDrag.dragging === i ? " q-row--dragging" : "")}>
+                  <td className="q-drag-cell"><button className="q-drag" title="Drag to reorder" aria-label="Drag to reorder" {...cardDrag.handleProps(i)}>⠿</button></td>
                   <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--muted)" }}>{i + 1}</td>
                   <td><strong>{c.t || "—"}</strong></td>
                   <td style={{ maxWidth: 420, color: "var(--ink-soft)" }}>{c.d}</td>
                   <td>
                     <div className="row-actions">
-                      <button className="icon-btn" title="Move up" onClick={() => Store.moveVenueCard(i, -1)} disabled={i === 0}>↑</button>
-                      <button className="icon-btn" title="Move down" onClick={() => Store.moveVenueCard(i, 1)} disabled={i === cards.length - 1}>↓</button>
                       <button className="icon-btn" title="Edit card" onClick={() => openCard(i)}>{Icon.edit({})}</button>
                       <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete card?", message: "This removes the card from the Venue page.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.updateVenueCards(cards.filter((_, j) => j !== i)); })}>{Icon.trash({})}</button>
                     </div>
                   </td>
                 </tr>
               ))}
-              {cards.length === 0 && <tr><td colSpan={4} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No cards yet. Add one to get started.</td></tr>}
+              {cards.length === 0 && <tr><td colSpan={5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No cards yet. Add one to get started.</td></tr>}
             </tbody>
           </table>
         </div>
