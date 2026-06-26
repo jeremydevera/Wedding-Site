@@ -566,7 +566,7 @@ export function ScheduleAdmin() {
 }
 
 export function SettingsAdmin() {
-  const { settings, story, venueCards, faq } = useStore();
+  const { settings, story, venueCards, faq, detailCards } = useStore();
   const f = settings;
   const set = (k) => (e) => Store.updateSettings({ [k]: e.target && e.target.type === "checkbox" ? e.target.checked : e.target.value });
   const setKey = (k, v) => Store.updateSettings({ [k]: v });
@@ -665,6 +665,37 @@ export function SettingsAdmin() {
             <Field label="Reception time" id="s-rt"><Input id="s-rt" value={f.receptionTime} onChange={set("receptionTime")} /></Field>
           </div>
           <Field label="Dress code" id="s-dc"><Input id="s-dc" value={f.dressCode} onChange={set("dressCode")} /></Field>
+
+          <div className="settings-subhead">Details page tiles</div>
+          <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>The info tiles on the Details page (Ceremony, Reception, etc.). Edit the title and text, pick an icon, reorder, delete, or add your own. A blank tile is hidden from guests.</p>
+          <div className="venue-cards-edit">
+            {(detailCards || []).map((c, i) => (
+              <div className="card venue-card-edit" key={i}>
+                <div className="venue-card-edit__top">
+                  <Input value={c.title || ""} onChange={(e) => Store.updateDetailCard(i, { title: e.target.value })} placeholder="Title — e.g. The Ceremony" aria-label="Tile title" />
+                  <div className="row-actions">
+                    <Select value={c.icon || "rings"} onChange={(e) => Store.updateDetailCard(i, { icon: e.target.value })} aria-label="Tile icon" style={{ width: 124 }}>
+                      <option value="rings">Rings</option>
+                      <option value="heart">Heart</option>
+                      <option value="user">Person</option>
+                      <option value="pin">Location</option>
+                      <option value="calendar">Calendar</option>
+                      <option value="camera">Camera</option>
+                      <option value="book">Book</option>
+                      <option value="quiz">Question</option>
+                    </Select>
+                    <button type="button" className="icon-btn" title="Move up" onClick={() => Store.moveDetailCard(i, -1)} disabled={i === 0}>↑</button>
+                    <button type="button" className="icon-btn" title="Move down" onClick={() => Store.moveDetailCard(i, 1)} disabled={i === ((detailCards || []).length - 1)}>↓</button>
+                    <button type="button" className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete tile?", message: "This removes it from the Details page.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.updateDetailCards(detailCards.filter((_, j) => j !== i)); })}>{Icon.trash({})}</button>
+                  </div>
+                </div>
+                <Textarea value={c.body || ""} onChange={(e) => Store.updateDetailCard(i, { body: e.target.value })} style={{ minHeight: 60, marginTop: 10 }} placeholder="What guests will read" aria-label="Tile text" />
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <Button variant="ghost" block onClick={() => Store.updateDetailCards([...(detailCards || []), { icon: "rings", title: "New tile", body: "" }])}>+ Add tile</Button>
+          </div>
 
           <div className="settings-subhead">Venue info cards</div>
           <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>The cards shown under the map on the Venue page. Edit the title and text, reorder with the arrows, delete, or add your own. A blank card is hidden from guests.</p>

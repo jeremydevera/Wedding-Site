@@ -410,7 +410,7 @@ export function StoryPage() {
 }
 
 export function DetailsPage() {
-  const { settings, faq } = useStore();
+  const { settings, faq, detailCards } = useStore();
   const s = settings;
   const [open, setOpen] = useState(0);
   return (
@@ -419,29 +419,13 @@ export function DetailsPage() {
       <section className="block" style={{ paddingTop: 20 }}>
         <div className="container">
           <div className="info-grid info-grid--2">
-            <div className="card card--pad-lg info-card">
-              <div className="info-card__icon">{Icon.rings({})}</div>
-              <h3>The Ceremony</h3>
-              <p className="lead-line">{s.ceremonyTime} &middot; {s.venueName}</p>
-              <p>{s.venueAddress}. Please be seated 10 minutes before we begin. The ceremony will be unplugged — be fully present with us.</p>
-            </div>
-            <div className="card card--pad-lg info-card">
-              <div className="info-card__icon">{Icon.heart({})}</div>
-              <h3>The Reception</h3>
-              <p className="lead-line">{s.receptionTime} onward</p>
-              <p>Cocktails, dinner, and dancing follow immediately at the same venue. Expect to celebrate late into the night.</p>
-            </div>
-            <div className="card card--pad-lg info-card">
-              <div className="info-card__icon">{Icon.user({})}</div>
-              <h3>Dress Code</h3>
-              <p>{s.dressCode}</p>
-            </div>
-            <div className="card card--pad-lg info-card">
-              <div className="info-card__icon">{Icon.pin({})}</div>
-              <h3>Getting There</h3>
-              <p>Complimentary valet and self-parking at the rear entrance. Rideshare drop-off is at the front gate.</p>
-              <Button variant="ghost" size="sm" style={{ marginTop: 14 }} onClick={() => go("venue")}>Venue & directions {Icon.arrow({})}</Button>
-            </div>
+            {(detailCards || []).filter((c) => (c.title || "").trim() || (c.body || "").trim()).map((c, i) => (
+              <div className="card card--pad-lg info-card" key={i}>
+                <div className="info-card__icon">{(Icon[c.icon] || Icon.rings)({})}</div>
+                <h3>{c.title}</h3>
+                <p>{c.body}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

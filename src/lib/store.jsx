@@ -76,6 +76,14 @@ export const SEED_FAQ = [
 
 // Venue info cards — the cards shown under the map on the Venue page.
 // Editable in admin (title + description), add/remove/reorder. Persisted to clients.content.
+// Details page info tiles — editable in admin (icon + title + body), add/remove/reorder.
+export const SEED_DETAIL_CARDS = [
+  { icon: "rings", title: "The Ceremony", body: "Join us as we say “I do.” Please be seated 10 minutes before we begin — the ceremony will be unplugged, so be fully present with us." },
+  { icon: "heart", title: "The Reception", body: "Cocktails, dinner, and dancing follow immediately at the same venue. Expect to celebrate late into the night." },
+  { icon: "user", title: "Dress Code", body: "Formal — black-tie optional. Dress to celebrate!" },
+  { icon: "pin", title: "Getting There", body: "Complimentary valet and self-parking at the rear entrance. Rideshare drop-off is at the front gate." },
+];
+
 export const SEED_VENUE_CARDS = [
   { t: "Parking", d: "Complimentary valet and self-parking available at the rear entrance from 2:00 PM." },
   { t: "Arrival", d: "Please arrive by 2:30 PM. The ceremony begins promptly — plan to be seated early." },
@@ -122,6 +130,7 @@ export function defaultState() {
     faq: SEED_FAQ,
     quiz: SEED_QUIZ,
     venueCards: SEED_VENUE_CARDS,
+    detailCards: SEED_DETAIL_CARDS,
     guestbook: SEED_GUESTBOOK,
     rsvps: SEED_RSVPS,
     media: SEED_MEDIA, // {id, type:'photo'|'video', category, dataUrl, src, name, message, status, size, ratio, createdAt}
@@ -352,6 +361,25 @@ export const Store = {
     if (index < 0 || j < 0 || j >= arr.length) return;
     [arr[index], arr[j]] = [arr[j], arr[index]];
     _state = { ..._state, faq: arr };
+    persist();
+    emit();
+  },
+  updateDetailCards(detailCards) {
+    _state = { ..._state, detailCards };
+    persist();
+    emit();
+  },
+  updateDetailCard(index, patch) {
+    _state = { ..._state, detailCards: (_state.detailCards || []).map((c, i) => (i === index ? { ...c, ...patch } : c)) };
+    persist();
+    emit();
+  },
+  moveDetailCard(index, dir) {
+    const arr = [...(_state.detailCards || [])];
+    const j = index + dir;
+    if (index < 0 || j < 0 || j >= arr.length) return;
+    [arr[index], arr[j]] = [arr[j], arr[index]];
+    _state = { ..._state, detailCards: arr };
     persist();
     emit();
   },
