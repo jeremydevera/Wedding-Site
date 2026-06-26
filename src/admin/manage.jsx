@@ -538,9 +538,9 @@ export function ScheduleEditor({ open, index, item, onClose }) {
     if (isEdit) Store.updateScheduleItem(index, payload);
     else Store.updateSchedule([...schedule, payload]);
     // Persist to the DB right away so the edit survives a refresh (mirrors the
-    // quiz editor) — no separate "Save changes" click needed.
+    // quiz editor). persistChanges shows the single "Changes saved" toast — don't
+    // add another here, or the user sees two popups.
     await persistChanges();
-    toast(isEdit ? "Moment updated" : "Moment added");
     onClose();
   }
 
@@ -607,73 +607,168 @@ export function ScheduleAdmin() {
   );
 }
 
-export function DetailsAdmin() {
-  const { settings, detailCards, faq } = useStore();
-  const f = settings;
+export function TileEditor({ open, index, item, onClose }) {
+  const { detailCards } = useStore();
+  const { save: persistChanges } = React.useContext(AdminSaveCtx);
+  const blank = { icon: "rings", title: "", body: "" };
+  const [f, setF] = useState(blank);
+  useEffect(() => {
+    if (item) setF({ icon: item.icon || "rings", title: item.title || "", body: item.body || "" });
+    else setF(blank);
+  }, [item, open]);
+  const isEdit = index != null && index >= 0;
+  async function save() {
+    if (!f.title.trim()) { toast("Please enter a title.", "err"); return; }
+    const payload = { icon: f.icon, title: f.title.trim(), body: f.body.trim() };
+    if (isEdit) Store.updateDetailCard(index, payload);
+    else Store.updateDetailCards([...(detailCards || []), payload]);
+    await persistChanges();
+    toast(isEdit ? "Tile updated" : "Tile added");
+    onClose();
+  }
   return (
-    <div className="panel">
-      <div className="panel__head"><div className="panel__title">Details Page</div></div>
-      <div className="panel__body">
-        <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 0, marginBottom: 18 }}>Everything on the public Details page. Edit inline, reorder with the arrows, add or remove. Click <strong>Save changes</strong> to publish.</p>
-        <div className="field-row field-row--2">
-          <Field label="Ceremony time" id="d-ct"><Input id="d-ct" value={f.ceremonyTime} onChange={(e) => Store.updateSettings({ ceremonyTime: e.target.value })} /></Field>
-          <Field label="Reception time" id="d-rt"><Input id="d-rt" value={f.receptionTime} onChange={(e) => Store.updateSettings({ receptionTime: e.target.value })} /></Field>
-        </div>
-        <Field label="Dress code" id="d-dc"><Input id="d-dc" value={f.dressCode} onChange={(e) => Store.updateSettings({ dressCode: e.target.value })} /></Field>
-
-        <div className="settings-subhead">Details page tiles</div>
-        <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>The info tiles on the Details page (Ceremony, Reception, etc.). Edit the title and text, pick an icon, reorder, delete, or add your own. A blank tile is hidden from guests.</p>
-        <div className="venue-cards-edit">
-          {(detailCards || []).map((c, i) => (
-            <div className="card venue-card-edit" key={i}>
-              <div className="venue-card-edit__top">
-                <Input value={c.title || ""} onChange={(e) => Store.updateDetailCard(i, { title: e.target.value })} placeholder="Title — e.g. The Ceremony" aria-label="Tile title" />
-                <div className="row-actions">
-                  <Select value={c.icon || "rings"} onChange={(e) => Store.updateDetailCard(i, { icon: e.target.value })} aria-label="Tile icon" style={{ width: 124 }}>
-                    <option value="rings">Rings</option>
-                    <option value="heart">Heart</option>
-                    <option value="user">Person</option>
-                    <option value="pin">Location</option>
-                    <option value="calendar">Calendar</option>
-                    <option value="camera">Camera</option>
-                    <option value="book">Book</option>
-                    <option value="quiz">Question</option>
-                  </Select>
-                  <button type="button" className="icon-btn" title="Move up" onClick={() => Store.moveDetailCard(i, -1)} disabled={i === 0}>↑</button>
-                  <button type="button" className="icon-btn" title="Move down" onClick={() => Store.moveDetailCard(i, 1)} disabled={i === ((detailCards || []).length - 1)}>↓</button>
-                  <button type="button" className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete tile?", message: "This removes it from the Details page.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.updateDetailCards(detailCards.filter((_, j) => j !== i)); })}>{Icon.trash({})}</button>
-                </div>
-              </div>
-              <Textarea value={c.body || ""} onChange={(e) => Store.updateDetailCard(i, { body: e.target.value })} style={{ minHeight: 60, marginTop: 10 }} placeholder="What guests will read" aria-label="Tile text" />
-            </div>
-          ))}
-        </div>
-        <div style={{ marginTop: 12 }}>
-          <Button variant="ghost" block onClick={() => Store.updateDetailCards([...(detailCards || []), { icon: "rings", title: "New tile", body: "" }])}>+ Add tile</Button>
-        </div>
-
-        <div className="settings-subhead">Frequently asked questions</div>
-        <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>The FAQ shown on the Details page. Edit each question and answer, reorder with the arrows, delete, or add your own. A blank question is hidden from guests.</p>
-        <div className="venue-cards-edit">
-          {(faq || []).map((item, i) => (
-            <div className="card venue-card-edit" key={i}>
-              <div className="venue-card-edit__top">
-                <Input value={item.q || ""} onChange={(e) => Store.updateFaqItem(i, { q: e.target.value })} placeholder="Question — e.g. What time should I arrive?" aria-label="FAQ question" />
-                <div className="row-actions">
-                  <button type="button" className="icon-btn" title="Move up" onClick={() => Store.moveFaq(i, -1)} disabled={i === 0}>↑</button>
-                  <button type="button" className="icon-btn" title="Move down" onClick={() => Store.moveFaq(i, 1)} disabled={i === ((faq || []).length - 1)}>↓</button>
-                  <button type="button" className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete question?", message: "This removes it from the Details page FAQ.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.updateFaq((faq || []).filter((_, j) => j !== i)); })}>{Icon.trash({})}</button>
-                </div>
-              </div>
-              <Textarea value={item.a || ""} onChange={(e) => Store.updateFaqItem(i, { a: e.target.value })} style={{ minHeight: 60, marginTop: 10 }} placeholder="Answer guests will see" aria-label="FAQ answer" />
-            </div>
-          ))}
-        </div>
-        <div style={{ marginTop: 12 }}>
-          <Button variant="ghost" block onClick={() => Store.updateFaq([...(faq || []), { q: "New question", a: "" }])}>+ Add question</Button>
-        </div>
+    <Modal open={open} onClose={onClose} label="Details tile">
+      <SectionHead eyebrow="Details Page" title={isEdit ? "Edit tile" : "New tile"} />
+      <Field label="Icon" id="te-icon">
+        <Select id="te-icon" value={f.icon} onChange={(e) => setF((p) => ({ ...p, icon: e.target.value }))}>
+          <option value="rings">Rings</option>
+          <option value="heart">Heart</option>
+          <option value="user">Person</option>
+          <option value="pin">Location</option>
+          <option value="calendar">Calendar</option>
+          <option value="camera">Camera</option>
+          <option value="book">Book</option>
+          <option value="quiz">Question</option>
+        </Select>
+      </Field>
+      <Field label="Title" required id="te-title"><Input id="te-title" value={f.title} onChange={(e) => setF((p) => ({ ...p, title: e.target.value }))} placeholder="e.g. The Ceremony" /></Field>
+      <Field label="Text" id="te-body" hint="What guests will read on the tile"><Textarea id="te-body" value={f.body} onChange={(e) => setF((p) => ({ ...p, body: e.target.value }))} placeholder="Join us as we say 'I do.'…" style={{ minHeight: 90 }} /></Field>
+      <div style={{ display: "flex", gap: 12, marginTop: 8, justifyContent: "flex-end" }}>
+        <Button variant="ghost" onClick={onClose}>Cancel</Button>
+        <Button variant="primary" onClick={save}>{isEdit ? "Save tile" : "Add tile"}</Button>
       </div>
-      <SaveFooter />
+    </Modal>
+  );
+}
+
+export function FaqEditor({ open, index, item, onClose }) {
+  const { faq } = useStore();
+  const { save: persistChanges } = React.useContext(AdminSaveCtx);
+  const blank = { q: "", a: "" };
+  const [f, setF] = useState(blank);
+  useEffect(() => {
+    if (item) setF({ q: item.q || "", a: item.a || "" });
+    else setF(blank);
+  }, [item, open]);
+  const isEdit = index != null && index >= 0;
+  async function save() {
+    if (!f.q.trim()) { toast("Please enter a question.", "err"); return; }
+    const payload = { q: f.q.trim(), a: f.a.trim() };
+    if (isEdit) Store.updateFaqItem(index, payload);
+    else Store.updateFaq([...(faq || []), payload]);
+    await persistChanges();
+    toast(isEdit ? "Question updated" : "Question added");
+    onClose();
+  }
+  return (
+    <Modal open={open} onClose={onClose} label="FAQ question">
+      <SectionHead eyebrow="Details Page" title={isEdit ? "Edit question" : "New question"} />
+      <Field label="Question" required id="fe-q"><Input id="fe-q" value={f.q} onChange={(e) => setF((p) => ({ ...p, q: e.target.value }))} placeholder="e.g. What time should I arrive?" /></Field>
+      <Field label="Answer" id="fe-a"><Textarea id="fe-a" value={f.a} onChange={(e) => setF((p) => ({ ...p, a: e.target.value }))} placeholder="The answer guests will see." style={{ minHeight: 100 }} /></Field>
+      <div style={{ display: "flex", gap: 12, marginTop: 8, justifyContent: "flex-end" }}>
+        <Button variant="ghost" onClick={onClose}>Cancel</Button>
+        <Button variant="primary" onClick={save}>{isEdit ? "Save question" : "Add question"}</Button>
+      </div>
+    </Modal>
+  );
+}
+
+export function DetailsAdmin() {
+  const { detailCards, faq } = useStore();
+  const [tab, setTab] = useState("tiles");
+  const [tileOpen, setTileOpen] = useState(false);
+  const [tileIndex, setTileIndex] = useState(null);
+  const [faqOpen, setFaqOpen] = useState(false);
+  const [faqIndex, setFaqIndex] = useState(null);
+  const openTile = (i) => { setTileIndex(i); setTileOpen(true); };
+  const openFaq = (i) => { setFaqIndex(i); setFaqOpen(true); };
+  const tiles = detailCards || [];
+  const faqs = faq || [];
+  return (
+    <div>
+      <div className="folders">
+        <button className={"folder" + (tab === "tiles" ? " folder--active" : "")} onClick={() => setTab("tiles")}>{Icon.rings({})} Details tiles</button>
+        <button className={"folder" + (tab === "faq" ? " folder--active" : "")} onClick={() => setTab("faq")}>{Icon.book({})} FAQ</button>
+      </div>
+
+      {tab === "tiles" && (
+      <div className="panel">
+        <div className="panel__head">
+          <div className="panel__title">Details tiles <span style={{ color: "var(--muted)", fontSize: 15 }}>({tiles.length})</span></div>
+          <Button variant="primary" size="sm" onClick={() => openTile(null)}>+ Add tile</Button>
+        </div>
+        <div className="panel__body--flush table-wrap">
+          <table className="tbl">
+            <thead><tr><th>#</th><th>Title</th><th>Text</th><th></th></tr></thead>
+            <tbody>
+              {tiles.map((c, i) => (
+                <tr key={i}>
+                  <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--muted)" }}>{i + 1}</td>
+                  <td><strong>{c.title || "—"}</strong></td>
+                  <td style={{ maxWidth: 420, color: "var(--ink-soft)" }}>{c.body}</td>
+                  <td>
+                    <div className="row-actions">
+                      <button className="icon-btn" title="Move up" onClick={() => Store.moveDetailCard(i, -1)} disabled={i === 0}>↑</button>
+                      <button className="icon-btn" title="Move down" onClick={() => Store.moveDetailCard(i, 1)} disabled={i === tiles.length - 1}>↓</button>
+                      <button className="icon-btn" title="Edit tile" onClick={() => openTile(i)}>{Icon.edit({})}</button>
+                      <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete tile?", message: "This removes it from the Details page.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.updateDetailCards(tiles.filter((_, j) => j !== i)); })}>{Icon.trash({})}</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {tiles.length === 0 && <tr><td colSpan={4} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No tiles yet. Add one to get started.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <SaveFooter />
+      </div>
+      )}
+
+      {tab === "faq" && (
+      <div className="panel">
+        <div className="panel__head">
+          <div className="panel__title">FAQ <span style={{ color: "var(--muted)", fontSize: 15 }}>({faqs.length})</span></div>
+          <Button variant="primary" size="sm" onClick={() => openFaq(null)}>+ Add question</Button>
+        </div>
+        <div className="panel__body--flush table-wrap">
+          <table className="tbl">
+            <thead><tr><th>#</th><th>Question</th><th>Answer</th><th></th></tr></thead>
+            <tbody>
+              {faqs.map((item, i) => (
+                <tr key={i}>
+                  <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--muted)" }}>{i + 1}</td>
+                  <td style={{ maxWidth: 320 }}><strong>{item.q || "—"}</strong></td>
+                  <td style={{ maxWidth: 380, color: "var(--ink-soft)" }}>{item.a}</td>
+                  <td>
+                    <div className="row-actions">
+                      <button className="icon-btn" title="Move up" onClick={() => Store.moveFaq(i, -1)} disabled={i === 0}>↑</button>
+                      <button className="icon-btn" title="Move down" onClick={() => Store.moveFaq(i, 1)} disabled={i === faqs.length - 1}>↓</button>
+                      <button className="icon-btn" title="Edit question" onClick={() => openFaq(i)}>{Icon.edit({})}</button>
+                      <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete question?", message: "This removes it from the Details page FAQ.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.updateFaq(faqs.filter((_, j) => j !== i)); })}>{Icon.trash({})}</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {faqs.length === 0 && <tr><td colSpan={4} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No questions yet. Add one to get started.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <SaveFooter />
+      </div>
+      )}
+
+      <TileEditor open={tileOpen} index={tileIndex} item={tileIndex != null ? tiles[tileIndex] : null} onClose={() => setTileOpen(false)} />
+      <FaqEditor open={faqOpen} index={faqIndex} item={faqIndex != null ? faqs[faqIndex] : null} onClose={() => setFaqOpen(false)} />
     </div>
   );
 }
