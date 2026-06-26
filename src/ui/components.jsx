@@ -166,7 +166,12 @@ export function ConfirmHost() {
     return () => { _confirmFn = null; };
   }, []);
   const close = (val) => { setState((s) => { if (s) s.resolve(val); return null; }); };
+  // confirmDialog is used from the admin console; render the modal inside the
+  // admin palette when it's mounted so it matches the admin look (neutral
+  // surface, Mulish, blue accent) instead of inheriting the event theme.
+  const inAdmin = typeof document !== "undefined" && !!document.querySelector(".admin--sa");
   return (
+    <div className={inAdmin ? "admin--sa" : undefined}>
     <Modal open={!!state} onClose={() => close(false)} label="Confirm">
       {state && (
         <div style={{ textAlign: "center" }}>
@@ -182,6 +187,7 @@ export function ConfirmHost() {
         </div>
       )}
     </Modal>
+    </div>
   );
 }
 export function confirmDialog(opts) {
