@@ -307,6 +307,19 @@ export const Store = {
     persist();
     emit();
   },
+  // Move question `fromId` to the position currently held by `toId` (drag reorder).
+  reorderQuizQuestion(fromId, toId) {
+    if (fromId === toId) return;
+    const arr = [..._state.quiz];
+    const from = arr.findIndex((q) => q.id === fromId);
+    const to = arr.findIndex((q) => q.id === toId);
+    if (from < 0 || to < 0) return;
+    const [m] = arr.splice(from, 1);
+    arr.splice(to, 0, m);
+    _state = { ..._state, quiz: arr };
+    persist();
+    emit();
+  },
   updateSchedule(schedule) {
     _state = { ..._state, schedule };
     persist();

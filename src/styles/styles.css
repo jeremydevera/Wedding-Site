@@ -759,23 +759,11 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .folder { background: var(--surface-2); border: 1px solid var(--line); border-bottom: none; border-radius: var(--radius) var(--radius) 0 0; padding: 11px 20px; cursor: pointer; font-family: var(--font-body); font-size: 14px; color: var(--ink-soft); position: relative; top: 1px; display: inline-flex; align-items: center; gap: 8px; }
 .folder svg { width: 16px; height: 16px; }
 .folder--active { background: var(--surface); color: var(--accent); font-weight: 600; border-bottom: 1px solid var(--surface); }
-.q-row--moved td { animation: qRowMoved .48s ease; }
-@keyframes qRowMoved {
-  0%   { background: var(--accent-soft); }
-  100% { background: transparent; }
-}
-.q-row--moved-up td { animation: qRowUp .48s cubic-bezier(.2,.7,.3,1); }
-.q-row--moved-down td { animation: qRowDown .48s cubic-bezier(.2,.7,.3,1); }
-@keyframes qRowUp {
-  0%   { background: var(--accent-soft); transform: translateY(10px); }
-  60%  { transform: translateY(-2px); }
-  100% { background: transparent; transform: translateY(0); }
-}
-@keyframes qRowDown {
-  0%   { background: var(--accent-soft); transform: translateY(-10px); }
-  60%  { transform: translateY(2px); }
-  100% { background: transparent; transform: translateY(0); }
-}
+/* Drag-to-reorder quiz questions (pointer-based; works on touch too) */
+.q-drag { cursor: grab; touch-action: none; font-size: 15px; line-height: 1; }
+.q-drag:active { cursor: grabbing; }
+.q-row--dragging td { background: var(--accent-soft); opacity: .65; }
+.q-row { transition: background .15s ease; }
 /* theme picker swatches */
 .theme-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x proximity; scroll-behavior: smooth; }
 .theme-grid .theme-sw { flex: 0 0 156px; scroll-snap-align: start; }

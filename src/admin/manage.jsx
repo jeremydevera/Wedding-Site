@@ -385,8 +385,27 @@ export function QuizAdmin() {
   const openNew = () => { setEditing(null); setEditorOpen(true); };
   const openEdit = (q) => { setEditing(q); setEditorOpen(true); };
   const [tab, setTab] = useState("questions");
-  const [moved, setMoved] = useState(null);
-  const doMove = (id, dir) => { setMoved({ id, dir }); Store.moveQuizQuestion(id, dir); setTimeout(() => setMoved(null), 480); };
+  const { save: persistChanges } = React.useContext(AdminSaveCtx);
+  // Pointer-based drag reorder — works with mouse AND touch (HTML5 DnD doesn't).
+  const dragId = useRef(null);
+  const [dragging, setDragging] = useState(null);
+  const onDragDown = (e, id) => {
+    e.preventDefault();
+    dragId.current = id; setDragging(id);
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
+  };
+  const onDragMove = (e) => {
+    if (dragId.current == null) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const row = el && el.closest("tr[data-qid]");
+    const overId = row && row.getAttribute("data-qid");
+    if (overId && overId !== dragId.current) Store.reorderQuizQuestion(dragId.current, overId);
+  };
+  const onDragUp = async () => {
+    if (dragId.current == null) return;
+    dragId.current = null; setDragging(null);
+    await persistChanges(); // save the new order to the DB so it survives a refresh
+  };
   return (
     <div>
       <div className="folders">
@@ -405,15 +424,16 @@ export function QuizAdmin() {
             <thead><tr><th>#</th><th>Question</th><th>Type</th><th>Correct answer</th><th></th></tr></thead>
             <tbody>
               {quiz.map((q, i) => (
-                <tr key={q.id} className={moved && moved.id === q.id ? "q-row--moved q-row--moved-" + (moved.dir < 0 ? "up" : "down") : ""}>
+                <tr key={q.id} data-qid={q.id} className={"q-row" + (dragging === q.id ? " q-row--dragging" : "")}>
                   <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--muted)" }}>{i + 1}</td>
                   <td style={{ maxWidth: 360 }}><strong>{q.q}</strong></td>
                   <td><span style={{ color: "var(--muted)" }}>{q.type === "true_false" ? "True / False" : "Multiple choice"}</span></td>
                   <td>{q.options ? q.options[q.answer] : ""}</td>
                   <td>
                     <div className="row-actions">
-                      <button className="icon-btn" title="Move up" onClick={() => doMove(q.id, -1)} disabled={i === 0}>↑</button>
-                      <button className="icon-btn" title="Move down" onClick={() => doMove(q.id, 1)} disabled={i === quiz.length - 1}>↓</button>
+                      <button className="icon-btn q-drag" title="Drag to reorder" aria-label="Drag to reorder"
+                        onPointerDown={(e) => onDragDown(e, q.id)} onPointerMove={onDragMove}
+                        onPointerUp={onDragUp} onPointerCancel={onDragUp}>{Icon.drag ? Icon.drag({}) : "⠿"}</button>
                       <button className="icon-btn" title="Edit question" onClick={() => openEdit(q)}>{Icon.edit({})}</button>
                       <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete question?", message: "This removes the question from the quiz.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.deleteQuizQuestion(q.id); })}>{Icon.trash({})}</button>
                     </div>
