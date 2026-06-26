@@ -223,10 +223,34 @@ export function THEME_DEFAULT_ACCENT(themeKey) {
   return ({ classic: "#5b7560", noir: "#b08d57", garden: "#3f7a52", blush: "#b06a72", dusk: "#5f7d9c", burgundy: "#7d2f3c", lavender: "#8f7fb0", emerald: "#2f7a5a", terracotta: "#c06a44", champagne: "#b08d57", envelope: "#5c6b3c" })[themeKey] || "#5b7560";
 }
 
+// Pure render decision for the app root — testable without React/network.
+// notfound takes precedence so a deleted/nonexistent subdomain can never fall
+// through to seed content. apex (subdomain===null) and the admin route render
+// the admin shell; everything else is the public client site.
+export function rootView({ loading, notFound, subdomain, route }) {
+  if (loading) return "loading";
+  if (notFound) return "notfound";
+  if (subdomain === null) return "admin"; // platform hub (bare apex)
+  if (route === "admin") return "admin";
+  return "public";
+}
+
+function NotFoundSite() {
+  return (
+    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", textAlign: "center", padding: 24 }}>
+      <div style={{ maxWidth: 440 }}>
+        <div style={{ color: "var(--accent)", marginBottom: 14 }}>{Icon.rings({})}</div>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, marginBottom: 10 }}>This site isn’t available</h1>
+        <p style={{ color: "var(--ink-soft)" }}>This event site has been removed or the address is incorrect.</p>
+      </div>
+    </div>
+  );
+}
+
 // --- Root -------------------------------------------------------------------
 export function App() {
   const route = useRoute();
-  const { settings } = useStore();
+  const { settings, notFound } = useStore();
 
   React.useEffect(() => { loadClientData().catch((e) => console.error("load failed", e)); }, []);
 
@@ -274,14 +298,17 @@ export function App() {
 
   // Gate the render AFTER all hooks above (rules of hooks: hook count must be
   // stable across renders — an early return between hooks crashes on hydrate).
-  if (Store.get().loading) {
+  const view = rootView({ loading: Store.get().loading, notFound, subdomain: resolveSubdomain(), route });
+  if (view === "loading") {
     return <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", color: "var(--ink-soft)" }}>Loading…</div>;
+  }
+  if (view === "notfound") {
+    return <NotFoundSite />;
   }
 
   const Page = ROUTES[route] || Home;
-  // Platform hub (bare apex, no client): only the admin login/console — no public site.
-  const isHub = resolveSubdomain() === null;
-  const isAdmin = route === "admin" || isHub;
+  // apex hub or the admin route → admin shell (no public site).
+  const isAdmin = view === "admin";
   const routeBlocked = route !== "home" && route !== "admin" && !moduleEnabled(settings.modules, route);
   const ActivePage = routeBlocked ? Home : Page;
 

@@ -128,6 +128,9 @@ export function defaultState() {
     quizSubs: [], // {id, name, score, total, answers, createdAt}
     clientId: null,
     loading: true,
+    // true when the requested subdomain has no active client (deleted / never
+    // existed / deactivated) — the app shows an "unavailable" page, not seed content.
+    notFound: false,
     auth: { ready: false, session: null, role: null, clientId: null, email: null },
   };
 }

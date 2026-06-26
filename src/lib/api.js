@@ -17,7 +17,9 @@ export async function loadClientData() {
   if (error || !client) {
     console.warn("[api] client not found for subdomain:", subdomain, error?.message);
     await loadSession(); // always resolve auth so admin doesn't hang on the loading gate
-    Store.hydrate({}); // clears loading; falls back to seed defaults
+    // No active client for this subdomain (deleted / never existed / deactivated).
+    // Flag it so the app shows an "unavailable" page instead of seed content.
+    Store.hydrate({ notFound: true });
     return;
   }
   const state = clientToState(client);
