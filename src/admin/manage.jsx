@@ -798,51 +798,110 @@ export function DetailsAdmin() {
 
 // Venue & Map — its own top-level admin tab (promoted out of Settings). Form
 // section, so it keeps the Save changes footer (not a per-item list).
+export function VenueCardEditor({ open, index, item, onClose }) {
+  const { venueCards } = useStore();
+  const { save: persistChanges } = React.useContext(AdminSaveCtx);
+  const blank = { t: "", d: "" };
+  const [f, setF] = useState(blank);
+  useEffect(() => {
+    if (item) setF({ t: item.t || "", d: item.d || "" });
+    else setF(blank);
+  }, [item, open]);
+  const isEdit = index != null && index >= 0;
+  async function save() {
+    if (!f.t.trim()) { toast("Please enter a title.", "err"); return; }
+    const payload = { t: f.t.trim(), d: f.d.trim() };
+    if (isEdit) Store.updateVenueCard(index, payload);
+    else Store.updateVenueCards([...(venueCards || []), payload]);
+    await persistChanges();
+    onClose();
+  }
+  return (
+    <Modal open={open} onClose={onClose} label="Venue card">
+      <SectionHead eyebrow="Venue & Map" title={isEdit ? "Edit card" : "New card"} />
+      <Field label="Title" required id="vc-t"><Input id="vc-t" value={f.t} onChange={(e) => setF((p) => ({ ...p, t: e.target.value }))} placeholder="e.g. Parking" /></Field>
+      <Field label="Description" id="vc-d" hint="What guests will read under the map"><Textarea id="vc-d" value={f.d} onChange={(e) => setF((p) => ({ ...p, d: e.target.value }))} placeholder="Complimentary valet at the rear entrance." style={{ minHeight: 100 }} /></Field>
+      <div style={{ display: "flex", gap: 12, marginTop: 8, justifyContent: "flex-end" }}>
+        <Button variant="ghost" onClick={onClose}>Cancel</Button>
+        <Button variant="primary" onClick={save}>{isEdit ? "Save card" : "Add card"}</Button>
+      </div>
+    </Modal>
+  );
+}
+
 export function VenueAdmin() {
   const { settings, venueCards } = useStore();
   const f = settings;
   const set = (k) => (e) => Store.updateSettings({ [k]: e.target && e.target.type === "checkbox" ? e.target.checked : e.target.value });
+  const [tab, setTab] = useState("map");
+  const [cardOpen, setCardOpen] = useState(false);
+  const [cardIndex, setCardIndex] = useState(null);
+  const openCard = (i) => { setCardIndex(i); setCardOpen(true); };
+  const cards = venueCards || [];
   return (
-    <div className="panel">
-      <div className="panel__head"><div className="panel__title">Venue &amp; Map</div></div>
-      <div className="panel__body">
-        <Field label="Venue name" id="s-vn"><Input id="s-vn" value={f.venueName} onChange={set("venueName")} /></Field>
-        <Field label="Venue address" id="s-va"><Input id="s-va" value={f.venueAddress} onChange={set("venueAddress")} /></Field>
-        <Field label="Map location" hint="Type to search a place or address, then click the map or drag the pin to the exact spot. Click Save changes to publish." id="s-map">
-          <LocationPicker
-            value={f.mapQuery}
-            lat={f.mapLat}
-            lng={f.mapLng}
-            onChange={({ query, lat, lng }) => Store.updateSettings({ mapQuery: query, mapLat: lat, mapLng: lng })}
-          />
-        </Field>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 8, marginBottom: 12 }}>
-          <Button variant="ghost" size="sm" onClick={() => window.open(mapSearchUrl(f.mapQuery || f.venueAddress), "_blank")}>{Icon.pin({})} Open in Google Maps</Button>
-          {(f.mapQuery || f.mapLat != null) && <Button variant="ghost" size="sm" onClick={() => Store.updateSettings({ mapQuery: "", mapLat: undefined, mapLng: undefined })}>Clear pin</Button>}
-        </div>
-
-        <div className="settings-subhead">Venue info cards</div>
-        <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>The cards shown under the map on the Venue page. Edit the title and text, reorder with the arrows, delete, or add your own. A blank card is hidden from guests.</p>
-        <div className="venue-cards-edit">
-          {(venueCards || []).map((c, i) => (
-            <div className="card venue-card-edit" key={i}>
-              <div className="venue-card-edit__top">
-                <Input value={c.t || ""} onChange={(e) => Store.updateVenueCard(i, { t: e.target.value })} placeholder="Title — e.g. Parking" aria-label="Card title" />
-                <div className="row-actions">
-                  <button type="button" className="icon-btn" title="Move up" onClick={() => Store.moveVenueCard(i, -1)} disabled={i === 0}>↑</button>
-                  <button type="button" className="icon-btn" title="Move down" onClick={() => Store.moveVenueCard(i, 1)} disabled={i === (venueCards.length - 1)}>↓</button>
-                  <button type="button" className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete card?", message: "This removes the card from the Venue page.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.updateVenueCards(venueCards.filter((_, j) => j !== i)); })}>{Icon.trash({})}</button>
-                </div>
-              </div>
-              <Textarea value={c.d || ""} onChange={(e) => Store.updateVenueCard(i, { d: e.target.value })} style={{ minHeight: 60, marginTop: 10 }} placeholder="Description guests will see" aria-label="Card description" />
-            </div>
-          ))}
-        </div>
-        <div style={{ marginTop: 12 }}>
-          <Button variant="ghost" block onClick={() => Store.updateVenueCards([...(venueCards || []), { t: "New card", d: "" }])}>+ Add card</Button>
-        </div>
+    <div>
+      <div className="folders">
+        <button className={"folder" + (tab === "map" ? " folder--active" : "")} onClick={() => setTab("map")}>{Icon.pin({})} Map</button>
+        <button className={"folder" + (tab === "venue" ? " folder--active" : "")} onClick={() => setTab("venue")}>{Icon.book({})} Venue</button>
       </div>
-      <SaveFooter />
+
+      {tab === "map" && (
+      <div className="panel">
+        <div className="panel__head"><div className="panel__title">Map &amp; location</div></div>
+        <div className="panel__body">
+          <Field label="Venue name" id="s-vn"><Input id="s-vn" value={f.venueName} onChange={set("venueName")} /></Field>
+          <Field label="Venue address" id="s-va"><Input id="s-va" value={f.venueAddress} onChange={set("venueAddress")} /></Field>
+          <Field label="Map location" hint="Type to search a place or address, then click the map or drag the pin to the exact spot. Click Save changes to publish." id="s-map">
+            <LocationPicker
+              value={f.mapQuery}
+              lat={f.mapLat}
+              lng={f.mapLng}
+              onChange={({ query, lat, lng }) => Store.updateSettings({ mapQuery: query, mapLat: lat, mapLng: lng })}
+            />
+          </Field>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 8, marginBottom: 12 }}>
+            <Button variant="ghost" size="sm" onClick={() => window.open(mapSearchUrl(f.mapQuery || f.venueAddress), "_blank")}>{Icon.pin({})} Open in Google Maps</Button>
+            {(f.mapQuery || f.mapLat != null) && <Button variant="ghost" size="sm" onClick={() => Store.updateSettings({ mapQuery: "", mapLat: undefined, mapLng: undefined })}>Clear pin</Button>}
+          </div>
+        </div>
+        <SaveFooter />
+      </div>
+      )}
+
+      {tab === "venue" && (
+      <div className="panel">
+        <div className="panel__head">
+          <div className="panel__title">Venue info cards <span style={{ color: "var(--muted)", fontSize: 15 }}>({cards.length})</span></div>
+          <Button variant="primary" size="sm" onClick={() => openCard(null)}>+ Add card</Button>
+        </div>
+        <div className="panel__body--flush table-wrap">
+          <table className="tbl">
+            <thead><tr><th>#</th><th>Title</th><th>Description</th><th></th></tr></thead>
+            <tbody>
+              {cards.map((c, i) => (
+                <tr key={i}>
+                  <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--muted)" }}>{i + 1}</td>
+                  <td><strong>{c.t || "—"}</strong></td>
+                  <td style={{ maxWidth: 420, color: "var(--ink-soft)" }}>{c.d}</td>
+                  <td>
+                    <div className="row-actions">
+                      <button className="icon-btn" title="Move up" onClick={() => Store.moveVenueCard(i, -1)} disabled={i === 0}>↑</button>
+                      <button className="icon-btn" title="Move down" onClick={() => Store.moveVenueCard(i, 1)} disabled={i === cards.length - 1}>↓</button>
+                      <button className="icon-btn" title="Edit card" onClick={() => openCard(i)}>{Icon.edit({})}</button>
+                      <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete card?", message: "This removes the card from the Venue page.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.updateVenueCards(cards.filter((_, j) => j !== i)); })}>{Icon.trash({})}</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {cards.length === 0 && <tr><td colSpan={4} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No cards yet. Add one to get started.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <SaveFooter />
+      </div>
+      )}
+
+      <VenueCardEditor open={cardOpen} index={cardIndex} item={cardIndex != null ? cards[cardIndex] : null} onClose={() => setCardOpen(false)} />
     </div>
   );
 }
