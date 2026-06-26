@@ -144,6 +144,11 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .demo-trybar .nav__themepick-label { margin-bottom: 4px; }
 .demo-trybar .nav__themepick select { width: 100%; max-width: none; }
 @media (min-width: 940px) { .demo-trybar { display: none; } }
+/* The fixed try-bar would cover the footer (incl. "Admin sign in") on mobile.
+   Reserve space at the bottom of the footer so it clears the bar and stays tappable. */
+@media (max-width: 939px) {
+  body:has(.demo-trybar) .footer { padding-bottom: calc(120px + env(safe-area-inset-bottom)); }
+}
 
 .drawer { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; }
 .drawer__bg { position: absolute; inset: 0; background: rgba(0,0,0,.4); animation: fade .2s ease; }
@@ -1227,7 +1232,9 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .eg-sealed .inv-lf-label { font-size: 6vw; font-size: min(calc(var(--eg-title-cqw, 2.3) * 1cqw), 8.5vw); letter-spacing: .08em; }
 .eg-sealed .inv-lf-names { font-size: 6vw; font-size: min(calc(var(--eg-title-cqw, 2.3) * 1cqw), 8.5vw); }
 .eg-sealed .inv-open-cue { font-size: 3.8vw; font-size: min(1.6cqw, 3.8vw); top: 75%; }
-.eg-open { width: min(1140px, 100vw, 105vh); flex: none; transition: width .6s ease; }
+/* 100% (not 100vw) so the opened invitation stays centered — 100vw includes the
+   scrollbar width that appears once the page scrolls, which shifted it right. */
+.eg-open { width: min(1140px, 100%, 105vh); flex: none; transition: width .6s ease; }
 .eg-cue {
   position: absolute; left: 50%;
   top: calc(50% + min(320px, 28.1vw, 29.5vh) + 40px); bottom: auto;
