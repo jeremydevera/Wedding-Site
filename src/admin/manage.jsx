@@ -566,7 +566,7 @@ export function ScheduleAdmin() {
 }
 
 export function SettingsAdmin() {
-  const { settings, story, venueCards } = useStore();
+  const { settings, story, venueCards, faq } = useStore();
   const f = settings;
   const set = (k) => (e) => Store.updateSettings({ [k]: e.target && e.target.type === "checkbox" ? e.target.checked : e.target.value });
   const setKey = (k, v) => Store.updateSettings({ [k]: v });
@@ -685,6 +685,27 @@ export function SettingsAdmin() {
           </div>
           <div style={{ marginTop: 12 }}>
             <Button variant="ghost" block onClick={() => Store.updateVenueCards([...(venueCards || []), { t: "New card", d: "" }])}>+ Add card</Button>
+          </div>
+
+          <div className="settings-subhead">Frequently asked questions</div>
+          <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>The FAQ shown on the Details page. Edit each question and answer, reorder with the arrows, delete, or add your own. A blank question is hidden from guests.</p>
+          <div className="venue-cards-edit">
+            {(faq || []).map((item, i) => (
+              <div className="card venue-card-edit" key={i}>
+                <div className="venue-card-edit__top">
+                  <Input value={item.q || ""} onChange={(e) => Store.updateFaqItem(i, { q: e.target.value })} placeholder="Question — e.g. What time should I arrive?" aria-label="FAQ question" />
+                  <div className="row-actions">
+                    <button type="button" className="icon-btn" title="Move up" onClick={() => Store.moveFaq(i, -1)} disabled={i === 0}>↑</button>
+                    <button type="button" className="icon-btn" title="Move down" onClick={() => Store.moveFaq(i, 1)} disabled={i === ((faq || []).length - 1)}>↓</button>
+                    <button type="button" className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete question?", message: "This removes it from the Details page FAQ.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.updateFaq((faq || []).filter((_, j) => j !== i)); })}>{Icon.trash({})}</button>
+                  </div>
+                </div>
+                <Textarea value={item.a || ""} onChange={(e) => Store.updateFaqItem(i, { a: e.target.value })} style={{ minHeight: 60, marginTop: 10 }} placeholder="Answer guests will see" aria-label="FAQ answer" />
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <Button variant="ghost" block onClick={() => Store.updateFaq([...(faq || []), { q: "New question", a: "" }])}>+ Add question</Button>
           </div>
         </div>
         <SaveFooter />

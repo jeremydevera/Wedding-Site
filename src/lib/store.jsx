@@ -336,6 +336,25 @@ export const Store = {
     persist();
     emit();
   },
+  updateFaq(faq) {
+    _state = { ..._state, faq };
+    persist();
+    emit();
+  },
+  updateFaqItem(index, patch) {
+    _state = { ..._state, faq: (_state.faq || []).map((f, i) => (i === index ? { ...f, ...patch } : f)) };
+    persist();
+    emit();
+  },
+  moveFaq(index, dir) {
+    const arr = [...(_state.faq || [])];
+    const j = index + dir;
+    if (index < 0 || j < 0 || j >= arr.length) return;
+    [arr[index], arr[j]] = [arr[j], arr[index]];
+    _state = { ..._state, faq: arr };
+    persist();
+    emit();
+  },
   resetAll() {
     _state = defaultState();
     persist();
