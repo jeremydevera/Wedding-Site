@@ -24,11 +24,11 @@ Claude test run. Done items stay here as the permanent history.
 - **Action:** New client's guest messages stay hidden even though the toggle looks ON.
 - **Plan:** Make the server default match the toggle (auto-approve ON by default).
 
-### Bug ID: 0003 — [APPROVAL] Guest photo/video uploads don't save
-- **Severity:** P2 · **Status:** Deferred (you said ignore for now) · **Added:** 2026-06-25
+### Bug ID: 0003 — Guest photo/video uploads don't save
+- **Severity:** P2 · **Status:** Rejected (2026-06-26 — feature not used; gallery/upload dropped) · **Added:** 2026-06-25
 - **Where:** Guest site → Upload (Share Photos) · Admin → Media
-- **Action:** Uploads only live on the phone that sent them — other devices and the admin never see them.
-- **Plan:** Add a server table + save uploads to it, so the gallery and admin sync everywhere.
+- **Action:** ~~Uploads only live on the phone that sent them.~~ Won't fix — the photo-upload/gallery feature is not used (gallery stays off via the platform kill switch).
+- **Plan:** N/A — closed. If uploads are ever re-enabled, reopen: add a server table + save uploads so the gallery/admin sync.
 
 ### Bug ID: 0004 — [APPROVAL] RSVP "Email" shown but never collected
 - **Severity:** P3 · **Status:** Pending · **Added:** 2026-06-25

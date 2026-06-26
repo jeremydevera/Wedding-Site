@@ -120,6 +120,61 @@ export function Pager({ page, totalPages, total, onPage, perPage = 20, start = 0
   );
 }
 
+// --- Infinite scroll --------------------------------------------------------
+// True lazy load: fetchPage(offset, size) returns the next slice of rows from
+// the server. Attach the returned `sentinelRef` to an element at the bottom of
+// the list — when it scrolls into view, the next page is fetched and appended.
+// Only ~pageSize rows are ever fetched/mounted up front, so a 1000-row list
+// loads instantly and grows as the user scrolls.
+export function useInfiniteScroll(fetchPage, pageSize = 20) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+  const offset = useRef(0);
+  const busy = useRef(false);
+  const sentinelRef = useRef(null);
+  const fetchRef = useRef(fetchPage);
+  fetchRef.current = fetchPage; // always call the latest fetcher without re-binding
+
+  const loadMore = useCallback(async () => {
+    if (busy.current || done) return;
+    busy.current = true; setLoading(true);
+    try {
+      const rows = (await fetchRef.current(offset.current, pageSize)) || [];
+      offset.current += rows.length;
+      setItems((prev) => [...prev, ...rows]);
+      if (rows.length < pageSize) setDone(true); // short page = no more
+    } catch (e) {
+      setDone(true); // stop trying on error
+    } finally {
+      busy.current = false; setLoading(false);
+    }
+  }, [pageSize, done]);
+
+  // first page on mount
+  useEffect(() => { loadMore(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // watch the sentinel; re-arm after each append so a still-visible sentinel
+  // (page not yet filled) keeps loading.
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || done) return;
+    const io = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) loadMore(); },
+      { rootMargin: "400px" } // start loading before it's fully on screen
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [loadMore, done, items.length]);
+
+  // Optimistically add/remove without a refetch (e.g. after a new submission
+  // or an admin delete), so the visible list stays in sync.
+  const prepend = useCallback((row) => { offset.current += 1; setItems((p) => [row, ...p]); }, []);
+  const removeItem = useCallback((pred) => setItems((p) => p.filter((x) => !pred(x))), []);
+
+  return { items, loading, done, sentinelRef, prepend, removeItem };
+}
+
 // --- Section header ---------------------------------------------------------
 export function SectionHead({ eyebrow, title, lead, center, light }) {
   return (

@@ -23,12 +23,9 @@ export async function loadClientData() {
     return;
   }
   const state = clientToState(client);
-  const { data: gb, error: gbErr } = await supabase
-    .from("guestbook").select("*").eq("client_id", client.id)
-    .eq("status", "approved").order("created_at", { ascending: false });
-  if (gbErr) console.warn("[api] guestbook fetch failed:", gbErr.message);
-  // only replace guestbook when the fetch succeeded — a failed query must not wipe it
-  Store.hydrate({ ...state, ...(gb ? { guestbook: gb.map(rowToGuestbook) } : { guestbook: [] }) });
+  // The public guestbook lazy-loads its own pages on the Guestbook page
+  // (infinite scroll), so boot no longer waits on fetching every message.
+  Store.hydrate({ ...state, guestbook: [] });
   await loadSession();
 }
 

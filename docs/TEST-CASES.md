@@ -101,17 +101,10 @@ Severity hint: 🔴 must-pass before release · 🟡 important · ⚪ nice-to-ha
 - **J3** 🟡 ⬜ Admin: add / edit / delete / reorder questions; multiple-choice vs true-false; mark correct answer.
 - **J4** ⚪ ⬜ Editing questions then replaying scores against the new answers.
 
-## K. Media — upload, gallery, video message (Guest site)
-
-- **K1** 🔴 ⬜ Upload requires a name + at least one file; progress bar; confirmation.
-- **K2** 🟡 ⬜ File-type guard: photo page rejects videos and vice-versa; unsupported types rejected.
-- **K3** 🟡 ⬜ Size guard: photo > 25MB rejected; video > 100MB rejected; max 10 files.
-- **K4** 🟡 ⬜ Auto-approve media ON → appears in gallery instantly; OFF → waits in admin Media queue.
-- **K5** 🟡 ⬜ Gallery filter (All/Photos/Videos); lightbox opens; video plays.
-- **K6** ⚪ ⬜ Uploads disabled (master switch) → "Uploads are closed" screen.
-- **K7** ⚪ ⬜ Gallery disabled → "gallery is private" screen.
-- **K8** ⚠️ 🔴 ⬜ Uploads currently persist only on the uploading device (no server) — admin/other devices don't see them (BUG-0003).
-- **K9** ⚪ ⬜ Private video message: only reaches admin (Media → Private), not the public gallery.
+> **Photo upload / gallery feature removed** — the guest photo-sharing / gallery
+> (Upload, Share Photos, Video Message, Media tab) is not used, so its test cases
+> were dropped. The gallery module stays off (platform kill switch). Admin image
+> setup (hero, story, envelope photos) is still covered under F/D/L.
 
 ## L. Admin — auth, dashboard, moderation, settings (Admin sign in)
 
@@ -148,7 +141,7 @@ Severity hint: 🔴 must-pass before release · 🟡 important · ⚪ nice-to-ha
 
 - **O1** 🔴 ⬜ Server data (RSVP/guestbook/quiz) is per-client and doesn't leak between tenants.
 - **O2** 🟡 ⬜ Settings/content changes only persist after "Save changes" (not on every keystroke for the public site).
-- **O3** ⚪ ⬜ A second device sees the same RSVPs/guestbook/quiz (server-backed) — but NOT media (BUG-0003).
+- **O3** ⚪ ⬜ A second device sees the same RSVPs / guestbook / quiz (server-backed).
 
 ---
 
