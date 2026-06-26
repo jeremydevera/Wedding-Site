@@ -47,6 +47,25 @@ Deno.serve(async (req) => {
     return json({ ok: true, userId: existing.id });
   }
 
+  // 2c. delete an owner's auth account (its profile cascades via profiles.id->users).
+  // Find by email, or by user_id, or by the (still-linked) profile for a client_id.
+  if (body.action === "delete_owner") {
+    const { email, user_id, client_id } = body;
+    let userId = user_id as string | undefined;
+    if (!userId && email) userId = (await findByEmail(email))?.id;
+    if (!userId && client_id) {
+      const { data: prof } = await admin.from("profiles").select("id").eq("client_id", client_id).eq("role", "owner").maybeSingle();
+      userId = prof?.id;
+    }
+    if (!userId) return json({ ok: true, noop: true }); // nothing to delete
+    // Safety: never delete a superadmin via this path.
+    const { data: p } = await admin.from("profiles").select("role").eq("id", userId).single();
+    if (p?.role === "superadmin") return json({ error: "Refusing to delete a superadmin" }, 400);
+    const { error } = await admin.auth.admin.deleteUser(userId);
+    if (error) return json({ error: error.message }, 400);
+    return json({ ok: true, deleted: userId });
+  }
+
   // 2b. create the owner, or reset the password of an existing owner
   const { email, password, client_id } = body;
   if (!email || !password || !client_id) return json({ error: "Bad request" }, 400);

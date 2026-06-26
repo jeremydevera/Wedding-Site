@@ -49,3 +49,13 @@ export async function updateOwnerEmail({ old_email, new_email }) {
   if (error) throw error;
   return data;
 }
+
+// Superadmin-only: delete an owner's auth account (its profile cascades).
+// Pass any of email / user_id / client_id; the function resolves the user.
+export async function deleteOwner({ email, user_id, client_id }) {
+  const { data, error } = await supabase.functions.invoke("admin-create-owner", {
+    body: { action: "delete_owner", email, user_id, client_id },
+  });
+  if (error) throw error;
+  return data;
+}

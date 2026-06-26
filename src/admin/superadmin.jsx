@@ -1,6 +1,6 @@
 import React from "react";
 import { supabase } from "@/lib/supabase.js";
-import { createOwner, updateOwnerEmail } from "@/lib/auth.js";
+import { createOwner, updateOwnerEmail, deleteOwner } from "@/lib/auth.js";
 import { THEMES } from "@/themes";
 import { themesForEvent } from "@/config/eventTypes.js";
 import { moduleLabel } from "@/lib/roles.js";
@@ -196,10 +196,21 @@ export function ClientsAdmin() {
 
   async function deleteClient(c) {
     // native confirm — neutral, not the event theme
-    if (!window.confirm(`Delete "${c.subdomain}" and all its data (RSVPs, guestbook, quiz)? This cannot be undone.`)) return;
+    if (!window.confirm(`Delete "${c.subdomain}" and all its data (RSVPs, guestbook, quiz) and its owner login? This cannot be undone.`)) return;
+    // Remove the owner's auth account FIRST, while profiles.client_id still links
+    // to this client (so the lookup works even when owner_email is null). Deleting
+    // the auth user cascades its profile. Then delete the client (cascades its
+    // RSVPs/guestbook/quiz). A noop is fine for clients that never had an owner.
+    let ownerWarn = false;
+    try {
+      await deleteOwner({ email: c.owner_email || undefined, client_id: c.id });
+    } catch (e2) {
+      ownerWarn = true;
+    }
     const { error } = await supabase.from("clients").delete().eq("id", c.id);
     if (error) return toast("Delete failed: " + error.message);
-    toast("Client deleted"); load();
+    toast(ownerWarn ? "Client deleted — owner login may remain; remove it in Supabase Auth." : "Client and owner login deleted");
+    load();
   }
 
   const filtered = clients.filter((c) => c.subdomain.toLowerCase().includes(q.trim().toLowerCase()));
