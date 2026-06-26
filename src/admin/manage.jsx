@@ -796,8 +796,59 @@ export function DetailsAdmin() {
   );
 }
 
+// Venue & Map — its own top-level admin tab (promoted out of Settings). Form
+// section, so it keeps the Save changes footer (not a per-item list).
+export function VenueAdmin() {
+  const { settings, venueCards } = useStore();
+  const f = settings;
+  const set = (k) => (e) => Store.updateSettings({ [k]: e.target && e.target.type === "checkbox" ? e.target.checked : e.target.value });
+  return (
+    <div className="panel">
+      <div className="panel__head"><div className="panel__title">Venue &amp; Map</div></div>
+      <div className="panel__body">
+        <Field label="Venue name" id="s-vn"><Input id="s-vn" value={f.venueName} onChange={set("venueName")} /></Field>
+        <Field label="Venue address" id="s-va"><Input id="s-va" value={f.venueAddress} onChange={set("venueAddress")} /></Field>
+        <Field label="Map location" hint="Type to search a place or address, then click the map or drag the pin to the exact spot. Click Save changes to publish." id="s-map">
+          <LocationPicker
+            value={f.mapQuery}
+            lat={f.mapLat}
+            lng={f.mapLng}
+            onChange={({ query, lat, lng }) => Store.updateSettings({ mapQuery: query, mapLat: lat, mapLng: lng })}
+          />
+        </Field>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 8, marginBottom: 12 }}>
+          <Button variant="ghost" size="sm" onClick={() => window.open(mapSearchUrl(f.mapQuery || f.venueAddress), "_blank")}>{Icon.pin({})} Open in Google Maps</Button>
+          {(f.mapQuery || f.mapLat != null) && <Button variant="ghost" size="sm" onClick={() => Store.updateSettings({ mapQuery: "", mapLat: undefined, mapLng: undefined })}>Clear pin</Button>}
+        </div>
+
+        <div className="settings-subhead">Venue info cards</div>
+        <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>The cards shown under the map on the Venue page. Edit the title and text, reorder with the arrows, delete, or add your own. A blank card is hidden from guests.</p>
+        <div className="venue-cards-edit">
+          {(venueCards || []).map((c, i) => (
+            <div className="card venue-card-edit" key={i}>
+              <div className="venue-card-edit__top">
+                <Input value={c.t || ""} onChange={(e) => Store.updateVenueCard(i, { t: e.target.value })} placeholder="Title — e.g. Parking" aria-label="Card title" />
+                <div className="row-actions">
+                  <button type="button" className="icon-btn" title="Move up" onClick={() => Store.moveVenueCard(i, -1)} disabled={i === 0}>↑</button>
+                  <button type="button" className="icon-btn" title="Move down" onClick={() => Store.moveVenueCard(i, 1)} disabled={i === (venueCards.length - 1)}>↓</button>
+                  <button type="button" className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete card?", message: "This removes the card from the Venue page.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.updateVenueCards(venueCards.filter((_, j) => j !== i)); })}>{Icon.trash({})}</button>
+                </div>
+              </div>
+              <Textarea value={c.d || ""} onChange={(e) => Store.updateVenueCard(i, { d: e.target.value })} style={{ minHeight: 60, marginTop: 10 }} placeholder="Description guests will see" aria-label="Card description" />
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <Button variant="ghost" block onClick={() => Store.updateVenueCards([...(venueCards || []), { t: "New card", d: "" }])}>+ Add card</Button>
+        </div>
+      </div>
+      <SaveFooter />
+    </div>
+  );
+}
+
 export function SettingsAdmin() {
-  const { settings, story, venueCards } = useStore();
+  const { settings, story } = useStore();
   const f = settings;
   const set = (k) => (e) => Store.updateSettings({ [k]: e.target && e.target.type === "checkbox" ? e.target.checked : e.target.value });
   const setKey = (k, v) => Store.updateSettings({ [k]: v });
@@ -822,7 +873,7 @@ export function SettingsAdmin() {
   const allowed = themesForEvent(f.eventType || DEFAULT_EVENT_TYPE);
   const normalThemes = allowed.filter((k) => THEMES[k] && !isPremiumTheme(k));
   const premiumThemes = allowed.filter((k) => THEMES[k] && isPremiumTheme(k));
-  const STABS = [["general", "General", "user"], ["features", "Features", "check"], ["appearance", "Theme", "grid"], ["venue", "Venue & Map", "pin"], ["photos", "Photos", "camera"], ["access", "Access", "check"]];
+  const STABS = [["general", "General", "user"], ["features", "Features", "check"], ["appearance", "Theme", "grid"], ["photos", "Photos", "camera"], ["access", "Access", "check"]];
 
   return (
     <div>
@@ -876,48 +927,6 @@ export function SettingsAdmin() {
                 </label>
               );
             })}
-          </div>
-        </div>
-        <SaveFooter />
-      </div>)}
-
-      {tab === "venue" && (<div className="panel">
-        <div className="panel__head"><div className="panel__title">Venue &amp; Map</div></div>
-        <div className="panel__body">
-          <Field label="Venue name" id="s-vn"><Input id="s-vn" value={f.venueName} onChange={set("venueName")} /></Field>
-          <Field label="Venue address" id="s-va"><Input id="s-va" value={f.venueAddress} onChange={set("venueAddress")} /></Field>
-          <Field label="Map location" hint="Type to search a place or address, then click the map or drag the pin to the exact spot. Click Save changes to publish." id="s-map">
-            <LocationPicker
-              value={f.mapQuery}
-              lat={f.mapLat}
-              lng={f.mapLng}
-              onChange={({ query, lat, lng }) => Store.updateSettings({ mapQuery: query, mapLat: lat, mapLng: lng })}
-            />
-          </Field>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 8, marginBottom: 12 }}>
-            <Button variant="ghost" size="sm" onClick={() => window.open(mapSearchUrl(f.mapQuery || f.venueAddress), "_blank")}>{Icon.pin({})} Open in Google Maps</Button>
-            {(f.mapQuery || f.mapLat != null) && <Button variant="ghost" size="sm" onClick={() => Store.updateSettings({ mapQuery: "", mapLat: undefined, mapLng: undefined })}>Clear pin</Button>}
-          </div>
-
-          <div className="settings-subhead">Venue info cards</div>
-          <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>The cards shown under the map on the Venue page. Edit the title and text, reorder with the arrows, delete, or add your own. A blank card is hidden from guests.</p>
-          <div className="venue-cards-edit">
-            {(venueCards || []).map((c, i) => (
-              <div className="card venue-card-edit" key={i}>
-                <div className="venue-card-edit__top">
-                  <Input value={c.t || ""} onChange={(e) => Store.updateVenueCard(i, { t: e.target.value })} placeholder="Title — e.g. Parking" aria-label="Card title" />
-                  <div className="row-actions">
-                    <button type="button" className="icon-btn" title="Move up" onClick={() => Store.moveVenueCard(i, -1)} disabled={i === 0}>↑</button>
-                    <button type="button" className="icon-btn" title="Move down" onClick={() => Store.moveVenueCard(i, 1)} disabled={i === (venueCards.length - 1)}>↓</button>
-                    <button type="button" className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete card?", message: "This removes the card from the Venue page.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.updateVenueCards(venueCards.filter((_, j) => j !== i)); })}>{Icon.trash({})}</button>
-                  </div>
-                </div>
-                <Textarea value={c.d || ""} onChange={(e) => Store.updateVenueCard(i, { d: e.target.value })} style={{ minHeight: 60, marginTop: 10 }} placeholder="Description guests will see" aria-label="Card description" />
-              </div>
-            ))}
-          </div>
-          <div style={{ marginTop: 12 }}>
-            <Button variant="ghost" block onClick={() => Store.updateVenueCards([...(venueCards || []), { t: "New card", d: "" }])}>+ Add card</Button>
           </div>
         </div>
         <SaveFooter />
@@ -1136,6 +1145,7 @@ export const ADMIN_TABS = [
   { key: "schedule", label: "Schedule", icon: "calendar" },
   { key: "quiz", label: "Quiz", icon: "quiz" },
   { key: "details", label: "Details", icon: "rings" },
+  { key: "venue", label: "Venue & Map", icon: "pin" },
   { key: "settings", label: "Settings", icon: "user" },
 ];
 
@@ -1258,6 +1268,7 @@ export function AdminApp() {
           {activeTab === "schedule" && <ScheduleAdmin />}
           {activeTab === "quiz" && <QuizAdmin />}
           {activeTab === "details" && <DetailsAdmin />}
+          {activeTab === "venue" && <VenueAdmin />}
           {activeTab === "qr" && <QrAdmin />}
           {activeTab === "settings" && <SettingsAdmin />}
           {activeTab === "overview" && <SuperOverview />}
