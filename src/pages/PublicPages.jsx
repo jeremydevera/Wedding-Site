@@ -2,7 +2,7 @@ import React from "react";
 import { go } from "@/lib/nav.js";
 import { useStore } from "@/lib/store.jsx";
 import { egTintGradient } from "@/themes";
-import { Button, Countdown, FallingFx, FloatingDecor, Icon, Placeholder, SectionHead, mapDirUrl, mapEmbedUrl } from "@/ui/components.jsx";
+import { Button, Countdown, FloatingDecor, Icon, Placeholder, SectionHead, mapDirUrl, mapEmbedUrl } from "@/ui/components.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // ============================================================================
@@ -307,10 +307,10 @@ export function Home() {
       {/* COUNTDOWN (envelope theme — the hero is replaced by the envelope) */}
       {s.theme === "envelope" && (
         <section className="block eg-celebrate" id="home-countdown" style={{ textAlign: "center", paddingBottom: 96 }}>
-          {/* Floating decoration is admin-configurable (Settings → Appearance → Floating Decorations). */}
-          {s.decorOn && (String(s.decorStyle).startsWith("fx-")
-            ? <FallingFx id={s.decorStyle.slice(3)} />
-            : <FloatingDecor on style={s.decorStyle} />)}
+          {/* IMPORTANT — DO NOT make this configurable. The Olive Envelope theme
+              ALWAYS shows falling leaves, regardless of the client's decorStyle/
+              decorOn (it's a bespoke template). Never bind this to s.decorStyle. */}
+          <FloatingDecor on style="leaves" />
           <div className="container container--narrow">
             <div className="eyebrow eyebrow--solo" style={{ justifyContent: "center" }}>{s.tagline}</div>
             <h2 style={{ fontSize: "clamp(28px,4.6vw,44px)", margin: "16px 0 14px", color: "var(--ink)" }}>
