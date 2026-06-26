@@ -19,6 +19,31 @@ const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 // Save state shared from the AdminApp shell down to each section's footer, so the
 // Save button can live INSIDE the section card being edited (Supabase pattern).
 const AdminSaveCtx = React.createContext({ saving: false, dirty: false, save: () => {} });
+
+// Move an array item from one index to another (returns a new array).
+function moveItem(arr, from, to) { const a = [...arr]; const [m] = a.splice(from, 1); a.splice(to, 0, m); return a; }
+
+// Pointer-based drag-to-reorder for admin list rows (mouse + touch, no animation).
+// `reorder(from, to)` applies the move for the specific list; `persist` saves to
+// the DB on drop. Mark each row with data-ri={index} and spread handleProps(i)
+// onto its drag handle.
+function useDragReorder(reorder, persist) {
+  const from = useRef(null);
+  const [dragging, setDragging] = useState(null);
+  const down = (e, i) => { e.preventDefault(); from.current = i; setDragging(i); try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {} };
+  const move = (e) => {
+    if (from.current == null) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const row = el && el.closest("[data-ri]");
+    if (!row) return;
+    const to = Number(row.getAttribute("data-ri"));
+    if (!Number.isNaN(to) && to !== from.current) { reorder(from.current, to); from.current = to; setDragging(to); }
+  };
+  const up = async () => { if (from.current == null) return; from.current = null; setDragging(null); if (persist) await persist(); };
+  const handleProps = (i) => ({ onPointerDown: (e) => down(e, i), onPointerMove: move, onPointerUp: up, onPointerCancel: up });
+  return { dragging, handleProps };
+}
+
 export function SaveFooter() {
   const { saving, dirty, save } = React.useContext(AdminSaveCtx);
   return (
@@ -386,52 +411,7 @@ export function QuizAdmin() {
   const openEdit = (q) => { setEditing(q); setEditorOpen(true); };
   const [tab, setTab] = useState("questions");
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
-  // Pointer-based drag reorder — works with mouse AND touch (HTML5 DnD doesn't).
-  const dragId = useRef(null);
-  const [dragging, setDragging] = useState(null);
-  const onDragDown = (e, id) => {
-    e.preventDefault();
-    dragId.current = id; setDragging(id);
-    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
-  };
-  const onDragMove = (e) => {
-    if (dragId.current == null) return;
-    const el = document.elementFromPoint(e.clientX, e.clientY);
-    const row = el && el.closest("tr[data-qid]");
-    const overId = row && row.getAttribute("data-qid");
-    if (overId && overId !== dragId.current) Store.reorderQuizQuestion(dragId.current, overId);
-  };
-  const onDragUp = async () => {
-    if (dragId.current == null) return;
-    dragId.current = null; setDragging(null);
-    await persistChanges(); // save the new order to the DB so it survives a refresh
-  };
-  // FLIP: whenever the order changes, slide each row from its old position to its
-  // new one so reordering animates smoothly instead of snapping.
-  const tbodyRef = useRef(null);
-  const rowTops = useRef(new Map());
-  React.useLayoutEffect(() => {
-    const tb = tbodyRef.current;
-    if (!tb) return;
-    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const next = new Map();
-    tb.querySelectorAll("tr[data-qid]").forEach((tr) => {
-      const id = tr.getAttribute("data-qid");
-      const top = tr.getBoundingClientRect().top;
-      next.set(id, top);
-      const old = rowTops.current.get(id);
-      if (!reduce && old != null && Math.abs(old - top) > 0.5) {
-        const dy = old - top;
-        tr.style.transition = "none";
-        tr.style.transform = `translateY(${dy}px)`;
-        requestAnimationFrame(() => {
-          tr.style.transition = "transform .22s cubic-bezier(.2,.7,.3,1)";
-          tr.style.transform = "";
-        });
-      }
-    });
-    rowTops.current = next;
-  }, [quiz]);
+  const drag = useDragReorder((f, t) => Store.reorderQuizQuestion(quiz[f].id, quiz[t].id), persistChanges);
   return (
     <div>
       <div className="folders">
@@ -448,13 +428,11 @@ export function QuizAdmin() {
         <div className="panel__body--flush table-wrap">
           <table className="tbl tbl--qz">
             <thead><tr><th aria-label="Reorder"></th><th>#</th><th>Question</th><th>Type</th><th>Correct answer</th><th></th></tr></thead>
-            <tbody ref={tbodyRef}>
+            <tbody>
               {quiz.map((q, i) => (
-                <tr key={q.id} data-qid={q.id} className={"q-row" + (dragging === q.id ? " q-row--dragging" : "")}>
+                <tr key={q.id} data-ri={i} className={"q-row" + (drag.dragging === i ? " q-row--dragging" : "")}>
                   <td className="q-drag-cell">
-                    <button className="q-drag" title="Drag to reorder" aria-label="Drag to reorder"
-                      onPointerDown={(e) => onDragDown(e, q.id)} onPointerMove={onDragMove}
-                      onPointerUp={onDragUp} onPointerCancel={onDragUp}>{Icon.drag ? Icon.drag({}) : "⠿"}</button>
+                    <button className="q-drag" title="Drag to reorder" aria-label="Drag to reorder" {...drag.handleProps(i)}>⠿</button>
                   </td>
                   <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--muted)" }}>{i + 1}</td>
                   <td style={{ maxWidth: 360 }}><strong>{q.q}</strong></td>
@@ -613,10 +591,9 @@ export function ScheduleAdmin() {
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
-  const [moved, setMoved] = useState(null);
   const openNew = () => { setEditingIndex(null); setEditorOpen(true); };
   const openEdit = (i) => { setEditingIndex(i); setEditorOpen(true); };
-  const doMove = async (i, dir) => { setMoved({ i, dir }); Store.moveSchedule(i, dir); setTimeout(() => setMoved(null), 480); await persistChanges(); };
+  const drag = useDragReorder((f, t) => Store.updateSchedule(moveItem(schedule, f, t)), persistChanges);
   const doDelete = async (i) => { if (await confirmDialog({ title: "Delete schedule item?", message: "This removes it from the wedding-day timeline.", confirmLabel: "Delete", danger: true })) { Store.updateSchedule(schedule.filter((_, j) => j !== i)); await persistChanges(); } };
   const editingItem = editingIndex != null ? schedule[editingIndex] : null;
   return (
@@ -627,10 +604,11 @@ export function ScheduleAdmin() {
       </div>
       <div className="panel__body--flush table-wrap">
         <table className="tbl">
-          <thead><tr><th>#</th><th>Time</th><th>Title</th><th>Description</th><th>Location</th><th></th></tr></thead>
+          <thead><tr><th aria-label="Reorder"></th><th>#</th><th>Time</th><th>Title</th><th>Description</th><th>Location</th><th></th></tr></thead>
           <tbody>
             {schedule.map((item, i) => (
-              <tr key={i} className={moved && moved.i === i ? "q-row--moved q-row--moved-" + (moved.dir < 0 ? "up" : "down") : ""}>
+              <tr key={i} data-ri={i} className={"q-row" + (drag.dragging === i ? " q-row--dragging" : "")}>
+                <td className="q-drag-cell"><button className="q-drag" title="Drag to reorder" aria-label="Drag to reorder" {...drag.handleProps(i)}>⠿</button></td>
                 <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--muted)" }}>{i + 1}</td>
                 <td style={{ whiteSpace: "nowrap" }}>{item.time || "—"}</td>
                 <td><strong>{item.title}</strong></td>
@@ -638,15 +616,13 @@ export function ScheduleAdmin() {
                 <td style={{ color: "var(--muted)" }}>{item.loc || "—"}</td>
                 <td>
                   <div className="row-actions">
-                    <button className="icon-btn" title="Move up" onClick={() => doMove(i, -1)} disabled={i === 0}>↑</button>
-                    <button className="icon-btn" title="Move down" onClick={() => doMove(i, 1)} disabled={i === schedule.length - 1}>↓</button>
                     <button className="icon-btn" title="Edit moment" onClick={() => openEdit(i)}>{Icon.edit({})}</button>
                     <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => doDelete(i)}>{Icon.trash({})}</button>
                   </div>
                 </td>
               </tr>
             ))}
-            {schedule.length === 0 && <tr><td colSpan={6} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No schedule items yet. Add your first moment.</td></tr>}
+            {schedule.length === 0 && <tr><td colSpan={7} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No schedule items yet. Add your first moment.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -741,9 +717,9 @@ export function DetailsAdmin() {
   const openFaq = (i) => { setFaqIndex(i); setFaqOpen(true); };
   const tiles = detailCards || [];
   const faqs = faq || [];
-  const moveTile = async (i, dir) => { Store.moveDetailCard(i, dir); await persistChanges(); };
+  const tileDrag = useDragReorder((f, t) => Store.updateDetailCards(moveItem(tiles, f, t)), persistChanges);
+  const faqDrag = useDragReorder((f, t) => Store.updateFaq(moveItem(faqs, f, t)), persistChanges);
   const delTile = async (i) => { if (await confirmDialog({ title: "Delete tile?", message: "This removes it from the Details page.", confirmLabel: "Delete", danger: true })) { Store.updateDetailCards(tiles.filter((_, j) => j !== i)); await persistChanges(); } };
-  const moveFaqItem = async (i, dir) => { Store.moveFaq(i, dir); await persistChanges(); };
   const delFaq = async (i) => { if (await confirmDialog({ title: "Delete question?", message: "This removes it from the Details page FAQ.", confirmLabel: "Delete", danger: true })) { Store.updateFaq(faqs.filter((_, j) => j !== i)); await persistChanges(); } };
   return (
     <div>
@@ -760,24 +736,23 @@ export function DetailsAdmin() {
         </div>
         <div className="panel__body--flush table-wrap">
           <table className="tbl">
-            <thead><tr><th>#</th><th>Title</th><th>Text</th><th></th></tr></thead>
+            <thead><tr><th aria-label="Reorder"></th><th>#</th><th>Title</th><th>Text</th><th></th></tr></thead>
             <tbody>
               {tiles.map((c, i) => (
-                <tr key={i}>
+                <tr key={i} data-ri={i} className={"q-row" + (tileDrag.dragging === i ? " q-row--dragging" : "")}>
+                  <td className="q-drag-cell"><button className="q-drag" title="Drag to reorder" aria-label="Drag to reorder" {...tileDrag.handleProps(i)}>⠿</button></td>
                   <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--muted)" }}>{i + 1}</td>
                   <td><strong>{c.title || "—"}</strong></td>
                   <td style={{ maxWidth: 420, color: "var(--ink-soft)" }}>{c.body}</td>
                   <td>
                     <div className="row-actions">
-                      <button className="icon-btn" title="Move up" onClick={() => moveTile(i, -1)} disabled={i === 0}>↑</button>
-                      <button className="icon-btn" title="Move down" onClick={() => moveTile(i, 1)} disabled={i === tiles.length - 1}>↓</button>
                       <button className="icon-btn" title="Edit tile" onClick={() => openTile(i)}>{Icon.edit({})}</button>
                       <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => delTile(i)}>{Icon.trash({})}</button>
                     </div>
                   </td>
                 </tr>
               ))}
-              {tiles.length === 0 && <tr><td colSpan={4} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No tiles yet. Add one to get started.</td></tr>}
+              {tiles.length === 0 && <tr><td colSpan={5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No tiles yet. Add one to get started.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -792,24 +767,23 @@ export function DetailsAdmin() {
         </div>
         <div className="panel__body--flush table-wrap">
           <table className="tbl">
-            <thead><tr><th>#</th><th>Question</th><th>Answer</th><th></th></tr></thead>
+            <thead><tr><th aria-label="Reorder"></th><th>#</th><th>Question</th><th>Answer</th><th></th></tr></thead>
             <tbody>
               {faqs.map((item, i) => (
-                <tr key={i}>
+                <tr key={i} data-ri={i} className={"q-row" + (faqDrag.dragging === i ? " q-row--dragging" : "")}>
+                  <td className="q-drag-cell"><button className="q-drag" title="Drag to reorder" aria-label="Drag to reorder" {...faqDrag.handleProps(i)}>⠿</button></td>
                   <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--muted)" }}>{i + 1}</td>
                   <td style={{ maxWidth: 320 }}><strong>{item.q || "—"}</strong></td>
                   <td style={{ maxWidth: 380, color: "var(--ink-soft)" }}>{item.a}</td>
                   <td>
                     <div className="row-actions">
-                      <button className="icon-btn" title="Move up" onClick={() => moveFaqItem(i, -1)} disabled={i === 0}>↑</button>
-                      <button className="icon-btn" title="Move down" onClick={() => moveFaqItem(i, 1)} disabled={i === faqs.length - 1}>↓</button>
                       <button className="icon-btn" title="Edit question" onClick={() => openFaq(i)}>{Icon.edit({})}</button>
                       <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => delFaq(i)}>{Icon.trash({})}</button>
                     </div>
                   </td>
                 </tr>
               ))}
-              {faqs.length === 0 && <tr><td colSpan={4} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No questions yet. Add one to get started.</td></tr>}
+              {faqs.length === 0 && <tr><td colSpan={5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No questions yet. Add one to get started.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -853,9 +827,16 @@ export function SettingsAdmin() {
   return (
     <div>
       <div className="folders folders--sticky">
-        {STABS.map(([k, l, ic]) => (
-          <button key={k} className={"folder" + (tab === k ? " folder--active" : "")} onClick={() => setTab(k)}>{Icon[ic]({})} {l}</button>
-        ))}
+        {STABS.map(([k, l, ic]) => {
+          const soon = k === "photos"; // Photos is a future feature — greyed out for now
+          return (
+            <button key={k} type="button" disabled={soon} title={soon ? "Coming soon" : undefined}
+              className={"folder" + (tab === k ? " folder--active" : "") + (soon ? " folder--soon" : "")}
+              onClick={() => { if (!soon) setTab(k); }}>
+              {Icon[ic]({})} {l}{soon && <span className="folder__soon">Soon</span>}
+            </button>
+          );
+        })}
       </div>
 
       {tab === "general" && (<div className="panel">

@@ -776,6 +776,10 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .folder { background: var(--surface-2); border: 1px solid var(--line); border-bottom: none; border-radius: var(--radius) var(--radius) 0 0; padding: 11px 20px; cursor: pointer; font-family: var(--font-body); font-size: 14px; color: var(--ink-soft); position: relative; top: 1px; display: inline-flex; align-items: center; gap: 8px; }
 .folder svg { width: 16px; height: 16px; }
 .folder--active { background: var(--surface); color: var(--accent); font-weight: 600; border-bottom: 1px solid var(--surface); }
+/* Future-feature tab: greyed out + not clickable, with a small "Soon" badge. */
+.folder--soon { opacity: 0.5; cursor: not-allowed; }
+.folder--soon:hover { background: var(--surface-2); }
+.folder__soon { margin-left: 6px; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--line); border-radius: 999px; padding: 2px 7px; }
 /* Drag-to-reorder quiz questions (pointer-based; works on touch too).
    Handle sits in a narrow left-edge column; rows FLIP-animate on reorder. */
 .q-drag-cell { width: 36px; padding-left: 8px; padding-right: 0; text-align: center; }
@@ -787,8 +791,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 }
 .q-drag:hover { color: var(--ink); background: var(--surface-2); }
 .q-drag:active { cursor: grabbing; }
-.q-row--dragging td { background: var(--accent-soft); opacity: .6; }
-.q-row { position: relative; will-change: transform; }
+.q-row--dragging td { background: var(--accent-soft); }
 /* theme picker swatches */
 .theme-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x proximity; scroll-behavior: smooth; }
 .theme-grid .theme-sw { flex: 0 0 156px; scroll-snap-align: start; }
