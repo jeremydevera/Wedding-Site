@@ -62,6 +62,14 @@ export function useRoute() {
   return route;
 }
 
+// Built-in floating-decoration styles offered in the demo nav picker.
+const DECOR_OPTS = [
+  ["petals", "Falling petals"], ["hearts", "Hearts"], ["fireflies", "Fireflies"],
+  ["leaves", "Drifting leaves"], ["confetti", "Confetti"], ["snow", "Falling snow"],
+  ["bubbles", "Rising bubbles"], ["sparkles", "Sparkles"], ["orbs", "Bokeh orbs"],
+  ["balloons", "Floating balloons"],
+];
+
 // --- Public nav -------------------------------------------------------------
 export function Nav({ route }) {
   const { settings } = useStore();
@@ -91,6 +99,23 @@ export function Nav({ route }) {
       </select>
     </label>
   );
+  // Like the theme picker: previews locally for visitors, saves for logged-in admins.
+  const pickDecor = async (v) => {
+    Store.updateSettings(v === "none" ? { decorOn: false } : { decorOn: true, decorStyle: v });
+    const role = Store.get().auth?.role;
+    if (role === "superadmin" || role === "owner") {
+      try { await saveClientData(); toast("Decoration saved"); } catch (e) { toast("Couldn't save decoration"); }
+    }
+  };
+  const DecorPicker = ({ block }) => (
+    <label className={"nav__themepick" + (block ? " nav__themepick--block" : "")}>
+      <span className="nav__themepick-label">{block ? "Preview decorations" : "Decoration"}</span>
+      <select value={settings.decorOn ? settings.decorStyle : "none"} aria-label="Preview a decoration" onChange={(e) => pickDecor(e.target.value)}>
+        <option value="none">None</option>
+        {DECOR_OPTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+      </select>
+    </label>
+  );
   return (
     <>
     <nav className="nav">
@@ -106,7 +131,7 @@ export function Nav({ route }) {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {isDemo
-            ? <ThemePicker />
+            ? <><ThemePicker /><DecorPicker /></>
             : <Button className="nav__cta" variant="primary" size="sm" onClick={() => go("rsvp")}>RSVP</Button>}
           <button className="nav__burger" onClick={() => setDrawer(true)} aria-label="Menu">{Icon.menu({})}</button>
         </div>
@@ -128,7 +153,7 @@ export function Nav({ route }) {
             {settings.uploadsEnabled && moduleEnabled(settings.modules, "video-message") && <button className="drawer__link" onClick={() => { go("video-message"); setDrawer(false); }}>Video Message</button>}
             <div style={{ marginTop: 20 }}>
               {isDemo
-                ? <ThemePicker block />
+                ? <div style={{ display: "flex", flexDirection: "column", gap: 12 }}><ThemePicker block /><DecorPicker block /></div>
                 : <Button variant="primary" block onClick={() => { go("rsvp"); setDrawer(false); }}>RSVP Now</Button>}
             </div>
           </div>
