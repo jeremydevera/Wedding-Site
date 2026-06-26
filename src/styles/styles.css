@@ -1288,6 +1288,14 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   animation: lp-spin .7s linear infinite;
 }
 @keyframes lp-spin { to { transform: rotate(360deg); } }
+.lp__clear {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  display: flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; padding: 0; border: none; border-radius: 50%;
+  background: var(--line); color: var(--ink); cursor: pointer;
+}
+.lp__clear:hover { background: var(--accent); color: var(--accent-ink); }
+.lp__clear svg { width: 13px; height: 13px; }
 .lp__results {
   position: absolute; left: 0; right: 0; top: calc(100% + 4px); margin: 0; padding: 4px;
   list-style: none; background: var(--surface); border: 1px solid var(--line);

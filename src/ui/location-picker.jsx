@@ -71,6 +71,7 @@ export function LocationPicker({ value, lat, lng, onChange }) {
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState(-1);
 
+  const inputRef = useRef(null);    // search input (for refocus after clear)
   const elRef = useRef(null);       // map container
   const mapRef = useRef(null);      // Leaflet map
   const markerRef = useRef(null);   // Leaflet marker
@@ -159,6 +160,16 @@ export function LocationPicker({ value, lat, lng, onChange }) {
     return () => clearTimeout(debounceRef.current);
   }, [text]);
 
+  // Clear the search text field (keeps any dropped pin — the venue tab has a
+  // separate "Clear pin" button for the coordinates).
+  function clearField() {
+    clearTimeout(debounceRef.current);
+    if (abortRef.current) abortRef.current.abort();
+    setText(""); setResults([]); setOpen(false); setActive(-1); setLoading(false);
+    emit("", lat, lng);
+    if (inputRef.current) inputRef.current.focus();
+  }
+
   function pick(r) {
     selectingRef.current = true;
     setText(r.label);
@@ -180,6 +191,7 @@ export function LocationPicker({ value, lat, lng, onChange }) {
       <div className="lp__searchwrap">
         <span className="lp__searchicon">{Icon.search({})}</span>
         <input
+          ref={inputRef}
           className="lp__search"
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -191,6 +203,10 @@ export function LocationPicker({ value, lat, lng, onChange }) {
           autoComplete="off"
         />
         {loading && <span className="lp__spin" aria-hidden="true" />}
+        {!loading && text && (
+          <button type="button" className="lp__clear" aria-label="Clear location"
+            onMouseDown={(e) => { e.preventDefault(); clearField(); }}>{Icon.close({})}</button>
+        )}
         {open && results.length > 0 && (
           <ul className="lp__results" role="listbox">
             {results.map((r, i) => (
