@@ -406,6 +406,32 @@ export function QuizAdmin() {
     dragId.current = null; setDragging(null);
     await persistChanges(); // save the new order to the DB so it survives a refresh
   };
+  // FLIP: whenever the order changes, slide each row from its old position to its
+  // new one so reordering animates smoothly instead of snapping.
+  const tbodyRef = useRef(null);
+  const rowTops = useRef(new Map());
+  React.useLayoutEffect(() => {
+    const tb = tbodyRef.current;
+    if (!tb) return;
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const next = new Map();
+    tb.querySelectorAll("tr[data-qid]").forEach((tr) => {
+      const id = tr.getAttribute("data-qid");
+      const top = tr.getBoundingClientRect().top;
+      next.set(id, top);
+      const old = rowTops.current.get(id);
+      if (!reduce && old != null && Math.abs(old - top) > 0.5) {
+        const dy = old - top;
+        tr.style.transition = "none";
+        tr.style.transform = `translateY(${dy}px)`;
+        requestAnimationFrame(() => {
+          tr.style.transition = "transform .22s cubic-bezier(.2,.7,.3,1)";
+          tr.style.transform = "";
+        });
+      }
+    });
+    rowTops.current = next;
+  }, [quiz]);
   return (
     <div>
       <div className="folders">
@@ -420,27 +446,29 @@ export function QuizAdmin() {
           <Button variant="primary" size="sm" onClick={openNew}>+ Add question</Button>
         </div>
         <div className="panel__body--flush table-wrap">
-          <table className="tbl">
-            <thead><tr><th>#</th><th>Question</th><th>Type</th><th>Correct answer</th><th></th></tr></thead>
-            <tbody>
+          <table className="tbl tbl--qz">
+            <thead><tr><th aria-label="Reorder"></th><th>#</th><th>Question</th><th>Type</th><th>Correct answer</th><th></th></tr></thead>
+            <tbody ref={tbodyRef}>
               {quiz.map((q, i) => (
                 <tr key={q.id} data-qid={q.id} className={"q-row" + (dragging === q.id ? " q-row--dragging" : "")}>
+                  <td className="q-drag-cell">
+                    <button className="q-drag" title="Drag to reorder" aria-label="Drag to reorder"
+                      onPointerDown={(e) => onDragDown(e, q.id)} onPointerMove={onDragMove}
+                      onPointerUp={onDragUp} onPointerCancel={onDragUp}>{Icon.drag ? Icon.drag({}) : "⠿"}</button>
+                  </td>
                   <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--muted)" }}>{i + 1}</td>
                   <td style={{ maxWidth: 360 }}><strong>{q.q}</strong></td>
                   <td><span style={{ color: "var(--muted)" }}>{q.type === "true_false" ? "True / False" : "Multiple choice"}</span></td>
                   <td>{q.options ? q.options[q.answer] : ""}</td>
                   <td>
                     <div className="row-actions">
-                      <button className="icon-btn q-drag" title="Drag to reorder" aria-label="Drag to reorder"
-                        onPointerDown={(e) => onDragDown(e, q.id)} onPointerMove={onDragMove}
-                        onPointerUp={onDragUp} onPointerCancel={onDragUp}>{Icon.drag ? Icon.drag({}) : "⠿"}</button>
                       <button className="icon-btn" title="Edit question" onClick={() => openEdit(q)}>{Icon.edit({})}</button>
                       <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete question?", message: "This removes the question from the quiz.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.deleteQuizQuestion(q.id); })}>{Icon.trash({})}</button>
                     </div>
                   </td>
                 </tr>
               ))}
-              {quiz.length === 0 && <tr><td colSpan={5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No questions yet. Add one to get started.</td></tr>}
+              {quiz.length === 0 && <tr><td colSpan={6} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No questions yet. Add one to get started.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -643,7 +671,6 @@ export function TileEditor({ open, index, item, onClose }) {
     if (isEdit) Store.updateDetailCard(index, payload);
     else Store.updateDetailCards([...(detailCards || []), payload]);
     await persistChanges();
-    toast(isEdit ? "Tile updated" : "Tile added");
     onClose();
   }
   return (
@@ -687,7 +714,6 @@ export function FaqEditor({ open, index, item, onClose }) {
     if (isEdit) Store.updateFaqItem(index, payload);
     else Store.updateFaq([...(faq || []), payload]);
     await persistChanges();
-    toast(isEdit ? "Question updated" : "Question added");
     onClose();
   }
   return (

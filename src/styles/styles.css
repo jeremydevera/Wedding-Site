@@ -759,11 +759,19 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .folder { background: var(--surface-2); border: 1px solid var(--line); border-bottom: none; border-radius: var(--radius) var(--radius) 0 0; padding: 11px 20px; cursor: pointer; font-family: var(--font-body); font-size: 14px; color: var(--ink-soft); position: relative; top: 1px; display: inline-flex; align-items: center; gap: 8px; }
 .folder svg { width: 16px; height: 16px; }
 .folder--active { background: var(--surface); color: var(--accent); font-weight: 600; border-bottom: 1px solid var(--surface); }
-/* Drag-to-reorder quiz questions (pointer-based; works on touch too) */
-.q-drag { cursor: grab; touch-action: none; font-size: 15px; line-height: 1; }
+/* Drag-to-reorder quiz questions (pointer-based; works on touch too).
+   Handle sits in a narrow left-edge column; rows FLIP-animate on reorder. */
+.q-drag-cell { width: 36px; padding-left: 8px; padding-right: 0; text-align: center; }
+.q-drag {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 30px; padding: 0; background: none; border: none;
+  color: var(--muted); cursor: grab; touch-action: none; border-radius: 6px;
+  font-size: 16px; line-height: 1; -webkit-tap-highlight-color: transparent;
+}
+.q-drag:hover { color: var(--ink); background: var(--surface-2); }
 .q-drag:active { cursor: grabbing; }
-.q-row--dragging td { background: var(--accent-soft); opacity: .65; }
-.q-row { transition: background .15s ease; }
+.q-row--dragging td { background: var(--accent-soft); opacity: .6; }
+.q-row { position: relative; will-change: transform; }
 /* theme picker swatches */
 .theme-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x proximity; scroll-behavior: smooth; }
 .theme-grid .theme-sw { flex: 0 0 156px; scroll-snap-align: start; }
