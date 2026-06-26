@@ -128,6 +128,23 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .nav__themepick--block select { width: 100%; max-width: none; }
 @media (min-width: 940px) { .nav__themepick { display: inline-flex; } }
 
+/* Demo showcase try-bar: pinned controls so mobile visitors can preview a theme
+   + decoration immediately — the nav pickers only show on wide screens, and on
+   the envelope theme the nav is hidden behind the sealed cover. Hidden on wide
+   screens, where the nav pickers appear instead. */
+.demo-trybar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 55;
+  display: flex; gap: 12px; align-items: flex-end;
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+  background: color-mix(in oklch, var(--surface) 88%, transparent);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid var(--line); box-shadow: 0 -6px 20px -12px rgba(0,0,0,.4);
+}
+.demo-trybar .nav__themepick { display: flex; flex: 1; min-width: 0; }
+.demo-trybar .nav__themepick-label { margin-bottom: 4px; }
+.demo-trybar .nav__themepick select { width: 100%; max-width: none; }
+@media (min-width: 940px) { .demo-trybar { display: none; } }
+
 .drawer { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; }
 .drawer__bg { position: absolute; inset: 0; background: rgba(0,0,0,.4); animation: fade .2s ease; }
 .drawer__panel {

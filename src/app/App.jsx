@@ -159,6 +159,15 @@ export function Nav({ route }) {
           </div>
         </div>
       )}
+
+      {/* Demo showcase: a fixed bar so visitors can preview a theme + decoration
+          immediately on mobile — even on the sealed envelope where the nav is hidden. */}
+      {isDemo && (
+        <div className="demo-trybar">
+          <ThemePicker block />
+          {!isPremiumTheme(settings.theme) && <DecorPicker block />}
+        </div>
+      )}
     </>
   );
 }
