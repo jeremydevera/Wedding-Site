@@ -593,7 +593,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
   /* Light console (Supabase light surfaces + brand green) */
   --bg: #fafafa; --surface: #ffffff; --surface-2: #f4f4f5;
   --ink: #1a1a1a; --ink-soft: #525252; --muted: #71717a; --line: #e7e7ea;
-  --accent: #3ecf8e; --accent-soft: #e7f9f0; --accent-ink: #052e1d; --gold: #16a34a;
+  --accent: #1E5BD6; --accent-soft: #e7eefc; --accent-ink: #ffffff; --gold: #16a34a;
   --radius: 8px;
   --font-display: "Mulish", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-body: "Mulish", "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -618,7 +618,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .admin--sa input.input { padding: 8px 12px; }
 .admin--sa select.input { padding: 8px 30px 8px 12px; }
 .admin--sa textarea.input { height: auto; min-height: 80px; padding: 8px 12px; }
-.admin--sa .input:focus { outline: 2px solid rgba(62, 207, 142, .35); outline-offset: 0; border-color: #3ecf8e; box-shadow: none; }
+.admin--sa .input:focus { outline: 2px solid rgba(30, 91, 214, .35); outline-offset: 0; border-color: #1E5BD6; box-shadow: none; }
 
 /* Data table + toolbar matched to the Supabase users page */
 .admin--sa .tbl th { background: #f3f3f3; color: #171717; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: normal; height: 36px; padding: 0 12px; border-bottom: 1px solid #dfdfdf; }
