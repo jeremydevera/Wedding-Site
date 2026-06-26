@@ -752,6 +752,35 @@ export function SettingsAdmin() {
         <SaveFooter />
       </div>
 
+      <div className="panel">
+        <div className="panel__head"><div className="panel__title">Floating Decorations</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Animated motif that drifts over your page</span></div>
+        <div className="panel__body">
+          <AdminToggle label="Show floating decorations" desc="A gentle animated layer over your page." checked={f.decorOn} onChange={(v) => setKey("decorOn", v)} />
+          <Field label="Decoration style" id="s-decor" hint="Pick the motif that floats across your page">
+            <Select id="s-decor" value={f.decorStyle} onChange={set("decorStyle")} disabled={!f.decorOn}>
+              <option value="petals">Falling petals</option>
+              <option value="hearts">Hearts</option>
+              <option value="fireflies">Fireflies</option>
+              <option value="leaves">Drifting leaves</option>
+              <option value="confetti">Confetti</option>
+              <option value="snow">Falling snow</option>
+              <option value="bubbles">Rising bubbles</option>
+              <option value="sparkles">Sparkles</option>
+              <option value="orbs">Bokeh orbs</option>
+              <option value="balloons">Floating balloons</option>
+              {FX_LIST.map((e) => (<option key={e.id} value={"fx-" + e.id}>{e.title}</option>))}
+            </Select>
+          </Field>
+          <div style={{ marginTop: 4 }}>
+            <span className="field__label" style={{ display: "block", marginBottom: 7 }}>Preview</span>
+            {String(f.decorStyle).startsWith("fx-")
+              ? <FallingFx id={f.decorStyle.slice(3)} preview />
+              : <DecorPreview style={f.decorStyle} />}
+          </div>
+        </div>
+        <SaveFooter />
+      </div>
+
       {f.theme === "envelope" && (
       <div className="panel">
         <div className="panel__head"><div className="panel__title">Envelope Frame Photo</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Shows inside the oval frame on the opened envelope</span></div>
@@ -825,36 +854,7 @@ export function SettingsAdmin() {
       </div>
       )}
 
-      {f.theme !== "envelope" && (
-      <div className="panel">
-        <div className="panel__head"><div className="panel__title">Home Decorations</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Floating animations on the home hero</span></div>
-        <div className="panel__body">
-          <AdminToggle label="Show floating decorations" desc="A gentle animated layer over the home hero." checked={f.decorOn} onChange={(v) => setKey("decorOn", v)} />
-          <Field label="Decoration style" id="s-decor" hint="Pick the motif that floats across your hero">
-            <Select id="s-decor" value={f.decorStyle} onChange={set("decorStyle")} disabled={!f.decorOn}>
-              <option value="petals">Falling petals</option>
-              <option value="hearts">Hearts</option>
-              <option value="fireflies">Fireflies</option>
-              <option value="leaves">Drifting leaves</option>
-              <option value="confetti">Confetti</option>
-              <option value="snow">Falling snow</option>
-              <option value="bubbles">Rising bubbles</option>
-              <option value="sparkles">Sparkles</option>
-              <option value="orbs">Bokeh orbs</option>
-              <option value="balloons">Floating balloons</option>
-              {FX_LIST.map((e) => (<option key={e.id} value={"fx-" + e.id}>{e.title}</option>))}
-            </Select>
-          </Field>
-          <div style={{ marginTop: 4 }}>
-            <span className="field__label" style={{ display: "block", marginBottom: 7 }}>Preview</span>
-            {String(f.decorStyle).startsWith("fx-")
-              ? <FallingFx id={f.decorStyle.slice(3)} preview />
-              : <DecorPreview style={f.decorStyle} />}
-          </div>
-        </div>
-        <SaveFooter />
-      </div>
-      )}</>)}
+      </>)}
 
       {tab === "photos" && (<div className="panel">
         <div className="panel__head"><div className="panel__title">Home &amp; Story Photos</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Upload your own — replaces the samples</span></div>
