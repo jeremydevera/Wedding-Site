@@ -463,7 +463,7 @@ export function QuizAdmin() {
                   <td>
                     <div className="row-actions">
                       <button className="icon-btn" title="Edit question" onClick={() => openEdit(q)}>{Icon.edit({})}</button>
-                      <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete question?", message: "This removes the question from the quiz.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.deleteQuizQuestion(q.id); })}>{Icon.trash({})}</button>
+                      <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete question?", message: "This removes the question from the quiz.", confirmLabel: "Delete", danger: true }).then(async (ok) => { if (ok) { Store.deleteQuizQuestion(q.id); await persistChanges(); } })}>{Icon.trash({})}</button>
                     </div>
                   </td>
                 </tr>
@@ -472,7 +472,6 @@ export function QuizAdmin() {
             </tbody>
           </table>
         </div>
-        <SaveFooter />
       </div>
       )}
 
@@ -611,12 +610,14 @@ export function ScheduleEditor({ open, index, item, onClose }) {
 
 export function ScheduleAdmin() {
   const { schedule } = useStore();
+  const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const [moved, setMoved] = useState(null);
   const openNew = () => { setEditingIndex(null); setEditorOpen(true); };
   const openEdit = (i) => { setEditingIndex(i); setEditorOpen(true); };
-  const doMove = (i, dir) => { setMoved({ i, dir }); Store.moveSchedule(i, dir); setTimeout(() => setMoved(null), 480); };
+  const doMove = async (i, dir) => { setMoved({ i, dir }); Store.moveSchedule(i, dir); setTimeout(() => setMoved(null), 480); await persistChanges(); };
+  const doDelete = async (i) => { if (await confirmDialog({ title: "Delete schedule item?", message: "This removes it from the wedding-day timeline.", confirmLabel: "Delete", danger: true })) { Store.updateSchedule(schedule.filter((_, j) => j !== i)); await persistChanges(); } };
   const editingItem = editingIndex != null ? schedule[editingIndex] : null;
   return (
     <div className="panel">
@@ -640,7 +641,7 @@ export function ScheduleAdmin() {
                     <button className="icon-btn" title="Move up" onClick={() => doMove(i, -1)} disabled={i === 0}>↑</button>
                     <button className="icon-btn" title="Move down" onClick={() => doMove(i, 1)} disabled={i === schedule.length - 1}>↓</button>
                     <button className="icon-btn" title="Edit moment" onClick={() => openEdit(i)}>{Icon.edit({})}</button>
-                    <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete schedule item?", message: "This removes it from the wedding-day timeline.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.updateSchedule(schedule.filter((_, j) => j !== i)); })}>{Icon.trash({})}</button>
+                    <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => doDelete(i)}>{Icon.trash({})}</button>
                   </div>
                 </td>
               </tr>
@@ -649,7 +650,6 @@ export function ScheduleAdmin() {
           </tbody>
         </table>
       </div>
-      <SaveFooter />
       <ScheduleEditor open={editorOpen} index={editingIndex} item={editingItem} onClose={() => setEditorOpen(false)} />
     </div>
   );
@@ -731,6 +731,7 @@ export function FaqEditor({ open, index, item, onClose }) {
 
 export function DetailsAdmin() {
   const { detailCards, faq } = useStore();
+  const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const [tab, setTab] = useState("tiles");
   const [tileOpen, setTileOpen] = useState(false);
   const [tileIndex, setTileIndex] = useState(null);
@@ -740,6 +741,10 @@ export function DetailsAdmin() {
   const openFaq = (i) => { setFaqIndex(i); setFaqOpen(true); };
   const tiles = detailCards || [];
   const faqs = faq || [];
+  const moveTile = async (i, dir) => { Store.moveDetailCard(i, dir); await persistChanges(); };
+  const delTile = async (i) => { if (await confirmDialog({ title: "Delete tile?", message: "This removes it from the Details page.", confirmLabel: "Delete", danger: true })) { Store.updateDetailCards(tiles.filter((_, j) => j !== i)); await persistChanges(); } };
+  const moveFaqItem = async (i, dir) => { Store.moveFaq(i, dir); await persistChanges(); };
+  const delFaq = async (i) => { if (await confirmDialog({ title: "Delete question?", message: "This removes it from the Details page FAQ.", confirmLabel: "Delete", danger: true })) { Store.updateFaq(faqs.filter((_, j) => j !== i)); await persistChanges(); } };
   return (
     <div>
       <div className="folders">
@@ -764,10 +769,10 @@ export function DetailsAdmin() {
                   <td style={{ maxWidth: 420, color: "var(--ink-soft)" }}>{c.body}</td>
                   <td>
                     <div className="row-actions">
-                      <button className="icon-btn" title="Move up" onClick={() => Store.moveDetailCard(i, -1)} disabled={i === 0}>↑</button>
-                      <button className="icon-btn" title="Move down" onClick={() => Store.moveDetailCard(i, 1)} disabled={i === tiles.length - 1}>↓</button>
+                      <button className="icon-btn" title="Move up" onClick={() => moveTile(i, -1)} disabled={i === 0}>↑</button>
+                      <button className="icon-btn" title="Move down" onClick={() => moveTile(i, 1)} disabled={i === tiles.length - 1}>↓</button>
                       <button className="icon-btn" title="Edit tile" onClick={() => openTile(i)}>{Icon.edit({})}</button>
-                      <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete tile?", message: "This removes it from the Details page.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.updateDetailCards(tiles.filter((_, j) => j !== i)); })}>{Icon.trash({})}</button>
+                      <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => delTile(i)}>{Icon.trash({})}</button>
                     </div>
                   </td>
                 </tr>
@@ -776,7 +781,6 @@ export function DetailsAdmin() {
             </tbody>
           </table>
         </div>
-        <SaveFooter />
       </div>
       )}
 
@@ -797,10 +801,10 @@ export function DetailsAdmin() {
                   <td style={{ maxWidth: 380, color: "var(--ink-soft)" }}>{item.a}</td>
                   <td>
                     <div className="row-actions">
-                      <button className="icon-btn" title="Move up" onClick={() => Store.moveFaq(i, -1)} disabled={i === 0}>↑</button>
-                      <button className="icon-btn" title="Move down" onClick={() => Store.moveFaq(i, 1)} disabled={i === faqs.length - 1}>↓</button>
+                      <button className="icon-btn" title="Move up" onClick={() => moveFaqItem(i, -1)} disabled={i === 0}>↑</button>
+                      <button className="icon-btn" title="Move down" onClick={() => moveFaqItem(i, 1)} disabled={i === faqs.length - 1}>↓</button>
                       <button className="icon-btn" title="Edit question" onClick={() => openFaq(i)}>{Icon.edit({})}</button>
-                      <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete question?", message: "This removes it from the Details page FAQ.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.updateFaq(faqs.filter((_, j) => j !== i)); })}>{Icon.trash({})}</button>
+                      <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => delFaq(i)}>{Icon.trash({})}</button>
                     </div>
                   </td>
                 </tr>
@@ -809,7 +813,6 @@ export function DetailsAdmin() {
             </tbody>
           </table>
         </div>
-        <SaveFooter />
       </div>
       )}
 
