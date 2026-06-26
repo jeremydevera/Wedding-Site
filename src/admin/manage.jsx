@@ -77,6 +77,7 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
 export function QuestionEditor({ open, question, onClose }) {
   const blank = { type: "multiple_choice", q: "", options: ["", "", "", ""], answer: 0 };
   const [f, setF] = useState(blank);
+  const { save: persistChanges } = React.useContext(AdminSaveCtx);
   useEffect(() => {
     if (question) setF({ type: question.type, q: question.q, options: question.type === "true_false" ? ["True", "False"] : [...(question.options || []), "", "", "", ""].slice(0, 4), answer: question.answer || 0 });
     else setF(blank);
@@ -91,7 +92,7 @@ export function QuestionEditor({ open, question, onClose }) {
   }
   function setOpt(i, v) { setF((p) => { const o = [...p.options]; o[i] = v; return { ...p, options: o }; }); }
 
-  function save() {
+  async function save() {
     if (!f.q.trim()) { toast("Please enter the question.", "err"); return; }
     const cleanOpts = (isTF ? ["True", "False"] : f.options.map((o) => o.trim())).filter((o, i) => isTF || o);
     if (cleanOpts.length < 2) { toast("Please provide at least two answer options.", "err"); return; }
@@ -100,7 +101,9 @@ export function QuestionEditor({ open, question, onClose }) {
     const payload = { type: f.type, q: f.q.trim(), options: cleanOpts, answer };
     if (question) Store.updateQuizQuestion(question.id, payload);
     else Store.addQuizQuestion(payload);
-    toast(question ? "Question updated" : "Question added");
+    // Persist to the database right away (and clear the table's unsaved state) so
+    // the edit survives a refresh without a second "Save changes" click.
+    await persistChanges();
     onClose();
   }
 
