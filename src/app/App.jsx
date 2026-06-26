@@ -151,11 +151,11 @@ export function Nav({ route }) {
             ))}
             {moduleEnabled(settings.modules, "gallery") && <button className="drawer__link" onClick={() => { go("upload"); setDrawer(false); }}>Share Photos</button>}
             {settings.uploadsEnabled && moduleEnabled(settings.modules, "video-message") && <button className="drawer__link" onClick={() => { go("video-message"); setDrawer(false); }}>Video Message</button>}
-            <div style={{ marginTop: 20 }}>
-              {isDemo
-                ? <div style={{ display: "flex", flexDirection: "column", gap: 12 }}><ThemePicker block />{!isPremiumTheme(settings.theme) && <DecorPicker block />}</div>
-                : <Button variant="primary" block onClick={() => { go("rsvp"); setDrawer(false); }}>RSVP Now</Button>}
-            </div>
+            {!isDemo && (
+              <div style={{ marginTop: 20 }}>
+                <Button variant="primary" block onClick={() => { go("rsvp"); setDrawer(false); }}>RSVP Now</Button>
+              </div>
+            )}
           </div>
         </div>
       )}
