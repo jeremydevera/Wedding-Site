@@ -5,7 +5,7 @@ import { THEMES } from "@/themes";
 import { themesForEvent } from "@/config/eventTypes.js";
 import { moduleLabel } from "@/lib/roles.js";
 import { PLATFORM_DOMAIN, clientUrl, isValidSubdomain } from "@/config/site.js"; // platform config → src/config/site.js
-import { Button, Field, Icon, Input, Pager, Select, toast, usePaged } from "@/ui/components.jsx";
+import { Button, confirmDialog, Field, Icon, Input, Pager, Select, toast, usePaged } from "@/ui/components.jsx";
 const { useState, useEffect } = React;
 
 const MODULES = ["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"];
@@ -195,8 +195,13 @@ export function ClientsAdmin() {
   }
 
   async function deleteClient(c) {
-    // native confirm — neutral, not the event theme
-    if (!window.confirm(`Delete "${c.subdomain}" and all its data (RSVPs, guestbook, quiz) and its owner login? This cannot be undone.`)) return;
+    const ok = await confirmDialog({
+      title: "Delete client?",
+      message: `Delete "${c.subdomain}" and all its data (RSVPs, guestbook, quiz) and its owner login? This can't be undone.`,
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
     // Remove the owner's auth account FIRST, while profiles.client_id still links
     // to this client (so the lookup works even when owner_email is null). Deleting
     // the auth user cascades its profile. Then delete the client (cascades its
