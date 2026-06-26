@@ -2,6 +2,7 @@ import React from "react";
 import { go } from "@/lib/nav.js";
 import { Store, useStore } from "@/lib/store.jsx";
 import { postGuestbook, postQuiz } from "@/lib/api.js";
+import { hasPlayedQuiz, markQuizPlayed, clearQuizPlayed } from "@/lib/quiz-attempt.js";
 import { Button, Field, Icon, Input, Modal, SectionHead, Textarea, toast } from "@/ui/components.jsx";
 import { PageHero } from "@/pages/PublicPages.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
@@ -110,7 +111,13 @@ export function GuestbookPage() {
 // --- Quiz ------------------------------------------------------------------
 export function QuizPage() {
   const { quiz } = useStore();
-  const [stage, setStage] = useState("intro"); // intro | playing | result
+  // One attempt per device: start locked if this browser already finished the
+  // quiz for this client. `?retake=1` clears the flag (owner re-demo escape hatch).
+  const [stage, setStage] = useState(() => {
+    const retake = new URLSearchParams(window.location.search).get("retake") === "1";
+    if (retake) { clearQuizPlayed(); return "intro"; }
+    return hasPlayedQuiz() ? "locked" : "intro";
+  }); // intro | playing | result | locked
   const [name, setName] = useState("");
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -146,7 +153,25 @@ export function QuizPage() {
       console.error("Could not save quiz score.", err);
       toast("Score couldn't be saved, but here's how you did!");
     }
+    markQuizPlayed(); // lock this device from replaying
     setStage("result");
+  }
+
+  if (stage === "locked") {
+    return (
+      <div className="fade-up">
+        <PageHero eyebrow="Couple Quiz" title="How well do you know us?" lead="Five quick questions about the happy couple." />
+        <section className="block" style={{ paddingTop: 12 }}>
+          <div className="container container--narrow">
+            <div className="card card--pad-lg" style={{ textAlign: "center" }}>
+              <div style={{ color: "var(--accent)", marginBottom: 16 }}>{Icon.quiz({ style: { width: 48, height: 48, margin: "0 auto" } })}</div>
+              <h2 style={{ fontSize: 30, margin: "4px 0 8px" }}>You already played! 🎉</h2>
+              <p style={{ color: "var(--ink-soft)", maxWidth: "40ch", margin: "0 auto" }}>Thanks for taking the couple quiz — one go per guest. We hope you had fun!</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
   }
 
   if (stage === "intro") {
