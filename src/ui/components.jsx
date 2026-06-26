@@ -175,6 +175,45 @@ export function useInfiniteScroll(fetchPage, pageSize = 20) {
   return { items, loading, done, sentinelRef, prepend, removeItem };
 }
 
+// Server-side pagination: fetchPage(from, to) returns { rows, count } for that
+// slice (use Supabase `.select("*", { count: "exact" }).range(from, to)`). Only
+// one page (pageSize rows) is fetched at a time, and `count` drives the page
+// total — so a 1000-row list never loads more than a page.
+export function useServerPaged(fetchPage, pageSize = 30) {
+  const [page, setPage] = useState(1);
+  const [items, setItems] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const fetchRef = useRef(fetchPage);
+  fetchRef.current = fetchPage;
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    const from = (page - 1) * pageSize;
+    Promise.resolve(fetchRef.current(from, from + pageSize - 1))
+      .then((res) => {
+        if (cancelled) return;
+        setItems((res && res.rows) || []);
+        if (res && typeof res.count === "number") setTotal(res.count);
+      })
+      .catch(() => { if (!cancelled) setItems([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [page, pageSize, refreshKey]);
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  // clamp if the list shrank under the current page (e.g. after deletes)
+  useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
+
+  return {
+    page, setPage, items, total, totalPages, loading,
+    perPage: pageSize, start: (page - 1) * pageSize,
+    reload: () => setRefreshKey((k) => k + 1),
+  };
+}
+
 // --- Section header ---------------------------------------------------------
 export function SectionHead({ eyebrow, title, lead, center, light }) {
   return (

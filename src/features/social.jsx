@@ -3,7 +3,7 @@ import { go } from "@/lib/nav.js";
 import { Store, useStore } from "@/lib/store.jsx";
 import { postGuestbook, postQuiz } from "@/lib/api.js";
 import { hasPlayedQuiz, markQuizPlayed, clearQuizPlayed } from "@/lib/quiz-attempt.js";
-import { Button, Field, Icon, Input, Modal, SectionHead, Textarea, toast, useInfiniteScroll } from "@/ui/components.jsx";
+import { Button, Field, Icon, Input, Modal, Pager, SectionHead, Textarea, toast, useServerPaged } from "@/ui/components.jsx";
 import { supabase } from "@/lib/supabase.js";
 import { rowToGuestbook } from "@/lib/mappers.js";
 import { PageHero } from "@/pages/PublicPages.jsx";
@@ -29,21 +29,21 @@ export function GuestbookPage() {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // True lazy load: fetch 20 approved messages at a time from the DB, more as
-  // the visitor scrolls. Never downloads or mounts the whole list.
-  const fetchPage = useCallback(async (offset, size) => {
+  // Server-side pagination: fetch one page (30) of approved messages from the DB
+  // at a time, with the total count for the page buttons. Never loads the whole list.
+  const fetchPage = useCallback(async (from, to) => {
     const clientId = Store.get().clientId;
-    if (!clientId) return [];
-    const { data, error } = await supabase
-      .from("guestbook").select("*").eq("client_id", clientId).eq("status", "approved")
-      // id tiebreaker → a total, stable order so range() pages never overlap
+    if (!clientId) return { rows: [], count: 0 };
+    const { data, count, error } = await supabase
+      .from("guestbook").select("*", { count: "exact" }).eq("client_id", clientId).eq("status", "approved")
+      // id tiebreaker → a total, stable order so pages never overlap
       // (rows sharing a created_at would otherwise repeat across pages).
       .order("created_at", { ascending: false }).order("id", { ascending: false })
-      .range(offset, offset + size - 1);
+      .range(from, to);
     if (error) { console.warn("[guestbook] load failed:", error.message); throw error; }
-    return (data || []).map(rowToGuestbook);
+    return { rows: (data || []).map(rowToGuestbook), count: count || 0 };
   }, []);
-  const gb = useInfiniteScroll(fetchPage, 20);
+  const gb = useServerPaged(fetchPage, 30);
   const set = (k) => (e) => { setForm((f) => ({ ...f, [k]: e.target.value })); setErrors((er) => ({ ...er, [k]: undefined })); };
 
   async function submit(e) {
@@ -57,11 +57,9 @@ export function GuestbookPage() {
     setSubmitting(true);
     try {
       const { status } = await postGuestbook({ name: form.name, relationship: form.relationship, message: form.message });
-      // If it's live immediately (auto-approve on), show it at the top right away.
-      if (status === "approved") {
-        const id = (globalThis.crypto && crypto.randomUUID) ? crypto.randomUUID() : `tmp_${Date.now()}`;
-        gb.prepend({ id, name: form.name, relationship: form.relationship, message: form.message, status: "visible", createdAt: Date.now() });
-      }
+      // If it's live immediately (auto-approve on), jump to page 1 and refetch so
+      // the new message shows at the top.
+      if (status === "approved") { gb.setPage(1); gb.reload(); }
       setForm({ name: "", relationship: "", message: "" });
       setOpen(false);
       toast(status === "approved" ? "Thank you for your message! \ud83d\udc95" : "Thank you! Your message will appear once the couple approves it.");
@@ -81,7 +79,7 @@ export function GuestbookPage() {
             <Button variant="primary" size="lg" onClick={() => setOpen(true)}>{Icon.book({})} Sign the guestbook</Button>
           </div>
 
-          {gb.items.length === 0 && gb.done ? (
+          {gb.total === 0 && !gb.loading ? (
             <div className="gal-empty"><p style={{ fontFamily: "var(--font-display)", fontSize: 24 }}>No messages yet — be the first!</p></div>
           ) : (
             <div className="gb-grid">
@@ -104,9 +102,8 @@ export function GuestbookPage() {
               })}
             </div>
           )}
-          {/* sentinel: scrolling near this fetches the next 20 */}
-          {!gb.done && <div ref={gb.sentinelRef} style={{ height: 1 }} />}
-          {gb.loading && <div style={{ textAlign: "center", color: "var(--muted)", padding: 24 }}>Loading more…</div>}
+          <Pager page={gb.page} totalPages={gb.totalPages} total={gb.total} perPage={gb.perPage} start={gb.start} noun="messages"
+            onPage={(p) => { gb.setPage(p); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
         </div>
       </section>
 
