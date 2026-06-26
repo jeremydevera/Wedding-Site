@@ -848,9 +848,10 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .login__sub { color: var(--muted); margin-bottom: 28px; }
 
 @media (max-width: 860px) {
-  /* Lock the admin to vertical scroll only. overflow-x: clip (not hidden) so it
-     doesn't become a scroll container and break the sticky topbar/tab strip. */
-  .admin { flex-direction: column; overflow-x: clip; max-width: 100%; }
+  /* Horizontal scroll is already locked at the root (html/body overflow-x: clip).
+     Do NOT clip here — an overflow ancestor becomes the sticky scroll container and
+     breaks the sticky header (.admin__head) + tab strip, making them scroll away. */
+  .admin { flex-direction: column; max-width: 100%; }
   .admin__head { position: -webkit-sticky; position: sticky; top: 0; z-index: 30; background: var(--surface); }
   /* sidebar becomes an off-canvas drawer toggled by the hamburger.
      translate3d + will-change promote it to its own layer so iOS Safari repaints
@@ -1232,9 +1233,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .eg-sealed .inv-lf-label { font-size: 6vw; font-size: min(calc(var(--eg-title-cqw, 2.3) * 1cqw), 8.5vw); letter-spacing: .08em; }
 .eg-sealed .inv-lf-names { font-size: 6vw; font-size: min(calc(var(--eg-title-cqw, 2.3) * 1cqw), 8.5vw); }
 .eg-sealed .inv-open-cue { font-size: 3.8vw; font-size: min(1.6cqw, 3.8vw); top: 75%; }
-/* 100% (not 100vw) so the opened invitation stays centered — 100vw includes the
-   scrollbar width that appears once the page scrolls, which shifted it right. */
-.eg-open { width: min(1140px, 100%, 105vh); flex: none; transition: width .6s ease; }
+.eg-open { width: min(1140px, 100vw, 105vh); flex: none; transition: width .6s ease; }
 .eg-cue {
   position: absolute; left: 50%;
   top: calc(50% + min(320px, 28.1vw, 29.5vh) + 40px); bottom: auto;
