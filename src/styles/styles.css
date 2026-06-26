@@ -603,7 +603,29 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 }
 .admin--sa .client-domain { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; }
 /* Supabase uses sentence-case, 6px-radius buttons (not the theme's uppercase) */
-.admin--sa .btn { text-transform: none; letter-spacing: normal; font-weight: 500; border-radius: 6px; }
+/* Buttons follow the Supabase dashboard treatment: 6px radius, normal-weight
+   compact label, flat (no lift/shadow), a subtle lighter rim on filled buttons,
+   and a quick ease-out transition. Colors use the admin's Cobalt accent. */
+.admin--sa .btn {
+  text-transform: none; letter-spacing: normal; font-weight: 400; font-size: 13px;
+  border-radius: 6px; padding: 7px 12px; gap: 6px; line-height: 1;
+  border: 1px solid transparent; box-shadow: none;
+  transition: background-color .2s cubic-bezier(0,0,.2,1), border-color .2s cubic-bezier(0,0,.2,1), color .2s cubic-bezier(0,0,.2,1);
+}
+.admin--sa .btn svg { width: 15px; height: 15px; }
+.admin--sa .btn:hover, .admin--sa .btn:active { transform: none; box-shadow: none; }
+.admin--sa .btn--sm { padding: 5px 11px; font-size: 12px; }
+.admin--sa .btn--lg { padding: 9px 16px; font-size: 14px; }
+/* primary: filled accent with a lighter top-rim (Supabase's signature bevel) */
+.admin--sa .btn--primary { background: var(--accent); color: #fff; border-color: color-mix(in oklch, white 32%, var(--accent)); }
+.admin--sa .btn--primary:hover { background: color-mix(in oklch, var(--accent) 88%, white); }
+.admin--sa .btn--primary:active { background: color-mix(in oklch, var(--accent) 86%, black); }
+/* default / ghost / light: neutral surface with a hairline border */
+.admin--sa .btn--ghost, .admin--sa .btn--light { background: var(--surface); color: var(--ink); border-color: var(--line); }
+.admin--sa .btn--ghost:hover, .admin--sa .btn--light:hover { background: var(--surface-2); border-color: #d4d4d8; }
+/* destructive: solid red with a lighter rim (matches Supabase's danger button) */
+.admin--sa .btn--danger { background: #dc2626; color: #fff; border-color: color-mix(in oklch, white 32%, #dc2626); }
+.admin--sa .btn--danger:hover { background: #b91c1c; }
 
 /* Type + controls matched to the Supabase dashboard */
 .admin--sa .admin__title { font-size: 24px; font-weight: 500; letter-spacing: -0.6px; line-height: 1.33; }
