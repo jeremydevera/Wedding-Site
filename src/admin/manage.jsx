@@ -939,7 +939,7 @@ export function VenueAdmin() {
                   <td>
                     <div className="row-actions">
                       <button className="icon-btn" title="Edit card" onClick={() => openCard(i)}>{Icon.edit({})}</button>
-                      <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete card?", message: "This removes the card from the Venue page.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) Store.updateVenueCards(cards.filter((_, j) => j !== i)); })}>{Icon.trash({})}</button>
+                      <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete card?", message: "This removes the card from the Venue page.", confirmLabel: "Delete", danger: true }).then(async (ok) => { if (ok) { Store.updateVenueCards(cards.filter((_, j) => j !== i)); await persistChanges(); } })}>{Icon.trash({})}</button>
                     </div>
                   </td>
                 </tr>
