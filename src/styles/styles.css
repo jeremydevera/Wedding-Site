@@ -503,7 +503,11 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .admin__navlink:hover { background: var(--surface-2); color: var(--ink); }
 .admin__navlink--active { background: var(--accent-soft); color: var(--ink); font-weight: 600; }
 .admin__main { flex: 1; min-width: 0; }
-.admin__topbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 30px; border-bottom: 1px solid var(--line); background: var(--surface); position: sticky; top: 0; z-index: 10; }
+/* The header must stay pinned. The sticky has to live on .admin__head (whose
+   parent .admin__main is tall) — a sticky .admin__topbar alone can't stick
+   because its parent .admin__head is only header-height, so it scrolled away. */
+.admin__head { position: sticky; top: 0; z-index: 30; background: var(--surface); }
+.admin__topbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 30px; border-bottom: 1px solid var(--line); background: var(--surface); z-index: 10; }
 .admin__title { font-family: var(--font-display); font-size: 26px; white-space: nowrap; }
 /* Client (owner) header title is smaller than the superadmin's. */
 .admin:not(.admin--sa) .admin__title { font-size: 20px; }
