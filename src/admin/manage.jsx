@@ -768,14 +768,14 @@ export function DetailsAdmin() {
   return (
     <div>
       <div className="folders">
-        <button className={"folder" + (tab === "tiles" ? " folder--active" : "")} onClick={() => setTab("tiles")}>{Icon.rings({})} Details tiles</button>
+        <button className={"folder" + (tab === "tiles" ? " folder--active" : "")} onClick={() => setTab("tiles")}>{Icon.rings({})} Details</button>
         <button className={"folder" + (tab === "faq" ? " folder--active" : "")} onClick={() => setTab("faq")}>{Icon.book({})} FAQ</button>
       </div>
 
       {tab === "tiles" && (
       <div className="panel">
         <div className="panel__head">
-          <div className="panel__title">Details tiles <span style={{ color: "var(--muted)", fontSize: 15 }}>({tiles.length})</span></div>
+          <div className="panel__title">Details <span style={{ color: "var(--muted)", fontSize: 15 }}>({tiles.length})</span></div>
           <Button variant="primary" size="sm" onClick={() => openTile(null)}>+ Add tile</Button>
         </div>
         <div className="panel__body--flush table-wrap">
