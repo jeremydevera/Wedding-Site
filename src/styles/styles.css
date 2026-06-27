@@ -489,7 +489,11 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
    Admin
    ============================================================================ */
 .admin { min-height: 100vh; display: flex; background: var(--bg); }
-.admin__side { width: 240px; flex: none; background: var(--surface); border-right: 1px solid var(--line); padding: 22px 16px; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
+/* Fixed (not sticky): sticky breaks when an ancestor is overflow-clipped
+   (html/body overflow-x:clip), so the desktop sidebar scrolled away after one
+   screen. Fixed keeps the nav (Dashboard/Venue/…) pinned; .admin__main is offset
+   by its width below. */
+.admin__side { width: 240px; flex: none; background: var(--surface); border-right: 1px solid var(--line); padding: 22px 16px; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; overflow-y: auto; z-index: 40; }
 .admin__brand { display: flex; align-items: center; gap: 10px; padding: 6px 8px 22px; }
 .admin__brand > div { min-width: 0; }
 .admin__brand-name { font-family: var(--font-display); font-size: 19px; white-space: nowrap; }
@@ -502,7 +506,7 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .admin__navlink svg { width: 18px; height: 18px; }
 .admin__navlink:hover { background: var(--surface-2); color: var(--ink); }
 .admin__navlink--active { background: var(--accent-soft); color: var(--ink); font-weight: 600; }
-.admin__main { flex: 1; min-width: 0; }
+.admin__main { flex: 1; min-width: 0; margin-left: 240px; }
 /* The header must stay pinned. The sticky has to live on .admin__head (whose
    parent .admin__main is tall) — a sticky .admin__topbar alone can't stick
    because its parent .admin__head is only header-height, so it scrolled away. */
@@ -899,6 +903,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
      Do NOT clip here — an overflow ancestor becomes the sticky scroll container and
      breaks the sticky header (.admin__head) + tab strip, making them scroll away. */
   .admin { flex-direction: column; max-width: 100%; }
+  .admin__main { margin-left: 0; }   /* sidebar is an off-canvas drawer on mobile, no offset */
   .admin__head { position: -webkit-sticky; position: sticky; top: 0; z-index: 30; background: var(--surface); }
   /* sidebar becomes an off-canvas drawer toggled by the hamburger.
      translate3d + will-change promote it to its own layer so iOS Safari repaints
