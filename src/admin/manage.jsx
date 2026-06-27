@@ -172,16 +172,8 @@ export function RsvpsAdmin() {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("all");
   const [detail, setDetail] = useState(null);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
   const [emailTo, setEmailTo] = useState("");
-  const menuRef = useRef(null);
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onDoc = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [menuOpen]);
 
   const filtered = rsvps.filter((r) => {
     if (filter !== "all" && r.status !== filter) return false;
@@ -227,24 +219,16 @@ export function RsvpsAdmin() {
       <div className="panel">
         <div className="panel__head">
           <div className="panel__title">RSVPs <span style={{ color: "var(--muted)", fontSize: 15 }}>({filtered.length})</span></div>
-          {/* Actions (kebab) on the left; search pushed to the right (marginLeft:auto). */}
+          {/* Actions exposed on the left; filter sits directly left of the search (pushed right). */}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", flex: 1 }}>
-            {/* Actions tucked behind a 3-dots menu to keep the toolbar minimal. */}
-            <div className="kebab" ref={menuRef}>
-              <button type="button" className="icon-btn kebab__btn" aria-label="More actions" aria-haspopup="true" aria-expanded={menuOpen} onClick={() => setMenuOpen((o) => !o)}>⋮</button>
-              {menuOpen && (
-                <div className="kebab__menu" role="menu">
-                  <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); setEmailTo(""); setEmailOpen(true); }}>Email results</button>
-                  <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); exportCsv(); }}>Export CSV</button>
-                </div>
-              )}
-            </div>
-            <div className="seg">
+            <Button variant="ghost" size="sm" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>Email results</Button>
+            <Button variant="primary" size="sm" onClick={exportCsv}>{Icon.download({})} Export CSV</Button>
+            <div className="seg" style={{ marginLeft: "auto" }}>
               {[["all", "All"], ["attending", "Yes"], ["maybe", "Maybe"], ["not_attending", "No"]].map(([v, l]) => (
                 <button key={v} className={filter === v ? "on" : ""} onClick={() => setFilter(v)}>{l}</button>
               ))}
             </div>
-            <div className="search-box" style={{ marginLeft: "auto", minWidth: 200 }}>{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
+            <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
           </div>
         </div>
         <div className="panel__body--flush table-wrap">
@@ -411,16 +395,18 @@ export function GuestbookAdmin() {
     <div className="panel">
       <div className="panel__head">
         <div className="panel__title">Guestbook <span style={{ color: "var(--muted)", fontSize: 15 }}>({filtered.length})</span></div>
-        {/* Export on the left; search pushed to the right (marginLeft:auto). */}
+        {/* Export exposed on the left; filter sits directly left of the search (pushed right). */}
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", flex: 1 }}>
           <Button variant="primary" size="sm" onClick={exportCsv}>{Icon.download({})} Export</Button>
-          {moderation && (
-            <div className="seg">
-              <button className={view === "published" ? "on" : ""} onClick={() => setView("published")}>Published ({publishedCount})</button>
-              <button className={view === "pending" ? "on" : ""} onClick={() => setView("pending")}>Pending approval ({pendingCount})</button>
-            </div>
-          )}
-          <div className="search-box" style={{ marginLeft: "auto", minWidth: 180 }}>{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", marginLeft: "auto" }}>
+            {moderation && (
+              <div className="seg">
+                <button className={view === "published" ? "on" : ""} onClick={() => setView("published")}>Published ({publishedCount})</button>
+                <button className={view === "pending" ? "on" : ""} onClick={() => setView("pending")}>Pending approval ({pendingCount})</button>
+              </div>
+            )}
+            <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
+          </div>
         </div>
       </div>
       <div className="panel__body--flush table-wrap">
