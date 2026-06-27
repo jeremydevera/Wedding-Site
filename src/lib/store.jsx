@@ -21,6 +21,10 @@ export const DEFAULT_SETTINGS = {
   tagline: "We're getting married",
   welcome:
     "Two families, one celebration. We would be honored to have you with us as we say \u201cI do.\u201d Find everything you need below \u2014 and don't forget to share your photos.",
+  // Home-page invitation section (editable via the admin "Home" tab).
+  inviteTitle: "You're invited to celebrate love",
+  inviteBody:
+    "We can't wait to celebrate the start of our forever, surrounded by the people we love most. Thank you for being part of our story \u2014 here's a little about how we got here, and what our wedding day will hold.",
   venueName: "Somewhere in Lipa, Batangas",
   venueAddress: "Lipa, Batangas, Philippines",
   ceremonyTime: "3:00 PM",

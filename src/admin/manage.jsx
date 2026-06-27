@@ -1195,9 +1195,34 @@ export function SettingsAdmin() {
   );
 }
 
+// Home — edit the welcome/invitation section guests see on the home page.
+export function HomeAdmin() {
+  const { settings } = useStore();
+  const f = settings;
+  const set = (k) => (e) => Store.updateSettings({ [k]: e.target.value });
+  return (
+    <div className="panel">
+      <div className="panel__head"><div className="panel__title">Home page — invitation</div></div>
+      <div className="panel__body">
+        <p style={{ color: "var(--muted)", margin: "0 0 18px", fontSize: 14 }}>
+          The welcome section guests see on your home page, under the hero.
+        </p>
+        <Field label="Heading" id="h-title" hint="The big invitation line">
+          <Input id="h-title" value={f.inviteTitle} onChange={set("inviteTitle")} placeholder="You're invited to celebrate love" />
+        </Field>
+        <Field label="Message" id="h-body" hint="A warm welcome paragraph under the heading">
+          <Textarea id="h-body" value={f.inviteBody} onChange={set("inviteBody")} style={{ minHeight: 130 }} placeholder="We can't wait to celebrate…" />
+        </Field>
+      </div>
+      <SaveFooter />
+    </div>
+  );
+}
+
 // --- Admin shell ------------------------------------------------------------
 export const ADMIN_TABS = [
   { key: "dashboard", label: "Dashboard", icon: "grid" },
+  { key: "home", label: "Home", icon: "heart" },
   { key: "rsvps", label: "RSVPs", icon: "check" },
   // Media/Gallery shelved for now — re-add when gallery ships (see DISABLED_MODULES).
   // { key: "media", label: "Media", icon: "camera" },
@@ -1322,6 +1347,7 @@ export function AdminApp() {
         <div className="admin__body">
           <AdminSaveCtx.Provider value={{ saving, dirty, save: saveChanges }}>
           {activeTab === "dashboard" && <AdminDashboard goTab={setTab} />}
+          {activeTab === "home" && <HomeAdmin />}
           {activeTab === "rsvps" && <RsvpsAdmin />}
           {activeTab === "media" && <MediaAdmin />}
           {activeTab === "guestbook" && <GuestbookAdmin />}

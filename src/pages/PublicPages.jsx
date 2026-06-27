@@ -314,12 +314,10 @@ export function Home() {
           <div className="container container--narrow">
             <div className="eyebrow eyebrow--solo" style={{ justifyContent: "center" }}>{s.tagline}</div>
             <h2 style={{ fontSize: "clamp(28px,4.6vw,44px)", margin: "16px 0 14px", color: "var(--ink)" }}>
-              You're invited to celebrate love
+              {s.inviteTitle}
             </h2>
             <p style={{ color: "var(--ink-soft)", fontSize: 19, margin: "0 0 10px" }}>
-              We can't wait to celebrate the start of our forever, surrounded by the people
-              we love most. Thank you for being part of our story — here's a little about
-              how we got here, and what our wedding day will hold.
+              {s.inviteBody}
             </p>
             <div style={{ color: "var(--ink-soft)", letterSpacing: ".12em", textTransform: "uppercase", fontSize: 14, margin: "18px 0 26px" }}>{s.weddingDateLabel}</div>
             <Countdown targetIso={s.weddingDate} light />
@@ -351,12 +349,10 @@ export function Home() {
         <div className="container container--narrow" style={{ textAlign: "center" }}>
           <div className="divider-mark">{Icon.rings({})}</div>
           <h2 style={{ fontSize: "clamp(28px,4.6vw,44px)", margin: "26px 0 18px" }}>
-            You're invited to celebrate love
+            {s.inviteTitle}
           </h2>
           <p style={{ color: "var(--ink-soft)", fontSize: 19 }}>
-            We can't wait to celebrate the start of our forever, surrounded by the people
-            we love most. Thank you for being part of our story — here's a little about
-            how we got here, and what our wedding day will hold.
+            {s.inviteBody}
           </p>
         </div>
       </section>
