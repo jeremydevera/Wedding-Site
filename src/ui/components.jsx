@@ -465,6 +465,8 @@ export function Countdown({ targetIso, light }) {
 
 // --- small inline icons (line style, no slop) -------------------------------
 export const Icon = {
+  home: (p) => (<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M4 10.6 12 4l8 6.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 9.6V19a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V9.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 20v-5.5h4V20" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>),
+  settings: (p) => (<svg viewBox="0 0 24 24" fill="none" {...p}><circle cx="12" cy="12" r="3.1" stroke="currentColor" strokeWidth="1.4"/><path d="M12 3.6v2.3M12 18.1v2.3M20.4 12h-2.3M5.9 12H3.6M18 6l-1.6 1.6M7.6 16.4 6 18M18 18l-1.6-1.6M7.6 7.6 6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>),
   rings: (p) => (<svg viewBox="0 0 24 24" fill="none" {...p}><circle cx="9" cy="15" r="6" stroke="currentColor" strokeWidth="1.4"/><circle cx="15" cy="13" r="6" stroke="currentColor" strokeWidth="1.4"/></svg>),
   pin: (p) => (<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11Z" stroke="currentColor" strokeWidth="1.4"/><circle cx="12" cy="10" r="2.4" stroke="currentColor" strokeWidth="1.4"/></svg>),
   camera: (p) => (<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M3 8.5A1.5 1.5 0 0 1 4.5 7H7l1.2-1.8A1 1 0 0 1 9 4.7h6a1 1 0 0 1 .8.5L17 7h2.5A1.5 1.5 0 0 1 21 8.5v9A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5v-9Z" stroke="currentColor" strokeWidth="1.4"/><circle cx="12" cy="12.5" r="3.2" stroke="currentColor" strokeWidth="1.4"/></svg>),
