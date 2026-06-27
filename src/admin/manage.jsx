@@ -912,7 +912,7 @@ export function SettingsAdmin() {
   const f = settings;
   const set = (k) => (e) => Store.updateSettings({ [k]: e.target && e.target.type === "checkbox" ? e.target.checked : e.target.value });
   const setKey = (k, v) => Store.updateSettings({ [k]: v });
-  const [tab, setTab] = useState("general");
+  const [tab, setTab] = useState("features");
   const themeRowRef = useRef(null);
   const renderSwatch = (key) => {
     const v = THEMES[key].vars;
@@ -933,7 +933,8 @@ export function SettingsAdmin() {
   const allowed = themesForEvent(f.eventType || DEFAULT_EVENT_TYPE);
   const normalThemes = allowed.filter((k) => THEMES[k] && !isPremiumTheme(k));
   const premiumThemes = allowed.filter((k) => THEMES[k] && isPremiumTheme(k));
-  const STABS = [["general", "General", "user"], ["features", "Features", "check"], ["appearance", "Theme", "grid"], ["photos", "Photos", "camera"], ["access", "Access", "check"]];
+  // "General" (Couple & Event) moved to the top-level Home tab.
+  const STABS = [["features", "Features", "check"], ["appearance", "Theme", "grid"], ["photos", "Photos", "camera"], ["access", "Access", "check"]];
 
   return (
     <div>
@@ -949,26 +950,6 @@ export function SettingsAdmin() {
           );
         })}
       </div>
-
-      {tab === "general" && (<div className="panel">
-        <div className="panel__head"><div className="panel__title">Couple & Event</div></div>
-        <div className="panel__body">
-          <div className="field-row field-row--2">
-            <Field label="Partner A" id="s-a"><Input id="s-a" value={f.partnerA} onChange={set("partnerA")} /></Field>
-            <Field label="Partner B" id="s-b"><Input id="s-b" value={f.partnerB} onChange={set("partnerB")} /></Field>
-          </div>
-          <div className="field-row field-row--2">
-            <Field label="Wedding date & time" hint="Drives the countdown" id="s-date"><Input id="s-date" type="datetime-local" value={f.weddingDate} onChange={set("weddingDate")} /></Field>
-            <Field label="Display date label" id="s-datel"><Input id="s-datel" value={f.weddingDateLabel} onChange={set("weddingDateLabel")} /></Field>
-          </div>
-          <Field label="Welcome message" id="s-welcome"><Textarea id="s-welcome" value={f.welcome} onChange={set("welcome")} /></Field>
-          <div className="field-row field-row--2">
-            <Field label="RSVP deadline" id="s-rsvp"><Input id="s-rsvp" value={f.rsvpDeadline} onChange={set("rsvpDeadline")} /></Field>
-            <Field label="Hashtag" id="s-hash"><Input id="s-hash" value={f.hashtag} onChange={set("hashtag")} /></Field>
-          </div>
-        </div>
-        <SaveFooter />
-      </div>)}
 
       {tab === "features" && (<div className="panel">
         <div className="panel__head"><div className="panel__title">Features</div></div>
@@ -1195,25 +1176,48 @@ export function SettingsAdmin() {
   );
 }
 
-// Home — edit the welcome/invitation section guests see on the home page.
+// Home — the home page's core info: couple/event details (moved here from
+// Settings → General) plus the welcome/invitation section guests see.
 export function HomeAdmin() {
   const { settings } = useStore();
   const f = settings;
-  const set = (k) => (e) => Store.updateSettings({ [k]: e.target.value });
+  const set = (k) => (e) => Store.updateSettings({ [k]: e.target && e.target.type === "checkbox" ? e.target.checked : e.target.value });
   return (
-    <div className="panel">
-      <div className="panel__head"><div className="panel__title">Home page — invitation</div></div>
-      <div className="panel__body">
-        <p style={{ color: "var(--muted)", margin: "0 0 18px", fontSize: 14 }}>
-          The welcome section guests see on your home page, under the hero.
-        </p>
-        <Field label="Heading" id="h-title" hint="The big invitation line">
-          <Input id="h-title" value={f.inviteTitle} onChange={set("inviteTitle")} placeholder="You're invited to celebrate love" />
-        </Field>
-        <Field label="Message" id="h-body" hint="A warm welcome paragraph under the heading">
-          <Textarea id="h-body" value={f.inviteBody} onChange={set("inviteBody")} style={{ minHeight: 130 }} placeholder="We can't wait to celebrate…" />
-        </Field>
+    <div>
+      <div className="panel">
+        <div className="panel__head"><div className="panel__title">Couple & Event</div></div>
+        <div className="panel__body">
+          <div className="field-row field-row--2">
+            <Field label="Partner A" id="s-a"><Input id="s-a" value={f.partnerA} onChange={set("partnerA")} /></Field>
+            <Field label="Partner B" id="s-b"><Input id="s-b" value={f.partnerB} onChange={set("partnerB")} /></Field>
+          </div>
+          <div className="field-row field-row--2">
+            <Field label="Wedding date & time" hint="Drives the countdown" id="s-date"><Input id="s-date" type="datetime-local" value={f.weddingDate} onChange={set("weddingDate")} /></Field>
+            <Field label="Display date label" id="s-datel"><Input id="s-datel" value={f.weddingDateLabel} onChange={set("weddingDateLabel")} /></Field>
+          </div>
+          <Field label="Welcome message" id="s-welcome"><Textarea id="s-welcome" value={f.welcome} onChange={set("welcome")} /></Field>
+          <div className="field-row field-row--2">
+            <Field label="RSVP deadline" id="s-rsvp"><Input id="s-rsvp" value={f.rsvpDeadline} onChange={set("rsvpDeadline")} /></Field>
+            <Field label="Hashtag" id="s-hash"><Input id="s-hash" value={f.hashtag} onChange={set("hashtag")} /></Field>
+          </div>
+        </div>
       </div>
+
+      <div className="panel">
+        <div className="panel__head"><div className="panel__title">Home page — invitation</div></div>
+        <div className="panel__body">
+          <p style={{ color: "var(--muted)", margin: "0 0 18px", fontSize: 14 }}>
+            The welcome section guests see on your home page, under the hero.
+          </p>
+          <Field label="Heading" id="h-title" hint="The big invitation line">
+            <Input id="h-title" value={f.inviteTitle} onChange={set("inviteTitle")} placeholder="You're invited to celebrate love" />
+          </Field>
+          <Field label="Message" id="h-body" hint="A warm welcome paragraph under the heading">
+            <Textarea id="h-body" value={f.inviteBody} onChange={set("inviteBody")} style={{ minHeight: 130 }} placeholder="We can't wait to celebrate…" />
+          </Field>
+        </div>
+      </div>
+
       <SaveFooter />
     </div>
   );
