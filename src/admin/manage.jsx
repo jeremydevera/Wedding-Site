@@ -221,8 +221,8 @@ export function RsvpsAdmin() {
           <div className="panel__title">RSVPs <span style={{ color: "var(--muted)", fontSize: 15 }}>({filtered.length})</span></div>
           {/* Actions exposed on the left; filter sits directly left of the search (pushed right). */}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", flex: 1 }}>
-            <Button variant="ghost" size="sm" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>Email results</Button>
-            <Button variant="primary" size="sm" onClick={exportCsv}>{Icon.download({})} Export CSV</Button>
+            <Button variant="ghost" style={{ padding: "8px 14px", fontSize: 13 }} onClick={() => { setEmailTo(""); setEmailOpen(true); }}>Email results</Button>
+            <Button variant="primary" style={{ padding: "8px 14px", fontSize: 13 }} onClick={exportCsv}>{Icon.download({})} Export CSV</Button>
             <div className="seg" style={{ marginLeft: "auto" }}>
               {[["all", "All"], ["attending", "Yes"], ["maybe", "Maybe"], ["not_attending", "No"]].map(([v, l]) => (
                 <button key={v} className={filter === v ? "on" : ""} onClick={() => setFilter(v)}>{l}</button>
@@ -397,7 +397,7 @@ export function GuestbookAdmin() {
         <div className="panel__title">Guestbook <span style={{ color: "var(--muted)", fontSize: 15 }}>({filtered.length})</span></div>
         {/* Export exposed on the left; filter sits directly left of the search (pushed right). */}
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", flex: 1 }}>
-          <Button variant="primary" size="sm" onClick={exportCsv}>{Icon.download({})} Export</Button>
+          <Button variant="primary" style={{ padding: "8px 14px", fontSize: 13 }} onClick={exportCsv}>{Icon.download({})} Export</Button>
           <div style={{ display: "flex", gap: 10, alignItems: "center", marginLeft: "auto" }}>
             {moderation && (
               <div className="seg">
