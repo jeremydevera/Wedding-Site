@@ -907,7 +907,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
   /* Fixed (not sticky) — sticky scrolls away under overflow-x:clip in some
      browsers. Fixed keeps the burger + title bar pinned; .admin__body is padded
      below to clear it. */
-  .admin__head { position: fixed; top: 0; left: 0; right: 0; z-index: 40; background: var(--surface); }
+  .admin__head { position: fixed; top: 0; left: 0; right: 0; z-index: 40; background: var(--surface); -webkit-transform: translateZ(0); transform: translateZ(0); -webkit-backface-visibility: hidden; backface-visibility: hidden; }
   /* sidebar becomes an off-canvas drawer toggled by the hamburger.
      translate3d + will-change promote it to its own layer so iOS Safari repaints
      the off-screen fixed element reliably (plain translateX sometimes won't show). */
