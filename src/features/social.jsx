@@ -259,9 +259,8 @@ export function QuizPage() {
               </div>
 
               <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-                {/* Result is only reached on the demo site, where replay is allowed. */}
-                <Button variant="primary" onClick={() => { setStage("intro"); setName(""); setIdx(0); setAnswers({}); }}>Play again</Button>
-                <Button variant="ghost" onClick={() => go("guestbook")}>Sign the guestbook</Button>
+                {/* Result is only reached on the demo site. Show the result, then Close. */}
+                <Button variant="primary" onClick={() => go("home")}>Close</Button>
               </div>
             </div>
           </div>
