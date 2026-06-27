@@ -3,6 +3,7 @@ import { go } from "@/lib/nav.js";
 import { Store, useStore } from "@/lib/store.jsx";
 import { postGuestbook, postQuiz } from "@/lib/api.js";
 import { hasPlayedQuiz, markQuizPlayed, clearQuizPlayed } from "@/lib/quiz-attempt.js";
+import { resolveSubdomain } from "@/lib/tenant.js";
 import { Button, Field, Icon, Input, Modal, Pager, SectionHead, Textarea, toast, useServerPaged } from "@/ui/components.jsx";
 import { supabase } from "@/lib/supabase.js";
 import { rowToGuestbook } from "@/lib/mappers.js";
@@ -131,9 +132,11 @@ export function GuestbookPage() {
 // --- Quiz ------------------------------------------------------------------
 export function QuizPage() {
   const { quiz } = useStore();
-  // One attempt per device: start locked if this browser already finished the
-  // quiz for this client. `?retake=1` clears the flag (owner re-demo escape hatch).
+  // Demo site = showcase: guests can see their result AND retake freely (no lock).
+  // Real client sites: one attempt per guest, and the result is NOT shown.
+  const isDemo = resolveSubdomain() === "demo";
   const [stage, setStage] = useState(() => {
+    if (isDemo) return "intro"; // demo never locks
     const retake = new URLSearchParams(window.location.search).get("retake") === "1";
     if (retake) { clearQuizPlayed(); return "intro"; }
     return hasPlayedQuiz() ? "locked" : "intro";
@@ -173,8 +176,12 @@ export function QuizPage() {
       console.error("Could not save quiz score.", err);
       toast("Score couldn't be saved, but here's how you did!");
     }
-    markQuizPlayed(); // lock this device from replaying
-    setStage("result");
+    if (isDemo) {
+      setStage("result"); // demo: show the result + allow "Play again"
+    } else {
+      markQuizPlayed();   // real: lock this device, no result shown
+      setStage("locked");
+    }
   }
 
   if (stage === "locked") {
@@ -252,9 +259,9 @@ export function QuizPage() {
               </div>
 
               <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-                {/* No "Play again" — one attempt per guest (the quiz locks after this). */}
-                <Button variant="primary" onClick={() => go("guestbook")}>Sign the guestbook</Button>
-                <Button variant="ghost" onClick={() => go("home")}>Back to home</Button>
+                {/* Result is only reached on the demo site, where replay is allowed. */}
+                <Button variant="primary" onClick={() => { setStage("intro"); setName(""); setIdx(0); setAnswers({}); }}>Play again</Button>
+                <Button variant="ghost" onClick={() => go("guestbook")}>Sign the guestbook</Button>
               </div>
             </div>
           </div>
