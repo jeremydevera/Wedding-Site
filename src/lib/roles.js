@@ -1,5 +1,9 @@
-// Settings, Media + Clients are owner-hidden (clients also filtered below).
-const SUPERADMIN_ONLY = new Set(["settings", "media"]);
+// Owner-hidden tabs — only the superadmin (who builds the site) manages these.
+// Owners only get the guest-response tabs (Dashboard, RSVPs, Guestbook, Quiz).
+// Site-content tabs — Settings (home/theme), Schedule, Details, Venue & Map — plus
+// Media + Clients are superadmin-only. (Superadmin-on-a-client uses a different
+// code path in AdminApp and still sees all of these.)
+const SUPERADMIN_ONLY = new Set(["settings", "media", "schedule", "details", "venue"]);
 
 export function visibleAdminTabs(role, allTabs) {
   if (role === "superadmin") {
