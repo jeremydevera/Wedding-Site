@@ -219,16 +219,18 @@ export function RsvpsAdmin() {
       <div className="panel">
         <div className="panel__head">
           <div className="panel__title">RSVPs <span style={{ color: "var(--muted)", fontSize: 15 }}>({filtered.length})</span></div>
-          {/* Actions exposed on the left; filter sits directly left of the search (pushed right). */}
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", flex: 1 }}>
-            <Button variant="ghost" style={{ padding: "8px 14px", fontSize: 13 }} onClick={() => { setEmailTo(""); setEmailOpen(true); }}>Email results</Button>
-            <Button variant="primary" style={{ padding: "8px 14px", fontSize: 13 }} onClick={exportCsv}>{Icon.download({})} Export CSV</Button>
-            <div className="seg" style={{ marginLeft: "auto" }}>
-              {[["all", "All"], ["attending", "Yes"], ["maybe", "Maybe"], ["not_attending", "No"]].map(([v, l]) => (
-                <button key={v} className={filter === v ? "on" : ""} onClick={() => setFilter(v)}>{l}</button>
-              ))}
+          {/* Actions exposed on the left; filter + search grouped on the right. */}
+          <div className="admin-toolbar">
+            <Button variant="ghost" className="admin-toolbar__action" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>Email results</Button>
+            <Button variant="primary" className="admin-toolbar__action" onClick={exportCsv}>{Icon.download({})} Export CSV</Button>
+            <div className="admin-toolbar__end">
+              <div className="seg">
+                {[["all", "All"], ["attending", "Yes"], ["maybe", "Maybe"], ["not_attending", "No"]].map(([v, l]) => (
+                  <button key={v} className={filter === v ? "on" : ""} onClick={() => setFilter(v)}>{l}</button>
+                ))}
+              </div>
+              <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
             </div>
-            <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
           </div>
         </div>
         <div className="panel__body--flush table-wrap">
@@ -392,19 +394,21 @@ export function GuestbookAdmin() {
   }
 
   return (
-    <div className="panel">
+    <div>
+      {/* With moderation on, split into folder tabs: Published vs Pending approval. */}
+      {moderation && (
+        <div className="folders">
+          <button className={"folder" + (view === "published" ? " folder--active" : "")} onClick={() => setView("published")}>{Icon.check({})} Published ({publishedCount})</button>
+          <button className={"folder" + (view === "pending" ? " folder--active" : "")} onClick={() => setView("pending")}>{Icon.book({})} Pending approval ({pendingCount})</button>
+        </div>
+      )}
+      <div className="panel">
       <div className="panel__head">
         <div className="panel__title">Guestbook <span style={{ color: "var(--muted)", fontSize: 15 }}>({filtered.length})</span></div>
-        {/* Export exposed on the left; filter sits directly left of the search (pushed right). */}
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", flex: 1 }}>
-          <Button variant="primary" style={{ padding: "8px 14px", fontSize: 13 }} onClick={exportCsv}>{Icon.download({})} Export</Button>
-          <div style={{ display: "flex", gap: 10, alignItems: "center", marginLeft: "auto" }}>
-            {moderation && (
-              <div className="seg">
-                <button className={view === "published" ? "on" : ""} onClick={() => setView("published")}>Published ({publishedCount})</button>
-                <button className={view === "pending" ? "on" : ""} onClick={() => setView("pending")}>Pending approval ({pendingCount})</button>
-              </div>
-            )}
+        {/* Export exposed on the left; search on the right. */}
+        <div className="admin-toolbar">
+          <Button variant="primary" className="admin-toolbar__action" onClick={exportCsv}>{Icon.download({})} Export</Button>
+          <div className="admin-toolbar__end">
             <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
           </div>
         </div>
@@ -434,6 +438,7 @@ export function GuestbookAdmin() {
         </table>
       </div>
       <Pager page={pg.page} totalPages={pg.totalPages} total={pg.total} perPage={pg.perPage} start={pg.start} onPage={pg.setPage} noun="messages" />
+      </div>
     </div>
   );
 }
