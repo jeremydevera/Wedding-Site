@@ -77,13 +77,17 @@ export function Nav({ route }) {
   // Demo site (demo.<platform> / apex) is a theme showcase: swap the RSVP CTA for
   // a live theme picker so prospective clients can preview every design.
   const isDemo = resolveSubdomain() === "demo";
-  // Anyone can preview a theme via the dropdown (local only — reverts on refresh).
-  // A logged-in admin (superadmin/owner) picking one SAVES it as the site's theme.
+  // A logged-in admin (superadmin/owner) picking a theme SAVES it as the site's
+  // theme. A public visitor only PREVIEWS it in-memory (previewSettings) — never
+  // persisted, so it can't override the saved theme and reverts on refresh.
   const pickTheme = async (k) => {
-    Store.updateSettings({ theme: k, themeAccent: "", displayFont: THEME_FONTS[k].display, bodyFont: THEME_FONTS[k].body });
+    const patch = { theme: k, themeAccent: "", displayFont: THEME_FONTS[k].display, bodyFont: THEME_FONTS[k].body };
     const role = Store.get().auth?.role;
     if (role === "superadmin" || role === "owner") {
+      Store.updateSettings(patch);
       try { await saveClientData(); toast("Theme saved"); } catch (e) { toast("Couldn't save theme"); }
+    } else {
+      Store.previewSettings(patch); // ephemeral preview — reverts on refresh
     }
   };
   const ThemePicker = ({ block }) => (
@@ -99,12 +103,15 @@ export function Nav({ route }) {
       </select>
     </label>
   );
-  // Like the theme picker: previews locally for visitors, saves for logged-in admins.
+  // Like the theme picker: admins save, public visitors only preview (ephemeral).
   const pickDecor = async (v) => {
-    Store.updateSettings(v === "none" ? { decorOn: false } : { decorOn: true, decorStyle: v });
+    const patch = v === "none" ? { decorOn: false } : { decorOn: true, decorStyle: v };
     const role = Store.get().auth?.role;
     if (role === "superadmin" || role === "owner") {
+      Store.updateSettings(patch);
       try { await saveClientData(); toast("Decoration saved"); } catch (e) { toast("Couldn't save decoration"); }
+    } else {
+      Store.previewSettings(patch); // ephemeral preview — reverts on refresh
     }
   };
   const DecorPicker = ({ block }) => (

@@ -227,6 +227,14 @@ export const Store = {
     persist();
     emit();
   },
+  // Ephemeral, in-memory settings change — theme/decoration PREVIEW for public
+  // demo visitors. Deliberately does NOT persist() to localStorage, so it never
+  // overrides the saved theme and reverts to the client's settings on refresh.
+  // (Admins use updateSettings + saveClientData to actually save.)
+  previewSettings(patch) {
+    _state = { ..._state, settings: { ..._state.settings, ...patch } };
+    emit();
+  },
   addRSVP(rsvp) {
     _state = { ..._state, rsvps: [{ ...rsvp, id: uid(), createdAt: Date.now() }, ..._state.rsvps] };
     persist();
