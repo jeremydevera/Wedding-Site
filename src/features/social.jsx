@@ -252,8 +252,9 @@ export function QuizPage() {
               </div>
 
               <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-                <Button variant="primary" onClick={() => { setStage("intro"); setName(""); }}>Play again</Button>
-                <Button variant="ghost" onClick={() => go("guestbook")}>Sign the guestbook</Button>
+                {/* No "Play again" — one attempt per guest (the quiz locks after this). */}
+                <Button variant="primary" onClick={() => go("guestbook")}>Sign the guestbook</Button>
+                <Button variant="ghost" onClick={() => go("home")}>Back to home</Button>
               </div>
             </div>
           </div>
