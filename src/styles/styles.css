@@ -88,7 +88,9 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
   border-bottom: 1px solid color-mix(in oklch, var(--line) 70%, transparent);
 }
 .nav__inner { display: flex; align-items: center; justify-content: space-between; height: 70px; gap: 16px; }
-.nav__brand { display: flex; align-items: center; gap: 12px; text-decoration: none; cursor: pointer; min-width: 0; flex: 0 1 auto; }
+/* Brand never shrinks — otherwise a crowded demo nav (long theme name) squeezes
+   the brand box below the monogram width and the first nav link overlaps it. */
+.nav__brand { display: flex; align-items: center; gap: 12px; text-decoration: none; cursor: pointer; flex: none; }
 /* Logo-only header: couple names are hidden beside the monogram on all sizes. */
 .nav__names { display: none; font-family: var(--font-display); font-size: 21px; color: var(--ink); white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .nav__names .amp { color: var(--accent); font-style: italic; }
@@ -114,12 +116,12 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .nav__burger svg { width: 22px; height: 22px; pointer-events: none; }
 
 /* Demo/showcase theme picker — replaces the RSVP CTA on the demo site */
-.nav__themepick { display: none; align-items: center; gap: 8px; }
+.nav__themepick { display: none; align-items: center; gap: 8px; min-width: 0; }
 .nav__themepick-label { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
 .nav__themepick select {
   appearance: none; -webkit-appearance: none; font-family: var(--font-body); font-size: 14px;
   color: var(--ink); background-color: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 9px 32px 9px 13px; cursor: pointer; max-width: 220px;
+  padding: 9px 32px 9px 13px; cursor: pointer; min-width: 0; max-width: 190px; text-overflow: ellipsis;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='m6 9 6 6 6-6' stroke='%23999' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 11px center;
 }
