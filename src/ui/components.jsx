@@ -231,8 +231,17 @@ export function Modal({ open, onClose, children, wide, label = "Dialog" }) {
     if (!open) return;
     const onKey = (e) => { if (e.key === "Escape") onClose && onClose(); };
     window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
+    // Lock the page behind the modal. position:fixed (not just overflow:hidden)
+    // so iOS Safari can't scroll the background; restore scroll position on close.
+    const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+    const b = document.body;
+    const prev = { position: b.style.position, top: b.style.top, left: b.style.left, right: b.style.right, width: b.style.width, overflow: b.style.overflow };
+    b.style.position = "fixed"; b.style.top = `-${scrollY}px`; b.style.left = "0"; b.style.right = "0"; b.style.width = "100%"; b.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      b.style.position = prev.position; b.style.top = prev.top; b.style.left = prev.left; b.style.right = prev.right; b.style.width = prev.width; b.style.overflow = prev.overflow;
+      window.scrollTo(0, scrollY);
+    };
   }, [open, onClose]);
   if (!open) return null;
   return (
