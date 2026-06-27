@@ -1289,7 +1289,7 @@ export function HomeAdmin() {
 export const ADMIN_TABS = [
   { key: "dashboard", label: "Dashboard", icon: "grid" },
   { key: "home", label: "Home", icon: "home" },
-  { key: "rsvps", label: "RSVPs", icon: "check" },
+  { key: "rsvps", label: "RSVPs", icon: "mail" },
   // Media/Gallery shelved for now — re-add when gallery ships (see DISABLED_MODULES).
   // { key: "media", label: "Media", icon: "camera" },
   { key: "guestbook", label: "Guestbook", icon: "book" },
@@ -1297,7 +1297,7 @@ export const ADMIN_TABS = [
   { key: "quiz", label: "Quiz", icon: "quiz" },
   { key: "details", label: "Details", icon: "rings" },
   { key: "venue", label: "Venue & Map", icon: "pin" },
-  { key: "settings", label: "Settings", icon: "settings" },
+  { key: "settings", label: "Settings", icon: "gear" },
 ];
 
 export function AdminApp() {
