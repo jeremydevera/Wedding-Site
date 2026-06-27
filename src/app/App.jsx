@@ -76,7 +76,9 @@ export function Nav({ route }) {
   const [drawer, setDrawer] = useState(false);
   // Demo site (demo.<platform> / apex) is a theme showcase: swap the RSVP CTA for
   // a live theme picker so prospective clients can preview every design.
-  const isDemo = resolveSubdomain() === "demo";
+  // In the admin Theme picker the home page is embedded via /?preview — hide the
+  // demo's own theme/decor pickers + try-bar there so the preview reads clean.
+  const isDemo = resolveSubdomain() === "demo" && !new URLSearchParams(window.location.search).has("preview");
   // The home nav picker is PREVIEW ONLY for everyone (admins included): it applies
   // in-memory via previewSettings and never persists, so it always reverts to the
   // saved theme on refresh. The saved theme is changed solely in Settings → Theme.
@@ -288,6 +290,30 @@ export function App() {
       bodyFont: settings.bodyFont,
     });
   }, [settings.theme, settings.themeAccent, settings.displayFont, settings.bodyFont]);
+
+  // Live preview bridge: when embedded in the admin Theme picker (/?preview),
+  // accept postMessage theme/decor updates and apply them IN-MEMORY only
+  // (previewSettings never persists), so switching themes re-renders the real
+  // page instantly with no reload and nothing saved.
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has("preview")) return;
+    const onMsg = (e) => {
+      if (e.origin !== window.location.origin) return;
+      const d = e.data;
+      if (!d || d.type !== "evermore:preview") return;
+      const patch = {};
+      if (d.theme && THEME_FONTS[d.theme]) {
+        Object.assign(patch, { theme: d.theme, themeAccent: "", displayFont: THEME_FONTS[d.theme].display, bodyFont: THEME_FONTS[d.theme].body });
+      }
+      if (d.decorStyle !== undefined) patch.decorStyle = d.decorStyle;
+      if (d.decorOn !== undefined) patch.decorOn = d.decorOn;
+      if (Object.keys(patch).length) Store.previewSettings(patch);
+    };
+    window.addEventListener("message", onMsg);
+    // Tell the parent we're mounted so it can push the initial theme (avoids a race).
+    try { window.parent && window.parent.postMessage({ type: "evermore:preview-ready" }, window.location.origin); } catch (e) {}
+    return () => window.removeEventListener("message", onMsg);
+  }, []);
 
   // theme-dependent scroll reveal animations
   useEffect(() => {

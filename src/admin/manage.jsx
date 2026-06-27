@@ -218,14 +218,18 @@ export function RsvpsAdmin() {
         <div className="panel__head">
           <div className="panel__title">RSVPs <span style={{ color: "var(--muted)", fontSize: 15 }}>({filtered.length})</span></div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-            <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email, phone" /></div>
+            <div className="search-box" style={{ flex: "1 1 220px", minWidth: 180 }}>{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email, phone" /></div>
             <div className="seg">
               {[["all", "All"], ["attending", "Yes"], ["maybe", "Maybe"], ["not_attending", "No"]].map(([v, l]) => (
                 <button key={v} className={filter === v ? "on" : ""} onClick={() => setFilter(v)}>{l}</button>
               ))}
             </div>
-            <Button variant="ghost" size="sm" onClick={emailResults}>{Icon.mail ? Icon.mail({}) : null} Email results</Button>
-            <Button variant="primary" size="sm" onClick={exportCsv}>{Icon.download({})} Export CSV</Button>
+            {/* Keep the two actions grouped so they stay aligned together instead of
+                Export CSV wrapping onto its own line. */}
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <Button variant="ghost" size="sm" onClick={emailResults}>{Icon.mail ? Icon.mail({}) : null} Email results</Button>
+              <Button variant="primary" size="sm" onClick={exportCsv}>{Icon.download({})} Export CSV</Button>
+            </div>
           </div>
         </div>
         <div className="panel__body--flush table-wrap">
@@ -931,6 +935,32 @@ export function VenueAdmin() {
   );
 }
 
+// Live theme preview — embeds the REAL home page (/?preview) and re-themes it
+// instantly via postMessage as the operator clicks themes. Display-only; the
+// iframe applies changes in-memory (previewSettings) and never saves.
+function ThemePreviewFrame({ theme, decorStyle, decorOn }) {
+  const ref = React.useRef(null);
+  const post = React.useCallback(() => {
+    const w = ref.current && ref.current.contentWindow;
+    if (w) w.postMessage({ type: "evermore:preview", theme, decorStyle, decorOn }, window.location.origin);
+  }, [theme, decorStyle, decorOn]);
+  React.useEffect(() => { post(); }, [post]);   // re-post whenever the selection changes
+  React.useEffect(() => {                        // and once the embedded app signals ready
+    const onReady = (e) => { if (e.origin === window.location.origin && e.data && e.data.type === "evermore:preview-ready") post(); };
+    window.addEventListener("message", onReady);
+    return () => window.removeEventListener("message", onReady);
+  }, [post]);
+  return (
+    <div style={{ width: "100%", maxWidth: 460, margin: "0 auto" }}>
+      <div style={{ width: "100%", height: 300, overflow: "hidden", borderRadius: 12, border: "1px solid var(--line, #e5e7eb)", boxShadow: "0 8px 28px -14px rgba(0,0,0,.35)", background: "#fff" }}>
+        <iframe ref={ref} title="Live theme preview" src="/?preview=1" loading="lazy" onLoad={post}
+          style={{ width: 1280, height: 836, border: 0, transform: "scale(0.359)", transformOrigin: "top left", pointerEvents: "none" }} />
+      </div>
+      <p style={{ textAlign: "center", color: "var(--muted)", fontSize: 12, margin: "8px 0 0" }}>Your real home page · click a theme to preview · Save to keep</p>
+    </div>
+  );
+}
+
 export function SettingsAdmin() {
   const { settings, story } = useStore();
   const f = settings;
@@ -1000,24 +1030,8 @@ export function SettingsAdmin() {
       {tab === "appearance" && (<><div className="panel">
         <div className="panel__head"><div className="panel__title">Theme</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Preview updates instantly — Save changes to publish</span></div>
         <div className="panel__body">
-          <span className="field__label" style={{ display: "block", margin: "0 0 8px" }}>Home preview</span>
-          <div className="theme-prev">
-            <div className="theme-prev__hero">
-              <div className="hero__media hero__media--themed" />
-              <div className="hero__tint hero__tint--themed" />
-              <div className="theme-prev__content">
-                <span className="theme-prev__eyebrow">We're getting married</span>
-                <span className="theme-prev__names">{f.partnerA} <span className="amp">&amp;</span> {f.partnerB}</span>
-                <span className="theme-prev__date">{f.weddingDateLabel}</span>
-                <span className="btn btn--primary btn--sm" style={{ marginTop: 4, pointerEvents: "none" }}>RSVP</span>
-              </div>
-            </div>
-            <div className="theme-prev__body">
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--ink)" }}>Aa</span>
-              <span style={{ fontSize: 13, color: "var(--ink-soft)", flex: 1 }}>Headings &amp; body update with the theme.</span>
-              <span className="theme-prev__swatches"><i className="theme-prev__sw" style={{ background: "var(--accent)" }} /><i className="theme-prev__sw" style={{ background: "var(--gold)" }} /></span>
-            </div>
-          </div>
+          <span className="field__label" style={{ display: "block", margin: "0 0 8px" }}>Live preview</span>
+          <ThemePreviewFrame theme={f.theme} decorStyle={f.decorStyle} decorOn={f.decorOn} />
           <span className="field__label" style={{ display: "block", margin: "20px 0 10px" }}>Choose a theme</span>
 
           <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 8px", whiteSpace: "nowrap" }}>
