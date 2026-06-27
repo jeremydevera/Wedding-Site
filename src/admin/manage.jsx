@@ -168,7 +168,7 @@ export function QuestionEditor({ open, question, onClose }) {
 }
 
 export function RsvpsAdmin() {
-  const { rsvps } = useStore();
+  const { rsvps, settings } = useStore();
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("all");
   const [detail, setDetail] = useState(null);
@@ -189,6 +189,29 @@ export function RsvpsAdmin() {
     downloadCSV("evermore-rsvps.csv", rows);
   }
 
+  // Open the device's mail app pre-filled with a results summary (no server mailer,
+  // so this composes the message and the admin sends it to whoever they choose).
+  function emailResults() {
+    const label = { attending: "Attending", maybe: "Maybe", not_attending: "Not attending" };
+    const yes = rsvps.filter((r) => r.status === "attending");
+    const guests = yes.reduce((s, r) => s + (Number(r.count) || 0), 0);
+    const MAX = 80;
+    const lines = rsvps.slice(0, MAX).map((r) => `• ${r.fullName} — ${label[r.status] || r.status}${r.count ? ` (${r.count})` : ""}`);
+    if (rsvps.length > MAX) lines.push(`…and ${rsvps.length - MAX} more — see the CSV export for the full list.`);
+    const body = [
+      `RSVP summary for ${settings.partnerA} & ${settings.partnerB}`,
+      ``,
+      `Total responses: ${rsvps.length}`,
+      `Attending: ${yes.length}  (${guests} guests)`,
+      `Maybe: ${rsvps.filter((r) => r.status === "maybe").length}`,
+      `Not attending: ${rsvps.filter((r) => r.status === "not_attending").length}`,
+      ``,
+      ...lines,
+    ].join("\n");
+    const subject = `RSVP results — ${settings.partnerA} & ${settings.partnerB}`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
+
   return (
     <div>
       <div className="panel">
@@ -201,6 +224,7 @@ export function RsvpsAdmin() {
                 <button key={v} className={filter === v ? "on" : ""} onClick={() => setFilter(v)}>{l}</button>
               ))}
             </div>
+            <Button variant="ghost" size="sm" onClick={emailResults}>{Icon.mail ? Icon.mail({}) : null} Email results</Button>
             <Button variant="primary" size="sm" onClick={exportCsv}>{Icon.download({})} Export CSV</Button>
           </div>
         </div>
