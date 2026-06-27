@@ -37,6 +37,7 @@ export const NAV_LINKS = [
   { key: "gallery", label: "Gallery" },
   { key: "guestbook", label: "Guestbook" },
   { key: "quiz", label: "Quiz" },
+  { key: "rsvp", label: "RSVP" },
 ];
 
 // Nav links visible for the active event type (home always shows). Driven by
@@ -123,9 +124,9 @@ export function Nav({ route }) {
           ))}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {isDemo
-            ? <><ThemePicker />{!isPremiumTheme(settings.theme) && <DecorPicker />}</>
-            : <Button className="nav__cta" variant="primary" size="sm" onClick={() => go("rsvp")}>RSVP</Button>}
+          {/* RSVP is a normal nav tab now (on every site). Demo's only extra is the
+              theme + decoration pickers. */}
+          {isDemo && <><ThemePicker />{!isPremiumTheme(settings.theme) && <DecorPicker />}</>}
           <button className="nav__burger" onClick={() => setDrawer(true)} aria-label="Menu">{Icon.menu({})}</button>
         </div>
       </div>
@@ -144,11 +145,6 @@ export function Nav({ route }) {
             ))}
             {moduleEnabled(settings.modules, "gallery") && <button className="drawer__link" onClick={() => { go("upload"); setDrawer(false); }}>Share Photos</button>}
             {settings.uploadsEnabled && moduleEnabled(settings.modules, "video-message") && <button className="drawer__link" onClick={() => { go("video-message"); setDrawer(false); }}>Video Message</button>}
-            {!isDemo && (
-              <div style={{ marginTop: 20 }}>
-                <Button variant="primary" block onClick={() => { go("rsvp"); setDrawer(false); }}>RSVP Now</Button>
-              </div>
-            )}
           </div>
         </div>
       )}
