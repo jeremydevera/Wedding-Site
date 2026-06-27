@@ -175,14 +175,14 @@ export function RsvpsAdmin() {
   const [emailOpen, setEmailOpen] = useState(false);
   const [emailTo, setEmailTo] = useState("");
 
-  const filtered = rsvps.filter((r) => {
-    if (filter !== "all" && r.status !== filter) return false;
-    if (q) {
-      const hay = `${r.fullName} ${r.email} ${r.phone}`.toLowerCase();
-      if (!hay.includes(q.toLowerCase())) return false;
-    }
-    return true;
-  });
+  const bySearch = rsvps.filter((r) => !q || `${r.fullName} ${r.email} ${r.phone}`.toLowerCase().includes(q.toLowerCase()));
+  const counts = {
+    all: bySearch.length,
+    attending: bySearch.filter((r) => r.status === "attending").length,
+    maybe: bySearch.filter((r) => r.status === "maybe").length,
+    not_attending: bySearch.filter((r) => r.status === "not_attending").length,
+  };
+  const filtered = filter === "all" ? bySearch : bySearch.filter((r) => r.status === filter);
   const pg = usePaged(filtered, 20);
 
   function exportCsv() {
@@ -216,19 +216,20 @@ export function RsvpsAdmin() {
 
   return (
     <div>
+      {/* Status filter as folder tabs (like Guestbook), above the panel. */}
+      <div className="folders">
+        {[["all", "All"], ["attending", "Yes"], ["maybe", "Maybe"], ["not_attending", "No"]].map(([v, l]) => (
+          <button key={v} className={"folder" + (filter === v ? " folder--active" : "")} onClick={() => setFilter(v)}>{l} ({counts[v]})</button>
+        ))}
+      </div>
       <div className="panel">
         <div className="panel__head">
           <div className="panel__title">RSVPs <span style={{ color: "var(--muted)", fontSize: 15 }}>({filtered.length})</span></div>
-          {/* Actions exposed on the left; filter + search grouped on the right. */}
+          {/* Actions exposed on the left; search on the right. */}
           <div className="admin-toolbar">
             <Button variant="ghost" className="admin-toolbar__action" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>Email results</Button>
             <Button variant="primary" className="admin-toolbar__action" onClick={exportCsv}>{Icon.download({})} Export CSV</Button>
             <div className="admin-toolbar__end">
-              <div className="seg">
-                {[["all", "All"], ["attending", "Yes"], ["maybe", "Maybe"], ["not_attending", "No"]].map(([v, l]) => (
-                  <button key={v} className={filter === v ? "on" : ""} onClick={() => setFilter(v)}>{l}</button>
-                ))}
-              </div>
               <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
             </div>
           </div>
