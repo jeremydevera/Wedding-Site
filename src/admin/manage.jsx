@@ -531,8 +531,14 @@ export function QuizAdmin() {
               const qq = quiz.find((x) => x.id === a.questionId) || {};
               return (
                 <div key={i} style={{ padding: "12px 0", borderBottom: "1px solid var(--line)", display: "flex", gap: 10 }}>
-                  <span style={{ color: a.isCorrect ? "oklch(0.55 0.13 150)" : "oklch(0.55 0.16 25)" }}>{a.isCorrect ? Icon.check({ style: { width: 18 } }) : Icon.close({ style: { width: 18 } })}</span>
-                  <div><div style={{ fontWeight: 600 }}>{qq.q}</div><div style={{ fontSize: 14, color: "var(--ink-soft)" }}>{qq.options ? qq.options[a.selected] : ""}</div></div>
+                  <span style={{ flex: "none", marginTop: 2, color: a.isCorrect ? "oklch(0.55 0.13 150)" : "oklch(0.55 0.16 25)" }}>{a.isCorrect ? Icon.check({ style: { width: 18 } }) : Icon.close({ style: { width: 18 } })}</span>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{qq.q}</div>
+                    <div style={{ fontSize: 14, color: "var(--ink-soft)" }}>
+                      Their answer: <strong style={{ color: a.isCorrect ? "oklch(0.5 0.13 150)" : "oklch(0.55 0.16 25)" }}>{qq.options && a.selected != null ? qq.options[a.selected] : "—"}</strong>
+                      {!a.isCorrect && qq.options && <> · Correct: <strong style={{ color: "oklch(0.5 0.13 150)" }}>{qq.options[qq.answer]}</strong></>}
+                    </div>
+                  </div>
                 </div>
               );
             })}
