@@ -1,3 +1,9 @@
+# Canonical domain: bounce the bare *.pages.dev project URL to the pretty custom
+# domain so guests (and QR codes) never see wedding-site-8nh.pages.dev. Only the
+# exact production host matches — preview/branch deploys (hash.<project>.pages.dev)
+# are left alone. Path + query are preserved via :splat.
+https://wedding-site-8nh.pages.dev/*  https://demo.celebrately.us/:splat  302
+
 # SPA fallback: serve the app for any path so history-routed deep links
 # (/home, /admin, /rsvp, …) work. Static assets are served before this rule.
 /*  /index.html  200
