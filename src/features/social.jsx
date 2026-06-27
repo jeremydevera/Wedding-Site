@@ -259,8 +259,9 @@ export function QuizPage() {
               </div>
 
               <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-                {/* Result is only reached on the demo site. Show the result, then Close. */}
+                {/* Result is only reached on the demo site. */}
                 <Button variant="primary" onClick={() => go("home")}>Close</Button>
+                <Button variant="ghost" onClick={() => go("guestbook")}>Sign the guestbook</Button>
               </div>
             </div>
           </div>
