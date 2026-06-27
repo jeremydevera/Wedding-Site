@@ -218,7 +218,7 @@ export function RsvpsAdmin() {
         <div className="panel__head">
           <div className="panel__title">RSVPs <span style={{ color: "var(--muted)", fontSize: 15 }}>({filtered.length})</span></div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-            <div className="search-box" style={{ flex: "1 1 220px", minWidth: 180 }}>{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email, phone" /></div>
+            <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
             <div className="seg">
               {[["all", "All"], ["attending", "Yes"], ["maybe", "Maybe"], ["not_attending", "No"]].map(([v, l]) => (
                 <button key={v} className={filter === v ? "on" : ""} onClick={() => setFilter(v)}>{l}</button>
@@ -395,7 +395,7 @@ export function GuestbookAdmin() {
               <button className={view === "pending" ? "on" : ""} onClick={() => setView("pending")}>Pending approval ({pendingCount})</button>
             </div>
           )}
-          <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name" /></div>
+          <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
           <Button variant="primary" size="sm" onClick={exportCsv}>{Icon.download({})} Export</Button>
         </div>
       </div>
