@@ -82,11 +82,20 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 
 /* --- Navigation ------------------------------------------------------------*/
 .nav {
-  position: sticky; top: 0; z-index: 50;
+  /* Fixed (not sticky): position:sticky silently breaks in Safari when an
+     ancestor is overflow-clipped (html/body use overflow-x:clip), so the header
+     would scroll away. Fixed always stays pinned. The public content is offset
+     by the nav height below. */
+  position: fixed; top: 0; left: 0; right: 0; z-index: 50;
   background: color-mix(in oklch, var(--surface) 60%, transparent);
   backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(20px) saturate(1.4);
   border-bottom: 1px solid color-mix(in oklch, var(--line) 70%, transparent);
 }
+/* Offset for the fixed header. Only the public site renders <main>; the admin
+   shell has none, so it's unaffected. */
+main { padding-top: 70px; }
+/* Sealed envelope is a full-screen takeover with the nav hidden — no offset. */
+body.env-sealed main { padding-top: 0; }
 .nav__inner { display: flex; align-items: center; justify-content: space-between; height: 70px; gap: 16px; }
 /* Brand never shrinks — otherwise a crowded demo nav (long theme name) squeezes
    the brand box below the monogram width and the first nav link overlaps it. */
