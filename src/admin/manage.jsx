@@ -227,13 +227,8 @@ export function RsvpsAdmin() {
       <div className="panel">
         <div className="panel__head">
           <div className="panel__title">RSVPs <span style={{ color: "var(--muted)", fontSize: 15 }}>({filtered.length})</span></div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-            <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
-            <div className="seg">
-              {[["all", "All"], ["attending", "Yes"], ["maybe", "Maybe"], ["not_attending", "No"]].map(([v, l]) => (
-                <button key={v} className={filter === v ? "on" : ""} onClick={() => setFilter(v)}>{l}</button>
-              ))}
-            </div>
+          {/* Actions (kebab) on the left; search pushed to the right (marginLeft:auto). */}
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", flex: 1 }}>
             {/* Actions tucked behind a 3-dots menu to keep the toolbar minimal. */}
             <div className="kebab" ref={menuRef}>
               <button type="button" className="icon-btn kebab__btn" aria-label="More actions" aria-haspopup="true" aria-expanded={menuOpen} onClick={() => setMenuOpen((o) => !o)}>⋮</button>
@@ -244,6 +239,12 @@ export function RsvpsAdmin() {
                 </div>
               )}
             </div>
+            <div className="seg">
+              {[["all", "All"], ["attending", "Yes"], ["maybe", "Maybe"], ["not_attending", "No"]].map(([v, l]) => (
+                <button key={v} className={filter === v ? "on" : ""} onClick={() => setFilter(v)}>{l}</button>
+              ))}
+            </div>
+            <div className="search-box" style={{ marginLeft: "auto", minWidth: 200 }}>{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
           </div>
         </div>
         <div className="panel__body--flush table-wrap">
@@ -410,15 +411,16 @@ export function GuestbookAdmin() {
     <div className="panel">
       <div className="panel__head">
         <div className="panel__title">Guestbook <span style={{ color: "var(--muted)", fontSize: 15 }}>({filtered.length})</span></div>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        {/* Export on the left; search pushed to the right (marginLeft:auto). */}
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", flex: 1 }}>
+          <Button variant="primary" size="sm" onClick={exportCsv}>{Icon.download({})} Export</Button>
           {moderation && (
             <div className="seg">
               <button className={view === "published" ? "on" : ""} onClick={() => setView("published")}>Published ({publishedCount})</button>
               <button className={view === "pending" ? "on" : ""} onClick={() => setView("pending")}>Pending approval ({pendingCount})</button>
             </div>
           )}
-          <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
-          <Button variant="primary" size="sm" onClick={exportCsv}>{Icon.download({})} Export</Button>
+          <div className="search-box" style={{ marginLeft: "auto", minWidth: 180 }}>{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
         </div>
       </div>
       <div className="panel__body--flush table-wrap">
