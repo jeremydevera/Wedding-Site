@@ -904,7 +904,10 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
      breaks the sticky header (.admin__head) + tab strip, making them scroll away. */
   .admin { flex-direction: column; max-width: 100%; }
   .admin__main { margin-left: 0; }   /* sidebar is an off-canvas drawer on mobile, no offset */
-  .admin__head { position: -webkit-sticky; position: sticky; top: 0; z-index: 30; background: var(--surface); }
+  /* Fixed (not sticky) — sticky scrolls away under overflow-x:clip in some
+     browsers. Fixed keeps the burger + title bar pinned; .admin__body is padded
+     below to clear it. */
+  .admin__head { position: fixed; top: 0; left: 0; right: 0; z-index: 40; background: var(--surface); }
   /* sidebar becomes an off-canvas drawer toggled by the hamburger.
      translate3d + will-change promote it to its own layer so iOS Safari repaints
      the off-screen fixed element reliably (plain translateX sometimes won't show). */
@@ -916,7 +919,8 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
   .admin--sa .admin__drawer-close { color: #fafafa; }
   .admin__burger { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex: none; background: none; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   .admin__burger svg { width: 20px; height: 20px; pointer-events: none; }
-  .admin__body { padding: 18px; }
+  .admin__body { padding: 76px 18px 18px; }   /* top clears the fixed .admin__head */
+  .admin--sa .admin__body { padding: 76px 26px 48px; }   /* same top clearance for the superadmin view */
   /* topbar must wrap: title + action buttons can't sit on one phone row */
   .admin__topbar { position: static; padding: 12px 16px; flex-wrap: wrap; gap: 10px; align-items: center; }
   .admin__topbar > div:last-child { flex-wrap: wrap; }
