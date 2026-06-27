@@ -598,6 +598,12 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .search-box { display: flex; align-items: center; gap: 8px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 12px; flex: none; }
 .search-box svg { width: 16px; height: 16px; color: var(--muted); flex: none; }
 .search-box input { border: none; background: none; outline: none; font-family: var(--font-body); font-size: 14px; color: var(--ink); width: 150px; min-width: 0; }
+/* 3-dots actions menu (RSVPs toolbar) */
+.kebab { position: relative; }
+.kebab__btn { font-size: 20px; line-height: 1; }
+.kebab__menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 170px; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 12px 30px -12px rgba(0,0,0,.3); display: flex; flex-direction: column; gap: 2px; }
+.kebab__menu button { display: block; width: 100%; text-align: left; padding: 9px 12px; background: none; border: none; border-radius: 6px; cursor: pointer; font: inherit; font-size: 14px; color: var(--ink); }
+.kebab__menu button:hover { background: var(--surface-2); }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
 .seg button { background: var(--surface); border: none; padding: 8px 14px; cursor: pointer; font-family: var(--font-body); font-size: 13px; color: var(--ink-soft); border-right: 1px solid var(--line); }
 .seg button:last-child { border-right: none; }

@@ -172,6 +172,16 @@ export function RsvpsAdmin() {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("all");
   const [detail, setDetail] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [emailTo, setEmailTo] = useState("");
+  const menuRef = useRef(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDoc = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [menuOpen]);
 
   const filtered = rsvps.filter((r) => {
     if (filter !== "all" && r.status !== filter) return false;
@@ -189,9 +199,9 @@ export function RsvpsAdmin() {
     downloadCSV("evermore-rsvps.csv", rows);
   }
 
-  // Open the device's mail app pre-filled with a results summary (no server mailer,
-  // so this composes the message and the admin sends it to whoever they choose).
-  function emailResults() {
+  // Open the device's mail app pre-filled with a results summary, addressed to the
+  // email the admin typed (no server mailer, so they press send in their mail app).
+  function emailResults(to) {
     const label = { attending: "Attending", maybe: "Maybe", not_attending: "Not attending" };
     const yes = rsvps.filter((r) => r.status === "attending");
     const guests = yes.reduce((s, r) => s + (Number(r.count) || 0), 0);
@@ -209,7 +219,7 @@ export function RsvpsAdmin() {
       ...lines,
     ].join("\n");
     const subject = `RSVP results — ${settings.partnerA} & ${settings.partnerB}`;
-    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = `mailto:${(to || "").trim()}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }
 
   return (
@@ -224,11 +234,15 @@ export function RsvpsAdmin() {
                 <button key={v} className={filter === v ? "on" : ""} onClick={() => setFilter(v)}>{l}</button>
               ))}
             </div>
-            {/* Keep the two actions grouped so they stay aligned together instead of
-                Export CSV wrapping onto its own line. */}
-            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-              <Button variant="ghost" size="sm" onClick={emailResults}>{Icon.mail ? Icon.mail({}) : null} Email results</Button>
-              <Button variant="primary" size="sm" onClick={exportCsv}>{Icon.download({})} Export CSV</Button>
+            {/* Actions tucked behind a 3-dots menu to keep the toolbar minimal. */}
+            <div className="kebab" ref={menuRef}>
+              <button type="button" className="icon-btn kebab__btn" aria-label="More actions" aria-haspopup="true" aria-expanded={menuOpen} onClick={() => setMenuOpen((o) => !o)}>⋮</button>
+              {menuOpen && (
+                <div className="kebab__menu" role="menu">
+                  <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); setEmailTo(""); setEmailOpen(true); }}>Email results</button>
+                  <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); exportCsv(); }}>Export CSV</button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -283,6 +297,14 @@ export function RsvpsAdmin() {
             </dl>
           </div>
         )}
+      </Modal>
+
+      <Modal open={emailOpen} onClose={() => setEmailOpen(false)} label="Email results">
+        <SectionHead eyebrow="RSVPs" title="Email the results" />
+        <Field label="Send to" id="rsvp-email-to" hint="We'll open your mail app with the summary ready to send to this address.">
+          <Input id="rsvp-email-to" type="email" inputMode="email" value={emailTo} onChange={(e) => setEmailTo(e.target.value)} placeholder="name@example.com" />
+        </Field>
+        <Button variant="primary" block disabled={!emailTo.trim()} onClick={() => { emailResults(emailTo); setEmailOpen(false); }}>Send results</Button>
       </Modal>
     </div>
   );
