@@ -237,7 +237,7 @@ export function RsvpsAdmin() {
                   <td>
                     <div className="row-actions">
                       <button className="icon-btn" onClick={() => setDetail(r)} aria-label="View">{Icon.eye({})}</button>
-                      <button className="icon-btn icon-btn--danger" onClick={() => confirmDialog({ title: "Delete RSVP?", message: `Remove the RSVP from ${r.fullName}? This can't be undone.`, confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) run(async () => { await deleteRsvpDb(r.id); Store.deleteRSVP(r.id); }).catch(() => toast("Couldn't delete on the server")); })} aria-label="Delete">{Icon.trash({})}</button>
+                      <button className="icon-btn icon-btn--danger" onClick={() => confirmDialog({ title: "Delete RSVP?", message: `Remove the RSVP from ${r.fullName}? This can't be undone.`, confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) run(async () => { await deleteRsvpDb(r.id); Store.deleteRSVP(r.id); }).then(() => toast("RSVP deleted", "success"), () => toast("Couldn't delete on the server")); })} aria-label="Delete">{Icon.trash({})}</button>
                     </div>
                   </td>
                 </tr>
@@ -418,7 +418,7 @@ export function GuestbookAdmin() {
                     {g.status === "visible"
                       ? <button className="icon-btn" title="Hide" onClick={() => run(async () => { await setGuestbookStatusDb(g.id, "hidden"); Store.setGuestbookStatus(g.id, "hidden"); }).catch(() => toast("Couldn't update on the server"))}>{Icon.eyeOff({})}</button>
                       : <button className="icon-btn" title={g.status === "pending" ? "Approve" : "Show"} onClick={() => run(async () => { await setGuestbookStatusDb(g.id, "visible"); Store.setGuestbookStatus(g.id, "visible"); }).catch(() => toast("Couldn't update on the server"))}>{g.status === "pending" ? Icon.check({}) : Icon.eye({})}</button>}
-                    <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete message?", message: "This permanently removes the guestbook entry.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) run(async () => { await deleteGuestbookDb(g.id); Store.deleteGuestbook(g.id); }).catch(() => toast("Couldn't delete on the server")); })}>{Icon.trash({})}</button>
+                    <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete message?", message: "This permanently removes the guestbook entry.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) run(async () => { await deleteGuestbookDb(g.id); Store.deleteGuestbook(g.id); }).then(() => toast("Message deleted", "success"), () => toast("Couldn't delete on the server")); })}>{Icon.trash({})}</button>
                   </div>
                 </td>
               </tr>
