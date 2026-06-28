@@ -482,8 +482,12 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 
 /* --- Toast -----------------------------------------------------------------*/
 .toast-host { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 200; display: flex; flex-direction: column; gap: 10px; align-items: center; pointer-events: none; }
-.toast { background: var(--ink); color: var(--bg); padding: 13px 22px; border-radius: 100px; font-size: 14px; box-shadow: 0 12px 30px -10px rgba(0,0,0,.5); animation: pop .24s ease; }
+.toast { display: inline-flex; align-items: center; gap: 9px; background: var(--ink); color: var(--bg); padding: 13px 22px; border-radius: 100px; font-size: 14px; font-weight: 500; box-shadow: 0 12px 30px -10px rgba(0,0,0,.5); animation: pop .24s ease; }
+/* Success = green with a check (e.g. "Changes saved"). */
+.toast--success { background: oklch(0.6 0.14 150); color: #fff; box-shadow: 0 14px 34px -12px oklch(0.6 0.14 150 / .6); }
 .toast--err { background: oklch(0.5 0.16 25); color: #fff; }
+.toast__ic { display: inline-flex; flex: none; }
+.toast__ic svg { width: 17px; height: 17px; }
 
 /* ============================================================================
    Admin

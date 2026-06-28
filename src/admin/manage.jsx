@@ -1555,7 +1555,7 @@ export function AdminApp() {
   const dirty = savedRef.current != null && snapshot() !== savedRef.current;
   const saveChanges = async () => {
     setSaving(true);
-    try { await saveClientData(); savedRef.current = snapshot(); toast("Changes saved"); }
+    try { await saveClientData(); savedRef.current = snapshot(); toast("Changes saved", "success"); }
     catch (e) { toast("Save failed: " + (e.message || "error")); }
     finally { setSaving(false); }
   };

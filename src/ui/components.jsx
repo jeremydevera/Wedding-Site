@@ -277,7 +277,11 @@ export function ToastHost() {
   return (
     <div className="toast-host" aria-live="polite">
       {toasts.map((t) => (
-        <div key={t.id} className={"toast toast--" + t.kind}>{t.msg}</div>
+        <div key={t.id} className={"toast toast--" + t.kind}>
+          {t.kind === "success" && <span className="toast__ic" aria-hidden="true">{Icon.check({})}</span>}
+          {t.kind === "err" && <span className="toast__ic" aria-hidden="true">{Icon.close({})}</span>}
+          <span>{t.msg}</span>
+        </div>
       ))}
     </div>
   );
