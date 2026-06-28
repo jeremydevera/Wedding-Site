@@ -88,6 +88,28 @@ export const SEED_DETAIL_CARDS = [
   { icon: "pin", title: "Getting There", body: "Complimentary valet and self-parking at the rear entrance. Rideshare drop-off is at the front gate." },
 ];
 
+// Entourage — named groups (Groomsmen, Bridesmaids, …), each a list of people
+// with an optional role. Shown on the home page after the schedule glimpse.
+export const SEED_ENTOURAGE = [
+  { id: "ent-sponsors", title: "Principal Sponsors", people: [
+    { id: "ent-p1", name: "Mr. & Mrs. Antonio Reyes", role: "" },
+    { id: "ent-p2", name: "Dr. & Mrs. Ramon Santos", role: "" },
+    { id: "ent-p3", name: "Mr. & Mrs. Eduardo Bautista", role: "" },
+  ] },
+  { id: "ent-groomsmen", title: "Groomsmen", people: [
+    { id: "ent-p4", name: "Mark Reyes", role: "Best Man" },
+    { id: "ent-p5", name: "Carlo Santos", role: "" },
+    { id: "ent-p6", name: "Paolo Cruz", role: "" },
+    { id: "ent-p7", name: "Daniel Ramos", role: "" },
+  ] },
+  { id: "ent-bridesmaids", title: "Bridesmaids", people: [
+    { id: "ent-p8", name: "Camille Bautista", role: "Maid of Honor" },
+    { id: "ent-p9", name: "Nicole Flores", role: "" },
+    { id: "ent-p10", name: "Andrea Torres", role: "" },
+    { id: "ent-p11", name: "Jasmine Cruz", role: "" },
+  ] },
+];
+
 export const SEED_VENUE_CARDS = [
   { t: "Parking", d: "Complimentary valet and self-parking available at the rear entrance from 2:00 PM." },
   { t: "Arrival", d: "Please arrive by 2:30 PM. The ceremony begins promptly — plan to be seated early." },
@@ -135,6 +157,7 @@ export function defaultState() {
     quiz: SEED_QUIZ,
     venueCards: SEED_VENUE_CARDS,
     detailCards: SEED_DETAIL_CARDS,
+    entourage: SEED_ENTOURAGE,
     guestbook: SEED_GUESTBOOK,
     rsvps: SEED_RSVPS,
     media: SEED_MEDIA, // {id, type:'photo'|'video', category, dataUrl, src, name, message, status, size, ratio, createdAt}
@@ -407,6 +430,50 @@ export const Store = {
     _state = { ..._state, detailCards: arr };
     persist();
     emit();
+  },
+  // ---- Entourage: groups of people (id-based ops) ----
+  addEntourageGroup(title) {
+    _state = { ..._state, entourage: [...(_state.entourage || []), { id: uid(), title: title || "New group", people: [] }] };
+    persist(); emit();
+  },
+  updateEntourageGroup(gid, patch) {
+    _state = { ..._state, entourage: (_state.entourage || []).map((g) => (g.id === gid ? { ...g, ...patch } : g)) };
+    persist(); emit();
+  },
+  deleteEntourageGroup(gid) {
+    _state = { ..._state, entourage: (_state.entourage || []).filter((g) => g.id !== gid) };
+    persist(); emit();
+  },
+  moveEntourageGroup(gid, dir) {
+    const arr = [...(_state.entourage || [])];
+    const i = arr.findIndex((g) => g.id === gid), j = i + dir;
+    if (i < 0 || j < 0 || j >= arr.length) return;
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+    _state = { ..._state, entourage: arr };
+    persist(); emit();
+  },
+  addEntouragePerson(gid, person) {
+    _state = { ..._state, entourage: (_state.entourage || []).map((g) => (g.id === gid ? { ...g, people: [...(g.people || []), { id: uid(), name: (person && person.name) || "", role: (person && person.role) || "" }] } : g)) };
+    persist(); emit();
+  },
+  updateEntouragePerson(gid, pid, patch) {
+    _state = { ..._state, entourage: (_state.entourage || []).map((g) => (g.id === gid ? { ...g, people: (g.people || []).map((p) => (p.id === pid ? { ...p, ...patch } : p)) } : g)) };
+    persist(); emit();
+  },
+  deleteEntouragePerson(gid, pid) {
+    _state = { ..._state, entourage: (_state.entourage || []).map((g) => (g.id === gid ? { ...g, people: (g.people || []).filter((p) => p.id !== pid) } : g)) };
+    persist(); emit();
+  },
+  moveEntouragePerson(gid, pid, dir) {
+    _state = { ..._state, entourage: (_state.entourage || []).map((g) => {
+      if (g.id !== gid) return g;
+      const arr = [...(g.people || [])];
+      const i = arr.findIndex((p) => p.id === pid), j = i + dir;
+      if (i < 0 || j < 0 || j >= arr.length) return g;
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      return { ...g, people: arr };
+    }) };
+    persist(); emit();
   },
   resetAll() {
     _state = defaultState();

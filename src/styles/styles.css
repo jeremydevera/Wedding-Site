@@ -1383,3 +1383,20 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* keep Leaflet UI under app overlays (modals/toasts) */
 .leaflet-pane, .leaflet-top, .leaflet-bottom { z-index: 1 !important; }
 .leaflet-container { font: inherit; }
+
+/* --- Entourage (public home section) -------------------------------------- */
+.ent-grid { display: grid; grid-template-columns: 1fr; gap: 28px; max-width: 880px; margin: 8px auto 0; }
+@media (min-width: 700px) { .ent-grid { grid-template-columns: repeat(2, 1fr); gap: 36px 48px; } }
+.ent-group { text-align: center; }
+.ent-group__title { font-family: var(--font-display); font-size: clamp(20px, 2.4vw, 26px); color: var(--ink); margin: 0 0 14px; }
+.ent-group__title::after { content: ""; display: block; width: 40px; height: 1px; background: var(--accent); margin: 10px auto 0; opacity: .6; }
+.ent-people { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 9px; }
+.ent-person { display: flex; flex-direction: column; gap: 1px; }
+.ent-person__name { font-size: 17px; color: var(--ink); }
+.ent-person__role { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+
+/* --- Entourage (admin editor) --------------------------------------------- */
+.ent-edit-group { border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 18px; overflow: hidden; }
+.ent-edit-group__head { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.ent-edit-group__title { font-family: var(--font-display); font-size: 19px; color: var(--ink); flex: 1; min-width: 0; }
+.ent-edit-group__head .row-actions { margin-left: auto; }

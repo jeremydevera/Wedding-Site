@@ -261,7 +261,7 @@ export function EnvelopeInvite() {
 }
 
 export function Home() {
-  const { settings, story, schedule } = useStore();
+  const { settings, story, schedule, entourage } = useStore();
   const s = settings;
 
   // replay the "Will you be there?" rise-in every time it scrolls into view
@@ -368,7 +368,39 @@ export function Home() {
           </div>
         </div>
       </section>
+
+      {/* ENTOURAGE — groups of people (Groomsmen, Bridesmaids, …) */}
+      <EntourageView groups={entourage} />
     </div>
+  );
+}
+
+// Public entourage section: each group titled, people listed as "Name — Role".
+// Renders nothing when there are no groups with people.
+export function EntourageView({ groups }) {
+  const list = (groups || []).filter((g) => g && (g.people || []).length);
+  if (!list.length) return null;
+  return (
+    <section className="block" id="home-entourage">
+      <div className="container">
+        <SectionHead center eyebrow="With Us" title="The Entourage" />
+        <div className="ent-grid">
+          {list.map((g) => (
+            <div className="ent-group" key={g.id}>
+              <h3 className="ent-group__title">{g.title}</h3>
+              <ul className="ent-people">
+                {(g.people || []).map((p) => (
+                  <li className="ent-person" key={p.id}>
+                    <span className="ent-person__name">{p.name}</span>
+                    {p.role ? <span className="ent-person__role">{p.role}</span> : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 

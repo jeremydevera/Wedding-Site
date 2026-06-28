@@ -1304,6 +1304,125 @@ export function HomeAdmin() {
   );
 }
 
+// --- Entourage admin (groups of people; superadmin-only content tab) --------
+export function EntouragePersonEditor({ open, gid, person, onClose }) {
+  const { save: persistChanges } = React.useContext(AdminSaveCtx);
+  const blank = { name: "", role: "" };
+  const [f, setF] = useState(blank);
+  useEffect(() => { if (person) setF({ name: person.name || "", role: person.role || "" }); else setF(blank); }, [person, open]);
+  const isEdit = !!(person && person.id);
+  async function save() {
+    if (!f.name.trim()) { toast("Please enter a name.", "err"); return; }
+    const payload = { name: f.name.trim(), role: f.role.trim() };
+    if (isEdit) Store.updateEntouragePerson(gid, person.id, payload);
+    else Store.addEntouragePerson(gid, payload);
+    await persistChanges();
+    onClose();
+  }
+  return (
+    <Modal open={open} onClose={onClose} label="Entourage person">
+      <SectionHead eyebrow="Entourage" title={isEdit ? "Edit person" : "Add person"} />
+      <Field label="Name" required id="ep-name"><Input id="ep-name" value={f.name} onChange={(e) => setF((p) => ({ ...p, name: e.target.value }))} placeholder="e.g. Mark Reyes" /></Field>
+      <Field label="Role" id="ep-role" hint="Optional — e.g. Best Man, Maid of Honor"><Input id="ep-role" value={f.role} onChange={(e) => setF((p) => ({ ...p, role: e.target.value }))} placeholder="e.g. Best Man" /></Field>
+      <div style={{ display: "flex", gap: 12, marginTop: 8, justifyContent: "flex-end" }}>
+        <Button variant="ghost" onClick={onClose}>Cancel</Button>
+        <Button variant="primary" onClick={save}>{isEdit ? "Save person" : "Add person"}</Button>
+      </div>
+    </Modal>
+  );
+}
+
+export function EntourageGroupEditor({ open, group, onClose }) {
+  const { save: persistChanges } = React.useContext(AdminSaveCtx);
+  const [title, setTitle] = useState("");
+  useEffect(() => { setTitle(group ? (group.title || "") : ""); }, [group, open]);
+  const isEdit = !!(group && group.id);
+  async function save() {
+    if (!title.trim()) { toast("Please enter a group name.", "err"); return; }
+    if (isEdit) Store.updateEntourageGroup(group.id, { title: title.trim() });
+    else Store.addEntourageGroup(title.trim());
+    await persistChanges();
+    onClose();
+  }
+  return (
+    <Modal open={open} onClose={onClose} label="Entourage group">
+      <SectionHead eyebrow="Entourage" title={isEdit ? "Rename group" : "Add group"} />
+      <Field label="Group name" required id="eg-title" hint="e.g. Groomsmen, Bridesmaids, Principal Sponsors"><Input id="eg-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Groomsmen" /></Field>
+      <div style={{ display: "flex", gap: 12, marginTop: 8, justifyContent: "flex-end" }}>
+        <Button variant="ghost" onClick={onClose}>Cancel</Button>
+        <Button variant="primary" onClick={save}>{isEdit ? "Save" : "Add group"}</Button>
+      </div>
+    </Modal>
+  );
+}
+
+export function EntourageAdmin() {
+  const { entourage } = useStore();
+  const { save: persistChanges } = React.useContext(AdminSaveCtx);
+  const groups = entourage || [];
+  const [groupOpen, setGroupOpen] = useState(false);
+  const [editGroup, setEditGroup] = useState(null);
+  const [personOpen, setPersonOpen] = useState(false);
+  const [personCtx, setPersonCtx] = useState({ gid: null, person: null });
+  const moveGroup = async (gid, dir) => { Store.moveEntourageGroup(gid, dir); await persistChanges(); };
+  const delGroup = async (g) => { if (await confirmDialog({ title: "Delete group?", message: `Remove "${g.title}" and everyone in it?`, confirmLabel: "Delete", danger: true })) { Store.deleteEntourageGroup(g.id); await persistChanges(); } };
+  const movePerson = async (gid, pid, dir) => { Store.moveEntouragePerson(gid, pid, dir); await persistChanges(); };
+  const delPerson = async (gid, p) => { if (await confirmDialog({ title: "Delete person?", message: `Remove ${p.name}?`, confirmLabel: "Delete", danger: true })) { Store.deleteEntouragePerson(gid, p.id); await persistChanges(); } };
+  return (
+    <div className="panel">
+      <div className="panel__head">
+        <div className="panel__title">Entourage <span style={{ color: "var(--muted)", fontSize: 15 }}>({groups.length})</span></div>
+        <Button variant="primary" size="sm" onClick={() => { setEditGroup(null); setGroupOpen(true); }}>+ Add group</Button>
+      </div>
+      <div className="panel__body">
+        <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 0, marginBottom: 18 }}>Groups shown on the home page after the schedule. Add a group (e.g. Groomsmen), then add people under it. Everything saves automatically.</p>
+        {groups.length === 0 && <p style={{ color: "var(--muted)", textAlign: "center", padding: "30px 0" }}>No groups yet — add your first one above.</p>}
+        {groups.map((g, gi) => (
+          <div className="ent-edit-group" key={g.id}>
+            <div className="ent-edit-group__head">
+              <div className="ent-edit-group__title">{g.title} <span style={{ color: "var(--muted)", fontWeight: 400, fontSize: 14 }}>({(g.people || []).length})</span></div>
+              <div className="row-actions">
+                <button className="icon-btn" title="Move up" onClick={() => moveGroup(g.id, -1)} disabled={gi === 0}>↑</button>
+                <button className="icon-btn" title="Move down" onClick={() => moveGroup(g.id, 1)} disabled={gi === groups.length - 1}>↓</button>
+                <button className="icon-btn" title="Rename group" onClick={() => { setEditGroup(g); setGroupOpen(true); }}>{Icon.edit({})}</button>
+                <button className="icon-btn icon-btn--danger" title="Delete group" onClick={() => delGroup(g)}>{Icon.trash({})}</button>
+              </div>
+            </div>
+            <div className="panel__body--flush table-wrap">
+              <table className="tbl">
+                <thead><tr><th>#</th><th>Name</th><th>Role</th><th></th></tr></thead>
+                <tbody>
+                  {(g.people || []).map((p, pi) => (
+                    <tr key={p.id}>
+                      <td style={{ color: "var(--muted)" }}>{pi + 1}</td>
+                      <td><strong>{p.name}</strong></td>
+                      <td style={{ color: "var(--ink-soft)" }}>{p.role || "—"}</td>
+                      <td>
+                        <div className="row-actions">
+                          <button className="icon-btn" title="Move up" onClick={() => movePerson(g.id, p.id, -1)} disabled={pi === 0}>↑</button>
+                          <button className="icon-btn" title="Move down" onClick={() => movePerson(g.id, p.id, 1)} disabled={pi === ((g.people || []).length - 1)}>↓</button>
+                          <button className="icon-btn" title="Edit person" onClick={() => { setPersonCtx({ gid: g.id, person: p }); setPersonOpen(true); }}>{Icon.edit({})}</button>
+                          <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => delPerson(g.id, p)}>{Icon.trash({})}</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {(g.people || []).length === 0 && <tr><td colSpan={4} style={{ color: "var(--muted)", textAlign: "center", padding: 24 }}>No people yet.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ padding: "10px 0 4px" }}>
+              <Button variant="ghost" size="sm" onClick={() => { setPersonCtx({ gid: g.id, person: null }); setPersonOpen(true); }}>+ Add person</Button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <EntourageGroupEditor open={groupOpen} group={editGroup} onClose={() => setGroupOpen(false)} />
+      <EntouragePersonEditor open={personOpen} gid={personCtx.gid} person={personCtx.person} onClose={() => setPersonOpen(false)} />
+    </div>
+  );
+}
+
 // --- Admin shell ------------------------------------------------------------
 export const ADMIN_TABS = [
   { key: "dashboard", label: "Dashboard", icon: "grid" },
@@ -1316,6 +1435,7 @@ export const ADMIN_TABS = [
   { key: "quiz", label: "Quiz", icon: "quiz" },
   { key: "details", label: "Details", icon: "rings" },
   { key: "venue", label: "Venue & Map", icon: "pin" },
+  { key: "entourage", label: "Entourage", icon: "user" },
   { key: "settings", label: "Settings", icon: "gear" },
 ];
 
@@ -1440,6 +1560,7 @@ export function AdminApp() {
           {activeTab === "quiz" && <QuizAdmin />}
           {activeTab === "details" && <DetailsAdmin />}
           {activeTab === "venue" && <VenueAdmin />}
+          {activeTab === "entourage" && <EntourageAdmin />}
           {activeTab === "qr" && <QrAdmin />}
           {activeTab === "settings" && <SettingsAdmin />}
           {activeTab === "overview" && <SuperOverview />}
