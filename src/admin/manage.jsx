@@ -1411,7 +1411,7 @@ export function EntourageAdmin() {
                 </tbody>
               </table>
             </div>
-            <div style={{ padding: "10px 0 4px" }}>
+            <div style={{ padding: "12px 16px 14px" }}>
               <Button variant="ghost" size="sm" onClick={() => { setPersonCtx({ gid: g.id, person: null }); setPersonOpen(true); }}>+ Add person</Button>
             </div>
           </div>
