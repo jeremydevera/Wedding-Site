@@ -1,0 +1,13 @@
+# Cloudflare Pages cache rules.
+# HTML must always revalidate so a new deploy's freshly-hashed JS/CSS is picked
+# up immediately (no more "hard-refresh to see changes"). Vite's /assets/* files
+# are content-hashed, so they're safe to cache forever (immutable).
+#
+# Order matters: /* is first, /assets/* is last — for assets both rules match and
+# the later (immutable) one wins; HTML only matches /* (revalidate).
+
+/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
