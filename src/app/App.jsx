@@ -334,20 +334,13 @@ export function App() {
         el.style.setProperty("--rd", Math.min(n, 6) * 0.07 + "s");
         counts.set(p, n + 1);
       });
-      let pending = els.slice();
-      const check = () => {
-        const h = window.innerHeight;
-        pending = pending.filter((el) => {
-          if (el.getBoundingClientRect().top < h * 0.92) { el.classList.add("is-in"); return false; }
-          return true;
-        });
-      };
-      let raf;
-      const tick = () => { check(); if (pending.length) raf = requestAnimationFrame(tick); };
-      raf = requestAnimationFrame(tick);
-      // safety: never leave text hidden, even if the page never scrolls
-      const safety = setTimeout(() => { pending.forEach((el) => el.classList.add("is-in")); pending = []; }, 3500);
-      App._cleanup = () => { cancelAnimationFrame(raf); clearTimeout(safety); };
+      // Toggle on every entry/exit so the reveal REPLAYS each time you scroll
+      // back to a section (not a one-shot).
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((e) => e.target.classList.toggle("is-in", e.isIntersecting));
+      }, { threshold: 0.12, rootMargin: "0px 0px -8% 0px" });
+      els.forEach((el) => io.observe(el));
+      App._cleanup = () => io.disconnect();
     }, 40);
     return () => { clearTimeout(t); if (App._cleanup) App._cleanup(); };
   }, [route, loading]);
