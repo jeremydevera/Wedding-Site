@@ -447,6 +447,7 @@ export function GuestbookAdmin() {
 export function QuizAdmin() {
   const { quizSubs, quiz } = useStore();
   const [open, setOpen] = useState(null);
+  const [viewing, setViewing] = useState(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const sorted = [...quizSubs].sort((a, b) => b.score - a.score);
@@ -484,6 +485,7 @@ export function QuizAdmin() {
                   <td>{q.options ? q.options[q.answer] : ""}</td>
                   <td>
                     <div className="row-actions">
+                      <button className="icon-btn" title="View question" onClick={() => setViewing(q)}>{Icon.eye({})}</button>
                       <button className="icon-btn" title="Edit question" onClick={() => openEdit(q)}>{Icon.edit({})}</button>
                       <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete question?", message: "This removes the question from the quiz.", confirmLabel: "Delete", danger: true }).then(async (ok) => { if (ok) { Store.deleteQuizQuestion(q.id); await persistChanges(); } })}>{Icon.trash({})}</button>
                     </div>
@@ -542,6 +544,25 @@ export function QuizAdmin() {
                 </div>
               );
             })}
+          </div>
+        )}
+      </Modal>
+      <Modal open={!!viewing} onClose={() => setViewing(null)} label="Quiz question">
+        {viewing && (
+          <div>
+            <SectionHead eyebrow={viewing.type === "true_false" ? "True / False" : "Multiple choice"} title={viewing.q} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {(viewing.options || []).map((opt, i) => {
+                const correct = i === viewing.answer;
+                return (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", borderRadius: "var(--radius)", border: "1px solid " + (correct ? "var(--accent)" : "var(--line)"), background: correct ? "var(--accent-soft)" : "transparent" }}>
+                    <span style={{ flex: "none", width: 22, color: correct ? "var(--accent)" : "var(--muted)" }}>{correct ? Icon.check({ style: { width: 18 } }) : String.fromCharCode(65 + i)}</span>
+                    <span style={{ fontWeight: correct ? 600 : 400, color: "var(--ink)" }}>{opt}</span>
+                    {correct && <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--accent)" }}>Correct</span>}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </Modal>
