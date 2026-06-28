@@ -323,7 +323,9 @@ export function App() {
     if (route === "admin" || loading) return;
     // NOTE: intentionally NOT gated on prefers-reduced-motion — the reveal is a
     // gentle fade/rise the owner wants visible even with Reduce Motion on.
-    const sel = "main .sec-head, main .story-row, main .info-card, main .card, main .gb-card, main .sched-cards__item, main .sched-cols__row, main .sched-min__row, main .countdown, main .hero__names, main .hero__welcome, main .hero__date, main .faq-item, main .divider-mark, main #home-rsvp h2, main #home-rsvp p, main #home-rsvp .btn, main #home-countdown h2, main #home-countdown > .container p";
+    // NOTE: the hero ("We're getting married") is intentionally excluded — the first
+    // screen shows immediately, no fade-in.
+    const sel = "main .sec-head, main .story-row, main .info-card, main .card, main .gb-card, main .sched-cards__item, main .sched-cols__row, main .sched-min__row, main .faq-item, main .divider-mark, main #home-rsvp h2, main #home-rsvp p, main #home-rsvp .btn, main #home-countdown h2, main #home-countdown > .container p";
     const t = setTimeout(() => {
       const els = Array.from(document.querySelectorAll(sel));
       const counts = new Map();
