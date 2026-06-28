@@ -321,7 +321,8 @@ export function App() {
   // false so the elements exist (home content hydrates async after first mount).
   useEffect(() => {
     if (route === "admin" || loading) return;
-    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // NOTE: intentionally NOT gated on prefers-reduced-motion — the reveal is a
+    // gentle fade/rise the owner wants visible even with Reduce Motion on.
     const sel = "main .sec-head, main .story-row, main .info-card, main .card, main .gb-card, main .sched-cards__item, main .sched-cols__row, main .sched-min__row, main .countdown, main .hero__names, main .hero__welcome, main .hero__date, main .faq-item, main .divider-mark, main #home-rsvp h2, main #home-rsvp p, main #home-rsvp .btn, main #home-countdown h2, main #home-countdown > .container p";
     const t = setTimeout(() => {
       const els = Array.from(document.querySelectorAll(sel));
