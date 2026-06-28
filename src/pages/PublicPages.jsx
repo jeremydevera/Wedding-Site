@@ -328,24 +328,9 @@ export function Home() {
         </section>
       )}
 
-      {/* RSVP CTA — right after the countdown/timer (non-envelope themes) */}
+      {/* WELCOME / invitation — RSVP button lives right under this section */}
       {s.theme !== "envelope" && (
-        <section className="block" id="home-rsvp">
-          <div className="container container--narrow" style={{ textAlign: "center" }}>
-            <div className="divider-mark">{Icon.heart({})}</div>
-            <div className="card card--pad-lg" style={{ marginTop: 30 }}>
-              <div className="eyebrow eyebrow--solo" style={{ justifyContent: "center" }}>RSVP</div>
-              <h2 style={{ fontSize: "clamp(28px,4.6vw,44px)", margin: "16px 0 12px" }}>Will you be there?</h2>
-              <p style={{ color: "var(--ink-soft)", fontSize: 18, margin: "0 0 26px" }}>Kindly respond by {s.rsvpDeadline}.</p>
-              <Button variant="primary" size="lg" onClick={() => go("rsvp")}>{Icon.check({})} Respond now</Button>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* WELCOME */}
-      {s.theme !== "envelope" && (
-      <section className="block">
+      <section className="block" id="home-rsvp">
         <div className="container container--narrow" style={{ textAlign: "center" }}>
           <div className="divider-mark">{Icon.rings({})}</div>
           <h2 style={{ fontSize: "clamp(28px,4.6vw,44px)", margin: "26px 0 18px" }}>
@@ -354,6 +339,8 @@ export function Home() {
           <p style={{ color: "var(--ink-soft)", fontSize: 19 }}>
             {s.inviteBody}
           </p>
+          <p style={{ color: "var(--ink-soft)", fontSize: 15, margin: "22px 0 16px", letterSpacing: ".04em" }}>Kindly respond by {s.rsvpDeadline}.</p>
+          <Button variant="primary" size="lg" onClick={() => go("rsvp")}>{Icon.check({})} Respond now</Button>
         </div>
       </section>
       )}
