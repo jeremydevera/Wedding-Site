@@ -963,6 +963,27 @@ export function VenueAdmin() {
 // iframe applies changes in-memory (previewSettings) and never saves.
 function ThemePreviewFrame({ theme, decorStyle, decorOn }) {
   const ref = React.useRef(null);
+  const wrapRef = React.useRef(null);
+  const [device, setDevice] = React.useState("desktop"); // desktop | mobile
+  const [scale, setScale] = React.useState(0.35);
+  // The embedded page renders at the iframe's own width, so a 1280px frame shows
+  // the desktop layout and a 390px frame shows the mobile layout. We then scale
+  // the whole frame down to fit the panel — so the WHOLE screen is always visible.
+  const baseW = device === "desktop" ? 1280 : 390;
+  const baseH = device === "desktop" ? 800 : 780;
+  const MAX_H = 460;
+  React.useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const measure = () => {
+      const w = el.clientWidth || baseW;
+      setScale(Math.min(w / baseW, MAX_H / baseH, 1)); // fit width + cap height, never upscale
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [baseW, baseH]);
   const post = React.useCallback(() => {
     const w = ref.current && ref.current.contentWindow;
     if (w) w.postMessage({ type: "evermore:preview", theme, decorStyle, decorOn }, window.location.origin);
@@ -974,10 +995,16 @@ function ThemePreviewFrame({ theme, decorStyle, decorOn }) {
     return () => window.removeEventListener("message", onReady);
   }, [post]);
   return (
-    <div style={{ width: "100%", maxWidth: 460, margin: "0 auto" }}>
-      <div style={{ width: "100%", height: 300, overflow: "hidden", borderRadius: 12, border: "1px solid var(--line, #e5e7eb)", boxShadow: "0 8px 28px -14px rgba(0,0,0,.35)", background: "#fff" }}>
-        <iframe ref={ref} title="Live theme preview" src="/?preview=1" loading="lazy" onLoad={post}
-          style={{ width: 1280, height: 836, border: 0, transform: "scale(0.359)", transformOrigin: "top left", pointerEvents: "none" }} />
+    <div style={{ width: "100%", maxWidth: 520, margin: "0 auto" }}>
+      <div className="seg" style={{ display: "flex", width: "fit-content", margin: "0 auto 12px" }}>
+        <button type="button" className={device === "desktop" ? "on" : ""} onClick={() => setDevice("desktop")}>Desktop</button>
+        <button type="button" className={device === "mobile" ? "on" : ""} onClick={() => setDevice("mobile")}>Mobile</button>
+      </div>
+      <div ref={wrapRef} style={{ width: "100%" }}>
+        <div style={{ width: Math.round(baseW * scale), height: Math.round(baseH * scale), margin: "0 auto", overflow: "hidden", borderRadius: 12, border: "1px solid var(--line, #e5e7eb)", boxShadow: "0 8px 28px -14px rgba(0,0,0,.35)", background: "#fff" }}>
+          <iframe ref={ref} title="Live theme preview" src="/?preview=1" loading="lazy" onLoad={post}
+            style={{ width: baseW, height: baseH, border: 0, transform: `scale(${scale})`, transformOrigin: "top left", pointerEvents: "none" }} />
+        </div>
       </div>
       <p style={{ textAlign: "center", color: "var(--muted)", fontSize: 12, margin: "8px 0 0" }}>Your real home page · click a theme to preview · Save to keep</p>
     </div>
@@ -1436,6 +1463,16 @@ export function AdminApp() {
     catch (e) { toast("Save failed: " + (e.message || "error")); }
     finally { setSaving(false); }
   };
+
+  // While a save/add/reorder/delete is in flight (`saving`), lock page scroll so
+  // the operator can't scroll or interact until it finishes — a blocking overlay
+  // (rendered below) covers the screen, then the "Changes saved" toast appears.
+  useEffect(() => {
+    if (!saving) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [saving]);
 
   // Owner (or superadmin managing a client) — load that client's submissions from
   // the DB so RSVPs / guestbook / quiz show up, not just this session's echoes.
