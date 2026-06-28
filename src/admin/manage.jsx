@@ -18,7 +18,7 @@ const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // Save state shared from the AdminApp shell down to each section's footer, so the
 // Save button can live INSIDE the section card being edited (Supabase pattern).
-const AdminSaveCtx = React.createContext({ saving: false, dirty: false, save: () => {} });
+const AdminSaveCtx = React.createContext({ saving: false, dirty: false, save: () => {}, run: (fn) => fn() });
 
 // Up/down reorder arrows for admin list rows. `onMove(dir)` applies the move
 // (dir -1 = up, +1 = down); disabled at the ends.
@@ -156,6 +156,7 @@ export function QuestionEditor({ open, question, onClose }) {
 
 export function RsvpsAdmin() {
   const { rsvps, settings } = useStore();
+  const { run } = React.useContext(AdminSaveCtx);   // wrap server ops in the saving overlay
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("all");
   const [detail, setDetail] = useState(null);
@@ -236,7 +237,7 @@ export function RsvpsAdmin() {
                   <td>
                     <div className="row-actions">
                       <button className="icon-btn" onClick={() => setDetail(r)} aria-label="View">{Icon.eye({})}</button>
-                      <button className="icon-btn icon-btn--danger" onClick={() => confirmDialog({ title: "Delete RSVP?", message: `Remove the RSVP from ${r.fullName}? This can't be undone.`, confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) { Store.deleteRSVP(r.id); deleteRsvpDb(r.id).catch(() => toast("Couldn't delete on the server")); } })} aria-label="Delete">{Icon.trash({})}</button>
+                      <button className="icon-btn icon-btn--danger" onClick={() => confirmDialog({ title: "Delete RSVP?", message: `Remove the RSVP from ${r.fullName}? This can't be undone.`, confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) run(async () => { await deleteRsvpDb(r.id); Store.deleteRSVP(r.id); }).catch(() => toast("Couldn't delete on the server")); })} aria-label="Delete">{Icon.trash({})}</button>
                     </div>
                   </td>
                 </tr>
@@ -362,6 +363,7 @@ export function MediaAdmin() {
 
 export function GuestbookAdmin() {
   const { guestbook, settings } = useStore();
+  const { run } = React.useContext(AdminSaveCtx);   // wrap server ops in the saving overlay
   const [q, setQ] = useState("");
   const [view, setView] = useState("published");
   // Moderation on = guest messages wait for approval (auto-approve turned off).
@@ -414,9 +416,9 @@ export function GuestbookAdmin() {
                 <td>
                   <div className="row-actions">
                     {g.status === "visible"
-                      ? <button className="icon-btn" title="Hide" onClick={() => { Store.setGuestbookStatus(g.id, "hidden"); setGuestbookStatusDb(g.id, "hidden").catch(() => toast("Couldn't update on the server")); }}>{Icon.eyeOff({})}</button>
-                      : <button className="icon-btn" title={g.status === "pending" ? "Approve" : "Show"} onClick={() => { Store.setGuestbookStatus(g.id, "visible"); setGuestbookStatusDb(g.id, "visible").catch(() => toast("Couldn't update on the server")); }}>{g.status === "pending" ? Icon.check({}) : Icon.eye({})}</button>}
-                    <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete message?", message: "This permanently removes the guestbook entry.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) { Store.deleteGuestbook(g.id); deleteGuestbookDb(g.id).catch(() => toast("Couldn't delete on the server")); } })}>{Icon.trash({})}</button>
+                      ? <button className="icon-btn" title="Hide" onClick={() => run(async () => { await setGuestbookStatusDb(g.id, "hidden"); Store.setGuestbookStatus(g.id, "hidden"); }).catch(() => toast("Couldn't update on the server"))}>{Icon.eyeOff({})}</button>
+                      : <button className="icon-btn" title={g.status === "pending" ? "Approve" : "Show"} onClick={() => run(async () => { await setGuestbookStatusDb(g.id, "visible"); Store.setGuestbookStatus(g.id, "visible"); }).catch(() => toast("Couldn't update on the server"))}>{g.status === "pending" ? Icon.check({}) : Icon.eye({})}</button>}
+                    <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete message?", message: "This permanently removes the guestbook entry.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) run(async () => { await deleteGuestbookDb(g.id); Store.deleteGuestbook(g.id); }).catch(() => toast("Couldn't delete on the server")); })}>{Icon.trash({})}</button>
                   </div>
                 </td>
               </tr>
@@ -1558,6 +1560,14 @@ export function AdminApp() {
     finally { setSaving(false); }
   };
 
+  // Wrap any async server op (RSVP/guestbook delete, guestbook status change) so
+  // the same blocking overlay shows while it's in flight — matters on slow links.
+  const runSaving = async (fn) => {
+    setSaving(true);
+    try { return await fn(); }
+    finally { setSaving(false); }
+  };
+
   // While a save/add/reorder/delete is in flight (`saving`), lock page scroll so
   // the operator can't scroll or interact until it finishes — a blocking overlay
   // (rendered below) covers the screen, then the "Changes saved" toast appears.
@@ -1666,7 +1676,7 @@ export function AdminApp() {
         </div>
         </div>
         <div className="admin__body">
-          <AdminSaveCtx.Provider value={{ saving, dirty, save: saveChanges }}>
+          <AdminSaveCtx.Provider value={{ saving, dirty, save: saveChanges, run: runSaving }}>
           {activeTab === "dashboard" && <AdminDashboard goTab={setTab} />}
           {activeTab === "home" && <HomeAdmin />}
           {activeTab === "rsvps" && <RsvpsAdmin />}
