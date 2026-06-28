@@ -973,9 +973,9 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 [data-theme="terracotta"] .reveal { transform: translateY(30px) scale(0.93) rotate(-1deg); }
 [data-theme="blush"] .reveal { transform: translateY(24px) scale(0.97); }
 [data-theme="champagne"] .reveal { transform: translateY(10px); transition-duration: 1s; }
-/* .reveal is intentionally NOT disabled under reduce-motion — it's a gentle
-   fade/rise the owner wants visible. (Safety net still adds .is-in either way.) */
-.reveal, .reveal.is-in { opacity: 1 !important; transform: none !important; filter: none !important; transition: none !important; animation: none !important; }
+/* .reveal animates regardless of reduce-motion (owner preference) — it's a gentle
+   fade/rise. NOTE: a blanket ".reveal{opacity:1!important;transition:none}" rule
+   here previously disabled ALL reveals globally — keep it removed. */
 
 /* --- Floating home decorations (whole-page fixed layer) --------------------*/
 .decor { position: fixed; inset: 0; z-index: 40; overflow: hidden; pointer-events: none; }
