@@ -280,6 +280,7 @@ function NotFoundSite() {
 export function App() {
   const route = useRoute();
   const { settings, notFound } = useStore();
+  const loading = Store.get().loading; // re-run scroll-reveal once content hydrates
 
   React.useEffect(() => { loadClientData().catch((e) => console.error("load failed", e)); }, []);
 
@@ -316,9 +317,10 @@ export function App() {
     return () => window.removeEventListener("message", onMsg);
   }, []);
 
-  // theme-dependent scroll reveal animations
+  // theme-dependent scroll reveal animations — also re-runs when `loading` flips
+  // false so the elements exist (home content hydrates async after first mount).
   useEffect(() => {
-    if (route === "admin") return;
+    if (route === "admin" || loading) return;
     if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const sel = "main .sec-head, main .story-row, main .info-card, main .card, main .gb-card, main .sched-cards__item, main .sched-cols__row, main .sched-min__row, main .countdown, main .hero__names, main .hero__welcome, main .hero__date, main .faq-item, main .divider-mark, main #home-rsvp h2, main #home-rsvp p, main #home-rsvp .btn, main #home-countdown h2, main #home-countdown > .container p";
     const t = setTimeout(() => {
@@ -347,7 +349,7 @@ export function App() {
       App._cleanup = () => { cancelAnimationFrame(raf); clearTimeout(safety); };
     }, 40);
     return () => { clearTimeout(t); if (App._cleanup) App._cleanup(); };
-  }, [route]);
+  }, [route, loading]);
 
   // Gate the render AFTER all hooks above (rules of hooks: hook count must be
   // stable across renders — an early return between hooks crashes on hydrate).
