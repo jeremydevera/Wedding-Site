@@ -105,3 +105,14 @@ export async function saveClientData() {
   const { error } = await supabase.from("clients").update(stateToClientRow(Store.get())).eq("id", clientId);
   if (error) { console.warn("[api] save failed:", error.message); throw error; }
 }
+
+// Upload an audio file to the public `audio` Storage bucket (superadmin-gated by
+// the bucket's RLS). Returns the public URL to store in the playlist.
+export async function uploadAudio(file, clientId) {
+  const safe = (file.name || "track").replace(/[^a-zA-Z0-9._-]/g, "_");
+  const path = `${clientId || "shared"}/${Date.now()}-${safe}`;
+  const { error } = await supabase.storage.from("audio").upload(path, file, { cacheControl: "31536000", upsert: false, contentType: file.type || "audio/mpeg" });
+  if (error) throw error;
+  const { data } = supabase.storage.from("audio").getPublicUrl(path);
+  return { url: data.publicUrl, path };
+}

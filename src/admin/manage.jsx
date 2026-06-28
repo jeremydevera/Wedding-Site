@@ -7,7 +7,7 @@ import { FX_LIST } from "@/lib/falling-fx.js";
 import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { signOut } from "@/lib/auth.js";
-import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb } from "@/lib/api.js";
+import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio } from "@/lib/api.js";
 import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
 import { visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel } from "@/lib/roles.js";
@@ -1430,6 +1430,99 @@ export function EntourageAdmin() {
   );
 }
 
+// --- Music admin (upload audio to Storage; superadmin-only content tab) -----
+export function TrackEditor({ open, track, onClose }) {
+  const { save: persistChanges } = React.useContext(AdminSaveCtx);
+  const [f, setF] = useState({ title: "", artist: "" });
+  useEffect(() => { if (track) setF({ title: track.title || "", artist: track.artist || "" }); }, [track, open]);
+  async function save() {
+    if (!track) return;
+    if (!f.title.trim()) { toast("Please enter a title.", "err"); return; }
+    Store.updateTrack(track.id, { title: f.title.trim(), artist: f.artist.trim() });
+    await persistChanges();
+    onClose();
+  }
+  return (
+    <Modal open={open} onClose={onClose} label="Track">
+      <SectionHead eyebrow="Music" title="Edit track" />
+      <Field label="Title" required id="trk-t"><Input id="trk-t" value={f.title} onChange={(e) => setF((p) => ({ ...p, title: e.target.value }))} placeholder="e.g. Perfect" /></Field>
+      <Field label="Artist" id="trk-a"><Input id="trk-a" value={f.artist} onChange={(e) => setF((p) => ({ ...p, artist: e.target.value }))} placeholder="e.g. Ed Sheeran" /></Field>
+      <div style={{ display: "flex", gap: 12, marginTop: 8, justifyContent: "flex-end" }}>
+        <Button variant="ghost" onClick={onClose}>Cancel</Button>
+        <Button variant="primary" onClick={save}>Save track</Button>
+      </div>
+    </Modal>
+  );
+}
+
+export function MusicAdmin() {
+  const { playlist, clientId } = useStore();
+  const { save: persistChanges } = React.useContext(AdminSaveCtx);
+  const tracks = playlist || [];
+  const fileRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+
+  async function onFiles(files) {
+    const list = [...(files || [])].filter((f) => f.type.startsWith("audio/"));
+    if (!list.length) { toast("Please choose audio files.", "err"); if (fileRef.current) fileRef.current.value = ""; return; }
+    setUploading(true);
+    let added = 0;
+    try {
+      for (const file of list) {
+        const { url } = await uploadAudio(file, clientId);
+        const title = (file.name || "").replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim();
+        Store.addTrack({ url, title: title || "Untitled", artist: "" });
+        added++;
+      }
+      await persistChanges();
+      toast(`Added ${added} track${added === 1 ? "" : "s"} — set the title & artist`);
+    } catch (e) { toast("Upload failed: " + (e.message || "error")); }
+    finally { setUploading(false); if (fileRef.current) fileRef.current.value = ""; }
+  }
+  const move = async (id, dir) => { Store.moveTrack(id, dir); await persistChanges(); };
+  const del = async (t) => { if (await confirmDialog({ title: "Delete track?", message: `Remove "${t.title}" from the playlist?`, confirmLabel: "Delete", danger: true })) { Store.deleteTrack(t.id); await persistChanges(); } };
+
+  return (
+    <div className="panel">
+      <div className="panel__head">
+        <div className="panel__title">Music Playlist <span style={{ color: "var(--muted)", fontSize: 15 }}>({tracks.length})</span></div>
+        <Button variant="primary" size="sm" disabled={uploading} onClick={() => fileRef.current && fileRef.current.click()}>{uploading ? "Uploading…" : "+ Upload audio"}</Button>
+        <input ref={fileRef} type="file" accept="audio/*" multiple style={{ display: "none" }} onChange={(e) => onFiles(e.target.files)} />
+      </div>
+      <div className="panel__body--flush table-wrap">
+        <table className="tbl">
+          <thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Preview</th><th></th></tr></thead>
+          <tbody>
+            {tracks.map((t, i) => (
+              <tr key={t.id}>
+                <td style={{ color: "var(--muted)" }}>{i + 1}</td>
+                <td><strong>{t.title}</strong></td>
+                <td style={{ color: "var(--ink-soft)" }}>{t.artist || "—"}</td>
+                <td><audio src={t.url} controls preload="none" style={{ height: 34, maxWidth: 200 }} /></td>
+                <td>
+                  <div className="row-actions">
+                    <button className="icon-btn" title="Move up" onClick={() => move(t.id, -1)} disabled={i === 0}>↑</button>
+                    <button className="icon-btn" title="Move down" onClick={() => move(t.id, 1)} disabled={i === tracks.length - 1}>↓</button>
+                    <button className="icon-btn" title="Edit title/artist" onClick={() => { setEditing(t); setEditOpen(true); }}>{Icon.edit({})}</button>
+                    <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => del(t)}>{Icon.trash({})}</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {tracks.length === 0 && <tr><td colSpan={5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No tracks yet — upload audio files to build the playlist.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      <div className="panel__foot">
+        <span className="panel__foot-hint">Plays as background music on the site (loops). Browsers may require a tap before audio starts. Saves automatically.</span>
+      </div>
+      <TrackEditor open={editOpen} track={editing} onClose={() => setEditOpen(false)} />
+    </div>
+  );
+}
+
 // --- Admin shell ------------------------------------------------------------
 export const ADMIN_TABS = [
   { key: "dashboard", label: "Dashboard", icon: "grid" },
@@ -1443,6 +1536,7 @@ export const ADMIN_TABS = [
   { key: "details", label: "Details", icon: "rings" },
   { key: "venue", label: "Venue & Map", icon: "pin" },
   { key: "entourage", label: "Entourage", icon: "user" },
+  { key: "music", label: "Music", icon: "play" },
   { key: "settings", label: "Settings", icon: "gear" },
 ];
 
@@ -1522,6 +1616,11 @@ export function AdminApp() {
   const exitToConsole = () => window.location.assign("/");
   return (
     <div className={"admin" + (isSuper ? " admin--sa" : "")}>
+      {saving && (
+        <div className="admin-saving" role="status" aria-live="polite" aria-label="Saving">
+          <div className="admin-saving__box"><span className="admin-saving__spin" aria-hidden="true" />Saving…</div>
+        </div>
+      )}
       {menuOpen && <div className="admin__overlay" onClick={() => setMenuOpen(false)} />}
       <aside className={"admin__side" + (menuOpen ? " admin__side--open" : "")}>
         <button className="admin__drawer-close" onClick={() => setMenuOpen(false)} aria-label="Close menu">{Icon.close({})}</button>
@@ -1578,6 +1677,7 @@ export function AdminApp() {
           {activeTab === "details" && <DetailsAdmin />}
           {activeTab === "venue" && <VenueAdmin />}
           {activeTab === "entourage" && <EntourageAdmin />}
+          {activeTab === "music" && <MusicAdmin />}
           {activeTab === "qr" && <QrAdmin />}
           {activeTab === "settings" && <SettingsAdmin />}
           {activeTab === "overview" && <SuperOverview />}

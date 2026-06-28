@@ -158,6 +158,7 @@ export function defaultState() {
     venueCards: SEED_VENUE_CARDS,
     detailCards: SEED_DETAIL_CARDS,
     entourage: SEED_ENTOURAGE,
+    playlist: [], // music tracks: { id, url, title, artist } (audio in Supabase Storage)
     guestbook: SEED_GUESTBOOK,
     rsvps: SEED_RSVPS,
     media: SEED_MEDIA, // {id, type:'photo'|'video', category, dataUrl, src, name, message, status, size, ratio, createdAt}
@@ -473,6 +474,27 @@ export const Store = {
       [arr[i], arr[j]] = [arr[j], arr[i]];
       return { ...g, people: arr };
     }) };
+    persist(); emit();
+  },
+  // ---- Music playlist (audio in Supabase Storage; rows hold url+title+artist) ----
+  addTrack(track) {
+    _state = { ..._state, playlist: [...(_state.playlist || []), { id: uid(), url: track.url, title: track.title || "Untitled", artist: track.artist || "" }] };
+    persist(); emit();
+  },
+  updateTrack(id, patch) {
+    _state = { ..._state, playlist: (_state.playlist || []).map((t) => (t.id === id ? { ...t, ...patch } : t)) };
+    persist(); emit();
+  },
+  deleteTrack(id) {
+    _state = { ..._state, playlist: (_state.playlist || []).filter((t) => t.id !== id) };
+    persist(); emit();
+  },
+  moveTrack(id, dir) {
+    const arr = [...(_state.playlist || [])];
+    const i = arr.findIndex((t) => t.id === id), j = i + dir;
+    if (i < 0 || j < 0 || j >= arr.length) return;
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+    _state = { ..._state, playlist: arr };
     persist(); emit();
   },
   resetAll() {

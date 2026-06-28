@@ -17,7 +17,7 @@ function venueCardsFrom(content) {
 export function clientToState(client) {
   const content = client.content || {};
   const theme = client.theme || {};
-  const { schedule, story, faq, quiz, venueCards, detailCards, entourage, venueParking, venueArrival, venueWeather, ...contentRest } = content;
+  const { schedule, story, faq, quiz, venueCards, detailCards, entourage, playlist, venueParking, venueArrival, venueWeather, ...contentRest } = content;
   return {
     clientId: client.id,
     settings: {
@@ -34,6 +34,7 @@ export function clientToState(client) {
     venueCards: venueCardsFrom(content),
     detailCards: Array.isArray(detailCards) ? detailCards : SEED_DETAIL_CARDS,
     entourage: Array.isArray(entourage) ? entourage : SEED_ENTOURAGE,
+    playlist: Array.isArray(playlist) ? playlist : [],
   };
 }
 
@@ -46,7 +47,7 @@ export function stateToClientRow(state) {
     template_key: theme,
     event_type: eventType,
     theme: {},
-    content: { ...rest, schedule: state.schedule, story: state.story, faq: state.faq, quiz: state.quiz, venueCards: state.venueCards, detailCards: state.detailCards, entourage: state.entourage },
+    content: { ...rest, schedule: state.schedule, story: state.story, faq: state.faq, quiz: state.quiz, venueCards: state.venueCards, detailCards: state.detailCards, entourage: state.entourage, playlist: state.playlist },
   };
 }
 

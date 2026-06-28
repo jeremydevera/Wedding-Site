@@ -3,6 +3,7 @@ import { go } from "@/lib/nav.js";
 import { useStore } from "@/lib/store.jsx";
 import { egTintGradient } from "@/themes";
 import { Button, Countdown, FloatingDecor, Icon, Placeholder, SectionHead, mapDirUrl, mapEmbedUrl } from "@/ui/components.jsx";
+import { PlaylistView } from "@/features/music.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // ============================================================================
@@ -261,7 +262,7 @@ export function EnvelopeInvite() {
 }
 
 export function Home() {
-  const { settings, story, schedule, entourage } = useStore();
+  const { settings, story, schedule, entourage, playlist } = useStore();
   const s = settings;
 
   // replay the "Will you be there?" rise-in every time it scrolls into view
@@ -358,6 +359,9 @@ export function Home() {
 
       {/* ENTOURAGE — groups of people (Groomsmen, Bridesmaids, …) */}
       <EntourageView groups={entourage} />
+
+      {/* MUSIC PLAYLIST — tap to play; floating player handles playback */}
+      <PlaylistView tracks={playlist} />
     </div>
   );
 }
