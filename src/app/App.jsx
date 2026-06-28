@@ -320,7 +320,7 @@ export function App() {
   useEffect(() => {
     if (route === "admin") return;
     if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const sel = "main .sec-head, main .story-row, main .info-card, main .card, main .gb-card, main .sched-cards__item, main .sched-cols__row, main .sched-min__row, main .countdown, main .hero__names, main .hero__welcome, main .hero__date, main .faq-item, main .divider-mark";
+    const sel = "main .sec-head, main .story-row, main .info-card, main .card, main .gb-card, main .sched-cards__item, main .sched-cols__row, main .sched-min__row, main .countdown, main .hero__names, main .hero__welcome, main .hero__date, main .faq-item, main .divider-mark, main #home-rsvp h2, main #home-rsvp p, main #home-rsvp .btn, main #home-countdown h2, main #home-countdown > .container p";
     const t = setTimeout(() => {
       const els = Array.from(document.querySelectorAll(sel));
       const counts = new Map();
