@@ -1441,7 +1441,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* with 2+ songs the card goes side-by-side: player left, playlist right */
 .vinyl-card--row { max-width: 760px; flex-direction: row; align-items: center; gap: 36px; }
 .vinyl-main { display: flex; flex-direction: column; align-items: center; gap: 26px; flex: 0 0 auto; width: 250px; max-width: 100%; }
-.vinyl-aside { flex: 1 1 auto; min-width: 0; align-self: stretch; display: flex; flex-direction: column; gap: 10px; justify-content: flex-start; border-left: 1px solid var(--line); padding-left: 32px; }
+.vinyl-aside { flex: 1 1 auto; min-width: 0; align-self: flex-start; display: flex; flex-direction: column; gap: 10px; justify-content: flex-start; border-left: 1px solid var(--line); padding-left: 32px; }
 .vinyl-aside__head { font-family: var(--font-body); font-size: 11px; letter-spacing: .24em; text-transform: uppercase; color: var(--muted); padding-left: 12px; }
 @media (max-width: 640px) {
   .vinyl-card--row { flex-direction: column; align-items: center; max-width: 460px; gap: 24px; }
