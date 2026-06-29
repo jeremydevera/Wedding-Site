@@ -374,7 +374,7 @@ export function Home() {
       <section className="block block--tint" id="home-schedule">
         <div className="container">
           <SectionHead center eyebrow="The Day" title="A glimpse of the schedule" />
-          <ScheduleView items={schedule.slice(0, 3)} style="alt" />
+          <ScheduleView items={schedule.slice(0, 3)} style={s.homeTimelineLayout === "horizontal" ? "horizontal" : "alt"} />
           {schedule.length > 0 && (
             <div style={{ textAlign: "center", marginTop: 20 }}>
               <Button variant="ghost" onClick={() => go("schedule")}>See the full timeline {Icon.arrow({})}</Button>
@@ -409,19 +409,16 @@ export function AttireView({ groups }) {
             const pal = g.palette || [];
             return (
               <div className="attire-card" key={g.id}>
-                {/* With a photo, show it + palette dots below. Without a photo,
-                    the tile is filled with the palette colours so it never
-                    looks like an empty box. */}
-                <div className={"attire-card__img" + (g.image ? "" : " attire-card__img--pal")}>
-                  {g.image
-                    ? <img src={g.image} alt={g.name || "Attire"} />
-                    : pal.length
-                      ? pal.map((c, i) => <span key={i} className="attire-card__band" style={{ background: c }} />)
-                      : <span className="attire-card__ph">{Icon.user({})}</span>}
-                </div>
+                {/* Only show the image area when a photo was uploaded — no photo
+                    means no box (name + description + palette dots only). */}
+                {g.image && (
+                  <div className="attire-card__img">
+                    <img src={g.image} alt={g.name || "Attire"} />
+                  </div>
+                )}
                 {g.name ? <div className="attire-card__name">{g.name}</div> : null}
                 {g.desc ? <div className="attire-card__desc">{g.desc}</div> : null}
-                {g.image && pal.length > 0 && (
+                {pal.length > 0 && (
                   <div className="attire-card__palette">
                     {pal.map((c, i) => <span key={i} className="attire-card__swatch" style={{ background: c }} title={c} />)}
                   </div>
@@ -584,6 +581,23 @@ export function ScheduleView({ items, style }) {
             </div>
           </div>
         ))}
+      </div>
+    );
+  }
+  if (s === "horizontal") {
+    return (
+      <div className="timeline-h">
+        <div className="timeline-h__track">
+          {items.map((it, i) => (
+            <div className="tl-h-item" key={i}>
+              <div className="tl-time">{it.time}</div>
+              <span className="tl-h-dot" />
+              <h3 className="tl-h-title">{it.title}</h3>
+              <p className="tl-desc">{it.desc}</p>
+              {it.loc && <div className="tl-loc">{Icon.pin({})} {it.loc}</div>}
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

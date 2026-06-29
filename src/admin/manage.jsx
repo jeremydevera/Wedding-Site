@@ -1285,6 +1285,7 @@ export function HomeAdmin() {
     ...(isSuper ? [
       { k: "music", label: "Music playlist", icon: "play" },
       { k: "entourage", label: "Entourage", icon: "user" },
+      { k: "timeline", label: "Timeline", icon: "calendar" },
       { k: "attire", label: "Attire", icon: "book" },
       { k: "maps", label: "Google Maps", icon: "pin" },
     ] : []),
@@ -1343,6 +1344,33 @@ export function HomeAdmin() {
           </div>
           <SaveFooter />
         </>
+      )}
+
+      {isSuper && active === "timeline" && (
+        <div className="panel">
+          <div className="panel__head"><div className="panel__title">Home timeline layout</div></div>
+          <div className="panel__body">
+            <p style={{ color: "var(--muted)", margin: "0 0 18px", fontSize: 14 }}>
+              How the “A glimpse of the schedule” timeline shows on the home page. Edit the events themselves in the Schedule tab. Saves instantly.
+            </p>
+            <div className="tl-pick">
+              {[
+                { v: "vertical", label: "Vertical", sub: "Events stacked down a centre rail",
+                  art: <svg viewBox="0 0 64 48" width="64" height="48" fill="none"><line x1="16" y1="6" x2="16" y2="42" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /><circle cx="16" cy="12" r="3.5" fill="currentColor" /><circle cx="16" cy="24" r="3.5" fill="currentColor" /><circle cx="16" cy="36" r="3.5" fill="currentColor" /><rect x="26" y="10" width="28" height="4" rx="2" fill="currentColor" opacity="0.5" /><rect x="26" y="22" width="28" height="4" rx="2" fill="currentColor" opacity="0.5" /><rect x="26" y="34" width="28" height="4" rx="2" fill="currentColor" opacity="0.5" /></svg> },
+                { v: "horizontal", label: "Horizontal", sub: "Events along a left-to-right rail (scrolls)",
+                  art: <svg viewBox="0 0 64 48" width="64" height="48" fill="none"><line x1="6" y1="20" x2="58" y2="20" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /><circle cx="16" cy="20" r="3.5" fill="currentColor" /><circle cx="32" cy="20" r="3.5" fill="currentColor" /><circle cx="48" cy="20" r="3.5" fill="currentColor" /><rect x="9" y="30" width="14" height="4" rx="2" fill="currentColor" opacity="0.5" /><rect x="25" y="30" width="14" height="4" rx="2" fill="currentColor" opacity="0.5" /><rect x="41" y="30" width="14" height="4" rx="2" fill="currentColor" opacity="0.5" /></svg> },
+              ].map((o) => (
+                <button key={o.v} type="button"
+                  className={"tl-pick__opt" + ((f.homeTimelineLayout || "vertical") === o.v ? " is-active" : "")}
+                  onClick={() => toggleShow("homeTimelineLayout", o.v)}>
+                  <span className="tl-pick__art">{o.art}</span>
+                  <span className="tl-pick__label">{o.label}</span>
+                  <span className="tl-pick__sub">{o.sub}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
 
       {isSuper && active === "music" && (

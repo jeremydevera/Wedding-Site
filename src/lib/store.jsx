@@ -55,6 +55,7 @@ export const DEFAULT_SETTINGS = {
   decorOn: false,
   decorStyle: "petals",
   scheduleStyle: "line",
+  homeTimelineLayout: "vertical",   // home "glimpse of the schedule" timeline: vertical | horizontal
   themeAccent: "",
   displayFont: "Cormorant Garamond",
   bodyFont: "Jost",

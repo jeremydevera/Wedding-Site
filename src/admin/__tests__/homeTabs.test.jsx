@@ -32,7 +32,7 @@ describe("Home tab — folder sub-tabs", () => {
     clickByText(container, "nav.admin__nav button", "Home");
 
     expect(folderLabels(container)).toEqual([
-      "Couple & Event", "Home page invitation", "Music playlist", "Entourage", "Attire", "Google Maps",
+      "Couple & Event", "Home page invitation", "Music playlist", "Entourage", "Timeline", "Attire", "Google Maps",
     ]);
 
     // Couple & Event (default) → explicit Save button
@@ -64,6 +64,12 @@ describe("Home tab — folder sub-tabs", () => {
     expect(container.textContent).toMatch(/Show map on the home page/);
     expect(container.textContent).toMatch(/Venue address/);
     expect(hasButton(container, "Save changes")).toBe(true);
+
+    // Timeline → vertical/horizontal layout picker
+    clickByText(container, ".folders .folder", "Timeline");
+    expect(container.textContent).toMatch(/Home timeline layout/);
+    expect(container.textContent).toMatch(/Vertical/);
+    expect(container.textContent).toMatch(/Horizontal/);
   });
 
   it("owner: Home shows only Couple & Event + invitation (no Music/Entourage)", () => {

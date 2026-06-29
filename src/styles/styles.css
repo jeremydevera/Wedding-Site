@@ -328,6 +328,28 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
   .timeline--alt .tl-dot { left: auto; right: -7px; }
   .timeline--alt .tl-item:nth-child(even) .tl-dot { left: -8px; right: auto; }
 }
+/* Horizontal timeline — events along a left-to-right rail; scrolls on overflow. */
+.timeline-h { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; padding-bottom: 8px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+.timeline-h::-webkit-scrollbar { height: 6px; }
+.timeline-h::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
+.timeline-h__track { display: flex; gap: 26px; position: relative; min-width: min-content; padding: 0 8px; }
+.timeline-h__track::before { content: ""; position: absolute; top: 42px; left: 8px; right: 8px; height: 3px; border-radius: 3px; background: color-mix(in oklch, var(--accent) 35%, var(--line)); }
+.tl-h-item { position: relative; flex: 0 0 210px; max-width: 210px; padding-top: 64px; text-align: center; }
+.tl-h-item .tl-time { position: absolute; top: 0; left: 0; right: 0; }
+.tl-h-dot { position: absolute; top: 42px; left: 50%; transform: translate(-50%, -50%); width: 15px; height: 15px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); box-shadow: 0 0 0 4px var(--bg); }
+.tl-h-title { font-size: 22px; margin: 0 0 6px; }
+.tl-h-item .tl-loc { justify-content: center; }
+@media (max-width: 560px) { .tl-h-item { flex-basis: 180px; max-width: 180px; } }
+/* Admin: home timeline layout picker (Home → Timeline) */
+.tl-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 520px; }
+.tl-pick__opt { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 22px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); cursor: pointer; text-align: center; transition: border-color .15s ease, background .15s ease; }
+.tl-pick__opt:hover { border-color: var(--accent); }
+.tl-pick__opt.is-active { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.tl-pick__art { color: var(--muted); display: inline-flex; }
+.tl-pick__opt.is-active .tl-pick__art { color: var(--accent); }
+.tl-pick__label { font-weight: 600; color: var(--ink); }
+.tl-pick__sub { font-size: 12px; color: var(--muted); line-height: 1.3; }
+@media (max-width: 520px) { .tl-pick { grid-template-columns: 1fr; } }
 
 /* --- Story -----------------------------------------------------------------*/
 .sched-cards { display: grid; gap: 16px; max-width: 720px; margin: 0 auto; }
@@ -1410,12 +1432,9 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .attire-card { flex: 0 1 230px; max-width: 260px; min-width: 190px; text-align: center; display: flex; flex-direction: column; align-items: center; }
 .attire-card__img { width: 100%; aspect-ratio: 3 / 4; border-radius: calc(var(--radius) + 6px); overflow: hidden; background: var(--surface-2); border: 1px solid var(--line); display: grid; place-items: center; }
 .attire-card__img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-/* No photo → fill the tile with the palette colours (equal vertical bands). */
-.attire-card__img--pal { display: flex; }
-.attire-card__band { flex: 1 1 0; height: 100%; }
-.attire-card__ph { color: var(--muted); opacity: .45; }
-.attire-card__ph svg { width: 52px; height: 52px; }
 .attire-card__name { font-family: var(--font-display); font-size: 21px; color: var(--ink); margin-top: 15px; letter-spacing: .01em; }
+/* No-photo tiles start with the name, so don't add the image-gap on top. */
+.attire-card > .attire-card__name:first-child { margin-top: 0; }
 .attire-card__desc { font-size: 13px; color: var(--ink-soft); line-height: 1.55; margin-top: 6px; max-width: 240px; }
 .attire-card__palette { display: flex; flex-wrap: wrap; gap: 9px; justify-content: center; margin-top: 12px; }
 .attire-card__swatch { width: 26px; height: 26px; border-radius: 50%; border: 1px solid color-mix(in oklch, var(--ink) 16%, transparent); box-shadow: inset 0 0 0 2px rgba(255,255,255,.35); }
