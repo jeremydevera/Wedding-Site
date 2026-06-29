@@ -32,7 +32,7 @@ describe("Home tab — folder sub-tabs", () => {
     clickByText(container, "nav.admin__nav button", "Home");
 
     expect(folderLabels(container)).toEqual([
-      "Couple & Event", "Home page invitation", "Music playlist", "Entourage",
+      "Couple & Event", "Home page invitation", "Music playlist", "Entourage", "Google Maps",
     ]);
 
     // Couple & Event (default) → explicit Save button
@@ -42,14 +42,22 @@ describe("Home tab — folder sub-tabs", () => {
     clickByText(container, ".folders .folder", "Home page invitation");
     expect(hasButton(container, "Save changes")).toBe(true);
 
-    // Music playlist → upload (save) action present
+    // Music playlist → show toggle + upload (save) action present
     clickByText(container, ".folders .folder", "Music playlist");
+    expect(container.textContent).toMatch(/Show music player on the home page/);
     expect(container.textContent).toMatch(/Music Playlist/);
     expect(hasButton(container, "+ Upload audio")).toBe(true);
 
-    // Entourage → add-group (save) action present
+    // Entourage → show toggle + add-group (save) action present
     clickByText(container, ".folders .folder", "Entourage");
+    expect(container.textContent).toMatch(/Show entourage on the home page/);
     expect(hasButton(container, "+ Add group")).toBe(true);
+
+    // Google Maps → show toggle + venue/map fields + Save
+    clickByText(container, ".folders .folder", "Google Maps");
+    expect(container.textContent).toMatch(/Show map on the home page/);
+    expect(container.textContent).toMatch(/Venue address/);
+    expect(hasButton(container, "Save changes")).toBe(true);
   });
 
   it("owner: Home shows only Couple & Event + invitation (no Music/Entourage)", () => {

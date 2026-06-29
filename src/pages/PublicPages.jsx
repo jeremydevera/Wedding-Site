@@ -349,7 +349,7 @@ export function Home() {
       )}
 
       {/* MAP — venue location right after the invitation (map only, framed) */}
-      {homeMapUrl && (
+      {s.showMap !== false && homeMapUrl && (
         <section className="block" id="home-map">
           <div className="container">
             <SectionHead center eyebrow="The Venue" title={s.venueName} />
@@ -384,10 +384,10 @@ export function Home() {
       </section>
 
       {/* MUSIC — vinyl player now sits right after the schedule glimpse */}
-      <VinylPlayer tracks={playlist} />
+      {s.showMusic !== false && <VinylPlayer tracks={playlist} />}
 
       {/* ENTOURAGE — groups of people (Groomsmen, Bridesmaids, …) */}
-      <EntourageView groups={entourage} />
+      {s.showEntourage !== false && <EntourageView groups={entourage} />}
     </div>
   );
 }

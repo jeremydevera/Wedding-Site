@@ -1270,18 +1270,22 @@ export function SettingsAdmin() {
 // Settings → General) plus the welcome/invitation section guests see.
 export function HomeAdmin() {
   const { settings, auth } = useStore();
+  const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const f = settings;
   const set = (k) => (e) => Store.updateSettings({ [k]: e.target && e.target.type === "checkbox" ? e.target.checked : e.target.value });
+  // flip a home-section visibility flag and save immediately (auto-save tabs)
+  const toggleShow = async (k, v) => { Store.updateSettings({ [k]: v }); await persistChanges(); };
   const isSuper = auth.role === "superadmin";
-  // Folder sub-tabs. Music + Entourage are superadmin-managed content, so owners
-  // only get Couple & Event + the home-page invitation; superadmin-on-a-client
-  // gets all four.
+  // Folder sub-tabs. Music, Entourage + Google Maps are superadmin-managed
+  // content, so owners only get Couple & Event + the home-page invitation;
+  // superadmin-on-a-client gets all five.
   const TABS = [
     { k: "couple", label: "Couple & Event", icon: "rings" },
     { k: "invite", label: "Home page invitation", icon: "home" },
     ...(isSuper ? [
       { k: "music", label: "Music playlist", icon: "play" },
       { k: "entourage", label: "Entourage", icon: "user" },
+      { k: "maps", label: "Google Maps", icon: "pin" },
     ] : []),
   ];
   const [tab, setTab] = useState("couple");
@@ -1340,8 +1344,47 @@ export function HomeAdmin() {
         </>
       )}
 
-      {isSuper && active === "music" && <MusicAdmin />}
-      {isSuper && active === "entourage" && <EntourageAdmin />}
+      {isSuper && active === "music" && (
+        <>
+          <div className="panel">
+            <div className="panel__body">
+              <AdminToggle label="Show music player on the home page" desc="Turn the playlist section on or off for guests. Saves instantly."
+                checked={f.showMusic !== false} onChange={(v) => toggleShow("showMusic", v)} />
+            </div>
+          </div>
+          <MusicAdmin />
+        </>
+      )}
+      {isSuper && active === "entourage" && (
+        <>
+          <div className="panel">
+            <div className="panel__body">
+              <AdminToggle label="Show entourage on the home page" desc="Turn the entourage section on or off for guests. Saves instantly."
+                checked={f.showEntourage !== false} onChange={(v) => toggleShow("showEntourage", v)} />
+            </div>
+          </div>
+          <EntourageAdmin />
+        </>
+      )}
+      {isSuper && active === "maps" && (
+        <>
+          <div className="panel">
+            <div className="panel__head"><div className="panel__title">Google Maps</div></div>
+            <div className="panel__body">
+              <AdminToggle label="Show map on the home page" desc="The venue map shown right after the invitation. Saves instantly."
+                checked={f.showMap !== false} onChange={(v) => toggleShow("showMap", v)} />
+              <div style={{ height: 20 }} />
+              <Field label="Venue name" id="m-vn"><Input id="m-vn" value={f.venueName} onChange={set("venueName")} /></Field>
+              <Field label="Venue address" id="m-va"><Input id="m-va" value={f.venueAddress} onChange={set("venueAddress")} /></Field>
+              <Field label="Map location" hint="Search a place, then click the map or drag the pin to the exact spot. This map is shared with the Venue page. Click Save changes to publish." id="m-map">
+                <LocationPicker value={f.mapQuery} lat={f.mapLat} lng={f.mapLng}
+                  onChange={({ query, lat, lng }) => Store.updateSettings({ mapQuery: query, mapLat: lat, mapLng: lng })} />
+              </Field>
+            </div>
+          </div>
+          <SaveFooter />
+        </>
+      )}
     </div>
   );
 }

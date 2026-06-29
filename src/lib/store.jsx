@@ -46,6 +46,11 @@ export const DEFAULT_SETTINGS = {
   envTitleSize: 5, // envelope cover title size, 1–10 scale; maps to a cqw fraction that scales with the envelope
   arrangeEnabled: false,
   mapQuery: "Lipa, Batangas, Philippines",
+  // Home-page section visibility (toggled in the admin Home tab). Default on;
+  // read as `!== false` everywhere so existing clients without the flag show.
+  showMusic: true,
+  showEntourage: true,
+  showMap: true,
   decorOn: false,
   decorStyle: "petals",
   scheduleStyle: "line",
