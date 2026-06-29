@@ -83,61 +83,92 @@ function FloatingPlayer() {
         <span className="music-player__title">{cur.title}</span>
         {cur.artist ? <span className="music-player__artist">{cur.artist}</span> : null}
       </div>
-      {st.tracks.length > 1 && <button className="music-player__next" onClick={nextTrack} aria-label="Next track">⏭</button>}
+      {st.tracks.length > 1 && <button className="music-player__next" onClick={nextTrack} aria-label="Next track">{"⏭"}</button>}
     </div>
   );
 }
 
-// Home vinyl player: spinning record (when playing) + now-playing title/artist,
-// live progress (seekable), controls, and a compact track list for multi-track.
+// Home vinyl player — a 1:1 port of VinylPlayer.dc.html (the default "stacked"
+// variant): dark card, spinning 3-layer disk with curved artist text on the
+// label, info column, live progress, and the three transport controls. Inline
+// styles mirror the source template's exact values; wired to the shared engine.
+const VP = {
+  bg: "#161618", text: "#f2f2f2", accent: "#d8d8d8",
+  labelBg: "#d8d8d8", labelText: "#15151a",
+  font: "'Space Grotesk', system-ui, sans-serif",
+};
 export function VinylPlayer({ tracks }) {
   const st = useMusic();
+  const uid = "vp-" + React.useId().replace(/:/g, "");
   const list = tracks || [];
   if (!list.length) return null;
   const cur = list[st.index] || list[0];
   const frac = st.duration ? st.time / st.duration : 0;
-  const initial = (cur.title || "♪").trim().charAt(0).toUpperCase() || "♪";
   return (
     <section className="block" id="home-playlist">
-      <div className="container container--narrow">
-        <div className="sec-head sec-head--center"><div className="eyebrow">Press Play</div><h2 className="sec-head__title">Our Song</h2></div>
-        <div className="vinyl">
-          <div className="vinyl__disc" aria-hidden="true">
-            <div className="vinyl__platter is-spinning">
-              <div className="vinyl__label"><span>{initial}</span></div>
-              <div className="vinyl__hole" />
+      <div style={{
+        width: "100%", maxWidth: 420, margin: "0 auto", boxSizing: "border-box",
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 26,
+        padding: "38px 34px", background: VP.bg, color: VP.text, fontFamily: VP.font,
+        position: "relative", overflow: "hidden", borderRadius: 20,
+      }}>
+        {/* disk */}
+        <div style={{ position: "relative", flex: "0 0 auto", width: 230, height: 230, borderRadius: "50%", boxShadow: "0 18px 40px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.4)" }}>
+          {/* spinning base: grooves + record gradient */}
+          <div style={{ position: "absolute", inset: 0, borderRadius: "50%", animation: "vp-spin 3.4s linear infinite", background: "repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 0.5px, rgba(0,0,0,0) 0.6px, rgba(0,0,0,0) 2.4px), radial-gradient(circle at 50% 50%, #3a3a3d 0%, #232325 26%, #0d0d0e 27%, #131315 60%, #050506 100%)" }}>
+            {/* center label with curved artist text */}
+            <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "38%", height: "38%", borderRadius: "50%", background: VP.labelBg, boxShadow: "0 0 0 1px rgba(0,0,0,0.25), inset 0 0 14px rgba(0,0,0,0.18)", overflow: "hidden" }}>
+              <svg viewBox="0 0 100 100" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible" }}>
+                <defs><path id={uid} d="M 22,50 A 28,28 0 1 1 78,50" fill="none" /></defs>
+                <text fill={VP.labelText} style={{ fontFamily: VP.font, fontSize: "5.4px", fontWeight: 600, letterSpacing: "0.5px", opacity: 0.9 }}>
+                  <textPath href={"#" + uid} startOffset="50%" textAnchor="middle">{(cur.artist || "").toUpperCase()}</textPath>
+                </text>
+              </svg>
             </div>
-            <div className="vinyl__gloss is-spinning" />
-            <div className="vinyl__specular" />
+            {/* spindle hole */}
+            <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "7%", height: "7%", borderRadius: "50%", background: VP.bg, boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.45), 0 0 2px rgba(0,0,0,0.4)" }} />
           </div>
-          <div className="vinyl__info">
-            <div className="vinyl__kicker">Now Playing</div>
-            <h3 className="vinyl__title">{cur.title}</h3>
-            <div className="vinyl__artist">{cur.artist || " "}</div>
-            <div className="vinyl__bar" onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); seekFrac((e.clientX - r.left) / r.width); }} role="progressbar" aria-valuenow={Math.round(frac * 100)}>
-              <span className="vinyl__fill" style={{ width: (frac * 100) + "%" }} />
+          {/* spinning glossy sheen */}
+          <div style={{ position: "absolute", inset: 0, borderRadius: "50%", pointerEvents: "none", mixBlendMode: "screen", animation: "vp-spin 3.4s linear infinite", background: "conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,0) 0deg, rgba(255,255,255,0.04) 16deg, rgba(255,255,255,0.20) 50deg, rgba(255,255,255,0.05) 84deg, rgba(255,255,255,0) 108deg, rgba(255,255,255,0) 180deg, rgba(255,255,255,0.04) 196deg, rgba(255,255,255,0.15) 228deg, rgba(255,255,255,0.04) 262deg, rgba(255,255,255,0) 286deg, rgba(255,255,255,0) 360deg)" }} />
+          {/* fixed specular */}
+          <div style={{ position: "absolute", inset: 0, borderRadius: "50%", pointerEvents: "none", mixBlendMode: "screen", background: "radial-gradient(circle at 32% 26%, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 38%)" }} />
+          {/* rim + sheen edge */}
+          <div style={{ position: "absolute", inset: 0, borderRadius: "50%", pointerEvents: "none", boxShadow: "inset 0 1px 1px rgba(255,255,255,0.18), inset 0 0 0 1px rgba(255,255,255,0.06), inset 0 -2px 6px rgba(0,0,0,0.5)" }} />
+        </div>
+
+        {/* info + controls */}
+        <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 18, width: "100%" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center", textAlign: "center", maxWidth: "100%" }}>
+            <div style={{ fontFamily: VP.font, fontSize: 10, letterSpacing: "0.28em", textTransform: "uppercase", color: VP.accent, opacity: 0.9 }}>Now Playing</div>
+            <div style={{ fontFamily: VP.font, fontSize: 30, fontWeight: 600, lineHeight: 1.05, letterSpacing: "-0.01em" }}>{cur.title}</div>
+            <div style={{ fontSize: 14, opacity: 0.6, letterSpacing: "0.02em" }}>{cur.artist || " "}</div>
+          </div>
+
+          {/* progress */}
+          <div style={{ width: "100%", maxWidth: 220, display: "flex", flexDirection: "column", gap: 7, alignItems: "center" }}>
+            <div onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); seekFrac((e.clientX - r.left) / r.width); }} role="progressbar" aria-valuenow={Math.round(frac * 100)} style={{ width: "100%", height: 3, borderRadius: 3, background: "rgba(128,128,128,0.25)", position: "relative", overflow: "hidden", cursor: "pointer" }}>
+              <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: (frac * 100) + "%", background: VP.accent, borderRadius: 3 }} />
             </div>
-            <div className="vinyl__times"><span>{fmt(st.time)}</span><span>{fmt(st.duration)}</span></div>
-            <div className="vinyl__controls">
-              <button className="vinyl__ctrl" onClick={prevTrack} disabled={list.length < 2} aria-label="Previous">⏮</button>
-              <button className="vinyl__ctrl vinyl__ctrl--play" onClick={toggle} aria-label={st.playing ? "Pause" : "Play"}>{st.playing ? "❚❚" : "►"}</button>
-              <button className="vinyl__ctrl" onClick={nextTrack} disabled={list.length < 2} aria-label="Next">⏭</button>
+            <div style={{ display: "flex", justifyContent: "space-between", width: "100%", fontFamily: VP.font, fontSize: 10, letterSpacing: "0.08em", opacity: 0.45 }}>
+              <span>{fmt(st.time)}</span><span>{fmt(st.duration)}</span>
             </div>
+          </div>
+
+          {/* controls */}
+          <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+            <button onClick={prevTrack} aria-label="Previous" className="vp-btn" style={{ cursor: "pointer", border: "none", background: "rgba(255,255,255,0.07)", color: VP.text, width: 46, height: 46, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zM20 6v12L9 12z" /></svg>
+            </button>
+            <button onClick={toggle} aria-label={st.playing ? "Pause" : "Play"} className="vp-btn" style={{ cursor: "pointer", border: "none", background: VP.accent, color: "#15151a", width: 62, height: 62, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, boxShadow: "0 8px 20px rgba(0,0,0,0.35)" }}>
+              {st.playing
+                ? <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="5" width="4" height="14" rx="1" /><rect x="13.5" y="5" width="4" height="14" rx="1" /></svg>
+                : <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>}
+            </button>
+            <button onClick={nextTrack} aria-label="Next" className="vp-btn" style={{ cursor: "pointer", border: "none", background: "rgba(255,255,255,0.07)", color: VP.text, width: 46, height: 46, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM4 6l11 6-11 6z" /></svg>
+            </button>
           </div>
         </div>
-        {list.length > 1 && (
-          <ul className="playlist playlist--compact">
-            {list.map((t, i) => (
-              <li className={"playlist__item" + (i === st.index ? " is-active" : "")} key={t.id}>
-                <button className="playlist__play" onClick={() => playIndex(i)} aria-label={"Play " + t.title}>{i === st.index && st.playing ? "❚❚" : "►"}</button>
-                <span className="playlist__meta">
-                  <span className="playlist__title">{t.title}</span>
-                  {t.artist ? <span className="playlist__artist">{t.artist}</span> : null}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
     </section>
   );
