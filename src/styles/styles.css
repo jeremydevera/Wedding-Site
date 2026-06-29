@@ -208,8 +208,10 @@ body.env-sealed main { padding-top: 0; }
 .hero__eyebrow { color: var(--accent-ink); }
 .hero__eyebrow::before, .hero__eyebrow::after { background: var(--accent-ink); opacity: 0.8; }
 .hero__names {
-  font-size: clamp(54px, 13vw, 150px); color: var(--accent-ink); margin: 18px 0 6px;
-  font-weight: 500; line-height: 0.96; text-shadow: 0 2px 30px rgba(0,0,0,.25);
+  font-size: clamp(54px, 13vw, 150px); color: var(--accent-ink); margin: 18px 0 0.18em;
+  /* line-height 1.0 (not <1) so the last name's descender (J, y, g) isn't clipped
+     into the date below; em-based bottom margin scales with the clamp font. */
+  font-weight: 500; line-height: 1.0; text-shadow: 0 2px 30px rgba(0,0,0,.25);
 }
 .hero__names .amp { font-style: italic; display: block; font-size: 0.42em; margin: 0.06em 0; opacity: 0.92; }
 .hero__date { color: var(--accent-ink); font-size: clamp(15px, 2.4vw, 20px); letter-spacing: 0.28em; text-transform: uppercase; font-weight: 500; margin-bottom: 30px; }
