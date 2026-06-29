@@ -329,15 +329,18 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
   .timeline--alt .tl-item:nth-child(even) .tl-dot { left: -8px; right: auto; }
 }
 /* Horizontal timeline — events along a left-to-right rail; scrolls on overflow. */
-.timeline-h { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; padding-bottom: 8px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+/* Flex parent + auto-margin track = centred when it fits, scrolls from the start
+   when it overflows (avoids the justify-content:center scroll-clipping bug). So
+   1–2 events sit centred, many events scroll. */
+.timeline-h { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; padding-bottom: 8px; display: flex; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
 .timeline-h::-webkit-scrollbar { height: 6px; }
 .timeline-h::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
-.timeline-h__track { display: flex; gap: 26px; position: relative; min-width: min-content; padding: 0 8px; }
+.timeline-h__track { --tl-h-gap: 30px; display: flex; gap: var(--tl-h-gap); position: relative; flex: 0 0 auto; margin: auto; }
 .tl-h-item { position: relative; flex: 0 0 210px; max-width: 210px; padding-top: 64px; text-align: center; }
 /* connector drawn PER item: a line from this dot to the NEXT one (width = item +
-   the 26px gap). The last item draws none, and nothing renders before the first
-   dot — so the rail always begins and ends on a dot, never a dangling stub. */
-.tl-h-item::after { content: ""; position: absolute; z-index: 0; top: 42px; left: 50%; width: calc(100% + 26px); height: 3px; border-radius: 3px; background: color-mix(in oklch, var(--accent) 35%, var(--line)); }
+   one gap, kept in sync via --tl-h-gap). The last item draws none, and nothing
+   renders before the first dot — the rail always begins and ends on a dot. */
+.tl-h-item::after { content: ""; position: absolute; z-index: 0; top: 42px; left: 50%; width: calc(100% + var(--tl-h-gap)); height: 3px; border-radius: 3px; background: color-mix(in oklch, var(--accent) 35%, var(--line)); }
 .tl-h-item:last-child::after { display: none; }
 .tl-h-item .tl-time { position: absolute; top: 0; left: 0; right: 0; }
 .tl-h-dot { position: absolute; z-index: 1; top: 42px; left: 50%; transform: translate(-50%, -50%); width: 15px; height: 15px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); }
