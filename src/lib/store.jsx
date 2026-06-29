@@ -51,6 +51,7 @@ export const DEFAULT_SETTINGS = {
   showMusic: true,
   showEntourage: true,
   showMap: true,
+  showAttire: true,
   decorOn: false,
   decorStyle: "petals",
   scheduleStyle: "line",
@@ -115,6 +116,14 @@ export const SEED_ENTOURAGE = [
   ] },
 ];
 
+// Attire guide — groups (Men, Women, Children, …), each with an example image
+// and a color palette (array of hex). Shown on the home page after the schedule.
+export const SEED_ATTIRE = [
+  { id: "att-men", name: "Men", image: "", palette: ["#1f2410", "#3a4422", "#0e0e0e"] },
+  { id: "att-women", name: "Women", image: "", palette: ["#6b7a3a", "#4a5320", "#b7a98a"] },
+  { id: "att-children", name: "Children", image: "", palette: ["#e6dcc3", "#cbb487", "#b59a6a"] },
+];
+
 export const SEED_VENUE_CARDS = [
   { t: "Parking", d: "Complimentary valet and self-parking available at the rear entrance from 2:00 PM." },
   { t: "Arrival", d: "Please arrive by 2:30 PM. The ceremony begins promptly — plan to be seated early." },
@@ -163,6 +172,7 @@ export function defaultState() {
     venueCards: SEED_VENUE_CARDS,
     detailCards: SEED_DETAIL_CARDS,
     entourage: SEED_ENTOURAGE,
+    attire: SEED_ATTIRE, // attire-guide groups: { id, name, image, palette:[hex] }
     playlist: [], // music tracks: { id, url, title, artist } (audio in Supabase Storage)
     guestbook: SEED_GUESTBOOK,
     rsvps: SEED_RSVPS,
@@ -479,6 +489,27 @@ export const Store = {
       [arr[i], arr[j]] = [arr[j], arr[i]];
       return { ...g, people: arr };
     }) };
+    persist(); emit();
+  },
+  // ---- Attire guide (groups with an example image + a color palette) ----
+  addAttireGroup(group) {
+    _state = { ..._state, attire: [...(_state.attire || []), { id: uid(), name: (group && group.name) || "New group", image: (group && group.image) || "", palette: (group && group.palette) || [] }] };
+    persist(); emit();
+  },
+  updateAttireGroup(id, patch) {
+    _state = { ..._state, attire: (_state.attire || []).map((g) => (g.id === id ? { ...g, ...patch } : g)) };
+    persist(); emit();
+  },
+  deleteAttireGroup(id) {
+    _state = { ..._state, attire: (_state.attire || []).filter((g) => g.id !== id) };
+    persist(); emit();
+  },
+  moveAttireGroup(id, dir) {
+    const arr = [...(_state.attire || [])];
+    const i = arr.findIndex((g) => g.id === id), j = i + dir;
+    if (i < 0 || j < 0 || j >= arr.length) return;
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+    _state = { ..._state, attire: arr };
     persist(); emit();
   },
   // ---- Music playlist (audio in Supabase Storage; rows hold url+title+artist) ----

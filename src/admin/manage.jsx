@@ -1285,6 +1285,7 @@ export function HomeAdmin() {
     ...(isSuper ? [
       { k: "music", label: "Music playlist", icon: "play" },
       { k: "entourage", label: "Entourage", icon: "user" },
+      { k: "attire", label: "Attire", icon: "book" },
       { k: "maps", label: "Google Maps", icon: "pin" },
     ] : []),
   ];
@@ -1364,6 +1365,17 @@ export function HomeAdmin() {
             </div>
           </div>
           <EntourageAdmin />
+        </>
+      )}
+      {isSuper && active === "attire" && (
+        <>
+          <div className="panel">
+            <div className="panel__body">
+              <AdminToggle label="Show attire guide on the home page" desc="The attire guide shown after the schedule. Saves instantly."
+                checked={f.showAttire !== false} onChange={(v) => toggleShow("showAttire", v)} />
+            </div>
+          </div>
+          <AttireAdmin />
         </>
       )}
       {isSuper && active === "maps" && (
@@ -1504,6 +1516,95 @@ export function EntourageAdmin() {
       </div>
       <EntourageGroupEditor open={groupOpen} group={editGroup} onClose={() => setGroupOpen(false)} />
       <EntouragePersonEditor open={personOpen} gid={personCtx.gid} person={personCtx.person} onClose={() => setPersonOpen(false)} />
+    </div>
+  );
+}
+
+// --- Attire guide admin (groups with an example image + a colour palette) ---
+export function AttireGroupEditor({ open, group, onClose }) {
+  const { save: persistChanges } = React.useContext(AdminSaveCtx);
+  const [f, setF] = useState({ name: "", image: "", palette: [] });
+  useEffect(() => {
+    if (group) setF({ name: group.name || "", image: group.image || "", palette: [...(group.palette || [])] });
+    else setF({ name: "", image: "", palette: [] });
+  }, [group, open]);
+  const isEdit = !!(group && group.id);
+  const setColor = (i, c) => setF((p) => ({ ...p, palette: p.palette.map((x, j) => (j === i ? c : x)) }));
+  const addColor = () => setF((p) => ({ ...p, palette: [...p.palette, "#c9a96a"] }));
+  const removeColor = (i) => setF((p) => ({ ...p, palette: p.palette.filter((_, j) => j !== i) }));
+  async function save() {
+    if (!f.name.trim()) { toast("Please enter a name.", "err"); return; }
+    const payload = { name: f.name.trim(), image: f.image, palette: f.palette };
+    if (isEdit) Store.updateAttireGroup(group.id, payload);
+    else Store.addAttireGroup(payload);
+    await persistChanges();
+    onClose();
+  }
+  return (
+    <Modal open={open} onClose={onClose} label="Attire group">
+      <SectionHead eyebrow="Attire" title={isEdit ? "Edit group" : "Add group"} />
+      <Field label="Name" required id="at-name"><Input id="at-name" value={f.name} onChange={(e) => setF((p) => ({ ...p, name: e.target.value }))} placeholder="e.g. Men, Women, Children" /></Field>
+      <Field label="Example picture" hint="A reference outfit or inspiration image (optional)." id="at-img">
+        <ImageUploadField value={f.image} ratio="3 / 4" onChange={(v) => setF((p) => ({ ...p, image: v }))} />
+      </Field>
+      <Field label="Colour palette" hint="Add the outfit colours — click a swatch to pick a colour.">
+        <div className="pal-edit">
+          {f.palette.map((c, i) => (
+            <span className="pal-edit__item" key={i}>
+              <input className="pal-edit__sw" type="color" value={/^#[0-9a-fA-F]{6}$/.test(c) ? c : "#c9a96a"} onChange={(e) => setColor(i, e.target.value)} />
+              <button type="button" className="pal-edit__rm" title="Remove colour" onClick={() => removeColor(i)}>×</button>
+            </span>
+          ))}
+          <button type="button" className="pal-edit__add" title="Add colour" onClick={addColor}>+</button>
+        </div>
+      </Field>
+      <div style={{ display: "flex", gap: 12, marginTop: 18, justifyContent: "flex-end" }}>
+        <Button variant="ghost" onClick={onClose}>Cancel</Button>
+        <Button variant="primary" onClick={save}>{isEdit ? "Save group" : "Add group"}</Button>
+      </div>
+    </Modal>
+  );
+}
+
+export function AttireAdmin() {
+  const { attire } = useStore();
+  const { save: persistChanges } = React.useContext(AdminSaveCtx);
+  const groups = attire || [];
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const move = async (id, dir) => { Store.moveAttireGroup(id, dir); await persistChanges(); };
+  const del = async (g) => { if (await confirmDialog({ title: "Delete group?", message: `Remove "${g.name}" from the attire guide?`, confirmLabel: "Delete", danger: true })) { Store.deleteAttireGroup(g.id); await persistChanges(); } };
+  return (
+    <div className="panel">
+      <div className="panel__head">
+        <div className="panel__title">Attire guide <span style={{ color: "var(--muted)", fontSize: 15 }}>({groups.length})</span></div>
+        <Button variant="primary" size="sm" onClick={() => { setEditing(null); setOpen(true); }}>+ Add group</Button>
+      </div>
+      <div className="panel__body--flush table-wrap">
+        <table className="tbl">
+          <thead><tr><th>#</th><th>Preview</th><th>Name</th><th>Palette</th><th></th></tr></thead>
+          <tbody>
+            {groups.map((g, i) => (
+              <tr key={g.id}>
+                <td style={{ color: "var(--muted)" }}>{i + 1}</td>
+                <td>{g.image ? <img src={g.image} alt="" style={{ width: 40, height: 52, objectFit: "cover", borderRadius: 6, display: "block" }} /> : <span style={{ color: "var(--muted)" }}>—</span>}</td>
+                <td><strong>{g.name}</strong></td>
+                <td><div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>{(g.palette || []).map((c, j) => <span key={j} style={{ width: 18, height: 18, borderRadius: "50%", background: c, border: "1px solid var(--line)", display: "inline-block" }} title={c} />)}</div></td>
+                <td>
+                  <div className="row-actions">
+                    <MoveArrows i={i} count={groups.length} onMove={(dir) => move(g.id, dir)} />
+                    <button className="icon-btn" title="Edit group" onClick={() => { setEditing(g); setOpen(true); }}>{Icon.edit({})}</button>
+                    <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => del(g)}>{Icon.trash({})}</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {groups.length === 0 && <tr><td colSpan={5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No groups yet — add Men, Women, Children, etc.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      <div className="panel__foot"><span className="panel__foot-hint">Shown on the home page after the schedule. Saves automatically.</span></div>
+      <AttireGroupEditor open={open} group={editing} onClose={() => setOpen(false)} />
     </div>
   );
 }

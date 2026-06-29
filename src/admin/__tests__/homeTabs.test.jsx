@@ -32,7 +32,7 @@ describe("Home tab — folder sub-tabs", () => {
     clickByText(container, "nav.admin__nav button", "Home");
 
     expect(folderLabels(container)).toEqual([
-      "Couple & Event", "Home page invitation", "Music playlist", "Entourage", "Google Maps",
+      "Couple & Event", "Home page invitation", "Music playlist", "Entourage", "Attire", "Google Maps",
     ]);
 
     // Couple & Event (default) → explicit Save button
@@ -51,6 +51,12 @@ describe("Home tab — folder sub-tabs", () => {
     // Entourage → show toggle + add-group (save) action present
     clickByText(container, ".folders .folder", "Entourage");
     expect(container.textContent).toMatch(/Show entourage on the home page/);
+    expect(hasButton(container, "+ Add group")).toBe(true);
+
+    // Attire → show toggle + add-group (save) action present
+    clickByText(container, ".folders .folder", "Attire");
+    expect(container.textContent).toMatch(/Show attire guide on the home page/);
+    expect(container.textContent).toMatch(/Attire guide/);
     expect(hasButton(container, "+ Add group")).toBe(true);
 
     // Google Maps → show toggle + venue/map fields + Save

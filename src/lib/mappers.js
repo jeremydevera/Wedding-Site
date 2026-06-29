@@ -1,4 +1,4 @@
-import { DEFAULT_SETTINGS, SEED_SCHEDULE, SEED_STORY, SEED_FAQ, SEED_QUIZ, SEED_VENUE_CARDS, SEED_DETAIL_CARDS, SEED_ENTOURAGE } from "@/lib/store.jsx";
+import { DEFAULT_SETTINGS, SEED_SCHEDULE, SEED_STORY, SEED_FAQ, SEED_QUIZ, SEED_VENUE_CARDS, SEED_DETAIL_CARDS, SEED_ENTOURAGE, SEED_ATTIRE } from "@/lib/store.jsx";
 
 // Build the venue-cards array from a client's content. Prefer the new
 // `venueCards` array; fall back to the legacy flat keys (venueParking/Arrival/
@@ -17,7 +17,7 @@ function venueCardsFrom(content) {
 export function clientToState(client) {
   const content = client.content || {};
   const theme = client.theme || {};
-  const { schedule, story, faq, quiz, venueCards, detailCards, entourage, playlist, venueParking, venueArrival, venueWeather, ...contentRest } = content;
+  const { schedule, story, faq, quiz, venueCards, detailCards, entourage, attire, playlist, venueParking, venueArrival, venueWeather, ...contentRest } = content;
   return {
     clientId: client.id,
     settings: {
@@ -34,6 +34,7 @@ export function clientToState(client) {
     venueCards: venueCardsFrom(content),
     detailCards: Array.isArray(detailCards) ? detailCards : SEED_DETAIL_CARDS,
     entourage: Array.isArray(entourage) ? entourage : SEED_ENTOURAGE,
+    attire: Array.isArray(attire) ? attire : SEED_ATTIRE,
     playlist: Array.isArray(playlist) ? playlist : [],
   };
 }
@@ -47,7 +48,7 @@ export function stateToClientRow(state) {
     template_key: theme,
     event_type: eventType,
     theme: {},
-    content: { ...rest, schedule: state.schedule, story: state.story, faq: state.faq, quiz: state.quiz, venueCards: state.venueCards, detailCards: state.detailCards, entourage: state.entourage, playlist: state.playlist },
+    content: { ...rest, schedule: state.schedule, story: state.story, faq: state.faq, quiz: state.quiz, venueCards: state.venueCards, detailCards: state.detailCards, entourage: state.entourage, attire: state.attire, playlist: state.playlist },
   };
 }
 

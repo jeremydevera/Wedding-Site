@@ -262,7 +262,7 @@ export function EnvelopeInvite() {
 }
 
 export function Home() {
-  const { settings, story, schedule, entourage, playlist } = useStore();
+  const { settings, story, schedule, entourage, attire, playlist } = useStore();
   const s = settings;
   const mapQuery = (s.mapQuery && s.mapQuery.trim()) || s.venueAddress;
   const homeMapUrl = mapEmbedUrl(mapQuery, s.mapLat, s.mapLng);
@@ -383,12 +383,48 @@ export function Home() {
         </div>
       </section>
 
+      {/* ATTIRE GUIDE — right after the schedule glimpse */}
+      {s.showAttire !== false && <AttireView groups={attire} />}
+
       {/* MUSIC — vinyl player now sits right after the schedule glimpse */}
       {s.showMusic !== false && <VinylPlayer tracks={playlist} />}
 
       {/* ENTOURAGE — groups of people (Groomsmen, Bridesmaids, …) */}
       {s.showEntourage !== false && <EntourageView groups={entourage} />}
     </div>
+  );
+}
+
+// Public attire-guide section: each group has an example image and a colour
+// palette. Renders nothing when there are no groups with any content.
+export function AttireView({ groups }) {
+  const list = (groups || []).filter((g) => g && ((g.name || "").trim() || g.image || (g.palette || []).length));
+  if (!list.length) return null;
+  return (
+    <section className="block" id="home-attire">
+      <div className="container">
+        <SectionHead center eyebrow="What to wear" title="Attire guide" />
+        <div className="attire-grid">
+          {list.map((g) => (
+            <div className="attire-card" key={g.id}>
+              <div className="attire-card__img">
+                {g.image
+                  ? <img src={g.image} alt={g.name || "Attire"} />
+                  : <span className="attire-card__ph">{Icon.user({})}</span>}
+              </div>
+              {g.name ? <div className="attire-card__name">{g.name}</div> : null}
+              {(g.palette || []).length > 0 && (
+                <div className="attire-card__palette">
+                  {(g.palette || []).map((c, i) => (
+                    <span key={i} className="attire-card__swatch" style={{ background: c }} title={c} />
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 

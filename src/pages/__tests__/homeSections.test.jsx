@@ -19,19 +19,21 @@ function setup(extra) {
 }
 
 describe("Home section visibility toggles", () => {
-  it("shows music, entourage, and map by default", () => {
+  it("shows music, entourage, attire, and map by default", () => {
     setup({});
     const { container } = render(<Home />);
     expect(container.querySelector("#home-map")).toBeTruthy();
     expect(container.querySelector(".vinyl-card")).toBeTruthy();
     expect(container.querySelector("#home-entourage")).toBeTruthy();
+    expect(container.querySelector("#home-attire")).toBeTruthy();
   });
 
   it("hides each section when its flag is false", () => {
-    setup({ showMusic: false, showEntourage: false, showMap: false });
+    setup({ showMusic: false, showEntourage: false, showMap: false, showAttire: false });
     const { container } = render(<Home />);
     expect(container.querySelector("#home-map")).toBeNull();
     expect(container.querySelector(".vinyl-card")).toBeNull();
     expect(container.querySelector("#home-entourage")).toBeNull();
+    expect(container.querySelector("#home-attire")).toBeNull();
   });
 });
