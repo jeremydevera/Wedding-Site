@@ -265,6 +265,8 @@ export function Home() {
   const { settings, story, schedule, entourage, playlist } = useStore();
   const s = settings;
   const [showFullSchedule, setShowFullSchedule] = useState(false);
+  const mapQuery = (s.mapQuery && s.mapQuery.trim()) || s.venueAddress;
+  const homeMapUrl = mapEmbedUrl(mapQuery, s.mapLat, s.mapLng);
 
   // replay the "Will you be there?" rise-in every time it scrolls into view
   React.useEffect(() => {
@@ -345,6 +347,18 @@ export function Home() {
           <Button variant="primary" size="lg" onClick={() => go("rsvp")}>{Icon.check({})} Respond now</Button>
         </div>
       </section>
+      )}
+
+      {/* MAP — venue location right after the invitation (map only, no cards) */}
+      {homeMapUrl && (
+        <section className="block" id="home-map">
+          <div className="container">
+            <SectionHead center eyebrow="The Venue" title={s.venueName} />
+            <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+              <iframe title="Venue map" src={homeMapUrl} style={{ width: "100%", height: 420, border: 0, display: "block" }} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
+            </div>
+          </div>
+        </section>
       )}
 
       {/* MUSIC — vinyl player right after the "celebrate love" / invitation section */}
