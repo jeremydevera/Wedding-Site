@@ -5,7 +5,9 @@
 // code path in AdminApp and still sees all of these.)
 // Entourage + Music are no longer tabs — they're folder sub-tabs inside Home,
 // gated to superadmin there (see HomeAdmin).
-const SUPERADMIN_ONLY = new Set(["settings", "media", "schedule", "details", "venue"]);
+// Home is superadmin-only too (the superadmin builds the home page); owners
+// don't get it. Superadmin-on-a-client uses a different path and still sees it.
+const SUPERADMIN_ONLY = new Set(["settings", "media", "schedule", "details", "venue", "home"]);
 
 export function visibleAdminTabs(role, allTabs) {
   if (role === "superadmin") {

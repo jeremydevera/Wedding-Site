@@ -73,12 +73,12 @@ describe("Home tab — folder sub-tabs", () => {
     expect(container.textContent).toMatch(/Horizontal/);
   });
 
-  it("owner: Home shows only Couple & Event + invitation (no Music/Entourage)", () => {
+  it("owner: does not see the Home tab (superadmin-only)", () => {
     Store.set({ clientId: "c1", loading: false });
     Store.setAuth({ session: { user: { email: "o@x" } }, role: "owner", clientId: "c1", email: "o@x" });
     const { container } = render(<AdminApp />);
-    clickByText(container, "nav.admin__nav button", "Home");
-    expect(folderLabels(container)).toEqual(["Couple & Event", "Home page invitation"]);
-    expect(hasButton(container, "Save changes")).toBe(true);
+    expect(navLabels(container)).not.toContain("Home");
+    // still gets the guest-response tabs
+    expect(navLabels(container)).toEqual(expect.arrayContaining(["Dashboard", "Guestbook"]));
   });
 });
