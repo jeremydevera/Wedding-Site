@@ -1272,47 +1272,76 @@ export function HomeAdmin() {
   const { settings, auth } = useStore();
   const f = settings;
   const set = (k) => (e) => Store.updateSettings({ [k]: e.target && e.target.type === "checkbox" ? e.target.checked : e.target.value });
+  const isSuper = auth.role === "superadmin";
+  // Folder sub-tabs. Music + Entourage are superadmin-managed content, so owners
+  // only get Couple & Event + the home-page invitation; superadmin-on-a-client
+  // gets all four.
+  const TABS = [
+    { k: "couple", label: "Couple & Event", icon: "rings" },
+    { k: "invite", label: "Home page invitation", icon: "home" },
+    ...(isSuper ? [
+      { k: "music", label: "Music playlist", icon: "play" },
+      { k: "entourage", label: "Entourage", icon: "user" },
+    ] : []),
+  ];
+  const [tab, setTab] = useState("couple");
+  const active = TABS.some((t) => t.k === tab) ? tab : TABS[0].k;
   return (
     <div>
-      <div className="panel">
-        <div className="panel__head"><div className="panel__title">Couple & Event</div></div>
-        <div className="panel__body">
-          <div className="field-row field-row--2">
-            <Field label="Partner A" id="s-a"><Input id="s-a" value={f.partnerA} onChange={set("partnerA")} /></Field>
-            <Field label="Partner B" id="s-b"><Input id="s-b" value={f.partnerB} onChange={set("partnerB")} /></Field>
-          </div>
-          <div className="field-row field-row--2">
-            <Field label="Wedding date & time" hint="Drives the countdown" id="s-date"><Input id="s-date" type="datetime-local" value={f.weddingDate} onChange={set("weddingDate")} /></Field>
-            <Field label="Display date label" id="s-datel"><Input id="s-datel" value={f.weddingDateLabel} onChange={set("weddingDateLabel")} /></Field>
-          </div>
-          <Field label="Welcome message" id="s-welcome"><Textarea id="s-welcome" value={f.welcome} onChange={set("welcome")} /></Field>
-          <div className="field-row field-row--2">
-            <Field label="RSVP deadline" id="s-rsvp"><Input id="s-rsvp" value={f.rsvpDeadline} onChange={set("rsvpDeadline")} /></Field>
-            <Field label="Hashtag" id="s-hash"><Input id="s-hash" value={f.hashtag} onChange={set("hashtag")} /></Field>
-          </div>
-        </div>
+      <div className="folders">
+        {TABS.map((t) => (
+          <button key={t.k} className={"folder" + (active === t.k ? " folder--active" : "")} onClick={() => setTab(t.k)}>
+            {Icon[t.icon] ? Icon[t.icon]({}) : null} {t.label}
+          </button>
+        ))}
       </div>
 
-      <div className="panel">
-        <div className="panel__head"><div className="panel__title">Home page — invitation</div></div>
-        <div className="panel__body">
-          <p style={{ color: "var(--muted)", margin: "0 0 18px", fontSize: 14 }}>
-            The welcome section guests see on your home page, under the hero.
-          </p>
-          <Field label="Heading" id="h-title" hint="The big invitation line">
-            <Input id="h-title" value={f.inviteTitle} onChange={set("inviteTitle")} placeholder="You're invited to celebrate love" />
-          </Field>
-          <Field label="Message" id="h-body" hint="A warm welcome paragraph under the heading">
-            <Textarea id="h-body" value={f.inviteBody} onChange={set("inviteBody")} style={{ minHeight: 130 }} placeholder="We can't wait to celebrate…" />
-          </Field>
-        </div>
-      </div>
+      {active === "couple" && (
+        <>
+          <div className="panel">
+            <div className="panel__head"><div className="panel__title">Couple & Event</div></div>
+            <div className="panel__body">
+              <div className="field-row field-row--2">
+                <Field label="Partner A" id="s-a"><Input id="s-a" value={f.partnerA} onChange={set("partnerA")} /></Field>
+                <Field label="Partner B" id="s-b"><Input id="s-b" value={f.partnerB} onChange={set("partnerB")} /></Field>
+              </div>
+              <div className="field-row field-row--2">
+                <Field label="Wedding date & time" hint="Drives the countdown" id="s-date"><Input id="s-date" type="datetime-local" value={f.weddingDate} onChange={set("weddingDate")} /></Field>
+                <Field label="Display date label" id="s-datel"><Input id="s-datel" value={f.weddingDateLabel} onChange={set("weddingDateLabel")} /></Field>
+              </div>
+              <Field label="Welcome message" id="s-welcome"><Textarea id="s-welcome" value={f.welcome} onChange={set("welcome")} /></Field>
+              <div className="field-row field-row--2">
+                <Field label="RSVP deadline" id="s-rsvp"><Input id="s-rsvp" value={f.rsvpDeadline} onChange={set("rsvpDeadline")} /></Field>
+                <Field label="Hashtag" id="s-hash"><Input id="s-hash" value={f.hashtag} onChange={set("hashtag")} /></Field>
+              </div>
+            </div>
+          </div>
+          <SaveFooter />
+        </>
+      )}
 
-      {/* Music lives here as a Home section (superadmin-managed) instead of its
-          own nav tab. Owners don't see it; superadmin-on-a-client does. */}
-      {auth.role === "superadmin" && <MusicAdmin />}
+      {active === "invite" && (
+        <>
+          <div className="panel">
+            <div className="panel__head"><div className="panel__title">Home page — invitation</div></div>
+            <div className="panel__body">
+              <p style={{ color: "var(--muted)", margin: "0 0 18px", fontSize: 14 }}>
+                The welcome section guests see on your home page, under the hero.
+              </p>
+              <Field label="Heading" id="h-title" hint="The big invitation line">
+                <Input id="h-title" value={f.inviteTitle} onChange={set("inviteTitle")} placeholder="You're invited to celebrate love" />
+              </Field>
+              <Field label="Message" id="h-body" hint="A warm welcome paragraph under the heading">
+                <Textarea id="h-body" value={f.inviteBody} onChange={set("inviteBody")} style={{ minHeight: 130 }} placeholder="We can't wait to celebrate…" />
+              </Field>
+            </div>
+          </div>
+          <SaveFooter />
+        </>
+      )}
 
-      <SaveFooter />
+      {isSuper && active === "music" && <MusicAdmin />}
+      {isSuper && active === "entourage" && <EntourageAdmin />}
     </div>
   );
 }
@@ -1541,7 +1570,6 @@ export const ADMIN_TABS = [
   { key: "quiz", label: "Quiz", icon: "quiz" },
   { key: "details", label: "Details", icon: "rings" },
   { key: "venue", label: "Venue & Map", icon: "pin" },
-  { key: "entourage", label: "Entourage", icon: "user" },
   { key: "settings", label: "Settings", icon: "gear" },
 ];
 
@@ -1689,7 +1717,6 @@ export function AdminApp() {
           {activeTab === "quiz" && <QuizAdmin />}
           {activeTab === "details" && <DetailsAdmin />}
           {activeTab === "venue" && <VenueAdmin />}
-          {activeTab === "entourage" && <EntourageAdmin />}
           {activeTab === "qr" && <QrAdmin />}
           {activeTab === "settings" && <SettingsAdmin />}
           {activeTab === "overview" && <SuperOverview />}

@@ -3,7 +3,9 @@
 // Site-content tabs — Settings (home/theme), Schedule, Details, Venue & Map — plus
 // Media + Clients are superadmin-only. (Superadmin-on-a-client uses a different
 // code path in AdminApp and still sees all of these.)
-const SUPERADMIN_ONLY = new Set(["settings", "media", "schedule", "details", "venue", "entourage"]);
+// Entourage + Music are no longer tabs — they're folder sub-tabs inside Home,
+// gated to superadmin there (see HomeAdmin).
+const SUPERADMIN_ONLY = new Set(["settings", "media", "schedule", "details", "venue"]);
 
 export function visibleAdminTabs(role, allTabs) {
   if (role === "superadmin") {
