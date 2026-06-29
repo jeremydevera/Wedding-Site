@@ -363,6 +363,9 @@ export function Home() {
                 <Button variant="primary" size="sm" onClick={() => window.open(mapDirUrl(mapQuery, s.mapLat, s.mapLng), "_blank")}>{Icon.pin({})} Get directions</Button>
               </div>
             </div>
+            <div style={{ textAlign: "center", marginTop: 20 }}>
+              <Button variant="ghost" onClick={() => go("venue")}>See full details {Icon.arrow({})}</Button>
+            </div>
           </div>
         </section>
       )}
