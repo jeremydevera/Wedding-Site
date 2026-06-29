@@ -1453,14 +1453,18 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
     radial-gradient(circle at 50% 50%, #3a3a3d 0%, #232325 26%, #0d0d0e 27%, #131315 60%, #050506 100%);
   box-shadow: inset 0 1px 1px rgba(255,255,255,.18), inset 0 0 0 1px rgba(255,255,255,.06), inset 0 -2px 6px rgba(0,0,0,.5);
 }
-.vinyl__platter.is-spinning { animation: vinyl-spin 4s linear infinite; }
+.vinyl__platter.is-spinning { animation: vinyl-spin 3.4s linear infinite; }
 @keyframes vinyl-spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .vinyl__platter.is-spinning { animation: none; } }
+/* spinning glossy sheen — the rotating glare from the source design (08) */
+.vinyl__gloss { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; mix-blend-mode: screen;
+  background: conic-gradient(rgba(255,255,255,0) 0deg, rgba(255,255,255,.04) 16deg, rgba(255,255,255,.20) 50deg, rgba(255,255,255,.05) 84deg, rgba(255,255,255,0) 108deg, rgba(255,255,255,0) 180deg, rgba(255,255,255,.04) 196deg, rgba(255,255,255,.15) 228deg, rgba(255,255,255,.04) 262deg, rgba(255,255,255,0) 286deg, rgba(255,255,255,0) 360deg); }
+.vinyl__gloss.is-spinning { animation: vinyl-spin 3.4s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .vinyl__platter.is-spinning, .vinyl__gloss.is-spinning { animation: none; } }
 /* Center label copied from "08 · Minimal Light": dark label, white text. */
 .vinyl__label { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 38%; height: 38%; border-radius: 50%; display: grid; place-items: center; background: #1a1a1a; box-shadow: 0 0 0 1px rgba(0,0,0,.25), inset 0 0 14px rgba(0,0,0,.18); }
 .vinyl__label span { font-family: var(--font-display); font-size: clamp(16px, 2.4vw, 22px); color: #ffffff; }
 .vinyl__hole { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 6%; height: 6%; border-radius: 50%; background: var(--bg); box-shadow: inset 0 0 0 1px rgba(0,0,0,.4); }
-.vinyl__specular { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; mix-blend-mode: screen; background: radial-gradient(circle at 32% 26%, rgba(255,255,255,.16) 0%, rgba(255,255,255,0) 42%); }
+.vinyl__specular { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; mix-blend-mode: screen; background: radial-gradient(circle at 32% 26%, rgba(255,255,255,.12) 0%, rgba(255,255,255,0) 38%); }
 .vinyl__info { flex: 1 1 230px; min-width: 210px; display: flex; flex-direction: column; align-items: flex-start; gap: 9px; }
 .vinyl__kicker { font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--accent); }
 .vinyl__title { font-family: var(--font-display); font-size: 28px; line-height: 1.1; color: var(--ink); margin: 0; }

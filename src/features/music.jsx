@@ -107,6 +107,7 @@ export function VinylPlayer({ tracks }) {
               <div className="vinyl__label"><span>{initial}</span></div>
               <div className="vinyl__hole" />
             </div>
+            <div className={"vinyl__gloss" + (st.playing ? " is-spinning" : "")} />
             <div className="vinyl__specular" />
           </div>
           <div className="vinyl__info">
