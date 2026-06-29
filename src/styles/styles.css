@@ -1480,7 +1480,9 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   .vinyl-card--row .vinyl-btn { width: 40px; height: 40px; }
   .vinyl-card--row .vinyl-btn--play { width: 50px; height: 50px; }
   .vinyl-aside { align-self: auto; width: 100%; border-left: none; border-top: 1px solid var(--line); padding-left: 0; padding-top: 16px; }
-  .vinyl-list { max-height: 168px; }
+  /* show ~2 tracks (row ≈ 60px + 3px gap); the rest scroll. Higher specificity
+     than the base .vinyl-list so it isn't overridden by the later 204px rule. */
+  .vinyl-card--row .vinyl-list { max-height: 124px; }
 }
 .vinyl-meta { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; }
 .vinyl-kicker { font-family: var(--font-body); font-size: 11px; letter-spacing: .28em; text-transform: uppercase; color: var(--gold); }
