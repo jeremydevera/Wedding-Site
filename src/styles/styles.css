@@ -333,10 +333,14 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .timeline-h::-webkit-scrollbar { height: 6px; }
 .timeline-h::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
 .timeline-h__track { display: flex; gap: 26px; position: relative; min-width: min-content; padding: 0 8px; }
-.timeline-h__track::before { content: ""; position: absolute; top: 42px; left: 8px; right: 8px; height: 3px; border-radius: 3px; background: color-mix(in oklch, var(--accent) 35%, var(--line)); }
 .tl-h-item { position: relative; flex: 0 0 210px; max-width: 210px; padding-top: 64px; text-align: center; }
+/* connector drawn PER item: a line from this dot to the NEXT one (width = item +
+   the 26px gap). The last item draws none, and nothing renders before the first
+   dot — so the rail always begins and ends on a dot, never a dangling stub. */
+.tl-h-item::after { content: ""; position: absolute; z-index: 0; top: 42px; left: 50%; width: calc(100% + 26px); height: 3px; border-radius: 3px; background: color-mix(in oklch, var(--accent) 35%, var(--line)); }
+.tl-h-item:last-child::after { display: none; }
 .tl-h-item .tl-time { position: absolute; top: 0; left: 0; right: 0; }
-.tl-h-dot { position: absolute; top: 42px; left: 50%; transform: translate(-50%, -50%); width: 15px; height: 15px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); box-shadow: 0 0 0 4px var(--bg); }
+.tl-h-dot { position: absolute; z-index: 1; top: 42px; left: 50%; transform: translate(-50%, -50%); width: 15px; height: 15px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); }
 .tl-h-title { font-size: 22px; margin: 0 0 6px; }
 .tl-h-item .tl-loc { justify-content: center; }
 @media (max-width: 560px) { .tl-h-item { flex-basis: 180px; max-width: 180px; } }
