@@ -1269,7 +1269,7 @@ export function SettingsAdmin() {
 // Home — the home page's core info: couple/event details (moved here from
 // Settings → General) plus the welcome/invitation section guests see.
 export function HomeAdmin() {
-  const { settings } = useStore();
+  const { settings, auth } = useStore();
   const f = settings;
   const set = (k) => (e) => Store.updateSettings({ [k]: e.target && e.target.type === "checkbox" ? e.target.checked : e.target.value });
   return (
@@ -1307,6 +1307,10 @@ export function HomeAdmin() {
           </Field>
         </div>
       </div>
+
+      {/* Music lives here as a Home section (superadmin-managed) instead of its
+          own nav tab. Owners don't see it; superadmin-on-a-client does. */}
+      {auth.role === "superadmin" && <MusicAdmin />}
 
       <SaveFooter />
     </div>
@@ -1538,7 +1542,6 @@ export const ADMIN_TABS = [
   { key: "details", label: "Details", icon: "rings" },
   { key: "venue", label: "Venue & Map", icon: "pin" },
   { key: "entourage", label: "Entourage", icon: "user" },
-  { key: "music", label: "Music", icon: "play" },
   { key: "settings", label: "Settings", icon: "gear" },
 ];
 
@@ -1687,7 +1690,6 @@ export function AdminApp() {
           {activeTab === "details" && <DetailsAdmin />}
           {activeTab === "venue" && <VenueAdmin />}
           {activeTab === "entourage" && <EntourageAdmin />}
-          {activeTab === "music" && <MusicAdmin />}
           {activeTab === "qr" && <QrAdmin />}
           {activeTab === "settings" && <SettingsAdmin />}
           {activeTab === "overview" && <SuperOverview />}
