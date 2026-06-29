@@ -346,6 +346,20 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .tl-h-dot { position: absolute; z-index: 1; top: 42px; left: 50%; transform: translate(-50%, -50%); width: 15px; height: 15px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); }
 .tl-h-title { font-size: 22px; margin: 0 0 6px; }
 .tl-h-item .tl-loc { justify-content: center; }
+/* Desktop scroll affordance: nav arrows instead of a scrollbar, each shown only
+   when there's more to scroll that way. Mobile keeps native touch scroll. */
+.timeline-hwrap { position: relative; }
+.tl-h-nav { position: absolute; top: 42px; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%; background: var(--surface); border: 1px solid var(--line); color: var(--ink); display: none; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 18px -6px rgba(0,0,0,.3); z-index: 3; transition: background .15s ease; }
+.tl-h-nav:hover { background: var(--surface-2); }
+.tl-h-nav:active { transform: translateY(-50%) scale(.94); }
+.tl-h-nav svg { width: 18px; height: 18px; }
+.tl-h-nav--prev { left: -6px; }
+.tl-h-nav--next { right: -6px; }
+@media (min-width: 760px) {
+  .timeline-h { scrollbar-width: none; }
+  .timeline-h::-webkit-scrollbar { display: none; }
+  .tl-h-nav.is-on { display: flex; }
+}
 @media (max-width: 560px) { .tl-h-item { flex-basis: 180px; max-width: 180px; } }
 /* Admin: home timeline layout picker (Home → Timeline) */
 .tl-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 520px; }

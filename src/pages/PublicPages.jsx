@@ -536,6 +536,47 @@ export function DetailsPage() {
   );
 }
 
+// Horizontal timeline: a scrollable rail with desktop nav arrows that appear
+// only when there's more to scroll in that direction (scrollbar hidden on
+// desktop; mobile keeps native touch scroll).
+function HorizontalTimeline({ items }) {
+  const ref = useRef(null);
+  const [edges, setEdges] = useState({ left: false, right: false });
+  const update = useCallback(() => {
+    const el = ref.current; if (!el) return;
+    const left = el.scrollLeft > 4;
+    const right = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
+    setEdges((p) => (p.left === left && p.right === right ? p : { left, right }));
+  }, []);
+  useEffect(() => {
+    update();
+    const el = ref.current; if (!el) return;
+    el.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => { el.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
+  }, [update, items.length]);
+  const scroll = (dir) => { const el = ref.current; if (el) el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" }); };
+  return (
+    <div className="timeline-hwrap">
+      <button type="button" className={"tl-h-nav tl-h-nav--prev" + (edges.left ? " is-on" : "")} aria-label="Scroll back" onClick={() => scroll(-1)}>{Icon.arrow({ style: { transform: "rotate(180deg)" } })}</button>
+      <div className="timeline-h" ref={ref}>
+        <div className="timeline-h__track">
+          {items.map((it, i) => (
+            <div className="tl-h-item" key={i}>
+              <div className="tl-time">{it.time}</div>
+              <span className="tl-h-dot" />
+              <h3 className="tl-h-title">{it.title}</h3>
+              <p className="tl-desc">{it.desc}</p>
+              {it.loc && <div className="tl-loc">{Icon.pin({})} {it.loc}</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+      <button type="button" className={"tl-h-nav tl-h-nav--next" + (edges.right ? " is-on" : "")} aria-label="Scroll forward" onClick={() => scroll(1)}>{Icon.arrow({})}</button>
+    </div>
+  );
+}
+
 export function ScheduleView({ items, style }) {
   const s = style || "line";
   if (s === "cards") {
@@ -585,21 +626,7 @@ export function ScheduleView({ items, style }) {
     );
   }
   if (s === "horizontal") {
-    return (
-      <div className="timeline-h">
-        <div className="timeline-h__track">
-          {items.map((it, i) => (
-            <div className="tl-h-item" key={i}>
-              <div className="tl-time">{it.time}</div>
-              <span className="tl-h-dot" />
-              <h3 className="tl-h-title">{it.title}</h3>
-              <p className="tl-desc">{it.desc}</p>
-              {it.loc && <div className="tl-loc">{Icon.pin({})} {it.loc}</div>}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    return <HorizontalTimeline items={items} />;
   }
   return (
     <div className={"timeline" + (s === "alt" ? " timeline--alt" : "")}>
