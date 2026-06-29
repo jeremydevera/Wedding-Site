@@ -1445,7 +1445,8 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .vp-btn { transition: transform .12s ease; }
 .vp-btn:hover { transform: scale(1.06); }
 .vp-btn:active { transform: scale(0.95); }
-@media (prefers-reduced-motion: reduce) { #home-playlist [style*="vp-spin"] { animation: none !important; } }
+/* No prefers-reduced-motion guard: the source design spins unconditionally and
+   the disk is the whole point of the player. */
 
 /* --- Music: home playlist list -------------------------------------------- */
 .playlist { list-style: none; padding: 0; margin: 30px auto 0; max-width: 540px; display: flex; flex-direction: column; gap: 10px; }
