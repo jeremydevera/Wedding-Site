@@ -352,7 +352,7 @@ export function Home() {
       {s.showMap !== false && homeMapUrl && (
         <section className="block" id="home-map">
           <div className="container">
-            <SectionHead center eyebrow="The Venue" title={s.venueName} />
+            <SectionHead center eyebrow="The Venue" title="Where we'll celebrate" />
             <div className="home-map">
               <iframe className="home-map__frame" title="Venue map" src={homeMapUrl} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
               <div className="home-map__bar">
