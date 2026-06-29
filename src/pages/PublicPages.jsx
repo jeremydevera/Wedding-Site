@@ -264,7 +264,6 @@ export function EnvelopeInvite() {
 export function Home() {
   const { settings, story, schedule, entourage, playlist } = useStore();
   const s = settings;
-  const [showFullSchedule, setShowFullSchedule] = useState(false);
   const mapQuery = (s.mapQuery && s.mapQuery.trim()) || s.venueAddress;
   const homeMapUrl = mapEmbedUrl(mapQuery, s.mapLat, s.mapLng);
 
@@ -372,12 +371,10 @@ export function Home() {
       <section className="block block--tint" id="home-schedule">
         <div className="container">
           <SectionHead center eyebrow="The Day" title="A glimpse of the schedule" />
-          <ScheduleView items={showFullSchedule ? schedule : schedule.slice(0, 3)} style="alt" />
-          {schedule.length > 3 && (
+          <ScheduleView items={schedule.slice(0, 3)} style="alt" />
+          {schedule.length > 0 && (
             <div style={{ textAlign: "center", marginTop: 20 }}>
-              <Button variant="ghost" onClick={() => setShowFullSchedule((v) => !v)}>
-                {showFullSchedule ? "Show less" : <>See the full timeline {Icon.arrow({})}</>}
-              </Button>
+              <Button variant="ghost" onClick={() => go("schedule")}>See the full timeline {Icon.arrow({})}</Button>
             </div>
           )}
         </div>
