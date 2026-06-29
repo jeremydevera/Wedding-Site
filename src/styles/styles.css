@@ -1420,7 +1420,10 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 }
 .ent-people { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 20px; }
 .ent-person { display: flex; flex-direction: column; gap: 5px; }
-.ent-person__name { font-family: var(--font-display); font-size: 19px; line-height: 1.25; color: var(--ink); }
+/* Use the body font (like the schedule .tl-desc details) so names never render
+   in a heavy display face — DM Serif Display (noir) / Playfair (classic2,
+   burgundy) ship only bold-ish weights and made names look bolded. */
+.ent-person__name { font-family: var(--font-body); font-weight: 500; font-size: 18px; letter-spacing: .01em; line-height: 1.3; color: var(--ink); }
 .ent-person__role { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
 
 
@@ -1440,18 +1443,17 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   width: 100%; max-width: 460px; margin: 0 auto; box-sizing: border-box;
   display: flex; flex-direction: column; align-items: center; gap: 28px;
   padding: 40px 34px;
-  /* Night-mode tile, TINTED by the theme: scope a dark palette derived from the
-     theme accent (cobalt → deep blue, olive → deep green, gold → warm dark) so
-     every child adapts and each theme gets its own dark mood — not flat black. */
-  --surface: color-mix(in oklch, var(--accent) 20%, #272a33);
-  --surface-2: color-mix(in oklch, var(--accent) 24%, #363943);
-  --ink: #f3f3f6;
-  --muted: color-mix(in oklch, #c6cad2 78%, var(--accent));
-  --line: color-mix(in oklch, var(--accent) 24%, rgba(255,255,255,0.16));
-  --accent-soft: color-mix(in oklch, var(--accent) 30%, transparent);
-  background: var(--surface); color: var(--ink);
-  border: 1px solid var(--line); border-radius: calc(var(--radius) + 8px);
-  box-shadow: 0 30px 66px -32px color-mix(in oklch, var(--accent) 30%, rgba(0,0,0,.55)), 0 2px 10px rgba(0,0,0,.3);
+  /* Light tile, TINTED by the theme: a soft accent wash over the theme's own
+     light surface, so each theme colors the tile (cobalt → cool blue, olive →
+     soft green, gold → warm cream) while staying light. Keeps the theme's own
+     ink/line/surface tokens so every child reads as normal light UI. */
+  background: linear-gradient(165deg,
+      color-mix(in oklch, var(--accent) 5%, var(--surface)) 0%,
+      color-mix(in oklch, var(--accent) 11%, var(--surface)) 100%);
+  color: var(--ink);
+  border: 1px solid color-mix(in oklch, var(--accent) 22%, var(--line));
+  border-radius: calc(var(--radius) + 8px);
+  box-shadow: 0 30px 66px -34px color-mix(in oklch, var(--accent) 28%, rgba(0,0,0,.22)), 0 2px 10px rgba(0,0,0,.05);
 }
 /* with 2+ songs the card goes side-by-side: player left, playlist right.
    It's also a good deal shorter than the single-song card — smaller disk and
