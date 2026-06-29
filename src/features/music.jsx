@@ -128,7 +128,8 @@ export function VinylPlayer({ tracks }) {
           <div className="eyebrow">Our Song</div>
           <h2 className="sec-head__title">{many ? "Our Playlist" : "Press Play"}</h2>
         </div>
-        <div className="vinyl-card">
+        <div className={"vinyl-card" + (many ? " vinyl-card--row" : "")}>
+          <div className="vinyl-main">
           <VinylDisk artist={cur.artist} uid={uid} />
           <div className="vinyl-meta">
             <div className="vinyl-kicker">Now Playing</div>
@@ -154,8 +155,11 @@ export function VinylPlayer({ tracks }) {
               </button>
             </div>
           </div>
+          </div>
 
           {many && (
+            <div className="vinyl-aside">
+              <div className="vinyl-aside__head">Playlist</div>
             <ol className="vinyl-list">
               {list.map((t, i) => {
                 const active = i === st.index;
@@ -175,6 +179,7 @@ export function VinylPlayer({ tracks }) {
                 );
               })}
             </ol>
+            </div>
           )}
         </div>
       </div>

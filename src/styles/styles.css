@@ -1432,6 +1432,15 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   border: 1px solid var(--line); border-radius: calc(var(--radius) + 8px);
   box-shadow: 0 28px 64px -34px rgba(0,0,0,.32), 0 2px 8px rgba(0,0,0,.05);
 }
+/* with 2+ songs the card goes side-by-side: player left, playlist right */
+.vinyl-card--row { max-width: 760px; flex-direction: row; align-items: center; gap: 36px; }
+.vinyl-main { display: flex; flex-direction: column; align-items: center; gap: 26px; flex: 0 0 auto; width: 250px; max-width: 100%; }
+.vinyl-aside { flex: 1 1 auto; min-width: 0; align-self: stretch; display: flex; flex-direction: column; gap: 10px; justify-content: center; border-left: 1px solid var(--line); padding-left: 32px; }
+.vinyl-aside__head { font-family: var(--font-body); font-size: 11px; letter-spacing: .24em; text-transform: uppercase; color: var(--muted); padding-left: 12px; }
+@media (max-width: 640px) {
+  .vinyl-card--row { flex-direction: column; align-items: center; max-width: 460px; gap: 24px; }
+  .vinyl-aside { align-self: auto; width: 100%; border-left: none; border-top: 1px solid var(--line); padding-left: 0; padding-top: 22px; }
+}
 .vinyl-meta { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; }
 .vinyl-kicker { font-family: var(--font-body); font-size: 11px; letter-spacing: .28em; text-transform: uppercase; color: var(--gold); }
 .vinyl-title { font-family: var(--font-display); font-size: clamp(26px, 4.6vw, 34px); font-weight: 600; line-height: 1.08; letter-spacing: -.01em; color: var(--ink); text-align: center; }
@@ -1448,7 +1457,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .vinyl-btn--play { width: 62px; height: 62px; border: none; background: var(--accent); color: var(--accent-ink); box-shadow: 0 12px 26px -10px var(--accent); }
 
 /* --- Music: home playlist list (shown only when 2+ songs) ----------------- */
-.vinyl-list { list-style: none; margin: 6px 0 0; padding: 20px 0 0; width: 100%; display: flex; flex-direction: column; gap: 3px; border-top: 1px solid var(--line); counter-reset: none; }
+.vinyl-list { list-style: none; margin: 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 3px; max-height: 322px; overflow-y: auto; }
 .vinyl-list__item { width: 100%; }
 .vinyl-list__item > button { width: 100%; display: flex; align-items: center; gap: 14px; padding: 10px 12px; background: transparent; border: none; border-radius: var(--btn-radius); cursor: pointer; text-align: left; color: var(--ink); transition: background .15s ease; }
 .vinyl-list__item > button:hover { background: var(--surface-2); }
