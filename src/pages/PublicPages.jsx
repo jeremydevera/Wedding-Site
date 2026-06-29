@@ -543,29 +543,30 @@ function HorizontalTimeline({ items }) {
   const ref = useRef(null);
   const [active, setActive] = useState(0);
   const [overflow, setOverflow] = useState(false);
+  // The rail scrolls continuously, so the dots track scroll PROGRESS: dot i maps
+  // to scroll fraction i/(n-1). This keeps the dots lighting in order and the
+  // chevrons disabling at the ends even when the rail only overflows a little.
+  const n = items.length;
   const update = useCallback(() => {
     const el = ref.current; if (!el) return;
-    setOverflow(el.scrollWidth > el.clientWidth + 4);
-    const center = el.scrollLeft + el.clientWidth / 2;
-    let best = 0, bestDist = Infinity;
-    el.querySelectorAll(".tl-h-item").forEach((c, i) => {
-      const d = Math.abs(c.offsetLeft + c.offsetWidth / 2 - center);
-      if (d < bestDist) { bestDist = d; best = i; }
-    });
-    setActive((p) => (p === best ? p : best));
-  }, []);
+    const max = el.scrollWidth - el.clientWidth;
+    setOverflow(max > 4);
+    const frac = max > 4 ? el.scrollLeft / max : 0;
+    const idx = n > 1 ? Math.max(0, Math.min(n - 1, Math.round(frac * (n - 1)))) : 0;
+    setActive((p) => (p === idx ? p : idx));
+  }, [n]);
   useEffect(() => {
     update();
     const el = ref.current; if (!el) return;
     el.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
     return () => { el.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
-  }, [update, items.length]);
+  }, [update]);
   const toItem = (i) => {
     const el = ref.current; if (!el) return;
-    const cells = el.querySelectorAll(".tl-h-item");
-    const c = cells[Math.max(0, Math.min(cells.length - 1, i))]; if (!c) return;
-    el.scrollTo({ left: Math.max(0, c.offsetLeft + c.offsetWidth / 2 - el.clientWidth / 2), behavior: "smooth" });
+    const max = el.scrollWidth - el.clientWidth;
+    const j = Math.max(0, Math.min(n - 1, i));
+    el.scrollTo({ left: n > 1 ? (j / (n - 1)) * max : 0, behavior: "smooth" });
   };
   return (
     <div className="timeline-hwrap">
