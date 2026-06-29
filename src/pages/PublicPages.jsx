@@ -573,12 +573,14 @@ function HorizontalTimeline({ items }) {
       <div className="timeline-h" ref={ref}>
         <div className="timeline-h__track">
           {items.map((it, i) => (
-            <div className="tl-h-item" key={i}>
+            <div className={"tl-h-item" + (overflow && i === active ? " is-active" : "")} key={i}>
               <div className="tl-time">{it.time}</div>
               <span className="tl-h-dot" />
-              <h3 className="tl-h-title">{it.title}</h3>
-              <p className="tl-desc">{it.desc}</p>
-              {it.loc && <div className="tl-loc">{Icon.pin({})} {it.loc}</div>}
+              <div className="tl-h-body">
+                <h3 className="tl-h-title">{it.title}</h3>
+                <p className="tl-desc">{it.desc}</p>
+                {it.loc && <div className="tl-loc">{Icon.pin({})} {it.loc}</div>}
+              </div>
             </div>
           ))}
         </div>

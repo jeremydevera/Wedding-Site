@@ -342,9 +342,15 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .tl-h-item::after { content: ""; position: absolute; z-index: 0; top: 42px; left: 50%; width: calc(100% + var(--tl-h-gap)); height: 3px; border-radius: 3px; background: color-mix(in oklch, var(--accent) 35%, var(--line)); }
 .tl-h-item:last-child::after { display: none; }
 .tl-h-item .tl-time { position: absolute; top: 0; left: 0; right: 0; }
-.tl-h-dot { position: absolute; z-index: 1; top: 42px; left: 50%; transform: translate(-50%, -50%); width: 15px; height: 15px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); }
-.tl-h-title { font-size: 22px; margin: 0 0 6px; }
+.tl-h-dot { position: absolute; z-index: 1; top: 42px; left: 50%; transform: translate(-50%, -50%); width: 15px; height: 15px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); transition: transform .35s ease, background-color .35s ease, box-shadow .35s ease; }
+.tl-h-title { font-size: 22px; margin: 0 0 6px; transition: color .3s ease; }
 .tl-h-item .tl-loc { justify-content: center; }
+/* selected tile (driven by the nav) zooms + highlights; the dot fills, the body
+   scales, the title goes accent. Connectors/positions are untouched. */
+.tl-h-body { transition: transform .35s ease; transform-origin: top center; }
+.tl-h-item.is-active .tl-h-body { transform: scale(1.1); }
+.tl-h-item.is-active .tl-h-dot { background: var(--accent); transform: translate(-50%, -50%) scale(1.5); box-shadow: 0 0 0 5px color-mix(in oklch, var(--accent) 20%, transparent); }
+.tl-h-item.is-active .tl-h-title { color: var(--accent); }
 /* Desktop scroll affordance: nav arrows instead of a scrollbar, each shown only
    when there's more to scroll that way. Mobile keeps native touch scroll. */
 .timeline-hwrap { position: relative; }
