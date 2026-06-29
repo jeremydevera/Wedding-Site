@@ -374,8 +374,8 @@ export function Home() {
       <section className="block block--tint" id="home-schedule">
         <div className="container">
           <SectionHead center eyebrow="The Day" title="A glimpse of the schedule" />
-          <ScheduleView items={schedule.slice(0, 3)} style={s.homeTimelineLayout === "horizontal" ? "horizontal" : "alt"} />
-          {schedule.length > 0 && (
+          <ScheduleView items={s.homeTimelineLayout === "horizontal" ? schedule : schedule.slice(0, 3)} style={s.homeTimelineLayout === "horizontal" ? "horizontal" : "alt"} />
+          {s.homeTimelineLayout !== "horizontal" && schedule.length > 0 && (
             <div style={{ textAlign: "center", marginTop: 20 }}>
               <Button variant="ghost" onClick={() => go("schedule")}>See the full timeline {Icon.arrow({})}</Button>
             </div>
