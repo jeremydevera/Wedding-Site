@@ -1472,7 +1472,13 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .vinyl-btn--play { width: 62px; height: 62px; border: none; background: var(--accent); color: var(--accent-ink); box-shadow: 0 12px 26px -10px var(--accent); }
 
 /* --- Music: home playlist list (shown only when 2+ songs) ----------------- */
-.vinyl-list { list-style: none; margin: 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 3px; max-height: 322px; overflow-y: auto; }
+/* capped near the disk height so a long playlist scrolls instead of stretching
+   the card; slim themed scrollbar. */
+.vinyl-list { list-style: none; margin: 0; padding: 0 6px 0 0; width: 100%; display: flex; flex-direction: column; gap: 3px; max-height: 204px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+.vinyl-list::-webkit-scrollbar { width: 6px; }
+.vinyl-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
+.vinyl-list::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+.vinyl-list::-webkit-scrollbar-track { background: transparent; }
 .vinyl-list__item { width: 100%; }
 .vinyl-list__item > button { width: 100%; display: flex; align-items: center; gap: 14px; padding: 10px 12px; background: transparent; border: none; border-radius: var(--btn-radius); cursor: pointer; text-align: left; color: var(--ink); transition: background .15s ease; }
 .vinyl-list__item > button:hover { background: var(--surface-2); }
