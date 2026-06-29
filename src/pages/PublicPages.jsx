@@ -3,7 +3,7 @@ import { go } from "@/lib/nav.js";
 import { useStore } from "@/lib/store.jsx";
 import { egTintGradient } from "@/themes";
 import { Button, Countdown, FloatingDecor, Icon, Placeholder, SectionHead, mapDirUrl, mapEmbedUrl } from "@/ui/components.jsx";
-import { PlaylistView } from "@/features/music.jsx";
+import { VinylPlayer } from "@/features/music.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // ============================================================================
@@ -329,6 +329,9 @@ export function Home() {
         </section>
       )}
 
+      {/* MUSIC — vinyl player right after the "celebrate love" section */}
+      <VinylPlayer tracks={playlist} />
+
       {/* WELCOME / invitation — RSVP button lives right under this section */}
       {s.theme !== "envelope" && (
       <section className="block" id="home-rsvp">
@@ -359,9 +362,6 @@ export function Home() {
 
       {/* ENTOURAGE — groups of people (Groomsmen, Bridesmaids, …) */}
       <EntourageView groups={entourage} />
-
-      {/* MUSIC PLAYLIST — tap to play; floating player handles playback */}
-      <PlaylistView tracks={playlist} />
     </div>
   );
 }

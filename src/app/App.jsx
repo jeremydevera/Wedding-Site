@@ -12,7 +12,7 @@ import { DetailsPage, Home, SchedulePage, StoryPage, VenuePage } from "@/pages/P
 import { RSVPPage } from "@/features/rsvp.jsx";
 import { GalleryPage, UploadPage, VideoMessagePage } from "@/features/media.jsx";
 import { GuestbookPage, QuizPage } from "@/features/social.jsx";
-import { MusicPlayer } from "@/features/music.jsx";
+import { MusicMount } from "@/features/music.jsx";
 import { AdminApp, ImageUploadField } from "@/admin/manage.jsx";
 import { hasSection } from "@/config/eventTypes.js";
 import { moduleEnabled } from "@/lib/roles.js";
@@ -377,7 +377,7 @@ export function App() {
               ? <FallingFx id={settings.decorStyle.slice(3)} />
               : <FloatingDecor on style={settings.decorStyle} />
           )}
-          <MusicPlayer />
+          <MusicMount />
         </>
       )}
       <ToastHost />
