@@ -349,20 +349,24 @@ export function Home() {
       </section>
       )}
 
-      {/* MAP — venue location right after the invitation (map only, no cards) */}
+      {/* MAP — venue location right after the invitation (map only, framed) */}
       {homeMapUrl && (
         <section className="block" id="home-map">
           <div className="container">
             <SectionHead center eyebrow="The Venue" title={s.venueName} />
-            <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-              <iframe title="Venue map" src={homeMapUrl} style={{ width: "100%", height: 420, border: 0, display: "block" }} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
+            <div className="home-map">
+              <iframe className="home-map__frame" title="Venue map" src={homeMapUrl} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
+              <div className="home-map__bar">
+                <div className="home-map__where">
+                  <span className="home-map__pin">{Icon.pin({})}</span>
+                  <div className="home-map__addr">{s.venueAddress || s.venueName}</div>
+                </div>
+                <Button variant="primary" size="sm" onClick={() => window.open(mapDirUrl(mapQuery, s.mapLat, s.mapLng), "_blank")}>{Icon.pin({})} Get directions</Button>
+              </div>
             </div>
           </div>
         </section>
       )}
-
-      {/* MUSIC — vinyl player right after the "celebrate love" / invitation section */}
-      <VinylPlayer tracks={playlist} />
 
       {/* SCHEDULE PREVIEW */}
       <section className="block block--tint" id="home-schedule">
@@ -378,6 +382,9 @@ export function Home() {
           )}
         </div>
       </section>
+
+      {/* MUSIC — vinyl player now sits right after the schedule glimpse */}
+      <VinylPlayer tracks={playlist} />
 
       {/* ENTOURAGE — groups of people (Groomsmen, Bridesmaids, …) */}
       <EntourageView groups={entourage} />
