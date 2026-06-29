@@ -80,7 +80,7 @@ export function MusicMount() {
 const DISK = { bg: "#161618", labelBg: "#d8d8d8", labelText: "#15151a", font: "'Space Grotesk', system-ui, sans-serif" };
 function VinylDisk({ artist, uid, size = 230 }) {
   return (
-    <div style={{ position: "relative", flex: "0 0 auto", width: size, height: size, borderRadius: "50%", boxShadow: "0 18px 40px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.4)" }}>
+    <div className="vinyl-disk" style={{ position: "relative", flex: "0 0 auto", width: size, height: size, borderRadius: "50%", boxShadow: "0 18px 40px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.4)" }}>
       {/* spinning base: grooves + record gradient */}
       <div style={{ position: "absolute", inset: 0, borderRadius: "50%", animation: "vp-spin 3.4s linear infinite", background: "repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 0.5px, rgba(0,0,0,0) 0.6px, rgba(0,0,0,0) 2.4px), radial-gradient(circle at 50% 50%, #3a3a3d 0%, #232325 26%, #0d0d0e 27%, #131315 60%, #050506 100%)" }}>
         {/* center label with curved artist text */}
