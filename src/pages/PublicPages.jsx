@@ -264,6 +264,7 @@ export function EnvelopeInvite() {
 export function Home() {
   const { settings, story, schedule, entourage, playlist } = useStore();
   const s = settings;
+  const [showFullSchedule, setShowFullSchedule] = useState(false);
 
   // replay the "Will you be there?" rise-in every time it scrolls into view
   React.useEffect(() => {
@@ -353,10 +354,14 @@ export function Home() {
       <section className="block block--tint" id="home-schedule">
         <div className="container">
           <SectionHead center eyebrow="The Day" title="A glimpse of the schedule" />
-          <ScheduleView items={schedule} style="alt" />
-          <div style={{ textAlign: "center", marginTop: 20 }}>
-            <Button variant="ghost" onClick={() => go("schedule")}>See the full timeline {Icon.arrow({})}</Button>
-          </div>
+          <ScheduleView items={showFullSchedule ? schedule : schedule.slice(0, 3)} style="alt" />
+          {schedule.length > 3 && (
+            <div style={{ textAlign: "center", marginTop: 20 }}>
+              <Button variant="ghost" onClick={() => setShowFullSchedule((v) => !v)}>
+                {showFullSchedule ? "Show less" : <>See the full timeline {Icon.arrow({})}</>}
+              </Button>
+            </div>
+          )}
         </div>
       </section>
 
