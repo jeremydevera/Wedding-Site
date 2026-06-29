@@ -123,14 +123,14 @@ export function VinylPlayer({ tracks }) {
   const many = list.length > 1;
   return (
     <section className="block" id="home-playlist">
-      <div className="container container--narrow">
+      <div className="container">
         <div className="sec-head sec-head--center">
           <div className="eyebrow">Our Song</div>
           <h2 className="sec-head__title">{many ? "Our Playlist" : "Press Play"}</h2>
         </div>
         <div className={"vinyl-card" + (many ? " vinyl-card--row" : "")}>
           <div className="vinyl-main">
-          <VinylDisk artist={cur.artist} uid={uid} size={many ? 100 : 230} />
+          <VinylDisk artist={cur.artist} uid={uid} />
           <div className="vinyl-meta">
             <div className="vinyl-kicker">Now Playing</div>
             <div className="vinyl-title">{cur.title}</div>
