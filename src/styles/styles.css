@@ -216,6 +216,11 @@ body.env-sealed main { padding-top: 0; }
 .hero__welcome { color: var(--accent-ink); max-width: 50ch; margin: 0 auto 30px; font-size: 18px; opacity: 0.95; }
 .hero__cta { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
 .hero__scroll { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); color: var(--accent-ink); font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; opacity: 0.75; }
+/* Mobile: the 92vh + vertical-centering pushed the hero text to mid-screen.
+   Start it near the top instead (nav is already cleared by main's padding-top). */
+@media (max-width: 640px) {
+  .hero__inner { min-height: 62vh; justify-content: flex-start; padding: 28px 22px 64px; }
+}
 
 /* --- Countdown -------------------------------------------------------------*/
 .countdown { display: flex; gap: 14px; justify-content: center; margin: 0 auto 34px; flex-wrap: wrap; }
