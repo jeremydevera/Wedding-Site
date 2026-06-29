@@ -1464,16 +1464,16 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .attire-card { flex: 0 1 230px; max-width: 260px; min-width: 190px; text-align: center; display: flex; flex-direction: column; align-items: center; }
 .attire-card__img { width: 100%; aspect-ratio: 3 / 4; border-radius: calc(var(--radius) + 6px); overflow: hidden; background: var(--surface-2); border: 1px solid var(--line); display: grid; place-items: center; }
 .attire-card__img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.attire-card__name { font-family: var(--font-display); font-size: 21px; color: var(--ink); margin-top: 15px; letter-spacing: .01em; }
+.attire-card__name { font-family: var(--font-display); font-size: 25px; color: var(--ink); margin-top: 16px; letter-spacing: .01em; }
 /* No-photo tiles start with the name, so don't add the image-gap on top. */
 .attire-card > .attire-card__name:first-child { margin-top: 0; }
-.attire-card__desc { font-size: 13px; color: var(--ink-soft); line-height: 1.55; margin-top: 6px; max-width: 240px; }
+.attire-card__desc { font-size: 15px; color: var(--ink-soft); line-height: 1.55; margin-top: 8px; max-width: 240px; }
 .attire-card__palette { display: flex; flex-wrap: wrap; gap: 9px; justify-content: center; margin-top: 12px; }
 .attire-card__swatch { width: 26px; height: 26px; border-radius: 50%; border: 1px solid color-mix(in oklch, var(--ink) 16%, transparent); box-shadow: inset 0 0 0 2px rgba(255,255,255,.35); }
 @media (max-width: 640px) {
   .attire-grid { gap: 20px 18px; }
   .attire-card { flex-basis: 43%; min-width: 0; }
-  .attire-card__name { font-size: 18px; }
+  .attire-card__name { font-size: 21px; }
   .attire-card__swatch { width: 22px; height: 22px; }
 }
 /* Attire palette editor (admin) */
@@ -1586,7 +1586,9 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 }
 .vinyl-meta { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; }
 .vinyl-kicker { font-family: var(--font-body); font-size: 11px; letter-spacing: .28em; text-transform: uppercase; color: var(--gold); }
-.vinyl-title { font-family: var(--font-display); font-size: clamp(26px, 4.6vw, 34px); font-weight: 600; line-height: 1.08; letter-spacing: -.01em; color: var(--ink); text-align: center; }
+/* playlist title uses the BODY font (not the display/header font) so the player
+   text reads distinctly from the section heading. */
+.vinyl-title { font-family: var(--font-body); font-size: clamp(24px, 4.2vw, 31px); font-weight: 600; line-height: 1.1; letter-spacing: -.01em; color: var(--ink); text-align: center; }
 .vinyl-artist { font-family: var(--font-body); font-size: 15px; letter-spacing: .02em; color: var(--muted); }
 .vinyl-progress { width: 100%; max-width: 240px; display: flex; flex-direction: column; gap: 8px; }
 .vinyl-track { width: 100%; height: 4px; border-radius: 999px; background: var(--line); position: relative; overflow: hidden; cursor: pointer; }
