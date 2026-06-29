@@ -103,11 +103,11 @@ export function VinylPlayer({ tracks }) {
         <div className="sec-head sec-head--center"><div className="eyebrow">Press Play</div><h2 className="sec-head__title">Our Song</h2></div>
         <div className="vinyl">
           <div className="vinyl__disc" aria-hidden="true">
-            <div className={"vinyl__platter" + (st.playing ? " is-spinning" : "")}>
+            <div className="vinyl__platter is-spinning">
               <div className="vinyl__label"><span>{initial}</span></div>
               <div className="vinyl__hole" />
             </div>
-            <div className={"vinyl__gloss" + (st.playing ? " is-spinning" : "")} />
+            <div className="vinyl__gloss is-spinning" />
             <div className="vinyl__specular" />
           </div>
           <div className="vinyl__info">
