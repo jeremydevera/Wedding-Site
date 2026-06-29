@@ -332,9 +332,8 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 /* Flex parent + auto-margin track = centred when it fits, scrolls from the start
    when it overflows (avoids the justify-content:center scroll-clipping bug). So
    1–2 events sit centred, many events scroll. */
-.timeline-h { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; padding-bottom: 8px; display: flex; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
-.timeline-h::-webkit-scrollbar { height: 6px; }
-.timeline-h::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
+.timeline-h { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; padding-bottom: 4px; display: flex; scrollbar-width: none; }
+.timeline-h::-webkit-scrollbar { display: none; }
 .timeline-h__track { --tl-h-gap: 30px; display: flex; gap: var(--tl-h-gap); position: relative; flex: 0 0 auto; margin: auto; }
 .tl-h-item { position: relative; flex: 0 0 210px; max-width: 210px; padding-top: 64px; text-align: center; }
 /* connector drawn PER item: a line from this dot to the NEXT one (width = item +
@@ -349,20 +348,17 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 /* Desktop scroll affordance: nav arrows instead of a scrollbar, each shown only
    when there's more to scroll that way. Mobile keeps native touch scroll. */
 .timeline-hwrap { position: relative; }
-/* Bootstrap-carousel-style controls: full-height side strips with a chevron and
-   a translucent scrim — faint at rest, brighter on hover/focus. Each appears
-   only when there's more to scroll that way. */
-.tl-h-nav { position: absolute; top: 0; bottom: 0; width: 72px; border: 0; padding: 0; display: none; align-items: center; cursor: pointer; z-index: 3; opacity: .5; background: transparent; transition: opacity .2s ease; }
-.tl-h-nav--prev { left: 0; justify-content: flex-start; padding-left: 8px; background: linear-gradient(to right, color-mix(in oklch, var(--ink) 26%, transparent), transparent); }
-.tl-h-nav--next { right: 0; justify-content: flex-end; padding-right: 8px; background: linear-gradient(to left, color-mix(in oklch, var(--ink) 26%, transparent), transparent); }
-.tl-h-nav svg { width: 30px; height: 30px; color: #fff; filter: drop-shadow(0 1px 2px rgba(0,0,0,.55)); transition: transform .12s ease; }
-.tl-h-nav:hover, .tl-h-nav:focus-visible { opacity: .95; }
-.tl-h-nav:active svg { transform: scale(.88); }
-@media (min-width: 760px) {
-  .timeline-h { scrollbar-width: none; }
-  .timeline-h::-webkit-scrollbar { display: none; }
-  .tl-h-nav.is-on { display: flex; }
-}
+/* Nav pill adapted from the "tilt stack carousel" pen: a frosted rounded bar
+   with prev/next chevrons and dot indicators (active dot = a wide accent pill).
+   Rendered only when the rail overflows. */
+.tl-nav { width: fit-content; margin: 24px auto 0; display: flex; align-items: center; gap: 14px; padding: 6px 10px; border-radius: 999px; color: var(--ink); background: color-mix(in oklch, var(--surface) 55%, transparent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border: 1px solid color-mix(in oklch, var(--line) 80%, transparent); box-shadow: 0 6px 18px -10px rgba(0,0,0,.3); }
+.tl-nav__arrow { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: inherit; cursor: pointer; transition: background .15s ease, opacity .15s ease; }
+.tl-nav__arrow:hover:not(:disabled) { background: color-mix(in oklch, var(--ink) 8%, transparent); }
+.tl-nav__arrow:disabled { opacity: .3; cursor: default; }
+.tl-nav__arrow svg { width: 22px; height: 22px; }
+.tl-nav__dots { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.tl-nav__dot { height: 8px; width: 8px; padding: 0; border: 0; border-radius: 999px; cursor: pointer; background: color-mix(in oklch, var(--ink) 28%, transparent); transition: width .3s ease, background-color .3s ease; }
+.tl-nav__dot.is-active { width: 28px; background: var(--accent); }
 @media (max-width: 560px) { .tl-h-item { flex-basis: 180px; max-width: 180px; } }
 /* Admin: home timeline layout picker (Home → Timeline) */
 .tl-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 520px; }

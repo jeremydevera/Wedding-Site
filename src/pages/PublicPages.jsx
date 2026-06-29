@@ -541,12 +541,18 @@ export function DetailsPage() {
 // desktop; mobile keeps native touch scroll).
 function HorizontalTimeline({ items }) {
   const ref = useRef(null);
-  const [edges, setEdges] = useState({ left: false, right: false });
+  const [active, setActive] = useState(0);
+  const [overflow, setOverflow] = useState(false);
   const update = useCallback(() => {
     const el = ref.current; if (!el) return;
-    const left = el.scrollLeft > 4;
-    const right = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
-    setEdges((p) => (p.left === left && p.right === right ? p : { left, right }));
+    setOverflow(el.scrollWidth > el.clientWidth + 4);
+    const center = el.scrollLeft + el.clientWidth / 2;
+    let best = 0, bestDist = Infinity;
+    el.querySelectorAll(".tl-h-item").forEach((c, i) => {
+      const d = Math.abs(c.offsetLeft + c.offsetWidth / 2 - center);
+      if (d < bestDist) { bestDist = d; best = i; }
+    });
+    setActive((p) => (p === best ? p : best));
   }, []);
   useEffect(() => {
     update();
@@ -555,12 +561,14 @@ function HorizontalTimeline({ items }) {
     window.addEventListener("resize", update);
     return () => { el.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
   }, [update, items.length]);
-  const scroll = (dir) => { const el = ref.current; if (el) el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" }); };
+  const toItem = (i) => {
+    const el = ref.current; if (!el) return;
+    const cells = el.querySelectorAll(".tl-h-item");
+    const c = cells[Math.max(0, Math.min(cells.length - 1, i))]; if (!c) return;
+    el.scrollTo({ left: Math.max(0, c.offsetLeft + c.offsetWidth / 2 - el.clientWidth / 2), behavior: "smooth" });
+  };
   return (
     <div className="timeline-hwrap">
-      <button type="button" className={"tl-h-nav tl-h-nav--prev" + (edges.left ? " is-on" : "")} aria-label="Scroll back" onClick={() => scroll(-1)}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
-      </button>
       <div className="timeline-h" ref={ref}>
         <div className="timeline-h__track">
           {items.map((it, i) => (
@@ -574,9 +582,23 @@ function HorizontalTimeline({ items }) {
           ))}
         </div>
       </div>
-      <button type="button" className={"tl-h-nav tl-h-nav--next" + (edges.right ? " is-on" : "")} aria-label="Scroll forward" onClick={() => scroll(1)}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
-      </button>
+      {/* Nav pill (adapted from the "tilt stack carousel" pen): prev/next chevrons
+          + dot indicators in a frosted pill. Shown only when the rail overflows. */}
+      {overflow && (
+        <div className="tl-nav">
+          <button type="button" className="tl-nav__arrow" onClick={() => toItem(active - 1)} disabled={active === 0} aria-label="Previous">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+          </button>
+          <div className="tl-nav__dots">
+            {items.map((_, i) => (
+              <button key={i} type="button" className={"tl-nav__dot" + (i === active ? " is-active" : "")} onClick={() => toItem(i)} aria-label={"Go to event " + (i + 1)} aria-current={i === active} />
+            ))}
+          </div>
+          <button type="button" className="tl-nav__arrow" onClick={() => toItem(active + 1)} disabled={active === items.length - 1} aria-label="Next">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
