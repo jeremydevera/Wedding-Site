@@ -3,9 +3,9 @@ import { useStore } from "@/lib/store.jsx";
 const { useState, useEffect } = React;
 
 // ============================================================================
-// Music — ONE shared audio engine (a single <Audio> element) driving two views:
-// the floating mini-player (persists across routes) and the home vinyl player.
-// Module-level pub/sub so both views read the same playback state.
+// Music — ONE shared audio engine (a single <Audio> element). The home vinyl
+// player is the only UI; the engine also keeps playing across route changes.
+// Module-level pub/sub so the player reads live playback state.
 // ============================================================================
 let _audio = null;
 let _tracks = [];
@@ -28,7 +28,7 @@ function el() {
 function load(i) {
   const t = _tracks[i]; if (!t) return;
   const a = el();
-  if (_loadedUrl !== t.url) { a.src = t.url; _loadedUrl = t.url; }
+  if (_loadedUrl !== t.url) { a.src = t.url; _loadedUrl = t.url; _st = { ..._st, duration: 0 }; }
   _st = { ..._st, index: i, time: 0 }; _emit();
 }
 export function setTracks(tracks) {
@@ -43,7 +43,7 @@ export function pause() { if (_audio) _audio.pause(); }
 export function toggle() { _st.playing ? pause() : play(); }
 export function nextTrack() { if (!_tracks.length) return; load((_st.index + 1) % _tracks.length); play(); }
 export function prevTrack() { if (!_tracks.length) return; load((_st.index - 1 + _tracks.length) % _tracks.length); play(); }
-export function playIndex(i) { load(i); play(); }
+export function playIndex(i) { if (i === _st.index) { toggle(); return; } load(i); play(); }
 export function seekFrac(f) { const a = el(); if (a && _st.duration) a.currentTime = Math.max(0, Math.min(1, f)) * _st.duration; }
 function useMusic() {
   const [, force] = useState(0);
@@ -52,8 +52,9 @@ function useMusic() {
 }
 const fmt = (s) => { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
 
-// Sits at the app root: feeds the playlist to the engine, attempts autoplay
-// (falling back to the first user gesture), and renders the floating mini-player.
+// Sits at the app root: feeds the playlist to the engine and attempts autoplay
+// (falling back to the first user gesture). Renders nothing — the home vinyl
+// player is the only visible control.
 export function MusicMount() {
   const { playlist } = useStore();
   const n = (playlist || []).length;
@@ -69,23 +70,7 @@ export function MusicMount() {
     window.addEventListener("scroll", go, { once: true, passive: true });
     return off;
   }, [n]);
-  return <FloatingPlayer />;
-}
-
-function FloatingPlayer() {
-  const st = useMusic();
-  if (!st.tracks.length) return null;
-  const cur = st.tracks[st.index] || st.tracks[0];
-  return (
-    <div className={"music-player" + (st.playing ? " is-playing" : "")} aria-label="Background music">
-      <button className="music-player__btn" onClick={toggle} aria-label={st.playing ? "Pause music" : "Play music"}>{st.playing ? "❚❚" : "►"}</button>
-      <div className="music-player__meta">
-        <span className="music-player__title">{cur.title}</span>
-        {cur.artist ? <span className="music-player__artist">{cur.artist}</span> : null}
-      </div>
-      {st.tracks.length > 1 && <button className="music-player__next" onClick={nextTrack} aria-label="Next track">{"⏭"}</button>}
-    </div>
-  );
+  return null;
 }
 
 // The spinning disk — a pixel-exact port of VinylPlayer.dc.html's record. These
@@ -120,8 +105,14 @@ function VinylDisk({ artist, uid }) {
   );
 }
 
+// Animated equalizer shown on the active track row (frozen when paused).
+function Equalizer({ on }) {
+  return <span className={"vinyl-eq" + (on ? " is-on" : "")} aria-hidden="true"><i /><i /><i /><i /></span>;
+}
+
 // Home vinyl player: a themed card (wedding tokens) wrapping the unchanged dark
-// disk. Its own titled section; wired to the shared audio engine.
+// disk, plus — when there is more than one song — a themed playlist below.
+// Its own titled section; wired to the shared audio engine.
 export function VinylPlayer({ tracks }) {
   const st = useMusic();
   const uid = "vp-" + React.useId().replace(/:/g, "");
@@ -129,12 +120,13 @@ export function VinylPlayer({ tracks }) {
   if (!list.length) return null;
   const cur = list[st.index] || list[0];
   const frac = st.duration ? st.time / st.duration : 0;
+  const many = list.length > 1;
   return (
     <section className="block" id="home-playlist">
       <div className="container container--narrow">
         <div className="sec-head sec-head--center">
           <div className="eyebrow">Our Song</div>
-          <h2 className="sec-head__title">Press Play</h2>
+          <h2 className="sec-head__title">{many ? "Our Playlist" : "Press Play"}</h2>
         </div>
         <div className="vinyl-card">
           <VinylDisk artist={cur.artist} uid={uid} />
@@ -149,7 +141,7 @@ export function VinylPlayer({ tracks }) {
               <div className="vinyl-times"><span>{fmt(st.time)}</span><span>{fmt(st.duration)}</span></div>
             </div>
             <div className="vinyl-controls">
-              <button className="vinyl-btn" onClick={prevTrack} disabled={list.length < 2} aria-label="Previous">
+              <button className="vinyl-btn" onClick={prevTrack} disabled={!many} aria-label="Previous">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zM20 6v12L9 12z" /></svg>
               </button>
               <button className="vinyl-btn vinyl-btn--play" onClick={toggle} aria-label={st.playing ? "Pause" : "Play"}>
@@ -157,11 +149,33 @@ export function VinylPlayer({ tracks }) {
                   ? <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="5" width="4" height="14" rx="1" /><rect x="13.5" y="5" width="4" height="14" rx="1" /></svg>
                   : <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>}
               </button>
-              <button className="vinyl-btn" onClick={nextTrack} disabled={list.length < 2} aria-label="Next">
+              <button className="vinyl-btn" onClick={nextTrack} disabled={!many} aria-label="Next">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM4 6l11 6-11 6z" /></svg>
               </button>
             </div>
           </div>
+
+          {many && (
+            <ol className="vinyl-list">
+              {list.map((t, i) => {
+                const active = i === st.index;
+                return (
+                  <li key={t.id || i} className={"vinyl-list__item" + (active ? " is-active" : "")}>
+                    <button onClick={() => playIndex(i)} aria-label={(active && st.playing ? "Pause " : "Play ") + t.title}>
+                      <span className="vinyl-list__num">
+                        {active ? <Equalizer on={st.playing} /> : <span className="vinyl-list__n">{i + 1}</span>}
+                        <svg className="vinyl-list__cue" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                      </span>
+                      <span className="vinyl-list__text">
+                        <span className="vinyl-list__title">{t.title}</span>
+                        {t.artist ? <span className="vinyl-list__artist">{t.artist}</span> : null}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
         </div>
       </div>
     </section>
