@@ -1438,8 +1438,16 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   border: 1px solid var(--line); border-radius: calc(var(--radius) + 8px);
   box-shadow: 0 28px 64px -34px rgba(0,0,0,.32), 0 2px 8px rgba(0,0,0,.05);
 }
-/* with 2+ songs the card goes side-by-side: player left, playlist right */
-.vinyl-card--row { max-width: 760px; flex-direction: row; align-items: center; gap: 36px; }
+/* with 2+ songs the card goes side-by-side: player left, playlist right.
+   It's also a good deal shorter than the single-song card — smaller disk and
+   tighter spacing — so it doesn't tower over the (unchanged) song tiles. */
+.vinyl-card--row { max-width: 760px; flex-direction: row; align-items: center; gap: 34px; padding: 22px 32px; }
+.vinyl-card--row .vinyl-main { gap: 12px; width: 200px; }
+.vinyl-card--row .vinyl-meta { gap: 8px; }
+.vinyl-card--row .vinyl-title { font-size: clamp(22px, 3.4vw, 27px); }
+.vinyl-card--row .vinyl-controls { margin-top: 0; }
+.vinyl-card--row .vinyl-btn { width: 40px; height: 40px; }
+.vinyl-card--row .vinyl-btn--play { width: 52px; height: 52px; }
 .vinyl-main { display: flex; flex-direction: column; align-items: center; gap: 26px; flex: 0 0 auto; width: 250px; max-width: 100%; }
 .vinyl-aside { flex: 1 1 auto; min-width: 0; align-self: flex-start; display: flex; flex-direction: column; gap: 10px; justify-content: flex-start; border-left: 1px solid var(--line); padding-left: 32px; }
 .vinyl-aside__head { font-family: var(--font-body); font-size: 11px; letter-spacing: .24em; text-transform: uppercase; color: var(--muted); padding-left: 12px; }
