@@ -1439,9 +1439,14 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .vinyl-card {
   width: 100%; max-width: 460px; margin: 0 auto; box-sizing: border-box;
   display: flex; flex-direction: column; align-items: center; gap: 28px;
-  padding: 40px 34px; background: var(--surface); color: var(--ink);
+  padding: 40px 34px;
+  /* Night-mode tile: scope a dark palette so every child (text, buttons,
+     dividers, list rows) adapts automatically; the theme accent + gold still pop. */
+  --surface: #17181c; --surface-2: #24262b; --ink: #f1f1f3; --muted: #9aa1aa;
+  --line: rgba(255,255,255,0.12); --accent-soft: rgba(255,255,255,0.09);
+  background: var(--surface); color: var(--ink);
   border: 1px solid var(--line); border-radius: calc(var(--radius) + 8px);
-  box-shadow: 0 28px 64px -34px rgba(0,0,0,.32), 0 2px 8px rgba(0,0,0,.05);
+  box-shadow: 0 30px 70px -30px rgba(0,0,0,.6), 0 2px 10px rgba(0,0,0,.35);
 }
 /* with 2+ songs the card goes side-by-side: player left, playlist right.
    It's also a good deal shorter than the single-song card — smaller disk and
