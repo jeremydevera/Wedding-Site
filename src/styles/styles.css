@@ -1482,8 +1482,8 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .vinyl-list__item { width: 100%; }
 .vinyl-list__item > button { width: 100%; display: flex; align-items: center; gap: 14px; padding: 10px 12px; background: transparent; border: none; border-radius: var(--btn-radius); cursor: pointer; text-align: left; color: var(--ink); transition: background .15s ease; }
 .vinyl-list__item > button:hover { background: var(--surface-2); }
-/* the currently-playing track is clearly flagged: tinted row, accent left bar */
-.vinyl-list__item.is-active > button { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+/* the currently-playing track is clearly flagged: tinted row + bold accent title */
+.vinyl-list__item.is-active > button { background: var(--accent-soft); }
 .vinyl-list__item.is-active > button:hover { background: var(--accent-soft); }
 /* leading slot: track number, swapped for a play cue on hover, or the equalizer when active */
 .vinyl-list__num { position: relative; flex: none; width: 22px; height: 16px; display: grid; place-items: center; }

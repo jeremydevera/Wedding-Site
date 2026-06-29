@@ -1,6 +1,6 @@
 import React from "react";
 import { useStore } from "@/lib/store.jsx";
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 
 // ============================================================================
 // Music — ONE shared audio engine (a single <Audio> element). The home vinyl
@@ -116,7 +116,17 @@ function Equalizer({ on }) {
 export function VinylPlayer({ tracks }) {
   const st = useMusic();
   const uid = "vp-" + React.useId().replace(/:/g, "");
+  const listRef = useRef(null);
+  const activeRef = useRef(null);
   const list = tracks || [];
+  // keep the playing track centred in the scrollable playlist
+  useEffect(() => {
+    const ol = listRef.current, li = activeRef.current;
+    if (!ol || !li) return;
+    const o = ol.getBoundingClientRect(), r = li.getBoundingClientRect();
+    const top = ol.scrollTop + (r.top - o.top) - (ol.clientHeight - li.clientHeight) / 2;
+    ol.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  }, [st.index, list.length]);
   if (!list.length) return null;
   const cur = list[st.index] || list[0];
   const frac = st.duration ? st.time / st.duration : 0;
@@ -160,11 +170,11 @@ export function VinylPlayer({ tracks }) {
           {many && (
             <div className="vinyl-aside">
               <div className="vinyl-aside__head">Playlist</div>
-            <ol className="vinyl-list">
+            <ol className="vinyl-list" ref={listRef}>
               {list.map((t, i) => {
                 const active = i === st.index;
                 return (
-                  <li key={t.id || i} className={"vinyl-list__item" + (active ? " is-active" : "")}>
+                  <li key={t.id || i} ref={active ? activeRef : null} className={"vinyl-list__item" + (active ? " is-active" : "")}>
                     <button onClick={() => playIndex(i)} aria-label={(active && st.playing ? "Pause " : "Play ") + t.title}>
                       <span className="vinyl-list__num">
                         {active ? <Equalizer on={st.playing} /> : <span className="vinyl-list__n">{i + 1}</span>}
