@@ -360,11 +360,11 @@ export function Home() {
                   <span className="home-map__pin">{Icon.pin({})}</span>
                   <div className="home-map__addr">{s.venueAddress || s.venueName}</div>
                 </div>
-                <Button variant="primary" size="sm" onClick={() => window.open(mapDirUrl(mapQuery, s.mapLat, s.mapLng), "_blank")}>{Icon.pin({})} Get directions</Button>
+                <div className="home-map__actions">
+                  <Button variant="ghost" size="sm" onClick={() => go("venue")}>See full details</Button>
+                  <Button variant="primary" size="sm" onClick={() => window.open(mapDirUrl(mapQuery, s.mapLat, s.mapLng), "_blank")}>{Icon.pin({})} Get directions</Button>
+                </div>
               </div>
-            </div>
-            <div style={{ textAlign: "center", marginTop: 20 }}>
-              <Button variant="ghost" onClick={() => go("venue")}>See full details {Icon.arrow({})}</Button>
             </div>
           </div>
         </section>

@@ -1446,9 +1446,11 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .home-map__pin { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
 .home-map__pin svg { width: 19px; height: 19px; }
 .home-map__addr { min-width: 0; font-size: 14px; color: var(--ink-soft); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; }
+.home-map__actions { display: flex; align-items: center; gap: 10px; flex: none; }
 @media (max-width: 640px) {
   .home-map__frame { height: 290px; }
   .home-map__bar { flex-direction: column; align-items: stretch; gap: 13px; padding: 15px 16px; }
+  .home-map__actions { flex-direction: column; }
   .home-map__bar .btn { width: 100%; justify-content: center; }
 }
 /* Invitation moment ("You're invited to celebrate love!") — taller, vertically
