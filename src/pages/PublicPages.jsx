@@ -558,7 +558,9 @@ function HorizontalTimeline({ items }) {
   const scroll = (dir) => { const el = ref.current; if (el) el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" }); };
   return (
     <div className="timeline-hwrap">
-      <button type="button" className={"tl-h-nav tl-h-nav--prev" + (edges.left ? " is-on" : "")} aria-label="Scroll back" onClick={() => scroll(-1)}>{Icon.arrow({ style: { transform: "rotate(180deg)" } })}</button>
+      <button type="button" className={"tl-h-nav tl-h-nav--prev" + (edges.left ? " is-on" : "")} aria-label="Scroll back" onClick={() => scroll(-1)}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+      </button>
       <div className="timeline-h" ref={ref}>
         <div className="timeline-h__track">
           {items.map((it, i) => (
@@ -572,7 +574,9 @@ function HorizontalTimeline({ items }) {
           ))}
         </div>
       </div>
-      <button type="button" className={"tl-h-nav tl-h-nav--next" + (edges.right ? " is-on" : "")} aria-label="Scroll forward" onClick={() => scroll(1)}>{Icon.arrow({})}</button>
+      <button type="button" className={"tl-h-nav tl-h-nav--next" + (edges.right ? " is-on" : "")} aria-label="Scroll forward" onClick={() => scroll(1)}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+      </button>
     </div>
   );
 }
