@@ -334,7 +334,11 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 /* Flex parent + auto-margin track = centred when it fits, scrolls from the start
    when it overflows (avoids the justify-content:center scroll-clipping bug). So
    1–2 events sit centred, many events scroll. */
-.timeline-h { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; padding-bottom: 4px; display: flex; scrollbar-width: none; }
+/* overflow-y must be set explicitly: with overflow-x:auto the browser would
+   otherwise compute overflow-y to `auto`, and the active tile's scale(1.1)
+   visually overflows the box — making the rail vertically scrollable (esp. on
+   mobile). Hide it; padding-bottom reserves room so the zoom isn't clipped. */
+.timeline-h { overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; padding-bottom: 20px; display: flex; scrollbar-width: none; }
 .timeline-h::-webkit-scrollbar { display: none; }
 .timeline-h__track { --tl-h-gap: 30px; display: flex; gap: var(--tl-h-gap); position: relative; flex: 0 0 auto; margin: auto; }
 .tl-h-item { position: relative; flex: 0 0 210px; max-width: 210px; padding-top: 64px; text-align: center; }
