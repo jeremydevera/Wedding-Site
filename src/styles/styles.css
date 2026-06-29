@@ -1423,6 +1423,9 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* Vinyl player. The spinning disk is a pixel-exact port of VinylPlayer.dc.html
    (inline-styled in src/features/music.jsx, never themed). The card, heading,
    text, progress and controls below adapt to the active wedding theme tokens. */
+/* The music section gets its own soft tinted band (a gentle accent wash) so it
+   reads as a distinct moment and the surface-coloured card lifts off it. */
+#home-playlist { background: linear-gradient(180deg, color-mix(in oklch, var(--accent-soft) 55%, var(--surface)), var(--accent-soft)); }
 @keyframes vp-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 /* (no prefers-reduced-motion guard: the disk is the whole point — spins always) */
 .vinyl-card {
