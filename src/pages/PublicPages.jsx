@@ -398,30 +398,37 @@ export function Home() {
 // Public attire-guide section: each group has an example image and a colour
 // palette. Renders nothing when there are no groups with any content.
 export function AttireView({ groups }) {
-  const list = (groups || []).filter((g) => g && ((g.name || "").trim() || g.image || (g.palette || []).length));
+  const list = (groups || []).filter((g) => g && ((g.name || "").trim() || g.image || (g.desc || "").trim() || (g.palette || []).length));
   if (!list.length) return null;
   return (
     <section className="block" id="home-attire">
       <div className="container">
         <SectionHead center eyebrow="What to wear" title="Attire guide" />
         <div className="attire-grid">
-          {list.map((g) => (
-            <div className="attire-card" key={g.id}>
-              <div className="attire-card__img">
-                {g.image
-                  ? <img src={g.image} alt={g.name || "Attire"} />
-                  : <span className="attire-card__ph">{Icon.user({})}</span>}
-              </div>
-              {g.name ? <div className="attire-card__name">{g.name}</div> : null}
-              {(g.palette || []).length > 0 && (
-                <div className="attire-card__palette">
-                  {(g.palette || []).map((c, i) => (
-                    <span key={i} className="attire-card__swatch" style={{ background: c }} title={c} />
-                  ))}
+          {list.map((g) => {
+            const pal = g.palette || [];
+            return (
+              <div className="attire-card" key={g.id}>
+                {/* With a photo, show it + palette dots below. Without a photo,
+                    the tile is filled with the palette colours so it never
+                    looks like an empty box. */}
+                <div className={"attire-card__img" + (g.image ? "" : " attire-card__img--pal")}>
+                  {g.image
+                    ? <img src={g.image} alt={g.name || "Attire"} />
+                    : pal.length
+                      ? pal.map((c, i) => <span key={i} className="attire-card__band" style={{ background: c }} />)
+                      : <span className="attire-card__ph">{Icon.user({})}</span>}
                 </div>
-              )}
-            </div>
-          ))}
+                {g.name ? <div className="attire-card__name">{g.name}</div> : null}
+                {g.desc ? <div className="attire-card__desc">{g.desc}</div> : null}
+                {g.image && pal.length > 0 && (
+                  <div className="attire-card__palette">
+                    {pal.map((c, i) => <span key={i} className="attire-card__swatch" style={{ background: c }} title={c} />)}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

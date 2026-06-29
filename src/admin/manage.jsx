@@ -1523,10 +1523,10 @@ export function EntourageAdmin() {
 // --- Attire guide admin (groups with an example image + a colour palette) ---
 export function AttireGroupEditor({ open, group, onClose }) {
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
-  const [f, setF] = useState({ name: "", image: "", palette: [] });
+  const [f, setF] = useState({ name: "", desc: "", image: "", palette: [] });
   useEffect(() => {
-    if (group) setF({ name: group.name || "", image: group.image || "", palette: [...(group.palette || [])] });
-    else setF({ name: "", image: "", palette: [] });
+    if (group) setF({ name: group.name || "", desc: group.desc || "", image: group.image || "", palette: [...(group.palette || [])] });
+    else setF({ name: "", desc: "", image: "", palette: [] });
   }, [group, open]);
   const isEdit = !!(group && group.id);
   const setColor = (i, c) => setF((p) => ({ ...p, palette: p.palette.map((x, j) => (j === i ? c : x)) }));
@@ -1534,7 +1534,7 @@ export function AttireGroupEditor({ open, group, onClose }) {
   const removeColor = (i) => setF((p) => ({ ...p, palette: p.palette.filter((_, j) => j !== i) }));
   async function save() {
     if (!f.name.trim()) { toast("Please enter a name.", "err"); return; }
-    const payload = { name: f.name.trim(), image: f.image, palette: f.palette };
+    const payload = { name: f.name.trim(), desc: f.desc.trim(), image: f.image, palette: f.palette };
     if (isEdit) Store.updateAttireGroup(group.id, payload);
     else Store.addAttireGroup(payload);
     await persistChanges();
@@ -1544,6 +1544,9 @@ export function AttireGroupEditor({ open, group, onClose }) {
     <Modal open={open} onClose={onClose} label="Attire group">
       <SectionHead eyebrow="Attire" title={isEdit ? "Edit group" : "Add group"} />
       <Field label="Name" required id="at-name"><Input id="at-name" value={f.name} onChange={(e) => setF((p) => ({ ...p, name: e.target.value }))} placeholder="e.g. Men, Women, Children" /></Field>
+      <Field label="Description" id="at-desc" hint="Short guidance, e.g. “Black suit, earthy tones” (optional).">
+        <Textarea id="at-desc" value={f.desc} onChange={(e) => setF((p) => ({ ...p, desc: e.target.value }))} placeholder="e.g. Black suit, earthy tones" style={{ minHeight: 70 }} />
+      </Field>
       <Field label="Example picture" hint="A reference outfit or inspiration image (optional)." id="at-img">
         <ImageUploadField value={f.image} ratio="3 / 4" onChange={(v) => setF((p) => ({ ...p, image: v }))} />
       </Field>
@@ -1588,7 +1591,7 @@ export function AttireAdmin() {
               <tr key={g.id}>
                 <td style={{ color: "var(--muted)" }}>{i + 1}</td>
                 <td>{g.image ? <img src={g.image} alt="" style={{ width: 40, height: 52, objectFit: "cover", borderRadius: 6, display: "block" }} /> : <span style={{ color: "var(--muted)" }}>—</span>}</td>
-                <td><strong>{g.name}</strong></td>
+                <td><strong>{g.name}</strong>{g.desc ? <div style={{ color: "var(--ink-soft)", fontSize: 12, marginTop: 2, maxWidth: 280 }}>{g.desc}</div> : null}</td>
                 <td><div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>{(g.palette || []).map((c, j) => <span key={j} style={{ width: 18, height: 18, borderRadius: "50%", background: c, border: "1px solid var(--line)", display: "inline-block" }} title={c} />)}</div></td>
                 <td>
                   <div className="row-actions">

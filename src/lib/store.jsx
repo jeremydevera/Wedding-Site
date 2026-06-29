@@ -119,9 +119,9 @@ export const SEED_ENTOURAGE = [
 // Attire guide — groups (Men, Women, Children, …), each with an example image
 // and a color palette (array of hex). Shown on the home page after the schedule.
 export const SEED_ATTIRE = [
-  { id: "att-men", name: "Men", image: "", palette: ["#1f2410", "#3a4422", "#0e0e0e"] },
-  { id: "att-women", name: "Women", image: "", palette: ["#6b7a3a", "#4a5320", "#b7a98a"] },
-  { id: "att-children", name: "Children", image: "", palette: ["#e6dcc3", "#cbb487", "#b59a6a"] },
+  { id: "att-men", name: "Men", desc: "Black or dark suit, earthy tones.", image: "", palette: ["#1f2410", "#3a4422", "#0e0e0e"] },
+  { id: "att-women", name: "Women", desc: "Olive green and soft sage shades.", image: "", palette: ["#6b7a3a", "#4a5320", "#b7a98a"] },
+  { id: "att-children", name: "Children", desc: "Beige and neutral tones.", image: "", palette: ["#e6dcc3", "#cbb487", "#b59a6a"] },
 ];
 
 export const SEED_VENUE_CARDS = [
@@ -493,7 +493,7 @@ export const Store = {
   },
   // ---- Attire guide (groups with an example image + a color palette) ----
   addAttireGroup(group) {
-    _state = { ..._state, attire: [...(_state.attire || []), { id: uid(), name: (group && group.name) || "New group", image: (group && group.image) || "", palette: (group && group.palette) || [] }] };
+    _state = { ..._state, attire: [...(_state.attire || []), { id: uid(), name: (group && group.name) || "New group", desc: (group && group.desc) || "", image: (group && group.image) || "", palette: (group && group.palette) || [] }] };
     persist(); emit();
   },
   updateAttireGroup(id, patch) {

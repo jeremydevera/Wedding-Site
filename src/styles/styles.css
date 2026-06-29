@@ -1410,9 +1410,13 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .attire-card { flex: 0 1 230px; max-width: 260px; min-width: 190px; text-align: center; display: flex; flex-direction: column; align-items: center; }
 .attire-card__img { width: 100%; aspect-ratio: 3 / 4; border-radius: calc(var(--radius) + 6px); overflow: hidden; background: var(--surface-2); border: 1px solid var(--line); display: grid; place-items: center; }
 .attire-card__img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* No photo → fill the tile with the palette colours (equal vertical bands). */
+.attire-card__img--pal { display: flex; }
+.attire-card__band { flex: 1 1 0; height: 100%; }
 .attire-card__ph { color: var(--muted); opacity: .45; }
 .attire-card__ph svg { width: 52px; height: 52px; }
 .attire-card__name { font-family: var(--font-display); font-size: 21px; color: var(--ink); margin-top: 15px; letter-spacing: .01em; }
+.attire-card__desc { font-size: 13px; color: var(--ink-soft); line-height: 1.55; margin-top: 6px; max-width: 240px; }
 .attire-card__palette { display: flex; flex-wrap: wrap; gap: 9px; justify-content: center; margin-top: 12px; }
 .attire-card__swatch { width: 26px; height: 26px; border-radius: 50%; border: 1px solid color-mix(in oklch, var(--ink) 16%, transparent); box-shadow: inset 0 0 0 2px rgba(255,255,255,.35); }
 @media (max-width: 640px) {

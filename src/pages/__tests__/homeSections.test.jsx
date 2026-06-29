@@ -26,6 +26,8 @@ describe("Home section visibility toggles", () => {
     expect(container.querySelector(".vinyl-card")).toBeTruthy();
     expect(container.querySelector("#home-entourage")).toBeTruthy();
     expect(container.querySelector("#home-attire")).toBeTruthy();
+    // seed attire groups carry a description -> it renders
+    expect(container.querySelector("#home-attire .attire-card__desc")).toBeTruthy();
   });
 
   it("hides each section when its flag is false", () => {
