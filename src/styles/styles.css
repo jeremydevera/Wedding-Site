@@ -1441,7 +1441,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* with 2+ songs the card goes side-by-side: player left, playlist right.
    It's also a good deal shorter than the single-song card — smaller disk and
    tighter spacing — so it doesn't tower over the (unchanged) song tiles. */
-.vinyl-card--row { max-width: 900px; flex-direction: row; align-items: center; gap: 32px; padding: 30px 36px; }
+.vinyl-card--row { max-width: 900px; flex-direction: row; align-items: center; gap: 32px; padding: 45px 36px; }
 /* the player goes horizontal — full-size disk beside the now-playing info — so
    the card stays short without ever resizing the disk. */
 .vinyl-card--row .vinyl-main { flex-direction: row; align-items: center; gap: 26px; width: auto; flex: 0 1 auto; }
