@@ -329,9 +329,6 @@ export function Home() {
         </section>
       )}
 
-      {/* MUSIC — vinyl player right after the "celebrate love" section */}
-      <VinylPlayer tracks={playlist} />
-
       {/* WELCOME / invitation — RSVP button lives right under this section */}
       {s.theme !== "envelope" && (
       <section className="block" id="home-rsvp">
@@ -348,6 +345,9 @@ export function Home() {
         </div>
       </section>
       )}
+
+      {/* MUSIC — vinyl player right after the "celebrate love" / invitation section */}
+      <VinylPlayer tracks={playlist} />
 
       {/* SCHEDULE PREVIEW */}
       <section className="block block--tint" id="home-schedule">
