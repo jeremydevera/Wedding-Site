@@ -56,11 +56,14 @@ const fmt = (s) => { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 
 // (falling back to the first user gesture). Renders nothing — the home vinyl
 // player is the only visible control.
 export function MusicMount() {
-  const { playlist } = useStore();
+  const { playlist, settings } = useStore();
   const n = (playlist || []).length;
+  // Autoplay is opt-out (default on). When off, the engine still has the tracks
+  // loaded so the home player works — it just won't start on its own.
+  const autoplay = (settings && settings.musicAutoplay) !== false;
   useEffect(() => { setTracks(playlist || []); }, [playlist]);
   useEffect(() => {
-    if (!n) return;
+    if (!n || !autoplay) return;
     let done = false;
     const go = () => { if (done) return; done = true; play(); off(); };
     const off = () => { window.removeEventListener("pointerdown", go); window.removeEventListener("keydown", go); window.removeEventListener("scroll", go); };
@@ -69,7 +72,7 @@ export function MusicMount() {
     window.addEventListener("keydown", go, { once: true });
     window.addEventListener("scroll", go, { once: true, passive: true });
     return off;
-  }, [n]);
+  }, [n, autoplay]);
   return null;
 }
 

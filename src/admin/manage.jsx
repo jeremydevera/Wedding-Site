@@ -1379,6 +1379,9 @@ export function HomeAdmin() {
             <div className="panel__body">
               <AdminToggle label="Show music player on the home page" desc="Turn the playlist section on or off for guests. Saves instantly."
                 checked={f.showMusic !== false} onChange={(v) => toggleShow("showMusic", v)} />
+              <div style={{ height: 14 }} />
+              <AdminToggle label="Autoplay music on load" desc="Start the playlist automatically (on the first tap or scroll). When off, guests press play themselves. Saves instantly."
+                checked={f.musicAutoplay !== false} onChange={(v) => toggleShow("musicAutoplay", v)} />
             </div>
           </div>
           <MusicAdmin />

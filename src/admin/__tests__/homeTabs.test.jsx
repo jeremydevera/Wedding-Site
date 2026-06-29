@@ -45,6 +45,7 @@ describe("Home tab — folder sub-tabs", () => {
     // Music playlist → show toggle + upload (save) action present
     clickByText(container, ".folders .folder", "Music playlist");
     expect(container.textContent).toMatch(/Show music player on the home page/);
+    expect(container.textContent).toMatch(/Autoplay music on load/);
     expect(container.textContent).toMatch(/Music Playlist/);
     expect(hasButton(container, "+ Upload audio")).toBe(true);
 

@@ -52,6 +52,7 @@ export const DEFAULT_SETTINGS = {
   showEntourage: true,
   showMap: true,
   showAttire: true,
+  musicAutoplay: true,
   decorOn: false,
   decorStyle: "petals",
   scheduleStyle: "line",
