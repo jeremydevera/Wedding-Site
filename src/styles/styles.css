@@ -1443,8 +1443,8 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   /* Night-mode tile, TINTED by the theme: scope a dark palette derived from the
      theme accent (cobalt → deep blue, olive → deep green, gold → warm dark) so
      every child adapts and each theme gets its own dark mood — not flat black. */
-  --surface: color-mix(in oklch, var(--accent) 20%, #1c1e25);
-  --surface-2: color-mix(in oklch, var(--accent) 24%, #2b2d36);
+  --surface: color-mix(in oklch, var(--accent) 20%, #272a33);
+  --surface-2: color-mix(in oklch, var(--accent) 24%, #363943);
   --ink: #f3f3f6;
   --muted: color-mix(in oklch, #c6cad2 78%, var(--accent));
   --line: color-mix(in oklch, var(--accent) 24%, rgba(255,255,255,0.16));
