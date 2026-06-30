@@ -1048,8 +1048,11 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
   .admin__main { margin-left: 0; }   /* sidebar is an off-canvas drawer on mobile, no offset */
   /* Fixed (not sticky) — sticky scrolls away under overflow-x:clip in some
      browsers. Fixed keeps the burger + title bar pinned; .admin__body is padded
-     below to clear it. */
-  .admin__head { position: fixed; top: 0; left: 0; right: 0; z-index: 40; background: var(--surface); -webkit-transform: translateZ(0); transform: translateZ(0); -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+     below to clear it.
+     Do NOT add transform/translateZ/backface-visibility/will-change here: on iOS
+     Safari a fixed bar with its own compositing layer gets detached during scroll
+     (when the URL bar animates) and the whole header VANISHES. Plain fixed stays put. */
+  .admin__head { position: fixed; top: 0; left: 0; right: 0; z-index: 40; background: var(--surface); }
   /* sidebar becomes an off-canvas drawer toggled by the hamburger.
      translate3d + will-change promote it to its own layer so iOS Safari repaints
      the off-screen fixed element reliably (plain translateX sometimes won't show). */
