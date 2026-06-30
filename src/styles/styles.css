@@ -1050,7 +1050,13 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
      OUTSIDE the scroll box, so it physically cannot move. Fixed-position children
      (.admin__side drawer, .admin-saving, .admin__overlay) still escape to the
      viewport because .admin has no transform, so overflow:hidden won't clip them. */
-  .admin { flex-direction: column; max-width: 100%; height: 100vh; height: 100dvh; overflow: hidden; }
+  /* position:fixed inset:0 makes the shell a true full-viewport app frame so the
+     DOCUMENT can never scroll — only .admin__body does. Without this, a short tab
+     (e.g. Quiz, where the body doesn't fill the screen) lets the swipe leak into a
+     tiny document scroll that drags the in-flow header along. .admin has no
+     transform, so being fixed does NOT clip/recontain its fixed children (drawer,
+     overlays) — they still pin to the viewport. */
+  .admin { position: fixed; inset: 0; flex-direction: column; max-width: 100%; height: 100vh; height: 100dvh; overflow: hidden; }
   .admin__main { margin-left: 0; display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
   .admin__head { position: static; flex: none; left: auto; right: auto; top: auto; z-index: 40; background: var(--surface); }
   /* sidebar becomes an off-canvas drawer toggled by the hamburger.
