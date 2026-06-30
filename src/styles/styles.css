@@ -559,7 +559,7 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 /* Rounded-box toast (not a pill): a refined card with a soft state tint, a
    matching icon, layered depth shadow, and a gentle slide-up. Adapts to context
    — neutral in the admin console, themed surface on the public site. */
-.toast { display: inline-flex; align-items: center; gap: 11px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); padding: 14px 18px; border-radius: 14px; font-size: 14px; font-weight: 500; line-height: 1.35; max-width: min(92vw, 440px); box-shadow: 0 2px 6px rgba(15,18,30,.06), 0 16px 38px -14px rgba(15,18,30,.32); animation: toast-in .34s cubic-bezier(.2,.8,.25,1); }
+.toast { display: inline-flex; align-items: center; gap: 11px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); padding: 14px 18px; border-radius: 14px; font-family: var(--font-body); font-size: 14.5px; font-weight: 650; letter-spacing: -0.011em; line-height: 1.35; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; max-width: min(92vw, 440px); box-shadow: 0 2px 6px rgba(15,18,30,.06), 0 16px 38px -14px rgba(15,18,30,.32); animation: toast-in .34s cubic-bezier(.2,.8,.25,1); }
 /* Success = soft green card + green check (e.g. "Changes saved"). */
 .toast--success { background: oklch(0.965 0.035 150); border-color: oklch(0.83 0.10 150); color: oklch(0.33 0.08 150); }
 .toast--err { background: oklch(0.965 0.035 25); border-color: oklch(0.86 0.09 25); color: oklch(0.42 0.13 25); }
