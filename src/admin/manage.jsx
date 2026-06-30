@@ -197,7 +197,8 @@ export function RsvpsAdmin() {
   function exportCsv() {
     const header = ["Full Name", "Email", "Phone", "Status", "Guests", "Plus-One Names", "Dietary", "Dietary Notes", "Song Request", "Notes", "Submitted"];
     const rows = [header, ...filtered.map((r) => [r.fullName, r.email, r.phone, r.status, r.count, r.plusOne, r.diet, r.dietNotes, r.song, r.notes, fmtDate(r.createdAt)])];
-    downloadCSV("evermore-rsvps.csv", rows);
+    const who = `${settings.partnerA}-and-${settings.partnerB}`.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "guests";
+    downloadCSV(`${who}-rsvps${filter !== "all" ? "-" + filter.replace(/_/g, "-") : ""}.csv`, rows);
   }
 
   // Build an HTML results email and send it server-side (Resend via the
@@ -422,7 +423,8 @@ export function GuestbookAdmin() {
   function exportCsv() {
     const rows = [["Guest Name", "Message", "Relationship", "Status", "Submitted"],
       ...filtered.map((g) => [g.name, g.message, g.relationship, g.status, fmtDate(g.createdAt)])];
-    downloadCSV("evermore-guestbook.csv", rows);
+    const who = `${settings.partnerA}-and-${settings.partnerB}`.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "guests";
+    downloadCSV(`${who}-guestbook${moderation ? "-" + view : ""}.csv`, rows);
   }
 
   return (
