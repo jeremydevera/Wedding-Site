@@ -32,14 +32,14 @@ describe("Home tab — folder sub-tabs", () => {
     clickByText(container, "nav.admin__nav button", "Home");
 
     expect(folderLabels(container)).toEqual([
-      "Couple & Event", "Home page invitation", "Music playlist", "Entourage", "Timeline", "Attire", "Google Maps",
+      "Couple & Event", "Invitation", "Google Maps", "Timeline", "Attire", "Music playlist", "Entourage",
     ]);
 
     // Couple & Event (default) → explicit Save button
     expect(hasButton(container, "Save changes")).toBe(true);
 
-    // Home page invitation → explicit Save button
-    clickByText(container, ".folders .folder", "Home page invitation");
+    // Invitation → explicit Save button
+    clickByText(container, ".folders .folder", "Invitation");
     expect(hasButton(container, "Save changes")).toBe(true);
 
     // Music playlist → show toggle + upload (save) action present

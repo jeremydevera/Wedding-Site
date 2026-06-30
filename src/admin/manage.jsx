@@ -1301,13 +1301,13 @@ export function HomeAdmin() {
   // superadmin-on-a-client gets all five.
   const TABS = [
     { k: "couple", label: "Couple & Event", icon: "rings" },
-    { k: "invite", label: "Home page invitation", icon: "home" },
+    { k: "invite", label: "Invitation", icon: "home" },
     ...(isSuper ? [
-      { k: "music", label: "Music playlist", icon: "play" },
-      { k: "entourage", label: "Entourage", icon: "user" },
+      { k: "maps", label: "Google Maps", icon: "pin" },
       { k: "timeline", label: "Timeline", icon: "calendar" },
       { k: "attire", label: "Attire", icon: "book" },
-      { k: "maps", label: "Google Maps", icon: "pin" },
+      { k: "music", label: "Music playlist", icon: "play" },
+      { k: "entourage", label: "Entourage", icon: "user" },
     ] : []),
   ];
   const [tab, setTab] = useState("couple");
