@@ -69,6 +69,8 @@ const DECOR_OPTS = [
   ["leaves", "Drifting leaves"], ["confetti", "Confetti"], ["snow", "Falling snow"],
   ["bubbles", "Rising bubbles"], ["sparkles", "Sparkles"], ["orbs", "Bokeh orbs"],
   ["balloons", "Floating balloons"],
+  // ...plus the refined FX effects, so this matches the Settings decoration list.
+  ...FX_LIST.map((e) => ["fx-" + e.id, e.title]),
 ];
 
 // --- Public nav -------------------------------------------------------------
