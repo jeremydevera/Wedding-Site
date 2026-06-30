@@ -692,6 +692,13 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .tbl td { padding: 14px 16px; border-bottom: 1px solid var(--line); vertical-align: middle; }
 .tbl tr:last-child td { border-bottom: none; }
 .tbl tr:hover td { background: var(--surface-2); }
+/* Mobile: drop the column header row on the data tables (RSVPs, Guestbook,
+   Quiz, …) — the rows read fine without it and it saves vertical space. The
+   superadmin Clients table (.tbl--clients) is a wide horizontal-scroll grid
+   where the header is needed to read columns, so keep it. */
+@media (max-width: 640px) {
+  .tbl:not(.tbl--clients) thead { display: none; }
+}
 .tag { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 3px 10px; border-radius: 100px; font-weight: 600; letter-spacing: 0.02em; }
 .tag--attending { background: oklch(0.94 0.05 150); color: oklch(0.42 0.1 150); }
 .tag--maybe { background: oklch(0.95 0.05 80); color: oklch(0.46 0.1 70); }
