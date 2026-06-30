@@ -1671,13 +1671,14 @@ export function TrackEditor({ open, track, onClose }) {
   async function save() {
     if (!track) return;
     if (!f.title.trim()) { toast("Please enter a title.", "err"); return; }
-    Store.updateTrack(track.id, { title: f.title.trim(), artist: f.artist.trim(), url: f.url });
+    const patch = { title: f.title.trim(), artist: f.artist.trim(), url: f.url };
+    if (track.id) Store.updateTrack(track.id, patch); else Store.addTrack(patch);
     await persistChanges();
     onClose();
   }
   return (
     <Modal open={open} onClose={onClose} label="Track">
-      <SectionHead eyebrow="Music" title="Edit track" />
+      <SectionHead eyebrow="Music" title={track && track.id ? "Edit track" : "Add track"} />
       <Field label="Title" required id="trk-t"><Input id="trk-t" value={f.title} onChange={(e) => setF((p) => ({ ...p, title: e.target.value }))} placeholder="e.g. Perfect" /></Field>
       <Field label="Artist" id="trk-a"><Input id="trk-a" value={f.artist} onChange={(e) => setF((p) => ({ ...p, artist: e.target.value }))} placeholder="e.g. Ed Sheeran" /></Field>
       <Field label="Audio file" id="trk-audio" hint="Upload a new file to replace this track's audio">
@@ -1700,27 +1701,40 @@ export function MusicAdmin() {
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const tracks = playlist || [];
   const fileRef = useRef(null);
+  const queueRef = useRef([]);   // freshly-uploaded drafts waiting to be named
   const [uploading, setUploading] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState(null);
 
+  // Upload the file(s), then open the editor so the title/artist can be set
+  // before the track is actually added — nothing is saved until "Save track".
   async function onFiles(files) {
     const list = [...(files || [])].filter(isAudioFile);
     if (!list.length) { toast("Please choose audio files.", "err"); if (fileRef.current) fileRef.current.value = ""; return; }
     setUploading(true);
-    let added = 0;
+    const drafts = [];
     try {
       for (const file of list) {
         const { url } = await uploadAudio(file, clientId);
         const title = (file.name || "").replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim();
-        Store.addTrack({ url, title: title || "Untitled", artist: "" });
-        added++;
+        drafts.push({ url, title: title || "", artist: "" });   // draft (no id) — added on Save
       }
-      await persistChanges();
-      toast(`Added ${added} track${added === 1 ? "" : "s"} — set the title & artist`);
-    } catch (e) { toast("Upload failed: " + (e.message || "error")); }
-    finally { setUploading(false); if (fileRef.current) fileRef.current.value = ""; }
+    } catch (e) {
+      toast("Upload failed: " + (e.message || "error"), "err");
+      setUploading(false); if (fileRef.current) fileRef.current.value = ""; return;
+    }
+    setUploading(false); if (fileRef.current) fileRef.current.value = "";
+    queueRef.current = drafts.slice(1);   // name the rest one after another
+    setEditing(drafts[0]);
+    setEditOpen(true);
   }
+  // After a draft is saved or cancelled, advance to the next uploaded draft.
+  const closeEditor = () => {
+    const q = queueRef.current;
+    if (q.length) { queueRef.current = q.slice(1); setEditing(q[0]); }
+    else { setEditOpen(false); setEditing(null); }
+  };
+  const editExisting = (t) => { queueRef.current = []; setEditing(t); setEditOpen(true); };
   const move = async (id, dir) => { Store.moveTrack(id, dir); await persistChanges(); };
   const del = async (t) => { if (await confirmDialog({ title: "Delete track?", message: `Remove "${t.title}" from the playlist?`, confirmLabel: "Delete", danger: true })) { Store.deleteTrack(t.id); await persistChanges(); } };
 
@@ -1745,7 +1759,7 @@ export function MusicAdmin() {
                   <div className="row-actions">
                     <button className="icon-btn" title="Move up" onClick={() => move(t.id, -1)} disabled={i === 0}>↑</button>
                     <button className="icon-btn" title="Move down" onClick={() => move(t.id, 1)} disabled={i === tracks.length - 1}>↓</button>
-                    <button className="icon-btn" title="Edit title/artist" onClick={() => { setEditing(t); setEditOpen(true); }}>{Icon.edit({})}</button>
+                    <button className="icon-btn" title="Edit title/artist" onClick={() => editExisting(t)}>{Icon.edit({})}</button>
                     <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => del(t)}>{Icon.trash({})}</button>
                   </div>
                 </td>
@@ -1756,9 +1770,9 @@ export function MusicAdmin() {
         </table>
       </div>
       <div className="panel__foot">
-        <span className="panel__foot-hint">Plays as background music on the site (loops). Browsers may require a tap before audio starts. Saves automatically.</span>
+        <span className="panel__foot-hint">Upload a file, then set its title &amp; artist before saving. Plays as background music on the site (loops); browsers may require a tap before audio starts.</span>
       </div>
-      <TrackEditor open={editOpen} track={editing} onClose={() => setEditOpen(false)} />
+      <TrackEditor open={editOpen} track={editing} onClose={closeEditor} />
     </div>
   );
 }
