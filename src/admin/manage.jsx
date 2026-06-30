@@ -436,8 +436,8 @@ export function GuestbookAdmin() {
                 <td>
                   <div className="row-actions">
                     {g.status === "visible"
-                      ? <button className="icon-btn" title="Hide" onClick={() => run(async () => { await setGuestbookStatusDb(g.id, "hidden"); Store.setGuestbookStatus(g.id, "hidden"); }).catch(() => toast("Couldn't update on the server"))}>{Icon.eyeOff({})}</button>
-                      : <button className="icon-btn" title={g.status === "pending" ? "Approve" : "Show"} onClick={() => run(async () => { await setGuestbookStatusDb(g.id, "visible"); Store.setGuestbookStatus(g.id, "visible"); }).catch(() => toast("Couldn't update on the server"))}>{g.status === "pending" ? Icon.check({}) : Icon.eye({})}</button>}
+                      ? <button className="icon-btn" title="Hide" onClick={() => run(async () => { await setGuestbookStatusDb(g.id, "hidden"); Store.setGuestbookStatus(g.id, "hidden"); }).then(() => toast("Message hidden", "success"), () => toast("Couldn't update on the server"))}>{Icon.eyeOff({})}</button>
+                      : <button className="icon-btn" title={g.status === "pending" ? "Approve" : "Show"} onClick={() => run(async () => { await setGuestbookStatusDb(g.id, "visible"); Store.setGuestbookStatus(g.id, "visible"); }).then(() => toast(g.status === "pending" ? "Message approved" : "Message shown", "success"), () => toast("Couldn't update on the server"))}>{g.status === "pending" ? Icon.check({}) : Icon.eye({})}</button>}
                     <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete message?", message: "This permanently removes the guestbook entry.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) run(async () => { await deleteGuestbookDb(g.id); Store.deleteGuestbook(g.id); }).then(() => toast("Message deleted", "success"), () => toast("Couldn't delete on the server")); })}>{Icon.trash({})}</button>
                   </div>
                 </td>
