@@ -3,13 +3,22 @@
 ## 🔴 CRITICAL — demo.celebrately.us is the client-facing demo
 `demo.celebrately.us` is what the owner shows to prospective clients. **It MUST reflect every change.**
 
-- These hosts are **ONE** Cloudflare Pages deployment (project `wedding-site-8nh`):
+- These hosts are **ONE** Cloudflare Pages deployment. **Project name = `wedding-site`**
+  (the `wedding-site-8nh` you see is the *subdomain*, not the project name — using it as the
+  project name in the CF API returns `8000007 Project not found`). CF account id
+  `4acf69efbeed54838dc0d5f004769933` (Jeremydevera03@gmail.com). Hosts:
   `demo.celebrately.us`, `www.celebrately.us`, `celebrately.us`, `wedding-site-8nh.pages.dev`.
   → A change deployed to the project is automatically live on **all** of them. There is no separate "demo" build.
-- **After every deploy, VERIFY on `https://demo.celebrately.us`** (not only the pages.dev URL).
-  Confirm the served bundle hash and/or the actual behavior on demo, e.g.:
-  `curl -s https://demo.celebrately.us/ | grep -oE '/assets/index-[^"]+\.js'`
-  and compare to the same on `wedding-site-8nh.pages.dev`.
+- 🔴 **Do NOT verify deploys by matching the LOCAL build hash to the served hash — they DON'T match.**
+  Cloudflare does a clean install and bakes in its own build-time env (Supabase vars, etc.), so the
+  same commit builds to a **different** `index-*.js` hash on CF than `npm run build` does locally.
+  Polling for your local hash will loop forever even though the deploy succeeded. (This wasted real time.)
+  **Verify the deploy via the CF Pages API instead** — confirm the latest deployment's *commit* and stage
+  status, using the `cloudflare-api` MCP `execute`:
+  `GET /accounts/{accountId}/pages/projects/wedding-site` → `result.latest_deployment` →
+  check `deployment_trigger.metadata.commit_hash` == your pushed commit and `stages[].status` all `success`.
+  Then confirm **behavior/marker strings** in the served bundle (e.g. `curl -s <host>/assets/index-*.js | grep <marker>`),
+  NOT the hash. All hosts serving the *same* hash as each other is still a good consistency check.
 - If demo looks stale, it is almost always **browser cache** (there is **no service worker**). Hard-refresh
   (Cmd+Shift+R) or use an incognito window before assuming the deploy failed.
 
