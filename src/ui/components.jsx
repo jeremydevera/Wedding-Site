@@ -238,6 +238,18 @@ export function Modal({ open, onClose, children, wide, label = "Dialog" }) {
   // open/close, not on every parent re-render (onClose is a new fn each render).
   useEffect(() => {
     if (!open) return;
+    // In the admin, the DOCUMENT never scrolls — the fixed flex-shell does, and
+    // only .admin__body scrolls inside it. Toggling body{position:fixed} there is
+    // pointless AND breaks iOS Safari: after the modal closes, iOS keeps stale
+    // touch hit-regions, so taps land on the wrong element or do nothing (burger /
+    // search go dead, a tab tap fires Email/Export). So in admin, just lock the
+    // inner scroller; keep the body-position lock for the public site (window scroll).
+    const adminBody = typeof document !== "undefined" && document.querySelector(".admin__body");
+    if (adminBody) {
+      const prevOv = adminBody.style.overflow;
+      adminBody.style.overflow = "hidden";
+      return () => { adminBody.style.overflow = prevOv; };
+    }
     // position:fixed (not just overflow:hidden) so iOS Safari can't scroll the
     // background; restore the exact scroll position on close.
     const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
