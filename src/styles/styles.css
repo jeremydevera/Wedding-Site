@@ -1050,13 +1050,15 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
      OUTSIDE the scroll box, so it physically cannot move. Fixed-position children
      (.admin__side drawer, .admin-saving, .admin__overlay) still escape to the
      viewport because .admin has no transform, so overflow:hidden won't clip them. */
-  /* position:fixed inset:0 makes the shell a true full-viewport app frame so the
-     DOCUMENT can never scroll — only .admin__body does. Without this, a short tab
-     (e.g. Quiz, where the body doesn't fill the screen) lets the swipe leak into a
-     tiny document scroll that drags the in-flow header along. .admin has no
-     transform, so being fixed does NOT clip/recontain its fixed children (drawer,
-     overlays) — they still pin to the viewport. */
-  .admin { position: fixed; inset: 0; flex-direction: column; max-width: 100%; height: 100vh; height: 100dvh; overflow: hidden; }
+  /* position:fixed full-viewport app frame so the DOCUMENT can never scroll —
+     only .admin__body does. Without this, a short tab (e.g. Quiz) lets the swipe
+     leak into a tiny document scroll that drags the in-flow header along. .admin
+     has no transform, so being fixed does NOT clip/recontain its fixed children
+     (drawer, overlays) — they still pin to the viewport.
+     Pin top/left/right but NOT bottom — height:100dvh = the VISIBLE viewport, so
+     the frame ends above the iOS Safari toolbar. (inset:0 / bottom:0 would pin to
+     the LARGE layout viewport, hiding the last rows behind the toolbar.) */
+  .admin { position: fixed; top: 0; left: 0; right: 0; flex-direction: column; max-width: 100%; height: 100vh; height: 100dvh; overflow: hidden; }
   .admin__main { margin-left: 0; display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
   /* Safe-area (notch) space goes ABOVE the bar so the bar's own padding stays
      symmetric and the burger + title center cleanly inside it. */
@@ -1074,8 +1076,9 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
   .admin__burger svg { width: 20px; height: 20px; pointer-events: none; }
   /* .admin__body is the ONLY scroll box now (header is in-flow above it), so no
      top padding to clear a fixed header — just scroll it. */
-  .admin__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 18px; }
-  .admin--sa .admin__body { padding: 18px 26px 48px; }
+  /* Bottom padding clears the home indicator so the LAST row is fully visible. */
+  .admin__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 18px 18px calc(28px + env(safe-area-inset-bottom)); }
+  .admin--sa .admin__body { padding: 18px 26px calc(48px + env(safe-area-inset-bottom)); }
   /* topbar must wrap: title + action buttons can't sit on one phone row */
   /* Extra TOP padding pushes the burger + title lower (more clearance below the
      status bar / Dynamic Island); notch inset on .admin__head adds to it on
