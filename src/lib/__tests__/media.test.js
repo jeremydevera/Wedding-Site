@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { mediaUrl, MEDIA_BASE } from "@/lib/media.js";
+import { mediaUrl, MEDIA_PROXY } from "@/lib/media.js";
 
 describe("mediaUrl", () => {
-  it("prepends the media base to a bare R2 key", () => {
-    expect(mediaUrl("87e2/owner/image/hero/k3x9-a.jpg")).toBe(MEDIA_BASE + "/87e2/owner/image/hero/k3x9-a.jpg");
+  it("resolves a bare R2 key through the same-origin proxy", () => {
+    expect(mediaUrl("87e2/owner/image/hero/k3x9-a.jpg")).toBe(MEDIA_PROXY + "87e2/owner/image/hero/k3x9-a.jpg");
   });
   it("passes through absolute http(s) urls unchanged", () => {
     expect(mediaUrl("https://x.supabase.co/storage/v1/object/public/audio/a.mp3"))
