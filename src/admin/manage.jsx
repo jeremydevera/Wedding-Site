@@ -7,7 +7,7 @@ import { FX_LIST } from "@/lib/falling-fx.js";
 import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { signOut } from "@/lib/auth.js";
-import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2 } from "@/lib/api.js";
+import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia } from "@/lib/api.js";
 import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
 import { visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel } from "@/lib/roles.js";
@@ -1403,6 +1403,7 @@ export function HomeAdmin() {
                 checked={f.musicAutoplay !== false} onChange={(v) => toggleShow("musicAutoplay", v)} />
             </div>
           </div>
+          <R2MigratePanel />
           <MusicAdmin />
         </>
       )}
@@ -1712,6 +1713,35 @@ export function TrackEditor({ open, track, onClose }) {
         <Button variant="primary" onClick={save} disabled={uploading}>Save track</Button>
       </div>
     </Modal>
+  );
+}
+
+// One-time helper: moves this client's legacy media (base64 images / Supabase
+// audio) into R2. Auto-hides once there's nothing left to move. Superadmin-only.
+export function R2MigratePanel() {
+  const state = useStore();
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(0);
+  if (!hasLegacyMedia(state)) return null;
+  async function run() {
+    setBusy(true); setDone(0);
+    try {
+      const { migrated, failed } = await migrateClientMediaToR2((n) => setDone(n));
+      toast(failed ? `Moved ${migrated} file(s) to R2; ${failed} failed` : `Moved ${migrated} file(s) to R2`, failed ? "err" : undefined);
+    } catch (e) {
+      toast("Migration failed: " + (e && e.message || "error"), "err");
+    } finally { setBusy(false); }
+  }
+  return (
+    <div className="panel">
+      <div className="panel__head"><div className="panel__title">Move existing media to R2</div></div>
+      <div className="panel__body">
+        <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 14px" }}>
+          This site still has media stored the old way (base64 images and/or Supabase audio). Move it into Cloudflare R2 — runs once and is safe to repeat.
+        </p>
+        <Button variant="primary" size="sm" disabled={busy} onClick={run}>{busy ? `Moving… (${done})` : "Move media to R2"}</Button>
+      </div>
+    </div>
   );
 }
 

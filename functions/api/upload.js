@@ -28,24 +28,43 @@ export async function onRequestPost(context) {
     return json({ error: "auth check failed" }, 502);
   }
 
-  // 2. Read the file from the multipart body.
+  // 2. Read the body. Either a multipart "file", or a "sourceUrl" to fetch
+  //    server-side (used by the one-time migration to pull existing media in
+  //    without hitting browser CORS).
   let form;
   try { form = await request.formData(); } catch { return json({ error: "bad form" }, 400); }
+  const clientId = String(form.get("clientId") || "shared").replace(/[^a-zA-Z0-9-]/g, "").slice(0, 64) || "shared";
+  const kind = String(form.get("kind") || "misc").replace(/[^a-z0-9]/gi, "").slice(0, 24) || "misc";
+
+  let body, type, name;
   const file = form.get("file");
-  if (!file || typeof file === "string") return json({ error: "no file" }, 400);
-  if (file.size > MAX_BYTES) return json({ error: "file too large (max 25MB)" }, 413);
-  const type = file.type || "application/octet-stream";
+  const sourceUrl = form.get("sourceUrl");
+  if (file && typeof file !== "string") {
+    if (file.size > MAX_BYTES) return json({ error: "file too large (max 25MB)" }, 413);
+    type = file.type || "application/octet-stream";
+    name = file.name || "file";
+    body = file.stream();
+  } else if (typeof sourceUrl === "string" && /^https:\/\//.test(sourceUrl)) {
+    let src;
+    try { src = await fetch(sourceUrl); } catch { return json({ error: "source fetch failed" }, 502); }
+    if (!src.ok) return json({ error: "source not reachable" }, 502);
+    const len = Number(src.headers.get("content-length") || 0);
+    if (len && len > MAX_BYTES) return json({ error: "source too large (max 25MB)" }, 413);
+    type = src.headers.get("content-type") || "application/octet-stream";
+    name = (sourceUrl.split("/").pop() || "file").split("?")[0];
+    body = src.body;
+  } else {
+    return json({ error: "no file or sourceUrl" }, 400);
+  }
   if (!TYPE_OK.test(type)) return json({ error: "unsupported file type" }, 415);
 
   // 3. Build a safe key: <clientId>/<kind>/<ts>-<name>.
-  const clientId = String(form.get("clientId") || "shared").replace(/[^a-zA-Z0-9-]/g, "").slice(0, 64) || "shared";
-  const kind = String(form.get("kind") || "misc").replace(/[^a-z0-9]/gi, "").slice(0, 24) || "misc";
-  const safeName = String(file.name || "file").replace(/[^a-zA-Z0-9._-]/g, "_").slice(-80);
+  const safeName = String(name || "file").replace(/[^a-zA-Z0-9._-]/g, "_").slice(-80);
   const key = `${clientId}/${kind}/${Date.now()}-${safeName}`;
 
   // 4. Store in R2.
   try {
-    await env.MEDIA.put(key, file.stream(), { httpMetadata: { contentType: type } });
+    await env.MEDIA.put(key, body, { httpMetadata: { contentType: type } });
   } catch (e) {
     return json({ error: "upload failed", detail: String(e && e.message || e) }, 500);
   }

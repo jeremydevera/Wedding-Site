@@ -132,3 +132,69 @@ export async function uploadAudio(file, clientId) {
   const { url, key } = await uploadToR2(file, "audio", clientId);
   return { url, path: key };
 }
+
+// Have the Function pull a remote file into R2 server-side (no browser CORS).
+// Used by the migration to move existing Supabase-hosted audio.
+async function uploadUrlToR2(sourceUrl, kind, clientId) {
+  const { data } = await supabase.auth.getSession();
+  const token = data && data.session && data.session.access_token;
+  if (!token) throw new Error("Not signed in");
+  const form = new FormData();
+  form.append("sourceUrl", sourceUrl);
+  form.append("kind", kind || "misc");
+  if (clientId) form.append("clientId", clientId);
+  const res = await fetch("/api/upload", { method: "POST", headers: { authorization: `Bearer ${token}` }, body: form });
+  if (!res.ok) { let m = `upload failed (${res.status})`; try { const e = await res.json(); if (e.error) m = e.error; } catch (_) {} throw new Error(m); }
+  return await res.json();
+}
+
+// One-time migration: move the active client's existing media into R2 and
+// rewrite the stored references. Idempotent — anything already on /r2/ is
+// skipped, so it can be re-run safely. base64 images upload from the browser
+// (data: URLs have no CORS); remote audio is pulled server-side.
+const isData = (u) => typeof u === "string" && u.startsWith("data:");
+const isLegacyUrl = (u) => typeof u === "string" && u && !u.startsWith("/r2/");
+export function hasLegacyMedia(state) {
+  const s = state || Store.get();
+  if (["heroImage", "frameImage", "envBgImage"].some((k) => isData(s.settings && s.settings[k]))) return true;
+  if ((s.attire || []).some((g) => isData(g.image))) return true;
+  if ((s.story || []).some((r) => isData(r.img))) return true;
+  if ((s.playlist || []).some((t) => isLegacyUrl(t.url) && !isData(t.url))) return true;
+  return false;
+}
+
+export async function migrateClientMediaToR2(onProgress) {
+  const st = Store.get();
+  const clientId = st.clientId;
+  let migrated = 0, failed = 0;
+  const tick = () => { migrated++; if (onProgress) onProgress(migrated); };
+
+  // base64 image -> upload from the browser
+  const imgToR2 = async (dataUrl, hint) => {
+    const blob = await (await fetch(dataUrl)).blob();
+    const file = new File([blob], `${hint || "image"}.jpg`, { type: blob.type || "image/jpeg" });
+    return (await uploadToR2(file, "image", clientId)).url;
+  };
+
+  // settings images
+  const settings = { ...st.settings };
+  for (const k of ["heroImage", "frameImage", "envBgImage"]) {
+    if (isData(settings[k])) { try { settings[k] = await imgToR2(settings[k], k); tick(); } catch (e) { failed++; } }
+  }
+  // attire images
+  const attire = (st.attire || []).map((g) => ({ ...g }));
+  for (const g of attire) { if (isData(g.image)) { try { g.image = await imgToR2(g.image, g.name || "attire"); tick(); } catch (e) { failed++; } } }
+  // story images
+  const story = (st.story || []).map((r) => ({ ...r }));
+  for (const r of story) { if (isData(r.img)) { try { r.img = await imgToR2(r.img, r.title || "story"); tick(); } catch (e) { failed++; } } }
+  // audio (remote Supabase URL) -> server-side pull
+  const playlist = (st.playlist || []).map((t) => ({ ...t }));
+  for (const t of playlist) {
+    if (isLegacyUrl(t.url) && !isData(t.url)) { try { t.url = (await uploadUrlToR2(t.url, "audio", clientId)).url; tick(); } catch (e) { failed++; } }
+  }
+
+  Store.set({ attire, story, playlist });
+  Store.updateSettings(settings);
+  await saveClientData();
+  return { migrated, failed };
+}
