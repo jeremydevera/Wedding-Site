@@ -196,7 +196,7 @@ export function RsvpsAdmin() {
 
   function exportCsv() {
     const header = ["Full Name", "Email", "Phone", "Status", "Guests", "Plus-One Names", "Dietary", "Dietary Notes", "Song Request", "Notes", "Submitted"];
-    const rows = [header, ...rsvps.map((r) => [r.fullName, r.email, r.phone, r.status, r.count, r.plusOne, r.diet, r.dietNotes, r.song, r.notes, fmtDate(r.createdAt)])];
+    const rows = [header, ...filtered.map((r) => [r.fullName, r.email, r.phone, r.status, r.count, r.plusOne, r.diet, r.dietNotes, r.song, r.notes, fmtDate(r.createdAt)])];
     downloadCSV("evermore-rsvps.csv", rows);
   }
 
@@ -205,9 +205,9 @@ export function RsvpsAdmin() {
   async function emailResults(to) {
     const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
     const label = { attending: "Attending", maybe: "Maybe", not_attending: "Not attending" };
-    const yes = rsvps.filter((r) => r.status === "attending");
+    const yes = filtered.filter((r) => r.status === "attending");
     const guests = yes.reduce((s, r) => s + (Number(r.count) || 0), 0);
-    const rows = rsvps.map((r) => `<tr>
+    const rows = filtered.map((r) => `<tr>
       <td style="padding:6px 10px;border-bottom:1px solid #eee">${esc(r.fullName)}</td>
       <td style="padding:6px 10px;border-bottom:1px solid #eee">${esc(label[r.status] || r.status)}</td>
       <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:center">${esc(r.count || "")}</td>
@@ -217,10 +217,10 @@ export function RsvpsAdmin() {
       <h2 style="margin:0 0 4px">RSVP results</h2>
       <p style="color:#666;margin:0 0 16px">${esc(settings.partnerA)} &amp; ${esc(settings.partnerB)}</p>
       <p style="margin:0 0 16px">
-        <strong>${rsvps.length}</strong> responses &nbsp;·&nbsp;
+        <strong>${filtered.length}</strong> responses &nbsp;·&nbsp;
         <strong>${yes.length}</strong> attending (${guests} guests) &nbsp;·&nbsp;
-        ${rsvps.filter((r) => r.status === "maybe").length} maybe &nbsp;·&nbsp;
-        ${rsvps.filter((r) => r.status === "not_attending").length} not attending
+        ${filtered.filter((r) => r.status === "maybe").length} maybe &nbsp;·&nbsp;
+        ${filtered.filter((r) => r.status === "not_attending").length} not attending
       </p>
       <table style="border-collapse:collapse;width:100%;font-size:14px">
         <thead><tr style="text-align:left;background:#f6f6f6">
@@ -421,7 +421,7 @@ export function GuestbookAdmin() {
 
   function exportCsv() {
     const rows = [["Guest Name", "Message", "Relationship", "Status", "Submitted"],
-      ...guestbook.map((g) => [g.name, g.message, g.relationship, g.status, fmtDate(g.createdAt)])];
+      ...filtered.map((g) => [g.name, g.message, g.relationship, g.status, fmtDate(g.createdAt)])];
     downloadCSV("evermore-guestbook.csv", rows);
   }
 
