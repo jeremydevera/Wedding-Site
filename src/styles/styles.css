@@ -1477,8 +1477,10 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* Attire guide — example image + colour palette per group (public) */
 .attire-grid { display: flex; flex-wrap: wrap; gap: 30px; justify-content: center; align-items: flex-start; max-width: 940px; margin: 44px auto 0; }
 .attire-card { flex: 0 1 230px; max-width: 260px; min-width: 190px; text-align: center; display: flex; flex-direction: column; align-items: center; }
-.attire-card__img { width: 100%; aspect-ratio: 3 / 4; border-radius: calc(var(--radius) + 6px); overflow: hidden; background: var(--surface-2); border: 1px solid var(--line); display: grid; place-items: center; }
-.attire-card__img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Transparent background + contain so cut-out PNGs blend into the section
+   (no opaque box) and the whole figure shows. */
+.attire-card__img { width: 100%; aspect-ratio: 3 / 4; overflow: hidden; background: transparent; display: grid; place-items: center; }
+.attire-card__img img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .attire-card__name { font-family: var(--font-display); font-size: 26px; color: var(--ink); margin-top: 16px; letter-spacing: .01em; } /* match the schedule tile title (.tl-title) */
 /* No-photo tiles start with the name, so don't add the image-gap on top. */
 .attire-card > .attire-card__name:first-child { margin-top: 0; }

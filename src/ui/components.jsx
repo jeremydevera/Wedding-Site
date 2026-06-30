@@ -372,9 +372,21 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc }
     const c = document.createElement("canvas");
     c.width = outW; c.height = outH;
     const ctx = c.getContext("2d");
-    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, outW, outH);
+    // No white fill — keep the canvas transparent so PNG cut-outs stay
+    // transparent. Opaque photos cover the whole crop box (cover scale), so
+    // there are no gaps to fill anyway.
     ctx.drawImage(im, srcX, srcY, srcW, srcH, 0, 0, outW, outH);
     return c;
+  }
+
+  // True if the cropped canvas has any transparent pixels (a cut-out PNG). If
+  // so we export PNG to preserve alpha; otherwise JPEG (smaller) for photos.
+  function hasTransparency(c) {
+    try {
+      const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
+      for (let i = 3; i < d.length; i += 4 * 37) if (d[i] < 250) return true;
+    } catch (e) { /* tainted canvas — assume opaque */ }
+    return false;
   }
 
   // live oval-frame preview — recompute as the user drags / zooms
@@ -388,7 +400,7 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc }
   function apply() {
     const c = drawCrop();
     if (!c) { onCancel && onCancel(); return; }
-    onApply(c.toDataURL("image/jpeg", 0.86));
+    onApply(hasTransparency(c) ? c.toDataURL("image/png") : c.toDataURL("image/jpeg", 0.86));
   }
 
   if (!open) return null;
