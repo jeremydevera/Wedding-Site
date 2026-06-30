@@ -707,7 +707,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 
 .search-box { display: flex; align-items: center; gap: 8px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 12px; flex: none; }
 .search-box svg { width: 16px; height: 16px; color: var(--muted); flex: none; }
-.search-box input { border: none; background: none; outline: none; font-family: var(--font-body); font-size: 14px; color: var(--ink); width: 150px; min-width: 0; }
+.search-box input { border: none; background: none; outline: none; font-family: var(--font-body); font-size: 14px; line-height: 1; color: var(--ink); width: 150px; min-width: 0; }
 /* 3-dots actions menu (RSVPs toolbar) */
 .kebab { position: relative; }
 .kebab__btn { font-size: 20px; line-height: 1; }
@@ -780,7 +780,13 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
    grouped on the right. Stacks cleanly on mobile instead of wrapping messily. */
 .admin-toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; flex: 1; }
 .admin-toolbar__end { display: flex; gap: 10px; align-items: center; margin-left: auto; }
-@media (min-width: 641px) { .admin--sa .admin-toolbar__action { padding: 8px 14px; font-size: 13px; } } /* match the filter seg height on desktop */
+/* Toolbar action buttons (Email results / Export) match the search-box height in
+   EVERY theme. Owner/themed admins fall through to the tall base .btn (14px pad);
+   superadmin uses the more-specific .admin--sa .btn (7px). Pin both to the same
+   compact padding so the actions line up with the search bar everywhere. */
+.admin-toolbar__action,
+.admin--sa .admin-toolbar__action { padding: 8px 14px; font-size: 13px; line-height: 1; }
+.admin-toolbar__action svg { width: 16px; height: 16px; }
 @media (max-width: 640px) {
   .admin-toolbar { gap: 8px; }
   .admin-toolbar__action { flex: 1 1 0; }                 /* actions share the top row */
