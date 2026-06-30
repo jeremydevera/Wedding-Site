@@ -1628,14 +1628,16 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .vinyl-list__title { font-family: var(--font-display); font-size: 18px; line-height: 1.25; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .vinyl-list__item.is-active .vinyl-list__title { color: var(--accent); font-weight: 600; }
 .vinyl-list__artist { font-family: var(--font-body); font-size: 12px; letter-spacing: .03em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-/* Playlist type: a Spotify-style geometric sans. Spotify's own Circular is
-   proprietary and can't be embedded, so use Montserrat (the closest free
-   match). Scoped to the player only; titles take Spotify's bold treatment. */
+/* Playlist type: Apple Music look = San Francisco (Apple's system font). Use the
+   native system-font stack so it renders SF Pro on Apple devices (where Apple
+   Music lives) and the OS UI font elsewhere. Scoped to the player only. */
 .vinyl-kicker, .vinyl-title, .vinyl-artist, .vinyl-times, .vinyl-aside__head,
 .vinyl-list__title, .vinyl-list__artist, .vinyl-list__n {
-  font-family: "Montserrat", "Helvetica Neue", Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, system-ui, sans-serif;
 }
-.vinyl-title { font-weight: 700; letter-spacing: -0.01em; }
+/* Now-playing title: larger + bold, like Apple Music's track header. */
+.vinyl-title { font-size: clamp(22px, 3.4vw, 30px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+.vinyl-list__title { font-weight: 600; letter-spacing: -0.01em; }
 .vinyl-list__title { font-weight: 600; letter-spacing: -0.01em; }
 /* equalizer bars on the active row (frozen unless playing) */
 .vinyl-eq { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; }
