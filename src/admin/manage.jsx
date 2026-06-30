@@ -254,7 +254,10 @@ export function RsvpsAdmin() {
       {/* Status filter as folder tabs (like Guestbook), above the panel. */}
       <div className="folders">
         {[["all", "All"], ["attending", "Yes"], ["maybe", "Maybe"], ["not_attending", "No"]].map(([v, l]) => (
-          <button key={v} className={"folder" + (filter === v ? " folder--active" : "")} onClick={() => setFilter(v)}>{l} ({counts[v]})</button>
+          // onMouseDown preventDefault: don't steal focus from the search input.
+          // On iOS, tabbing a filter while search is focused blurs it mid-re-render
+          // and the keyboard can't be brought back — keep focus on the input instead.
+          <button key={v} className={"folder" + (filter === v ? " folder--active" : "")} onMouseDown={(e) => e.preventDefault()} onClick={() => setFilter(v)}>{l} ({counts[v]})</button>
         ))}
       </div>
       <div className="panel">
@@ -479,8 +482,8 @@ export function GuestbookAdmin() {
       {/* With moderation on, split into folder tabs: Published vs Pending approval. */}
       {moderation && (
         <div className="folders">
-          <button className={"folder" + (view === "published" ? " folder--active" : "")} onClick={() => setView("published")}>{Icon.check({})} Published ({publishedCount})</button>
-          <button className={"folder" + (view === "pending" ? " folder--active" : "")} onClick={() => setView("pending")}>{Icon.book({})} Pending approval ({pendingCount})</button>
+          <button className={"folder" + (view === "published" ? " folder--active" : "")} onMouseDown={(e) => e.preventDefault()} onClick={() => setView("published")}>{Icon.check({})} Published ({publishedCount})</button>
+          <button className={"folder" + (view === "pending" ? " folder--active" : "")} onMouseDown={(e) => e.preventDefault()} onClick={() => setView("pending")}>{Icon.book({})} Pending approval ({pendingCount})</button>
         </div>
       )}
       <div className="panel">
