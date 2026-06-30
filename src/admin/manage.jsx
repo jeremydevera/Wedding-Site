@@ -1644,6 +1644,12 @@ export function AttireAdmin() {
 }
 
 // --- Music admin (upload audio to Storage; superadmin-only content tab) -----
+// Some browsers report an empty MIME type for .mp3/.m4a etc., so accept by file
+// extension too — not just `file.type.startsWith("audio/")`.
+const AUDIO_EXT_RE = /\.(mp3|m4a|aac|wav|ogg|oga|opus|flac|weba|webm|aiff?|wma)$/i;
+const isAudioFile = (f) => !!f && ((f.type && f.type.startsWith("audio/")) || AUDIO_EXT_RE.test(f.name || ""));
+const AUDIO_ACCEPT = "audio/*,.mp3,.m4a,.aac,.wav,.ogg,.oga,.opus,.flac";
+
 export function TrackEditor({ open, track, onClose }) {
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const { clientId } = useStore();
@@ -1652,7 +1658,7 @@ export function TrackEditor({ open, track, onClose }) {
   const fileRef = useRef(null);
   useEffect(() => { if (track) setF({ title: track.title || "", artist: track.artist || "", url: track.url || "" }); }, [track, open]);
   async function onReplace(files) {
-    const file = [...(files || [])].find((x) => x.type.startsWith("audio/"));
+    const file = [...(files || [])].find(isAudioFile);
     if (!file) { toast("Please choose an audio file.", "err"); if (fileRef.current) fileRef.current.value = ""; return; }
     setUploading(true);
     try {
@@ -1677,7 +1683,7 @@ export function TrackEditor({ open, track, onClose }) {
       <Field label="Audio file" id="trk-audio" hint="Upload a new file to replace this track's audio">
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {f.url ? <audio src={f.url} controls preload="none" style={{ width: "100%", height: 38 }} /> : <span style={{ color: "var(--muted)", fontSize: 13 }}>No audio yet</span>}
-          <input ref={fileRef} type="file" accept="audio/*" style={{ display: "none" }} onChange={(e) => onReplace(e.target.files)} />
+          <input ref={fileRef} type="file" accept={AUDIO_ACCEPT} style={{ display: "none" }} onChange={(e) => onReplace(e.target.files)} />
           <div><Button variant="ghost" size="sm" disabled={uploading} onClick={() => fileRef.current && fileRef.current.click()}>{uploading ? "Uploading…" : "Replace audio"}</Button></div>
         </div>
       </Field>
@@ -1699,7 +1705,7 @@ export function MusicAdmin() {
   const [editing, setEditing] = useState(null);
 
   async function onFiles(files) {
-    const list = [...(files || [])].filter((f) => f.type.startsWith("audio/"));
+    const list = [...(files || [])].filter(isAudioFile);
     if (!list.length) { toast("Please choose audio files.", "err"); if (fileRef.current) fileRef.current.value = ""; return; }
     setUploading(true);
     let added = 0;
@@ -1723,7 +1729,7 @@ export function MusicAdmin() {
       <div className="panel__head">
         <div className="panel__title">Music Playlist <span style={{ color: "var(--muted)", fontSize: 15 }}>({tracks.length})</span></div>
         <Button variant="primary" size="sm" disabled={uploading} onClick={() => fileRef.current && fileRef.current.click()}>{uploading ? "Uploading…" : "+ Upload audio"}</Button>
-        <input ref={fileRef} type="file" accept="audio/*" multiple style={{ display: "none" }} onChange={(e) => onFiles(e.target.files)} />
+        <input ref={fileRef} type="file" accept={AUDIO_ACCEPT} multiple style={{ display: "none" }} onChange={(e) => onFiles(e.target.files)} />
       </div>
       <div className="panel__body--flush table-wrap">
         <table className="tbl">
