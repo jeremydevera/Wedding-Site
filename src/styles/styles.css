@@ -91,9 +91,11 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
   backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(20px) saturate(1.4);
   border-bottom: 1px solid color-mix(in oklch, var(--line) 70%, transparent);
 }
-/* Offset for the fixed header. Only the public site renders <main>; the admin
-   shell has none, so it's unaffected. */
-main { padding-top: 70px; }
+/* Offset for the fixed public .nav. The admin shell ALSO renders a <main>
+   (.admin__main) with its own fixed header + body padding, so it must be
+   excluded here — otherwise this 70px pushes the admin header down and opens a
+   blank band above it. */
+main:not(.admin__main) { padding-top: 70px; }
 /* Sealed envelope is a full-screen takeover with the nav hidden — no offset. */
 body.env-sealed main { padding-top: 0; }
 .nav__inner { display: flex; align-items: center; justify-content: space-between; height: 70px; gap: 16px; }
@@ -675,7 +677,7 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 .signin__btn:hover { background: #1c9159; }
 .signin__btn:disabled { opacity: .65; cursor: default; }
 
-.admin__body { padding: 100px 30px 30px; }   /* top clears the fixed .admin__head (~70px) */
+.admin__body { padding: 86px 30px 30px; }   /* top clears the fixed .admin__head (~70px) + a small gap */
 /* Save footer LIVES INSIDE the section card (Supabase pattern): a top-divider
    footer with helper text left + button right. Rendered as the last child of a
    .panel, only on sections that edit content. */
@@ -858,7 +860,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 /* Data table + toolbar matched to the Supabase users page */
 .admin--sa .tbl th { background: #f3f3f3; color: #171717; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: normal; height: 36px; padding: 0 12px; border-bottom: 1px solid #dfdfdf; }
 .admin--sa .tbl td { font-size: 13px; padding: 10px 12px; }
-.admin--sa .admin__body { padding: 92px 26px 48px; }   /* top clears the fixed .admin__head (~70px) */
+.admin--sa .admin__body { padding: 84px 26px 48px; }   /* top clears the fixed .admin__head (~70px) + a small gap */
 /* Clients table: fixed columns so width spreads evenly (no dead gap before Owner login) */
 .admin--sa .tbl--clients { table-layout: fixed; width: 100%; min-width: 820px; }
 .admin--sa .tbl--clients th:nth-child(1), .admin--sa .tbl--clients td:nth-child(1) { width: 38%; }
