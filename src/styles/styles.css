@@ -680,6 +680,9 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 .signin__btn:disabled { opacity: .65; cursor: default; }
 
 .admin__body { padding: 86px 30px 30px; }   /* top clears the fixed .admin__head (~70px) + a small gap */
+.admin__footer { text-align: center; color: var(--muted); font-size: 12px; letter-spacing: .02em; padding: 26px 0 8px; margin-top: 28px; border-top: 1px solid var(--line); }
+.admin__footer a { color: var(--muted); text-decoration: none; }
+.admin__footer a:hover { color: var(--ink); text-decoration: underline; }
 /* Save footer LIVES INSIDE the section card (Supabase pattern): a top-divider
    footer with helper text left + button right. Rendered as the last child of a
    .panel, only on sections that edit content. */

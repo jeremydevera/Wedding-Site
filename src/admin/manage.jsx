@@ -2072,6 +2072,10 @@ export function AdminApp() {
           {activeTab === "overview" && <SuperOverview />}
           {activeTab === "clients" && <ClientsAdmin />}
           </AdminSaveCtx.Provider>
+          {/* Footer: a clear end-of-content marker at the bottom of the scroll. */}
+          <footer className="admin__footer">
+            © {new Date().getFullYear()} {BRAND_NAME} · <a href="https://celebrately.us" target="_blank" rel="noreferrer">celebrately.us</a>
+          </footer>
         </div>
       </main>
     </div>
