@@ -264,8 +264,8 @@ export function RsvpsAdmin() {
           <div className="admin-toolbar">
             {/* Email results + Export CSV grouped to the right, directly left of search. */}
             <div className="admin-toolbar__end">
-              <Button variant="ghost" className="admin-toolbar__action" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>{Icon.mail({})} Email results</Button>
-              <Button variant="primary" className="admin-toolbar__action" onClick={exportCsv}>{Icon.download({})} Export CSV</Button>
+              <Button variant="ghost" className="admin-toolbar__action" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>{Icon.mail({})} Email</Button>
+              <Button variant="primary" className="admin-toolbar__action" onClick={exportCsv}>{Icon.download({})} Export</Button>
               <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
             </div>
           </div>
@@ -490,7 +490,7 @@ export function GuestbookAdmin() {
         <div className="admin-toolbar">
           {/* Email + Export directly left of search (right group). */}
           <div className="admin-toolbar__end">
-            <Button variant="ghost" className="admin-toolbar__action" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>{Icon.mail({})} Email results</Button>
+            <Button variant="ghost" className="admin-toolbar__action" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>{Icon.mail({})} Email</Button>
             <Button variant="primary" className="admin-toolbar__action" onClick={exportCsv}>{Icon.download({})} Export</Button>
             <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
           </div>
