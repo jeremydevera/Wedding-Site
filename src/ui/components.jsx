@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { uid } from "@/lib/store.jsx";
 import { FX_CSS, FX_MOUNTS } from "@/lib/falling-fx.js";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
@@ -251,14 +252,22 @@ export function Modal({ open, onClose, children, wide, label = "Dialog" }) {
     };
   }, [open]);
   if (!open) return null;
-  return (
-    <div className="modal" role="dialog" aria-modal="true" aria-label={label}>
+  // Render into <body> so the modal escapes any ancestor that creates a
+  // containing block — e.g. .fade-up's persistent transform (animation-fill:both
+  // leaves translateY(0)) or scroll-reveal's will-change. Those would otherwise
+  // resolve the modal's position:fixed against the page instead of the viewport,
+  // cutting it off (and hiding it on mobile). Re-apply .admin--sa when opened
+  // from the console so it keeps the neutral admin palette, not the event theme.
+  const inAdmin = typeof document !== "undefined" && !!document.querySelector(".admin--sa");
+  return createPortal(
+    <div className={"modal" + (inAdmin ? " admin--sa" : "")} role="dialog" aria-modal="true" aria-label={label}>
       <div className="modal__backdrop" onClick={onClose} />
       <div className={"modal__panel" + (wide ? " modal__panel--wide" : "")}>
         <button className="modal__close" onClick={onClose} aria-label="Close">&times;</button>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
