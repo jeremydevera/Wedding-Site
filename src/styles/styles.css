@@ -1070,10 +1070,12 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
      leak into a tiny document scroll that drags the in-flow header along. .admin
      has no transform, so being fixed does NOT clip/recontain its fixed children
      (drawer, overlays) — they still pin to the viewport.
-     Pin top/left/right but NOT bottom — height:100dvh = the VISIBLE viewport, so
-     the frame ends above the iOS Safari toolbar. (inset:0 / bottom:0 would pin to
-     the LARGE layout viewport, hiding the last rows behind the toolbar.) */
-  .admin { position: fixed; top: 0; left: 0; right: 0; flex-direction: column; max-width: 100%; height: 100vh; height: 100dvh; overflow: hidden; }
+     Pin top/left/right but NOT bottom, and size with 100svh — the SMALL (stable)
+     viewport. The shell never scrolls the document, so iOS keeps the URL toolbar
+     shown; svh is exactly that visible height, so the frame always ends ABOVE the
+     toolbar. (dvh was unreliable — it can resolve to the LARGE toolbar-hidden
+     viewport, hiding the last rows behind the toolbar.) */
+  .admin { position: fixed; top: 0; left: 0; right: 0; flex-direction: column; max-width: 100%; height: 100vh; height: 100svh; overflow: hidden; }
   .admin__main { margin-left: 0; display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
   /* Safe-area (notch) space goes ABOVE the bar so the bar's own padding stays
      symmetric and the burger + title center cleanly inside it. */
