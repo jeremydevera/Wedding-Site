@@ -207,6 +207,8 @@ export function RsvpsAdmin() {
   async function emailResults(to) {
     const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
     const label = { attending: "Attending", maybe: "Maybe", not_attending: "Not attending" };
+    const tab = label[filter];                       // active tab → title; null on "All"
+    const heading = `RSVP${tab ? " — " + tab : " results"}`;
     const yes = filtered.filter((r) => r.status === "attending");
     const guests = yes.reduce((s, r) => s + (Number(r.count) || 0), 0);
     const rows = filtered.map((r) => `<tr>
@@ -216,7 +218,7 @@ export function RsvpsAdmin() {
       <td style="padding:6px 10px;border-bottom:1px solid #eee">${esc(r.email)}</td>
     </tr>`).join("");
     const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#222;max-width:640px;margin:0 auto">
-      <h2 style="margin:0 0 4px">RSVP results</h2>
+      <h2 style="margin:0 0 4px">${heading}</h2>
       <p style="color:#666;margin:0 0 16px">${esc(settings.partnerA)} &amp; ${esc(settings.partnerB)}</p>
       <p style="margin:0 0 16px">
         <strong>${filtered.length}</strong> responses &nbsp;·&nbsp;
@@ -232,7 +234,8 @@ export function RsvpsAdmin() {
         <tbody>${rows || '<tr><td colspan="4" style="padding:14px;color:#888">No RSVPs yet.</td></tr>'}</tbody>
       </table>
     </div>`;
-    const subject = `RSVP results — ${settings.partnerA} & ${settings.partnerB}`;
+    const who = [settings.partnerA, settings.partnerB].filter(Boolean).join(" & ");
+    const subject = `${who ? who + " — " : ""}${heading}`;
     setEmailSending(true);
     try {
       await sendEmail({ to: (to || "").trim(), subject, html });
