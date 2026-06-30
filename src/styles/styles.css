@@ -150,6 +150,12 @@ body.env-sealed main { padding-top: 0; }
   background: color-mix(in oklch, var(--surface) 88%, transparent);
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   border-top: 1px solid var(--line); box-shadow: 0 -6px 20px -12px rgba(0,0,0,.4);
+  /* iOS Safari mis-paints a position:fixed + backdrop-filter bar during scroll /
+     when body overflow toggles (e.g. switching to/from the envelope theme),
+     leaving it stuck mid-screen. Promote it to its own compositor layer so it
+     stays pinned to the viewport bottom — same fix as .admin__head. */
+  -webkit-transform: translateZ(0); transform: translateZ(0);
+  -webkit-backface-visibility: hidden; backface-visibility: hidden;
 }
 .demo-trybar .nav__themepick { display: flex; flex: 1; min-width: 0; }
 .demo-trybar .nav__themepick-label { margin-bottom: 4px; }
