@@ -7,7 +7,7 @@ compatibility_date = "2024-11-01"
 # R2 bucket that holds uploaded audio + images. The Functions reach it as env.MEDIA.
 [[r2_buckets]]
 binding = "MEDIA"
-bucket_name = "celebrately-media"
+bucket_name = "celebrately-medias"
 
 # Public values used by functions/api/upload.js to verify the caller's Supabase
 # session before allowing an upload. These are the publishable anon URL + key —
