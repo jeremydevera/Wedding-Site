@@ -234,7 +234,7 @@ export function RsvpsAdmin() {
     setEmailSending(true);
     try {
       await sendEmail({ to: (to || "").trim(), subject, html });
-      toast(`Sent to ${(to || "").trim()}`);
+      toast("Email sent", "success");
       setEmailOpen(false);
     } catch (e) {
       toast("Couldn't send: " + (e && e.message || "error"), "err");
