@@ -915,6 +915,10 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .pager__num { min-width: 32px; height: 32px; padding: 0 8px; display: inline-flex; align-items: center; justify-content: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer; font-family: var(--font-body); font-size: 13px; color: var(--ink); }
 .pager__num:hover { background: var(--surface-2); border-color: #d4d4d8; }
 .pager__num--active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+/* Keep the active page readable when hovered/focused. On touch, iOS leaves a
+   sticky :hover after a tap; .pager__num:hover (higher specificity) was turning
+   the bg light while the text stayed white (accent-ink) — invisible until blur. */
+.pager__num--active:hover, .pager__num--active:focus { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .pager__ellipsis { color: var(--muted); padding: 0 2px; font-size: 13px; }
 .pager__btn { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 12px; cursor: pointer; font-family: var(--font-body); font-size: 13px; color: var(--ink); }
 .pager__btn:hover:not(:disabled) { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
