@@ -297,6 +297,16 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 input[type="datetime-local"].input,
 input[type="date"].input,
 input[type="time"].input { min-width: 0; }
+/* iOS Safari renders datetime-local as its own taller, centred control that
+   ignores our padding/alignment. Strip the native appearance so it matches the
+   plain text fields beside it (same height, left-aligned value). */
+input[type="datetime-local"].input,
+input[type="date"].input,
+input[type="time"].input { -webkit-appearance: none; appearance: none; text-align: left; }
+input[type="datetime-local"].input::-webkit-date-and-time-value,
+input[type="date"].input::-webkit-date-and-time-value,
+input[type="time"].input::-webkit-date-and-time-value { text-align: left; margin: 0; }
+input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 
 /* --- Radio pills (attendance, etc) -----------------------------------------*/
 .pills { display: flex; gap: 10px; flex-wrap: wrap; }
