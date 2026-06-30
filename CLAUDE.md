@@ -32,6 +32,12 @@
 - `poseandclick.it.com` is a **separate, unrelated** Cloudflare zone — never touch it.
 
 ## Deploy workflow
-- Build: `npm run build`. Tests: `npm test` (vitest, 41 tests). Cloudflare Pages auto-builds on push to `main`.
-- Only deploy on explicit user instruction. End commit messages with the Co-Authored-By trailer.
-- Verify by polling the served bundle hash on **both** demo.celebrately.us and wedding-site-8nh.pages.dev.
+- Build: `npm run build`. Tests: `npm test` (vitest, 51 tests). Cloudflare Pages auto-builds on push to `main`.
+- "Deploy always": after build + tests pass, auto commit + push approved changes to `main` (no per-change confirm). End commit messages with the Co-Authored-By trailer. Stage ONLY this change's files.
+- Verify via the **CF Pages API** (commit + stage status), NOT the local bundle hash — see the 🔴 note above. Then grep a behavior marker in the served bundle. All hosts serving the same hash as each other is a fine consistency check.
+
+## Mobile pinned headers — use a flex-scroll shell, NOT position:fixed/sticky
+Under `html/body { overflow-x: clip }`, BOTH `position: sticky` AND `position: fixed` fail on the user's browsers — sticky scrolls away; **fixed detaches and VANISHES on iOS Safari** (confirmed iPhone 17 Pro). Adding `transform: translateZ(0)`/`backface-visibility` to a fixed bar makes it worse (iOS drops the composited layer while the URL bar animates).
+- **The working fix (verified, user-confirmed):** pin by LAYOUT, not positioning. Make the shell a full-height flex column where only the inner body scrolls; the header is an in-flow flex child OUTSIDE the scroll box, so it can't move. Mobile admin (`@media max-width:860px`): `.admin { height:100dvh; overflow:hidden; flex-direction:column }`, `.admin__main { display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden }`, `.admin__head { position:static; flex:none }`, `.admin__body { flex:1 1 auto; min-height:0; overflow-y:auto }`.
+- Fixed children (drawer, saving overlay, modals) still float over everything — `.admin` has no transform, so its `overflow:hidden` doesn't clip fixed descendants. Use `100dvh` (not `100vh`) for the iOS toolbar.
+- Don't re-introduce `position:fixed`/`sticky` for mobile pinned headers, and don't add `transform`/`will-change`/`filter` to an ancestor of a fixed element (creates a containing block → fixed breaks).
