@@ -698,6 +698,12 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
    where the header is needed to read columns, so keep it. */
 @media (max-width: 640px) {
   .tbl:not(.tbl--clients) thead { display: none; }
+  /* Drop the panel title ("RSVPs (19)" / "Guestbook (n)") beside the toolbar on
+     mobile — the folder tab already names the view, and this frees the full row
+     for the Email/Export buttons + search. Scoped via :has to the toolbar panels
+     (RSVPs, Guestbook) so other panels keep their titles. */
+  .panel__head:has(.admin-toolbar) .panel__title { display: none; }
+  .panel__head:has(.admin-toolbar) { justify-content: flex-start; }
 }
 .tag { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 3px 10px; border-radius: 100px; font-weight: 600; letter-spacing: 0.02em; }
 .tag--attending { background: oklch(0.94 0.05 150); color: oklch(0.42 0.1 150); }
