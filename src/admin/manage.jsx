@@ -236,8 +236,8 @@ export function RsvpsAdmin() {
           {/* Actions exposed on the left; search on the right. */}
           <div className="admin-toolbar">
             <Button variant="ghost" className="admin-toolbar__action" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>Email results</Button>
-            <Button variant="primary" className="admin-toolbar__action" onClick={exportCsv}>{Icon.download({})} Export CSV</Button>
             <div className="admin-toolbar__end">
+              <Button variant="primary" className="admin-toolbar__action" onClick={exportCsv}>{Icon.download({})} Export CSV</Button>
               <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
             </div>
           </div>
