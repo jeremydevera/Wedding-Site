@@ -16,12 +16,17 @@ export async function onRequestPost(context) {
 
   if (!env.MEDIA) return json({ error: "storage not configured" }, 503);
 
+  // Public anon values (already shipped in the client bundle) — fall back to
+  // these so the Function's auth check works without runtime env vars set.
+  const SUPABASE_URL = env.SUPABASE_URL || "https://xprynknppsehuzqqdvue.supabase.co";
+  const SUPABASE_ANON_KEY = env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhwcnlua25wcHNlaHV6cXFkdnVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwODg1OTUsImV4cCI6MjA5NzY2NDU5NX0._S3xdNXBm6d4SI8MO0MNoZ3bT8uspEd8lrdVm29Efgo";
+
   // 1. Require a valid Supabase session (verify the bearer token with Supabase).
   const token = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
   if (!token) return json({ error: "unauthorized" }, 401);
   try {
-    const who = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
-      headers: { apikey: env.SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
+    const who = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
     });
     if (!who.ok) return json({ error: "unauthorized" }, 401);
   } catch {
