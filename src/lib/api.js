@@ -106,13 +106,29 @@ export async function saveClientData() {
   if (error) { console.warn("[api] save failed:", error.message); throw error; }
 }
 
-// Upload an audio file to the public `audio` Storage bucket (superadmin-gated by
-// the bucket's RLS). Returns the public URL to store in the playlist.
+// Upload any media file (audio or image) to Cloudflare R2 via the auth-gated
+// /api/upload Pages Function. Requires a valid Supabase session (admins only);
+// returns { url, key } where url is a same-origin "/r2/<key>" link to store.
+export async function uploadToR2(file, kind, clientId) {
+  const { data } = await supabase.auth.getSession();
+  const token = data && data.session && data.session.access_token;
+  if (!token) throw new Error("Not signed in");
+  const form = new FormData();
+  form.append("file", file);
+  form.append("kind", kind || "misc");
+  if (clientId) form.append("clientId", clientId);
+  const res = await fetch("/api/upload", { method: "POST", headers: { authorization: `Bearer ${token}` }, body: form });
+  if (!res.ok) {
+    let msg = `upload failed (${res.status})`;
+    try { const e = await res.json(); if (e && e.error) msg = e.error; } catch (_) {}
+    throw new Error(msg);
+  }
+  return await res.json();
+}
+
+// Upload an audio file to R2. Returns { url, path } (path kept for the old
+// call-site shape). Audio now lives in R2, not the Supabase `audio` bucket.
 export async function uploadAudio(file, clientId) {
-  const safe = (file.name || "track").replace(/[^a-zA-Z0-9._-]/g, "_");
-  const path = `${clientId || "shared"}/${Date.now()}-${safe}`;
-  const { error } = await supabase.storage.from("audio").upload(path, file, { cacheControl: "31536000", upsert: false, contentType: file.type || "audio/mpeg" });
-  if (error) throw error;
-  const { data } = supabase.storage.from("audio").getPublicUrl(path);
-  return { url: data.publicUrl, path };
+  const { url, key } = await uploadToR2(file, "audio", clientId);
+  return { url, path: key };
 }
