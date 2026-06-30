@@ -317,6 +317,15 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 [data-theme="glass"] .nav { background: color-mix(in oklch, var(--surface) 42%, transparent); -webkit-backdrop-filter: blur(28px) saturate(1.8); backdrop-filter: blur(28px) saturate(1.8); }
 [data-theme="glass"] .input { background: color-mix(in oklch, var(--surface) 60%, transparent); }
 [data-theme="glass"] section.block--tint { background: color-mix(in oklch, var(--accent) 9%, transparent); }
+/* The superadmin console (.admin--sa) is a neutral light app — a client's theme
+   (esp. glass: translucent + blur surfaces) must NOT bleed into admin panels,
+   cards, modals, or inputs. These override the [data-theme] element rules above
+   for the admin subtree; for non-glass themes they match the base look (opaque
+   surface, --line border, no shadow), so only glass actually changes. */
+.admin--sa .card, .admin--sa .panel, .admin--sa .gb-card, .admin--sa .stat, .admin--sa .info-card, .admin--sa .sched-cards__item, .admin--sa .qr-card, .admin--sa .modal__panel {
+  background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; border: 1px solid var(--line); box-shadow: none;
+}
+.admin--sa .input { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
 
 /* --- Timeline --------------------------------------------------------------*/
 .timeline { position: relative; max-width: 720px; margin: 0 auto; }
