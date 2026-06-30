@@ -7,7 +7,7 @@ import { FX_LIST } from "@/lib/falling-fx.js";
 import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { signOut } from "@/lib/auth.js";
-import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio } from "@/lib/api.js";
+import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2 } from "@/lib/api.js";
 import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
 import { visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel } from "@/lib/roles.js";
@@ -48,13 +48,32 @@ export function SaveFooter() {
 
 // Reusable image uploader for admin (hero, story milestones)
 export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", framePreview, defaultPreview, tintStrength, tintGradient }) {
+  const { clientId } = useStore();
   const ref = useRef(null);
   const [cropSrc, setCropSrc] = useState(null);
+  const [busy, setBusy] = useState(false);
   const aspect = (() => { const m = String(ratio).split("/").map((n) => parseFloat(n)); return (m.length === 2 && m[1]) ? m[0] / m[1] : 1; })();
   function pick(file) {
     if (!file) return;
     if (!file.type.startsWith("image/")) { toast("Please choose an image file.", "err"); return; }
     setCropSrc(URL.createObjectURL(file));
+  }
+  // Cropped image -> R2 (via /api/upload). Store the returned "/r2/<key>" URL,
+  // not base64, so the client content row stays lean. Existing base64 values
+  // still render fine (an <img src> takes either).
+  async function applyCrop(dataUrl) {
+    setCropSrc(null);
+    setBusy(true);
+    try {
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], `image-${Date.now()}.jpg`, { type: blob.type || "image/jpeg" });
+      const { url } = await uploadToR2(file, "image", clientId);
+      onChange(url);
+    } catch (e) {
+      toast("Image upload failed: " + (e && e.message || "error"), "err");
+    } finally {
+      setBusy(false);
+    }
   }
   return (
     <div className="field">
@@ -74,13 +93,13 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
           )}
         </div>
         <div className="imgup__actions">
-          <Button variant="ghost" size="sm" onClick={() => ref.current && ref.current.click()}>{Icon.upload({})} {value ? "Replace" : "Upload"}</Button>
-          {value && <Button variant="ghost" size="sm" onClick={() => setCropSrc(value)}>{Icon.crop({})} Crop</Button>}
-          {value && <Button variant="ghost" size="sm" onClick={() => onChange("")}>Remove</Button>}
+          <Button variant="ghost" size="sm" disabled={busy} onClick={() => ref.current && ref.current.click()}>{Icon.upload({})} {busy ? "Uploading…" : (value ? "Replace" : "Upload")}</Button>
+          {value && !busy && <Button variant="ghost" size="sm" onClick={() => setCropSrc(value)}>{Icon.crop({})} Crop</Button>}
+          {value && !busy && <Button variant="ghost" size="sm" onClick={() => onChange("")}>Remove</Button>}
         </div>
         <input ref={ref} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => pick(e.target.files[0])} />
       </div>
-      <CropModal open={!!cropSrc} src={cropSrc} aspect={aspect} frameSrc={framePreview} onCancel={() => setCropSrc(null)} onApply={(d) => { onChange(d); setCropSrc(null); }} />
+      <CropModal open={!!cropSrc} src={cropSrc} aspect={aspect} frameSrc={framePreview} onCancel={() => setCropSrc(null)} onApply={applyCrop} />
     </div>
   );
 }
