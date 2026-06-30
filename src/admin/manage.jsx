@@ -8,6 +8,7 @@ import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { signOut } from "@/lib/auth.js";
 import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia } from "@/lib/api.js";
+import { mediaUrl } from "@/lib/media.js";
 import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
 import { visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel } from "@/lib/roles.js";
@@ -47,7 +48,7 @@ export function SaveFooter() {
 // ============================================================================
 
 // Reusable image uploader for admin (hero, story milestones)
-export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", framePreview, defaultPreview, tintStrength, tintGradient }) {
+export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", framePreview, defaultPreview, tintStrength, tintGradient, purpose = "misc" }) {
   const { clientId } = useStore();
   const ref = useRef(null);
   const [cropSrc, setCropSrc] = useState(null);
@@ -67,8 +68,8 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
     try {
       const blob = await (await fetch(dataUrl)).blob();
       const file = new File([blob], `image-${Date.now()}.jpg`, { type: blob.type || "image/jpeg" });
-      const { url } = await uploadToR2(file, "image", clientId);
-      onChange(url);
+      const { key } = await uploadToR2(file, { scope: "owner", purpose }, clientId);
+      onChange(key);
     } catch (e) {
       toast("Image upload failed: " + (e && e.message || "error"), "err");
     } finally {
@@ -81,7 +82,7 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
       <div className="imgup">
         <div className="imgup__thumb" style={{ aspectRatio: ratio }}>
           {value
-            ? <img src={value} alt="" />
+            ? <img src={mediaUrl(value)} alt="" />
             : defaultPreview
               ? <img src={defaultPreview} alt="" />
               : <Placeholder label="no photo" ratio={ratio} />}
@@ -1177,7 +1178,7 @@ export function SettingsAdmin() {
       <div className="panel">
         <div className="panel__head"><div className="panel__title">Envelope Frame Photo</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Shows inside the oval frame on the opened envelope</span></div>
         <div className="panel__body" style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-          <ImageUploadField label="Photo inside the oval frame" ratio="1 / 1" framePreview="/assets/invite/p2-frame.png" defaultPreview="/assets/invite/frame-video.gif"
+          <ImageUploadField purpose="frame" label="Photo inside the oval frame" ratio="1 / 1" framePreview="/assets/invite/p2-frame.png" defaultPreview="/assets/invite/frame-video.gif"
             value={f.frameImage} onChange={(v) => setKey("frameImage", v)} />
           <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 10, maxWidth: 360 }}>A square photo of the two of you works best. Leave empty to keep the default animated frame.</p>
         </div>
@@ -1214,7 +1215,7 @@ export function SettingsAdmin() {
         <div className="panel__body">
           <div style={{ display: "flex", gap: 28, alignItems: "flex-start", flexWrap: "wrap" }}>
             <div style={{ flex: "1 1 300px", minWidth: 260, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-              <ImageUploadField label="Background image" ratio="16 / 9" defaultPreview="/assets/invite/bg-wedding.jpg" tintStrength={f.envTintOn !== false ? (f.envTint == null ? 55 : f.envTint) : 0} tintGradient={egTintGradient(f.envTintColor || "olive")}
+              <ImageUploadField purpose="envbg" label="Background image" ratio="16 / 9" defaultPreview="/assets/invite/bg-wedding.jpg" tintStrength={f.envTintOn !== false ? (f.envTint == null ? 55 : f.envTint) : 0} tintGradient={egTintGradient(f.envTintColor || "olive")}
                 value={f.envBgImage} onChange={(v) => setKey("envBgImage", v)} />
               <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 10, maxWidth: 360 }}>A wide landscape photo works best — it sits behind the envelope and gently zooms when the invitation opens. Leave empty to keep the default.</p>
             </div>
@@ -1251,12 +1252,12 @@ export function SettingsAdmin() {
       {tab === "photos" && (<div className="panel">
         <div className="panel__head"><div className="panel__title">Home &amp; Story Photos</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Upload your own — replaces the samples</span></div>
         <div className="panel__body">
-          <ImageUploadField label="Home hero photo (full-bleed background)" ratio="16 / 9" value={f.heroImage} onChange={(v) => setKey("heroImage", v)} />
+          <ImageUploadField purpose="hero" label="Home hero photo (full-bleed background)" ratio="16 / 9" value={f.heroImage} onChange={(v) => setKey("heroImage", v)} />
           <p style={{ fontSize: 12, color: "var(--muted)", marginTop: -2 }}>Leave empty to use a themed background that matches your chosen theme.</p>
           <div style={{ fontSize: 12, letterSpacing: ".12em", textTransform: "uppercase", fontWeight: 600, color: "var(--ink-soft)", margin: "22px 0 10px" }}>Our Story photos</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))", gap: 20 }}>
             {story.map((row, i) => (
-              <ImageUploadField key={i} ratio="4 / 3" label={(row.year ? row.year + " \u00b7 " : "") + row.title} value={row.img} onChange={(v) => Store.updateStoryItem(i, { img: v })} />
+              <ImageUploadField key={i} purpose="story" ratio="4 / 3" label={(row.year ? row.year + " \u00b7 " : "") + row.title} value={row.img} onChange={(v) => Store.updateStoryItem(i, { img: v })} />
             ))}
           </div>
           <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 16 }}>Photos save automatically.</p>
@@ -1599,7 +1600,7 @@ export function AttireGroupEditor({ open, group, onClose }) {
         <Textarea id="at-desc" value={f.desc} onChange={(e) => setF((p) => ({ ...p, desc: e.target.value }))} placeholder="e.g. Black suit, earthy tones" style={{ minHeight: 70 }} />
       </Field>
       <Field label="Example picture" hint="A reference outfit or inspiration image (optional)." id="at-img">
-        <ImageUploadField value={f.image} ratio="3 / 4" onChange={(v) => setF((p) => ({ ...p, image: v }))} />
+        <ImageUploadField purpose="attire" value={f.image} ratio="3 / 4" onChange={(v) => setF((p) => ({ ...p, image: v }))} />
       </Field>
       <Field label="Colour palette" hint="Add the outfit colours — click a swatch to pick a colour.">
         <div className="pal-edit">
@@ -1641,7 +1642,7 @@ export function AttireAdmin() {
             {groups.map((g, i) => (
               <tr key={g.id}>
                 <td style={{ color: "var(--muted)" }}>{i + 1}</td>
-                <td>{g.image ? <img src={g.image} alt="" style={{ width: 40, height: 52, objectFit: "cover", borderRadius: 6, display: "block" }} /> : <span style={{ color: "var(--muted)" }}>—</span>}</td>
+                <td>{g.image ? <img src={mediaUrl(g.image)} alt="" style={{ width: 40, height: 52, objectFit: "cover", borderRadius: 6, display: "block" }} /> : <span style={{ color: "var(--muted)" }}>—</span>}</td>
                 <td><strong>{g.name}</strong>{g.desc ? <div style={{ color: "var(--ink-soft)", fontSize: 12, marginTop: 2, maxWidth: 280 }}>{g.desc}</div> : null}</td>
                 <td><div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>{(g.palette || []).map((c, j) => <span key={j} style={{ width: 18, height: 18, borderRadius: "50%", background: c, border: "1px solid var(--line)", display: "inline-block" }} title={c} />)}</div></td>
                 <td>
@@ -1703,7 +1704,7 @@ export function TrackEditor({ open, track, onClose }) {
       <Field label="Artist" id="trk-a"><Input id="trk-a" value={f.artist} onChange={(e) => setF((p) => ({ ...p, artist: e.target.value }))} placeholder="e.g. Ed Sheeran" /></Field>
       <Field label="Audio file" id="trk-audio" hint="Upload a new file to replace this track's audio">
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {f.url ? <audio src={f.url} controls preload="none" style={{ width: "100%", height: 38 }} /> : <span style={{ color: "var(--muted)", fontSize: 13 }}>No audio yet</span>}
+          {f.url ? <audio src={mediaUrl(f.url)} controls preload="none" style={{ width: "100%", height: 38 }} /> : <span style={{ color: "var(--muted)", fontSize: 13 }}>No audio yet</span>}
           <input ref={fileRef} type="file" accept={AUDIO_ACCEPT} style={{ display: "none" }} onChange={(e) => onReplace(e.target.files)} />
           <div><Button variant="ghost" size="sm" disabled={uploading} onClick={() => fileRef.current && fileRef.current.click()}>{uploading ? "Uploading…" : "Replace audio"}</Button></div>
         </div>
@@ -1803,7 +1804,7 @@ export function MusicAdmin() {
                 <td style={{ color: "var(--muted)" }}>{i + 1}</td>
                 <td><strong>{t.title}</strong></td>
                 <td style={{ color: "var(--ink-soft)" }}>{t.artist || "—"}</td>
-                <td><audio src={t.url} controls preload="none" style={{ height: 34, maxWidth: 200 }} /></td>
+                <td><audio src={mediaUrl(t.url)} controls preload="none" style={{ height: 34, maxWidth: 200 }} /></td>
                 <td>
                   <div className="row-actions">
                     <button className="icon-btn" title="Move up" onClick={() => move(t.id, -1)} disabled={i === 0}>↑</button>

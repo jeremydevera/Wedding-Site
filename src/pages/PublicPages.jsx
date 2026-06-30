@@ -1,5 +1,6 @@
 import React from "react";
 import { go } from "@/lib/nav.js";
+import { mediaUrl } from "@/lib/media.js";
 import { useStore } from "@/lib/store.jsx";
 import { egTintGradient } from "@/themes";
 import { Button, Countdown, FloatingDecor, Icon, Placeholder, SectionHead, mapDirUrl, mapEmbedUrl } from "@/ui/components.jsx";
@@ -15,7 +16,7 @@ export function HeroBg() {
   if (settings.heroImage) {
     return (
       <div className="hero__media">
-        <img src={settings.heroImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <img src={mediaUrl(settings.heroImage)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         <div className="hero__tint" />
       </div>
     );
@@ -29,7 +30,7 @@ export function HeroBg() {
 
 export function StoryImg({ row }) {
   return row && row.img
-    ? <img src={row.img} alt={row.title} style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", borderRadius: "var(--radius)", display: "block" }} />
+    ? <img src={mediaUrl(row.img)} alt={row.title} style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", borderRadius: "var(--radius)", display: "block" }} />
     : <Placeholder label="story photo" ratio="4 / 3" />;
 }
 
@@ -156,7 +157,7 @@ export function EnvelopeHero() {
 
   return (
     <header className={"eg-hero" + (open ? " is-open" : "")} id="env-hero" style={egTintVars(s)}>
-      <div className="eg-bg" style={s.envBgImage ? { backgroundImage: `url(${s.envBgImage})` } : undefined} />
+      <div className="eg-bg" style={s.envBgImage ? { backgroundImage: `url(${mediaUrl(s.envBgImage)})` } : undefined} />
       <div className="eg-stage">
         {/* Sealed envelope */}
         <div className={"eg-page" + (open ? "" : " is-active")}>
@@ -185,7 +186,7 @@ export function EnvelopeHero() {
             </div>
             <div className="inv-l-framegroup">
               <div className="inv-l-video" aria-hidden="true">
-                <img src={s.frameImage || "/assets/invite/frame-video.gif"} alt="" />
+                <img src={mediaUrl(s.frameImage) || "/assets/invite/frame-video.gif"} alt="" />
               </div>
               <img className="inv-frame-img" src="/assets/invite/p2-frame.png" alt="Cream oval frame with embossed peony" />
             </div>
@@ -245,7 +246,7 @@ export function EnvelopeInvite() {
           </div>
           <div className="inv-l-framegroup">
             <div className="inv-l-video" aria-hidden="true">
-              <img src={s.frameImage || "/assets/invite/frame-video.gif"} alt="" />
+              <img src={mediaUrl(s.frameImage) || "/assets/invite/frame-video.gif"} alt="" />
             </div>
             <img className="inv-frame-img" src="/assets/invite/p2-frame.png" alt="Cream oval frame with embossed peony" />
           </div>
@@ -413,7 +414,7 @@ export function AttireView({ groups }) {
                     means no box (name + description + palette dots only). */}
                 {g.image && (
                   <div className="attire-card__img">
-                    <img src={g.image} alt={g.name || "Attire"} />
+                    <img src={mediaUrl(g.image)} alt={g.name || "Attire"} />
                   </div>
                 )}
                 {g.name ? <div className="attire-card__name">{g.name}</div> : null}

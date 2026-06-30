@@ -106,16 +106,19 @@ export async function saveClientData() {
   if (error) { console.warn("[api] save failed:", error.message); throw error; }
 }
 
-// Upload any media file (audio or image) to Cloudflare R2 via the auth-gated
-// /api/upload Pages Function. Requires a valid Supabase session (admins only);
-// returns { url, key } where url is a same-origin "/r2/<key>" link to store.
-export async function uploadToR2(file, kind, clientId) {
+// Upload any media file to Cloudflare R2 via the auth-gated /api/upload Pages
+// Function. Requires a valid Supabase session (admins only). opts = { scope,
+// purpose } (type is derived server-side from the content type). Returns
+// { key, url } — callers store the bare `key`; render via mediaUrl().
+export async function uploadToR2(file, opts, clientId) {
+  const o = opts || {};
   const { data } = await supabase.auth.getSession();
   const token = data && data.session && data.session.access_token;
   if (!token) throw new Error("Not signed in");
   const form = new FormData();
   form.append("file", file);
-  form.append("kind", kind || "misc");
+  form.append("scope", o.scope || "owner");
+  form.append("purpose", o.purpose || "misc");
   if (clientId) form.append("clientId", clientId);
   const res = await fetch("/api/upload", { method: "POST", headers: { authorization: `Bearer ${token}` }, body: form });
   if (!res.ok) {
@@ -126,40 +129,43 @@ export async function uploadToR2(file, kind, clientId) {
   return await res.json();
 }
 
-// Upload an audio file to R2. Returns { url, path } (path kept for the old
-// call-site shape). Audio now lives in R2, not the Supabase `audio` bucket.
+// Upload an audio file to R2. Returns { url, path } where url is the bare key
+// (call-sites store it as the track url and render via mediaUrl()).
 export async function uploadAudio(file, clientId) {
-  const { url, key } = await uploadToR2(file, "audio", clientId);
-  return { url, path: key };
+  const { key } = await uploadToR2(file, { scope: "owner", purpose: "playlist" }, clientId);
+  return { url: key, path: key, key };
 }
 
 // Have the Function pull a remote file into R2 server-side (no browser CORS).
 // Used by the migration to move existing Supabase-hosted audio.
-async function uploadUrlToR2(sourceUrl, kind, clientId) {
+async function uploadUrlToR2(sourceUrl, opts, clientId) {
+  const o = opts || {};
   const { data } = await supabase.auth.getSession();
   const token = data && data.session && data.session.access_token;
   if (!token) throw new Error("Not signed in");
   const form = new FormData();
   form.append("sourceUrl", sourceUrl);
-  form.append("kind", kind || "misc");
+  form.append("scope", o.scope || "owner");
+  form.append("purpose", o.purpose || "misc");
   if (clientId) form.append("clientId", clientId);
   const res = await fetch("/api/upload", { method: "POST", headers: { authorization: `Bearer ${token}` }, body: form });
   if (!res.ok) { let m = `upload failed (${res.status})`; try { const e = await res.json(); if (e.error) m = e.error; } catch (_) {} throw new Error(m); }
   return await res.json();
 }
 
-// One-time migration: move the active client's existing media into R2 and
-// rewrite the stored references. Idempotent — anything already on /r2/ is
-// skipped, so it can be re-run safely. base64 images upload from the browser
-// (data: URLs have no CORS); remote audio is pulled server-side.
+// One-time migration: move the active client's existing media into R2 (new key
+// layout) and rewrite the stored references to bare keys. Idempotent — base64
+// images and remote (Supabase) audio are migrated; anything already a key /
+// /r2/ / on the media domain is left alone, so it's safe to re-run.
 const isData = (u) => typeof u === "string" && u.startsWith("data:");
-const isLegacyUrl = (u) => typeof u === "string" && u && !u.startsWith("/r2/");
+const isRemote = (u) => typeof u === "string" && /^https?:\/\//i.test(u);
+const onMediaDomain = (u) => typeof u === "string" && u.includes("media.celebrately.us");
 export function hasLegacyMedia(state) {
   const s = state || Store.get();
   if (["heroImage", "frameImage", "envBgImage"].some((k) => isData(s.settings && s.settings[k]))) return true;
   if ((s.attire || []).some((g) => isData(g.image))) return true;
   if ((s.story || []).some((r) => isData(r.img))) return true;
-  if ((s.playlist || []).some((t) => isLegacyUrl(t.url) && !isData(t.url))) return true;
+  if ((s.playlist || []).some((t) => isRemote(t.url) && !onMediaDomain(t.url))) return true;
   return false;
 }
 
@@ -169,28 +175,29 @@ export async function migrateClientMediaToR2(onProgress) {
   let migrated = 0, failed = 0;
   const tick = () => { migrated++; if (onProgress) onProgress(migrated); };
 
-  // base64 image -> upload from the browser
-  const imgToR2 = async (dataUrl, hint) => {
+  // base64 image -> upload from the browser, returns the bare key
+  const imgToKey = async (dataUrl, purpose, hint) => {
     const blob = await (await fetch(dataUrl)).blob();
     const file = new File([blob], `${hint || "image"}.jpg`, { type: blob.type || "image/jpeg" });
-    return (await uploadToR2(file, "image", clientId)).url;
+    return (await uploadToR2(file, { scope: "owner", purpose }, clientId)).key;
   };
 
   // settings images
   const settings = { ...st.settings };
+  const purposeOf = { heroImage: "hero", frameImage: "frame", envBgImage: "envbg" };
   for (const k of ["heroImage", "frameImage", "envBgImage"]) {
-    if (isData(settings[k])) { try { settings[k] = await imgToR2(settings[k], k); tick(); } catch (e) { failed++; } }
+    if (isData(settings[k])) { try { settings[k] = await imgToKey(settings[k], purposeOf[k], k); tick(); } catch (e) { failed++; } }
   }
   // attire images
   const attire = (st.attire || []).map((g) => ({ ...g }));
-  for (const g of attire) { if (isData(g.image)) { try { g.image = await imgToR2(g.image, g.name || "attire"); tick(); } catch (e) { failed++; } } }
+  for (const g of attire) { if (isData(g.image)) { try { g.image = await imgToKey(g.image, "attire", g.name || "attire"); tick(); } catch (e) { failed++; } } }
   // story images
   const story = (st.story || []).map((r) => ({ ...r }));
-  for (const r of story) { if (isData(r.img)) { try { r.img = await imgToR2(r.img, r.title || "story"); tick(); } catch (e) { failed++; } } }
-  // audio (remote Supabase URL) -> server-side pull
+  for (const r of story) { if (isData(r.img)) { try { r.img = await imgToKey(r.img, "story", r.title || "story"); tick(); } catch (e) { failed++; } } }
+  // audio (remote Supabase URL) -> server-side pull, returns the bare key
   const playlist = (st.playlist || []).map((t) => ({ ...t }));
   for (const t of playlist) {
-    if (isLegacyUrl(t.url) && !isData(t.url)) { try { t.url = (await uploadUrlToR2(t.url, "audio", clientId)).url; tick(); } catch (e) { failed++; } }
+    if (isRemote(t.url) && !onMediaDomain(t.url)) { try { t.url = (await uploadUrlToR2(t.url, { scope: "owner", purpose: "playlist" }, clientId)).key; tick(); } catch (e) { failed++; } }
   }
 
   Store.set({ attire, story, playlist });

@@ -6,7 +6,9 @@
 // needed. Scoped to /api/* via public/_routes.json so the SPA is untouched.
 
 const MAX_BYTES = 25 * 1024 * 1024; // 25 MB per file
-const TYPE_OK = /^(audio\/|image\/)/;
+const TYPE_OK = /^(audio\/|image\/|video\/)/;
+const SCOPES = new Set(["owner", "guest"]);
+const PURPOSES = new Set(["hero", "attire", "story", "frame", "envbg", "playlist", "gallery", "message", "misc"]);
 
 const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json" } });
@@ -39,7 +41,8 @@ export async function onRequestPost(context) {
   let form;
   try { form = await request.formData(); } catch { return json({ error: "bad form" }, 400); }
   const clientId = String(form.get("clientId") || "shared").replace(/[^a-zA-Z0-9-]/g, "").slice(0, 64) || "shared";
-  const kind = String(form.get("kind") || "misc").replace(/[^a-z0-9]/gi, "").slice(0, 24) || "misc";
+  const scope = SCOPES.has(String(form.get("scope") || "")) ? String(form.get("scope")) : "owner";
+  const purpose = PURPOSES.has(String(form.get("purpose") || "")) ? String(form.get("purpose")) : "misc";
 
   let body, type, name;
   const file = form.get("file");
@@ -63,9 +66,12 @@ export async function onRequestPost(context) {
   }
   if (!TYPE_OK.test(type)) return json({ error: "unsupported file type" }, 415);
 
-  // 3. Build a safe key: <clientId>/<kind>/<ts>-<name>.
+  // 3. Build a safe key: <clientId>/<scope>/<type>/<purpose>/<shortid>-<name>.
+  //    Type segment is derived from the content type (never trusts the caller).
+  const typeSeg = type.startsWith("audio/") ? "audio" : type.startsWith("video/") ? "video" : "image";
   const safeName = String(name || "file").replace(/[^a-zA-Z0-9._-]/g, "_").slice(-80);
-  const key = `${clientId}/${kind}/${Date.now()}-${safeName}`;
+  const shortid = (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID().replace(/-/g, "").slice(0, 8) : String(Date.now());
+  const key = `${clientId}/${scope}/${typeSeg}/${purpose}/${shortid}-${safeName}`;
 
   // 4. Store in R2.
   try {
