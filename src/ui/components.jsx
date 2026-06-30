@@ -283,8 +283,13 @@ export function ToastHost() {
     };
     return () => { _toastFn = null; };
   }, []);
+  // When shown from the admin console, adopt the admin palette/typography
+  // (.admin--sa = Mulish + neutral surfaces) so the toast matches the console
+  // instead of inheriting the public event theme's font. On the public site it
+  // stays themed. (Mirrors how the confirm dialog + modal handle this.)
+  const inAdmin = typeof document !== "undefined" && !!document.querySelector(".admin--sa");
   return (
-    <div className="toast-host" aria-live="polite">
+    <div className={"toast-host" + (inAdmin ? " admin--sa" : "")} aria-live="polite">
       {toasts.map((t) => (
         <div key={t.id} className={"toast toast--" + t.kind}>
           {t.kind === "success" && <span className="toast__ic" aria-hidden="true">{Icon.check({})}</span>}
