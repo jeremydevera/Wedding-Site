@@ -2,7 +2,8 @@ import React from "react";
 
 import { go } from "@/lib/nav.js";
 import { Store, useStore } from "@/lib/store.jsx";
-import { loadClientData } from "@/lib/api.js";
+import { loadClientData, saveClientData } from "@/lib/api.js";
+import { canEnterAdmin } from "@/lib/roles.js";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { FONT_OPTIONS, THEMES, THEME_FONTS, applyTheme, isPremiumTheme } from "@/themes";
 import { Button, ConfirmHost, FallingFx, FloatingDecor, Icon, Monogram, ToastHost, confirmDialog, toast } from "@/ui/components.jsx";
@@ -75,18 +76,27 @@ const DECOR_OPTS = [
 
 // --- Public nav -------------------------------------------------------------
 export function Nav({ route }) {
-  const { settings } = useStore();
+  const { settings, auth, clientId } = useStore();
   const [drawer, setDrawer] = useState(false);
   // Demo site (demo.<platform> / apex) is a theme showcase: swap the RSVP CTA for
   // a live theme picker so prospective clients can preview every design.
   // In the admin Theme picker the home page is embedded via /?preview — hide the
   // demo's own theme/decor pickers + try-bar there so the preview reads clean.
   const isDemo = resolveSubdomain() === "demo" && !new URLSearchParams(window.location.search).has("preview");
-  // The home nav picker is PREVIEW ONLY for everyone (admins included): it applies
-  // in-memory via previewSettings and never persists, so it always reverts to the
-  // saved theme on refresh. The saved theme is changed solely in Settings → Theme.
+  // The home picker SAVES when the signed-in owner/admin uses it (so their pick
+  // sticks — it won't be overridden when they return to admin), but stays a
+  // throwaway in-memory PREVIEW for anonymous demo visitors (so prospective
+  // clients can try themes without changing the real site).
+  const applyPick = (patch, label) => {
+    if (canEnterAdmin(auth, clientId)) {
+      Store.updateSettings(patch);
+      saveClientData().then(() => toast(label + " saved", "success")).catch((e) => toast("Save failed: " + (e.message || "error")));
+    } else {
+      Store.previewSettings(patch);
+    }
+  };
   const pickTheme = (k) => {
-    Store.previewSettings({ theme: k, themeAccent: "", displayFont: THEME_FONTS[k].display, bodyFont: THEME_FONTS[k].body });
+    applyPick({ theme: k, themeAccent: "", displayFont: THEME_FONTS[k].display, bodyFont: THEME_FONTS[k].body }, "Theme");
   };
   const ThemePicker = ({ block }) => (
     <label className={"nav__themepick" + (block ? " nav__themepick--block" : "")}>
@@ -101,9 +111,10 @@ export function Nav({ route }) {
       </select>
     </label>
   );
-  // Like the theme picker: preview only for everyone — never persists.
+  // Same rule as the theme picker: saves for the signed-in owner, previews for
+  // anonymous visitors.
   const pickDecor = (v) => {
-    Store.previewSettings(v === "none" ? { decorOn: false } : { decorOn: true, decorStyle: v });
+    applyPick(v === "none" ? { decorOn: false } : { decorOn: true, decorStyle: v }, "Decoration");
   };
   const DecorPicker = ({ block }) => (
     <label className={"nav__themepick" + (block ? " nav__themepick--block" : "")}>
