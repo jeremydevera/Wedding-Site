@@ -2,8 +2,7 @@ import React from "react";
 
 import { go } from "@/lib/nav.js";
 import { Store, useStore } from "@/lib/store.jsx";
-import { loadClientData, saveClientData } from "@/lib/api.js";
-import { canEnterAdmin } from "@/lib/roles.js";
+import { loadClientData } from "@/lib/api.js";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { FONT_OPTIONS, THEMES, THEME_FONTS, applyTheme, isPremiumTheme } from "@/themes";
 import { Button, ConfirmHost, FallingFx, FloatingDecor, Icon, Monogram, ToastHost, confirmDialog, toast } from "@/ui/components.jsx";
@@ -83,17 +82,14 @@ export function Nav({ route }) {
   // In the admin Theme picker the home page is embedded via /?preview — hide the
   // demo's own theme/decor pickers + try-bar there so the preview reads clean.
   const isDemo = resolveSubdomain() === "demo" && !new URLSearchParams(window.location.search).has("preview");
-  // The home picker SAVES when the signed-in owner/admin uses it (so their pick
-  // sticks — it won't be overridden when they return to admin), but stays a
-  // throwaway in-memory PREVIEW for anonymous demo visitors (so prospective
-  // clients can try themes without changing the real site).
-  const applyPick = (patch, label) => {
-    if (canEnterAdmin(auth, clientId)) {
-      Store.updateSettings(patch);
-      saveClientData().then(() => toast(label + " saved", "success")).catch((e) => toast("Save failed: " + (e.message || "error")));
-    } else {
-      Store.previewSettings(patch);
-    }
+  // The home nav picker is PREVIEW ONLY for everyone — owners/admins included.
+  // It applies in-memory via previewSettings and never persists, so it always
+  // reverts to the saved theme on refresh. The saved theme/decor is changed
+  // SOLELY in Settings → Theme. (The owner is `role: "owner"` for their own
+  // site, so a per-role save here would let them override it from home — which
+  // is exactly what we don't want.)
+  const applyPick = (patch, _label) => {
+    Store.previewSettings(patch);
   };
   const pickTheme = (k) => {
     applyPick({ theme: k, themeAccent: "", displayFont: THEME_FONTS[k].display, bodyFont: THEME_FONTS[k].body }, "Theme");
