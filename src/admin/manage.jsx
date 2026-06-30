@@ -414,6 +414,9 @@ export function GuestbookAdmin() {
   const { run } = React.useContext(AdminSaveCtx);   // wrap server ops in the saving overlay
   const [q, setQ] = useState("");
   const [view, setView] = useState("published");
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [emailTo, setEmailTo] = useState("");
+  const [emailSending, setEmailSending] = useState(false);
   // Moderation on = guest messages wait for approval (auto-approve turned off).
   const moderation = settings?.autoApproveGuestbook === false;
 
@@ -433,6 +436,44 @@ export function GuestbookAdmin() {
     downloadCSV(`${who} - Guestbook${tab ? " - " + tab : ""}.csv`, rows);
   }
 
+  // Build an HTML guestbook email and send it server-side (same /api/send-email
+  // Function as RSVPs). Uses the current view (Published / Pending) like Export.
+  async function emailResults(to) {
+    const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    const tab = moderation ? (view === "pending" ? "Pending" : "Published") : "";
+    const heading = `Guestbook${tab ? " — " + tab : ""}`;
+    const rows = filtered.map((g) => `<tr>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee;vertical-align:top">${esc(g.name)}${g.relationship ? `<div style="color:#888;font-size:12px">${esc(g.relationship)}</div>` : ""}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee">${esc(g.message)}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:right;color:#888;white-space:nowrap">${esc(fmtDate(g.createdAt))}</td>
+    </tr>`).join("");
+    const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#222;max-width:640px;margin:0 auto">
+      <h2 style="margin:0 0 4px">${heading}</h2>
+      <p style="color:#666;margin:0 0 16px">${esc(settings.partnerA)} &amp; ${esc(settings.partnerB)}</p>
+      <p style="margin:0 0 16px"><strong>${filtered.length}</strong> message${filtered.length === 1 ? "" : "s"}</p>
+      <table style="border-collapse:collapse;width:100%;font-size:14px">
+        <thead><tr style="text-align:left;background:#f6f6f6">
+          <th style="padding:8px 10px">Guest</th><th style="padding:8px 10px">Message</th>
+          <th style="padding:8px 10px;text-align:right">Date</th>
+        </tr></thead>
+        <tbody>${rows || '<tr><td colspan="3" style="padding:14px;color:#888">No messages yet.</td></tr>'}</tbody>
+      </table>
+    </div>`;
+    const who = [settings.partnerA, settings.partnerB].filter(Boolean).join(" & ");
+    const today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const subject = `${who ? who + " — " : ""}${heading} · ${today}`;
+    setEmailSending(true);
+    try {
+      await sendEmail({ to: (to || "").trim(), subject, html });
+      toast("Email sent", "success");
+      setEmailOpen(false);
+    } catch (e) {
+      toast("Couldn't send: " + (e && e.message || "error"), "err");
+    } finally {
+      setEmailSending(false);
+    }
+  }
+
   return (
     <div>
       {/* With moderation on, split into folder tabs: Published vs Pending approval. */}
@@ -447,8 +488,9 @@ export function GuestbookAdmin() {
         <div className="panel__title">Guestbook <span style={{ color: "var(--muted)", fontSize: 15 }}>({filtered.length})</span></div>
         {/* Export exposed on the left; search on the right. */}
         <div className="admin-toolbar">
-          {/* Export directly left of search (right group). */}
+          {/* Email + Export directly left of search (right group). */}
           <div className="admin-toolbar__end">
+            <Button variant="ghost" className="admin-toolbar__action" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>{Icon.mail({})} Email results</Button>
             <Button variant="primary" className="admin-toolbar__action" onClick={exportCsv}>{Icon.download({})} Export</Button>
             <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
           </div>
@@ -480,6 +522,14 @@ export function GuestbookAdmin() {
       </div>
       <Pager page={pg.page} totalPages={pg.totalPages} total={pg.total} perPage={pg.perPage} start={pg.start} onPage={pg.setPage} noun="messages" />
       </div>
+
+      <Modal open={emailOpen} onClose={() => setEmailOpen(false)} label="Email results">
+        <SectionHead eyebrow="Guestbook" title="Email the messages" />
+        <Field label="Send to" id="gb-email-to" hint="We'll email the guestbook messages (a summary + full table) to this address.">
+          <Input id="gb-email-to" type="email" inputMode="email" value={emailTo} onChange={(e) => setEmailTo(e.target.value)} placeholder="name@example.com" />
+        </Field>
+        <Button variant="primary" block disabled={!emailTo.trim() || emailSending} onClick={() => emailResults(emailTo)}>{emailSending ? "Sending…" : "Send messages"}</Button>
+      </Modal>
     </div>
   );
 }
