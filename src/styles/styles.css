@@ -1467,7 +1467,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .attire-card__name { font-family: var(--font-display); font-size: 26px; color: var(--ink); margin-top: 16px; letter-spacing: .01em; } /* match the schedule tile title (.tl-title) */
 /* No-photo tiles start with the name, so don't add the image-gap on top. */
 .attire-card > .attire-card__name:first-child { margin-top: 0; }
-.attire-card__desc { font-size: 15px; color: var(--ink-soft); line-height: 1.55; margin-top: 8px; max-width: 240px; }
+.attire-card__desc { font-size: 17px; color: var(--ink-soft); line-height: 1.65; margin-top: 8px; max-width: 240px; } /* match the schedule description (.tl-desc) */
 .attire-card__palette { display: flex; flex-wrap: wrap; gap: 9px; justify-content: center; margin-top: 12px; }
 .attire-card__swatch { width: 26px; height: 26px; border-radius: 50%; border: 1px solid color-mix(in oklch, var(--ink) 16%, transparent); box-shadow: inset 0 0 0 2px rgba(255,255,255,.35); }
 @media (max-width: 640px) {
@@ -1560,7 +1560,6 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    the card stays short without ever resizing the disk. */
 .vinyl-card--row .vinyl-main { flex-direction: row; align-items: center; gap: 26px; width: auto; flex: 0 1 auto; }
 .vinyl-card--row .vinyl-meta { align-items: flex-start; text-align: left; gap: 10px; width: 230px; }
-.vinyl-card--row .vinyl-title { font-size: clamp(24px, 3vw, 30px); }
 .vinyl-main { display: flex; flex-direction: column; align-items: center; gap: 26px; flex: 0 0 auto; width: 250px; max-width: 100%; }
 .vinyl-aside { flex: 1 1 auto; min-width: 0; align-self: flex-start; display: flex; flex-direction: column; gap: 10px; justify-content: flex-start; border-left: 1px solid var(--line); padding-left: 32px; }
 .vinyl-aside__head { font-family: var(--font-body); font-size: 11px; letter-spacing: .24em; text-transform: uppercase; color: var(--muted); padding-left: 12px; }
@@ -1571,9 +1570,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   .vinyl-card--row .vinyl-main { flex-direction: row; align-items: center; gap: 16px; width: 100%; }
   .vinyl-disk { width: 104px !important; height: 104px !important; }
   .vinyl-card--row .vinyl-meta { align-items: flex-start; text-align: left; width: auto; flex: 1 1 auto; min-width: 0; gap: 9px; }
-  .vinyl-card--row .vinyl-title { font-size: 20px; }
   .vinyl-card--row .vinyl-kicker { font-size: 10px; }
-  .vinyl-card--row .vinyl-artist { font-size: 13px; }
   .vinyl-card--row .vinyl-progress { max-width: none; }
   .vinyl-card--row .vinyl-controls { gap: 12px; margin-top: 0; }
   .vinyl-card--row .vinyl-btn { width: 40px; height: 40px; }
@@ -1585,10 +1582,10 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 }
 .vinyl-meta { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; }
 .vinyl-kicker { font-family: var(--font-body); font-size: 11px; letter-spacing: .28em; text-transform: uppercase; color: var(--gold); }
-/* playlist title uses the BODY font (not the display/header font) so the player
-   text reads distinctly from the section heading. */
-.vinyl-title { font-family: var(--font-body); font-size: clamp(24px, 4.2vw, 31px); font-weight: 600; line-height: 1.1; letter-spacing: -.01em; color: var(--ink); text-align: center; }
-.vinyl-artist { font-family: var(--font-body); font-size: 15px; letter-spacing: .02em; color: var(--muted); }
+/* playlist title matches the schedule DESCRIPTION (.tl-desc) and the artist
+   matches the schedule LOCATION (.tl-loc). */
+.vinyl-title { font-family: var(--font-body); font-size: 17px; font-weight: 400; line-height: 1.65; letter-spacing: normal; color: var(--ink-soft); text-align: center; }
+.vinyl-artist { font-family: var(--font-body); font-size: 14px; letter-spacing: normal; line-height: 1.65; color: var(--muted); }
 .vinyl-progress { width: 100%; max-width: 240px; display: flex; flex-direction: column; gap: 8px; }
 .vinyl-track { width: 100%; height: 4px; border-radius: 999px; background: var(--line); position: relative; overflow: hidden; cursor: pointer; }
 .vinyl-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); border-radius: 999px; }
