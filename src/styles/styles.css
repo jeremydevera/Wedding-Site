@@ -1086,8 +1086,11 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
   /* .admin__body is the ONLY scroll box now (header is in-flow above it), so no
      top padding to clear a fixed header — just scroll it. */
   /* Bottom padding clears the home indicator so the LAST row is fully visible. */
-  .admin__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 18px 18px calc(28px + env(safe-area-inset-bottom)); }
-  .admin--sa .admin__body { padding: 18px 26px calc(48px + env(safe-area-inset-bottom)); }
+  /* Big bottom pad: iOS Safari's bottom toolbar can overlap the last ~50px of a
+     100dvh fixed frame, hiding the footer / last table row. The extra space pushes
+     the last content up into the visible area regardless of the toolbar state. */
+  .admin__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 18px 18px calc(96px + env(safe-area-inset-bottom)); }
+  .admin--sa .admin__body { padding: 18px 26px calc(96px + env(safe-area-inset-bottom)); }
   /* topbar must wrap: title + action buttons can't sit on one phone row */
   /* Extra TOP padding pushes the burger + title lower (more clearance below the
      status bar / Dynamic Island); notch inset on .admin__head adds to it on
