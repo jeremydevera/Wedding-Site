@@ -192,7 +192,7 @@ export function RsvpsAdmin() {
     not_attending: bySearch.filter((r) => r.status === "not_attending").length,
   };
   const filtered = filter === "all" ? bySearch : bySearch.filter((r) => r.status === filter);
-  const pg = usePaged(filtered, 20);
+  const pg = usePaged(filtered, 10);
 
   function exportCsv() {
     const header = ["Full Name", "Email", "Phone", "Status", "Guests", "Plus-One Names", "Dietary", "Dietary Notes", "Song Request", "Notes", "Submitted"];
@@ -426,7 +426,7 @@ export function GuestbookAdmin() {
   // With moderation: split into Published (visible/hidden) vs Pending approval.
   const filtered = !moderation ? bySearch
     : bySearch.filter((g) => view === "pending" ? g.status === "pending" : g.status !== "pending");
-  const pg = usePaged(filtered, 20);
+  const pg = usePaged(filtered, 10);
 
   function exportCsv() {
     const rows = [["Guest Name", "Message", "Relationship", "Status", "Submitted"],
@@ -541,7 +541,7 @@ export function QuizAdmin() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const sorted = [...quizSubs].sort((a, b) => b.score - a.score);
-  const lb = usePaged(sorted, 20);
+  const lb = usePaged(sorted, 10);
   const openNew = () => { setEditing(null); setEditorOpen(true); };
   const openEdit = (q) => { setEditing(q); setEditorOpen(true); };
   const [tab, setTab] = useState("questions");
