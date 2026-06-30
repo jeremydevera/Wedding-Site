@@ -787,9 +787,19 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .admin-toolbar__action,
 .admin--sa .admin-toolbar__action { padding: 8px 14px; font-size: 13px; line-height: 1; }
 .admin-toolbar__action svg { width: 16px; height: 16px; }
+/* Pin the search box AND both action buttons to ONE identical height so the
+   thickness lines up in every theme regardless of icon/text size differences.
+   box-sizing: border-box is global, so height includes padding + border. */
+.admin-toolbar .search-box,
+.admin-toolbar__action,
+.admin--sa .admin-toolbar__action { height: 38px; min-height: 38px; }
 @media (max-width: 640px) {
   .admin-toolbar { gap: 8px; }
   .admin-toolbar__action { flex: 1 1 0; }                 /* actions share the top row */
+  /* Taller (44px) on mobile for tap targets, but search + actions stay equal. */
+  .admin-toolbar .search-box,
+  .admin-toolbar__action,
+  .admin--sa .admin-toolbar__action { height: 44px; min-height: 44px; }
   .admin-toolbar__end { margin-left: 0; width: 100%; flex-wrap: wrap; gap: 8px; }
   .admin-toolbar__end .seg { flex: 1 1 100%; display: flex; }
   .admin-toolbar__end .seg button { flex: 1; }            /* equal-width filter, full row */
