@@ -7,7 +7,7 @@ import { FX_LIST } from "@/lib/falling-fx.js";
 import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { signOut } from "@/lib/auth.js";
-import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia } from "@/lib/api.js";
+import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail } from "@/lib/api.js";
 import { mediaUrl } from "@/lib/media.js";
 import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
@@ -182,6 +182,7 @@ export function RsvpsAdmin() {
   const [detail, setDetail] = useState(null);
   const [emailOpen, setEmailOpen] = useState(false);
   const [emailTo, setEmailTo] = useState("");
+  const [emailSending, setEmailSending] = useState(false);
 
   const bySearch = rsvps.filter((r) => !q || `${r.fullName} ${r.email} ${r.phone}`.toLowerCase().includes(q.toLowerCase()));
   const counts = {
@@ -199,27 +200,47 @@ export function RsvpsAdmin() {
     downloadCSV("evermore-rsvps.csv", rows);
   }
 
-  // Open the device's mail app pre-filled with a results summary, addressed to the
-  // email the admin typed (no server mailer, so they press send in their mail app).
-  function emailResults(to) {
+  // Build an HTML results email and send it server-side (Resend via the
+  // /api/send-email Function) to the address the admin typed.
+  async function emailResults(to) {
+    const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
     const label = { attending: "Attending", maybe: "Maybe", not_attending: "Not attending" };
     const yes = rsvps.filter((r) => r.status === "attending");
     const guests = yes.reduce((s, r) => s + (Number(r.count) || 0), 0);
-    const MAX = 80;
-    const lines = rsvps.slice(0, MAX).map((r) => `• ${r.fullName} — ${label[r.status] || r.status}${r.count ? ` (${r.count})` : ""}`);
-    if (rsvps.length > MAX) lines.push(`…and ${rsvps.length - MAX} more — see the CSV export for the full list.`);
-    const body = [
-      `RSVP summary for ${settings.partnerA} & ${settings.partnerB}`,
-      ``,
-      `Total responses: ${rsvps.length}`,
-      `Attending: ${yes.length}  (${guests} guests)`,
-      `Maybe: ${rsvps.filter((r) => r.status === "maybe").length}`,
-      `Not attending: ${rsvps.filter((r) => r.status === "not_attending").length}`,
-      ``,
-      ...lines,
-    ].join("\n");
+    const rows = rsvps.map((r) => `<tr>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee">${esc(r.fullName)}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee">${esc(label[r.status] || r.status)}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:center">${esc(r.count || "")}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee">${esc(r.email)}</td>
+    </tr>`).join("");
+    const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#222;max-width:640px;margin:0 auto">
+      <h2 style="margin:0 0 4px">RSVP results</h2>
+      <p style="color:#666;margin:0 0 16px">${esc(settings.partnerA)} &amp; ${esc(settings.partnerB)}</p>
+      <p style="margin:0 0 16px">
+        <strong>${rsvps.length}</strong> responses &nbsp;·&nbsp;
+        <strong>${yes.length}</strong> attending (${guests} guests) &nbsp;·&nbsp;
+        ${rsvps.filter((r) => r.status === "maybe").length} maybe &nbsp;·&nbsp;
+        ${rsvps.filter((r) => r.status === "not_attending").length} not attending
+      </p>
+      <table style="border-collapse:collapse;width:100%;font-size:14px">
+        <thead><tr style="text-align:left;background:#f6f6f6">
+          <th style="padding:8px 10px">Name</th><th style="padding:8px 10px">Status</th>
+          <th style="padding:8px 10px;text-align:center">Guests</th><th style="padding:8px 10px">Email</th>
+        </tr></thead>
+        <tbody>${rows || '<tr><td colspan="4" style="padding:14px;color:#888">No RSVPs yet.</td></tr>'}</tbody>
+      </table>
+    </div>`;
     const subject = `RSVP results — ${settings.partnerA} & ${settings.partnerB}`;
-    window.location.href = `mailto:${(to || "").trim()}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    setEmailSending(true);
+    try {
+      await sendEmail({ to: (to || "").trim(), subject, html });
+      toast(`Sent to ${(to || "").trim()}`);
+      setEmailOpen(false);
+    } catch (e) {
+      toast("Couldn't send: " + (e && e.message || "error"), "err");
+    } finally {
+      setEmailSending(false);
+    }
   }
 
   return (
@@ -297,10 +318,10 @@ export function RsvpsAdmin() {
 
       <Modal open={emailOpen} onClose={() => setEmailOpen(false)} label="Email results">
         <SectionHead eyebrow="RSVPs" title="Email the results" />
-        <Field label="Send to" id="rsvp-email-to" hint="We'll open your mail app with the summary ready to send to this address.">
+        <Field label="Send to" id="rsvp-email-to" hint="We'll email the RSVP results (a summary + full table) to this address.">
           <Input id="rsvp-email-to" type="email" inputMode="email" value={emailTo} onChange={(e) => setEmailTo(e.target.value)} placeholder="name@example.com" />
         </Field>
-        <Button variant="primary" block disabled={!emailTo.trim()} onClick={() => { emailResults(emailTo); setEmailOpen(false); }}>Send results</Button>
+        <Button variant="primary" block disabled={!emailTo.trim() || emailSending} onClick={() => emailResults(emailTo)}>{emailSending ? "Sending…" : "Send results"}</Button>
       </Modal>
     </div>
   );

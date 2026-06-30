@@ -136,6 +136,25 @@ export async function uploadAudio(file, clientId) {
   return { url: key, path: key, key };
 }
 
+// Send an HTML email via the auth-gated /api/send-email Function (Resend).
+// Used by the RSVP "Email results" action. Requires a valid admin session.
+export async function sendEmail({ to, subject, html }) {
+  const { data } = await supabase.auth.getSession();
+  const token = data && data.session && data.session.access_token;
+  if (!token) throw new Error("Not signed in");
+  const res = await fetch("/api/send-email", {
+    method: "POST",
+    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+    body: JSON.stringify({ to, subject, html }),
+  });
+  if (!res.ok) {
+    let msg = `send failed (${res.status})`;
+    try { const e = await res.json(); if (e && e.error) msg = e.error; } catch (_) {}
+    throw new Error(msg);
+  }
+  return await res.json();
+}
+
 // Have the Function pull a remote file into R2 server-side (no browser CORS).
 // Used by the migration to move existing Supabase-hosted audio.
 async function uploadUrlToR2(sourceUrl, opts, clientId) {
