@@ -289,7 +289,14 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
   select { font-size: 16px !important; }
 }
 .field-row { display: grid; grid-template-columns: 1fr; gap: 0 18px; }
-@media (min-width: 640px) { .field-row--2 { grid-template-columns: 1fr 1fr; } }
+/* minmax(0,…) so a child's intrinsic min-width (native datetime-local is wide)
+   can't blow its track past its twin and make the columns lopsided. */
+@media (min-width: 640px) { .field-row--2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+/* Native date/time inputs carry a large intrinsic min-width + control chrome;
+   let them shrink to the column and behave like a normal text field. */
+input[type="datetime-local"].input,
+input[type="date"].input,
+input[type="time"].input { min-width: 0; }
 
 /* --- Radio pills (attendance, etc) -----------------------------------------*/
 .pills { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -598,10 +605,13 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .admin__navlink:hover { background: var(--surface-2); color: var(--ink); }
 .admin__navlink--active { background: var(--accent-soft); color: var(--ink); font-weight: 600; }
 .admin__main { flex: 1; min-width: 0; margin-left: 240px; }
-/* The header must stay pinned. The sticky has to live on .admin__head (whose
-   parent .admin__main is tall) — a sticky .admin__topbar alone can't stick
-   because its parent .admin__head is only header-height, so it scrolled away. */
-.admin__head { position: sticky; top: 0; z-index: 30; background: var(--surface); }
+/* The header must stay pinned. position:sticky DEGRADES under html/body
+   { overflow-x: clip } (Safari especially): the head detaches from the top,
+   opening a lavender gap above it / letting it scroll away. Pin with
+   position:fixed, offset by the 240px sidebar, and clear it with .admin__body
+   top-padding — the same fixed+offset approach already used for the sidebar
+   and the mobile head. */
+.admin__head { position: fixed; top: 0; left: 240px; right: 0; z-index: 30; background: var(--surface); }
 .admin__topbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 30px; border-bottom: 1px solid var(--line); background: var(--surface); z-index: 10; }
 .admin__title { font-family: var(--font-display); font-size: 26px; white-space: nowrap; }
 /* Client (owner) header title is smaller than the superadmin's. */
@@ -655,7 +665,7 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .signin__btn:hover { background: #1c9159; }
 .signin__btn:disabled { opacity: .65; cursor: default; }
 
-.admin__body { padding: 30px; }
+.admin__body { padding: 100px 30px 30px; }   /* top clears the fixed .admin__head (~70px) */
 /* Save footer LIVES INSIDE the section card (Supabase pattern): a top-divider
    footer with helper text left + button right. Rendered as the last child of a
    .panel, only on sections that edit content. */
@@ -838,7 +848,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 /* Data table + toolbar matched to the Supabase users page */
 .admin--sa .tbl th { background: #f3f3f3; color: #171717; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: normal; height: 36px; padding: 0 12px; border-bottom: 1px solid #dfdfdf; }
 .admin--sa .tbl td { font-size: 13px; padding: 10px 12px; }
-.admin--sa .admin__body { padding: 22px 26px 48px; }
+.admin--sa .admin__body { padding: 92px 26px 48px; }   /* top clears the fixed .admin__head (~70px) */
 /* Clients table: fixed columns so width spreads evenly (no dead gap before Owner login) */
 .admin--sa .tbl--clients { table-layout: fixed; width: 100%; min-width: 820px; }
 .admin--sa .tbl--clients th:nth-child(1), .admin--sa .tbl--clients td:nth-child(1) { width: 38%; }
