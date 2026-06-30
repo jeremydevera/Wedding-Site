@@ -219,7 +219,7 @@ export function TweaksContent() {
         <>
           <TweakSection label="Envelope Frame" />
           <div className="twk-row" style={{ display: "block" }}>
-            <ImageUploadField label="Photo inside the oval frame" ratio="1 / 1"
+            <ImageUploadField purpose="frame" label="Photo inside the oval frame" ratio="1 / 1"
               value={s.frameImage} onChange={(v) => upd({ frameImage: v })} />
             <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
               A square photo of the couple works best. Leave empty to use the default animated frame.

@@ -1,5 +1,6 @@
 import React from "react";
 import { useStore } from "@/lib/store.jsx";
+import { mediaUrl } from "@/lib/media.js";
 const { useState, useEffect, useRef } = React;
 
 // ============================================================================
@@ -28,7 +29,7 @@ function el() {
 function load(i) {
   const t = _tracks[i]; if (!t) return;
   const a = el();
-  if (_loadedUrl !== t.url) { a.src = t.url; _loadedUrl = t.url; _st = { ..._st, duration: 0 }; }
+  if (_loadedUrl !== t.url) { a.src = mediaUrl(t.url); _loadedUrl = t.url; _st = { ..._st, duration: 0 }; }
   _st = { ..._st, index: i, time: 0 }; _emit();
 }
 export function setTracks(tracks) {
