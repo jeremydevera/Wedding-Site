@@ -1464,7 +1464,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .attire-card { flex: 0 1 230px; max-width: 260px; min-width: 190px; text-align: center; display: flex; flex-direction: column; align-items: center; }
 .attire-card__img { width: 100%; aspect-ratio: 3 / 4; border-radius: calc(var(--radius) + 6px); overflow: hidden; background: var(--surface-2); border: 1px solid var(--line); display: grid; place-items: center; }
 .attire-card__img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.attire-card__name { font-family: var(--font-display); font-size: 25px; color: var(--ink); margin-top: 16px; letter-spacing: .01em; }
+.attire-card__name { font-family: var(--font-display); font-size: 26px; color: var(--ink); margin-top: 16px; letter-spacing: .01em; } /* match the schedule tile title (.tl-title) */
 /* No-photo tiles start with the name, so don't add the image-gap on top. */
 .attire-card > .attire-card__name:first-child { margin-top: 0; }
 .attire-card__desc { font-size: 15px; color: var(--ink-soft); line-height: 1.55; margin-top: 8px; max-width: 240px; }
@@ -1473,7 +1473,6 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 @media (max-width: 640px) {
   .attire-grid { gap: 20px 18px; }
   .attire-card { flex-basis: 43%; min-width: 0; }
-  .attire-card__name { font-size: 21px; }
   .attire-card__swatch { width: 22px; height: 22px; }
 }
 /* Attire palette editor (admin) */
