@@ -235,7 +235,8 @@ export function RsvpsAdmin() {
       </table>
     </div>`;
     const who = [settings.partnerA, settings.partnerB].filter(Boolean).join(" & ");
-    const subject = `${who ? who + " — " : ""}${heading}`;
+    const today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const subject = `${who ? who + " — " : ""}${heading} · ${today}`;
     setEmailSending(true);
     try {
       await sendEmail({ to: (to || "").trim(), subject, html });
