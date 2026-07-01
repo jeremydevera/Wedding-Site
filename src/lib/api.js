@@ -181,6 +181,22 @@ export async function listMedia(clientId, type) {
   return Array.isArray(body.items) ? body.items : [];
 }
 
+// Delete a file from R2 by its bare key. Requires an active admin session.
+// Throws on network error or non-ok response.
+export async function deleteFromR2(key) {
+  const token = await freshToken();
+  const res = await fetch("/api/media", {
+    method: "DELETE",
+    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+    body: JSON.stringify({ key }),
+  });
+  if (!res.ok) {
+    let msg = `delete failed (${res.status})`;
+    try { const e = await res.json(); if (e && e.error) msg = e.error; } catch (_) {}
+    throw new Error(msg);
+  }
+}
+
 // Send an HTML email via the auth-gated /api/send-email Function (Resend).
 // Used by the RSVP "Email results" action. Requires a valid admin session.
 export async function sendEmail({ to, subject, html }) {
