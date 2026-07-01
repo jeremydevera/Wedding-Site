@@ -332,8 +332,8 @@ export function ConfirmHost() {
     <Modal open={!!state} onClose={() => close(false)} label="Confirm" solid>
       {state && (
         <div style={{ textAlign: "center" }}>
-          <div className="confirm__seal" style={{ borderColor: state.danger ? "oklch(0.72 0.12 25)" : "var(--gold)", color: state.danger ? "oklch(0.55 0.16 25)" : "var(--accent)" }}>
-            {state.danger ? Icon.trash({}) : Icon.check({})}
+          <div className="confirm__seal" style={{ borderColor: (state.danger || state.error) ? "oklch(0.72 0.12 25)" : "var(--gold)", color: (state.danger || state.error) ? "oklch(0.55 0.16 25)" : "var(--accent)" }}>
+            {state.error ? Icon.close({}) : state.danger ? Icon.trash({}) : Icon.check({})}
           </div>
           <h3 style={{ fontFamily: "var(--font-display)", fontSize: 28, marginBottom: 10 }}>{state.title || "Are you sure?"}</h3>
           {state.message && <p style={{ color: "var(--ink-soft)", maxWidth: "42ch", margin: "0 auto 24px" }}>{state.message}</p>}

@@ -438,6 +438,7 @@ export function R2LibraryAdmin() {
       message: `"${fileNameFromKey(item.key)}" is being used on a client's site, so it can't be deleted.`,
       confirmLabel: "OK",
       okOnly: true,
+      error: true,   // red X seal, not the green check
     });
   }
 
