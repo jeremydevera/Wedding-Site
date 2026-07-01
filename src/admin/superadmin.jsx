@@ -432,11 +432,10 @@ export function R2LibraryAdmin() {
   // marks the item inUse locally (covers the 409 race where usage changed after
   // the list loaded), so the button stays a hard block afterwards.
   function blockInUse(item, usedBy) {
-    const who = usedBy || item.usedBy || item.key.split("/")[0];
     if (usedBy) setItems((prev) => prev.map((it) => (it.key === item.key ? { ...it, inUse: true, usedBy } : it)));
     return confirmDialog({
-      title: "Can't delete — file in use",
-      message: `"${fileNameFromKey(item.key)}" is currently used by ${who}'s site. Remove it from that site first, then delete it here.`,
+      title: "In use — can't delete",
+      message: `"${fileNameFromKey(item.key)}" is being used on a client's site, so it can't be deleted.`,
       confirmLabel: "OK",
       okOnly: true,
     });
