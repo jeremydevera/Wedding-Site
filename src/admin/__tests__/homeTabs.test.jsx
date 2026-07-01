@@ -47,7 +47,7 @@ describe("Home tab — folder sub-tabs", () => {
     expect(container.textContent).toMatch(/Show music player on the home page/);
     expect(container.textContent).toMatch(/Autoplay music on load/);
     expect(container.textContent).toMatch(/Music Playlist/);
-    expect(hasButton(container, "+ Upload audio")).toBe(true);
+    expect(hasButton(container, "+ Add music")).toBe(true);
 
     // Entourage → show toggle + add-group (save) action present
     clickByText(container, ".folders .folder", "Entourage");

@@ -567,6 +567,13 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 .modal__backdrop { position: absolute; inset: 0; background: rgba(15,15,15,.6); backdrop-filter: blur(3px); animation: fade .2s ease; }
 .modal__panel { position: relative; background: var(--surface); border-radius: var(--radius); padding: 36px; width: min(560px, 100%); max-height: 90vh; overflow-y: auto; animation: pop .24s cubic-bezier(.2,.7,.3,1); }
 .modal__panel--wide { width: min(920px, 100%); }
+/* Confirm/message dialogs stay opaque even under the glass theme — a translucent
+   blurred panel makes a short message box hard to read. Overrides the
+   [data-theme="glass"] .modal__panel rule above. */
+[data-theme="glass"] .modal__panel--solid, .modal__panel--solid {
+  background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none;
+  border: 1px solid var(--line); box-shadow: 0 16px 44px -18px rgba(40,50,90,.3);
+}
 .modal__close { position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: none; border: none; font-size: 28px; line-height: 1; color: var(--muted); cursor: pointer; border-radius: 8px; -webkit-tap-highlight-color: transparent; }
 .modal__close:hover { color: var(--ink); background: var(--surface-2); }
 /* Bigger tap target on phones so the close button is easy to hit. */

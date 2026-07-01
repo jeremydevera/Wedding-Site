@@ -227,7 +227,7 @@ export function SectionHead({ eyebrow, title, lead, center, light }) {
 }
 
 // --- Modal ------------------------------------------------------------------
-export function Modal({ open, onClose, children, wide, label = "Dialog" }) {
+export function Modal({ open, onClose, children, wide, solid, label = "Dialog" }) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => { if (e.key === "Escape") onClose && onClose(); };
@@ -274,7 +274,7 @@ export function Modal({ open, onClose, children, wide, label = "Dialog" }) {
   return createPortal(
     <div className={"modal" + (inAdmin ? " admin--sa" : "")} role="dialog" aria-modal="true" aria-label={label}>
       <div className="modal__backdrop" onClick={onClose} />
-      <div className={"modal__panel" + (wide ? " modal__panel--wide" : "")}>
+      <div className={"modal__panel" + (wide ? " modal__panel--wide" : "") + (solid ? " modal__panel--solid" : "")}>
         <button className="modal__close" onClick={onClose} aria-label="Close">&times;</button>
         {children}
       </div>
@@ -329,7 +329,7 @@ export function ConfirmHost() {
   const inAdmin = typeof document !== "undefined" && !!document.querySelector(".admin--sa");
   return (
     <div className={inAdmin ? "admin--sa" : undefined}>
-    <Modal open={!!state} onClose={() => close(false)} label="Confirm">
+    <Modal open={!!state} onClose={() => close(false)} label="Confirm" solid>
       {state && (
         <div style={{ textAlign: "center" }}>
           <div className="confirm__seal" style={{ borderColor: state.danger ? "oklch(0.72 0.12 25)" : "var(--gold)", color: state.danger ? "oklch(0.55 0.16 25)" : "var(--accent)" }}>

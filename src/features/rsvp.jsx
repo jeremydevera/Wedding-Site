@@ -58,7 +58,7 @@ export function RSVPPage() {
         setSubmitting(false);
         await confirmDialog({
           title: "You've already RSVP'd",
-          message: `Looks like ${fullName} has already responded. If that's not you, go back and add your middle name so we can tell you apart.`,
+          message: `Looks like ${fullName} has already responded. We've got you down — thank you!`,
           confirmLabel: "OK",
           okOnly: true,
         });
