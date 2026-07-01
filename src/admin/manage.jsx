@@ -9,7 +9,6 @@ import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fm
 import { signOut } from "@/lib/auth.js";
 import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail } from "@/lib/api.js";
 import { mediaUrl } from "@/lib/media.js";
-import { rsvpStats } from "@/lib/rsvp.js";
 import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
 import { visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel } from "@/lib/roles.js";
@@ -206,8 +205,6 @@ export function RsvpsAdmin() {
   };
   const filtered = filter === "all" ? bySearch : bySearch.filter((r) => r.status === filter);
   const pg = usePaged(filtered, 10);
-  const stats = React.useMemo(() => rsvpStats(rsvps), [rsvps]);
-  const dietSummary = Object.entries(stats.diets).map(([d, n]) => `${n} ${d}`).join(" · ");
 
   function exportCsv() {
     const header = ["Full Name", "Email", "Phone", "Status", "Guests", "Plus-One Names", "Dietary", "Dietary Notes", "Song Request", "Notes", "Submitted"];
@@ -266,13 +263,6 @@ export function RsvpsAdmin() {
 
   return (
     <div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 16, padding: "10px 4px 16px", color: "var(--muted)", fontSize: 14 }}>
-        <span><strong style={{ color: "var(--ink)" }}>{stats.total}</strong> responses</span>
-        <span><strong style={{ color: "var(--ink)" }}>{stats.attendingHeads}</strong> guests coming <span style={{ opacity: 0.7 }}>({stats.attendingParties} parties)</span></span>
-        <span><strong style={{ color: "var(--ink)" }}>{stats.maybe}</strong> maybe</span>
-        <span><strong style={{ color: "var(--ink)" }}>{stats.declined}</strong> declined</span>
-        {dietSummary && <span>Dietary: {dietSummary}</span>}
-      </div>
       {/* Status filter as folder tabs (like Guestbook), above the panel. */}
       <div className="folders">
         {[["all", "All"], ["attending", "Yes"], ["maybe", "Maybe"], ["not_attending", "No"]].map(([v, l]) => (

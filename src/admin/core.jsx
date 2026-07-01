@@ -4,6 +4,7 @@ import { go } from "@/lib/nav.js";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { DISABLED_MODULES } from "@/lib/roles.js";
 import { useStore } from "@/lib/store.jsx";
+import { rsvpStats } from "@/lib/rsvp.js";
 import { signIn } from "@/lib/auth.js";
 import { Button, Field, Icon, Input, Monogram, Placeholder, toast } from "@/ui/components.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
@@ -159,6 +160,7 @@ export function AdminDashboard({ goTab }) {
   const { rsvps, media, guestbook, quizSubs } = useStore();
   const attending = rsvps.filter((r) => r.status === "attending");
   const guestCount = attending.reduce((s, r) => s + (r.count || 0), 0);
+  const rstats = rsvpStats(rsvps);
   const photos = media.filter((m) => m.type === "photo" && m.category === "gallery");
   const videos = media.filter((m) => m.type === "video");
   const pendingMedia = media.filter((m) => m.status === "pending");
@@ -167,6 +169,8 @@ export function AdminDashboard({ goTab }) {
   const stats = [
     { label: "RSVPs", value: rsvps.length, sub: `${attending.length} attending`, tab: "rsvps" },
     { label: "Guest Count", value: guestCount, sub: "people coming", tab: "rsvps" },
+    { label: "Maybe", value: rstats.maybe, sub: "tentative", tab: "rsvps" },
+    { label: "Declined", value: rstats.declined, sub: "can't make it", tab: "rsvps" },
     ...(mediaShelved ? [] : [
       { label: "Photos", value: photos.length, sub: pendingMedia.length ? `${pendingMedia.length} to review` : "all clear", tab: "media" },
       { label: "Videos", value: videos.length, sub: "uploaded", tab: "media" },
@@ -189,6 +193,21 @@ export function AdminDashboard({ goTab }) {
           </button>
         ))}
       </div>
+
+      {Object.keys(rstats.diets).length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 12, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted)", fontWeight: 600, margin: "0 0 10px" }}>Dietary needs — attending</div>
+          <div className="stat-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
+            {Object.entries(rstats.diets).map(([diet, n]) => (
+              <div key={diet} className="stat">
+                <div className="stat__label">{diet}</div>
+                <div className="stat__value">{n}</div>
+                <div className="stat__sub">{n === 1 ? "request" : "requests"}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "grid", gap: 24, gridTemplateColumns: "1fr" }}>
         <div className="panel">
