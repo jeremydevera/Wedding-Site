@@ -1773,6 +1773,7 @@ export function TrackEditor({ open, track, onClose }) {
   const [f, setF] = useState({ title: "", artist: "", url: "" });
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   useEffect(() => { if (track) setF({ title: track.title || "", artist: track.artist || "", url: track.url || "" }); }, [track, open]);
   async function onReplace(files) {
     const file = [...(files || [])].find(isAudioFile);
@@ -1781,6 +1782,7 @@ export function TrackEditor({ open, track, onClose }) {
     try {
       const { url } = await uploadAudio(file, clientId);
       setF((p) => ({ ...p, url }));
+      setPickerOpen(false);
       toast("Audio replaced — click Save track to keep it");
     } catch (e) { toast("Upload failed: " + (e.message || "error"), "err"); }
     finally { setUploading(false); if (fileRef.current) fileRef.current.value = ""; }
@@ -1798,13 +1800,23 @@ export function TrackEditor({ open, track, onClose }) {
       <SectionHead eyebrow="Music" title={track && track.id ? "Edit track" : "Add track"} />
       <Field label="Title" required id="trk-t"><Input id="trk-t" value={f.title} onChange={(e) => setF((p) => ({ ...p, title: e.target.value }))} placeholder="e.g. Perfect" /></Field>
       <Field label="Artist" id="trk-a"><Input id="trk-a" value={f.artist} onChange={(e) => setF((p) => ({ ...p, artist: e.target.value }))} placeholder="e.g. Ed Sheeran" /></Field>
-      <Field label="Audio file" id="trk-audio" hint="Upload a new file to replace this track's audio">
+      <Field label="Audio file" id="trk-audio" hint="Upload a new file, or reuse one from your library">
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {f.url ? <audio src={mediaUrl(f.url)} controls preload="none" style={{ width: "100%", height: 38 }} /> : <span style={{ color: "var(--muted)", fontSize: 13 }}>No audio yet</span>}
           <input ref={fileRef} type="file" accept={AUDIO_ACCEPT} style={{ display: "none" }} onChange={(e) => onReplace(e.target.files)} />
-          <div><Button variant="ghost" size="sm" disabled={uploading} onClick={() => fileRef.current && fileRef.current.click()}>{uploading ? "Uploading…" : "Replace audio"}</Button></div>
+          <div><Button variant="ghost" size="sm" disabled={uploading} onClick={() => setPickerOpen(true)}>{uploading ? "Uploading…" : (f.url ? "Replace audio" : "Add audio")}</Button></div>
         </div>
       </Field>
+      <MediaPickerModal
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        type="audio"
+        clientId={clientId}
+        uploadLabel={f.url ? "Replace audio" : "Choose audio"}
+        uploading={uploading}
+        onUploadNew={() => fileRef.current && fileRef.current.click()}
+        onPick={(key) => setF((p) => ({ ...p, url: key }))}
+      />
       <div style={{ display: "flex", gap: 12, marginTop: 8, justifyContent: "flex-end" }}>
         <Button variant="ghost" onClick={onClose}>Cancel</Button>
         <Button variant="primary" onClick={save} disabled={uploading}>Save track</Button>
