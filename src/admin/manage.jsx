@@ -17,7 +17,9 @@ import { ClientsAdmin, R2LibraryAdmin, SuperOverview } from "@/admin/superadmin.
 import { LocationPicker } from "@/ui/location-picker.jsx";
 import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
 import { MediaPickerModal } from "@/admin/MediaPicker.jsx";
-import { RsvpCharts } from "@/admin/rsvp-charts.jsx";
+// Lazy: amCharts is heavy (~1MB) — split it into its own chunk so the public
+// site and non-RSVP admin tabs never download it.
+const RsvpCharts = React.lazy(() => import("@/admin/rsvp-charts.jsx"));
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // Save state shared from the AdminApp shell down to each section's footer, so the
@@ -400,7 +402,7 @@ export function RsvpsAdmin() {
 
   return (
     <div>
-      <RsvpCharts rsvps={rsvps} />
+      <React.Suspense fallback={null}><RsvpCharts rsvps={rsvps} /></React.Suspense>
       {/* Status filter as folder tabs (like Guestbook), above the panel. */}
       <div className="folders">
         {[["all", "All"], ["attending", "Yes"], ["maybe", "Maybe"], ["not_attending", "No"]].map(([v, l]) => (
@@ -1513,7 +1515,7 @@ export function SettingsAdmin() {
           <Field label="Admin password" id="s-pw"><Input id="s-pw" value={f.adminPassword} onChange={set("adminPassword")} /></Field>
           <AdminToggle label="Allow guest uploads" desc="Master switch for the photo/video upload pages." checked={f.uploadsEnabled} onChange={(v) => setKey("uploadsEnabled", v)} />
           <AdminToggle label="Show public gallery" desc="Hide the gallery from guests entirely if you prefer." checked={f.galleryEnabled} onChange={(v) => setKey("galleryEnabled", v)} />
-          <AdminToggle label="Enable Strict RSVP" desc="Track an invited-guest list with seat allocations, and see who hasn't replied. Adds a Guests tab. (The public RSVP form stays open for now.)" checked={f.strictRsvp === true} onChange={(v) => setKey("strictRsvp", v)} />
+          <AdminToggle label="Enable Strict RSVP" desc="Track an invited-guest list with seat allocations, and see who hasn't replied. Adds a Guests tab. Only guests on the list can RSVP, and party size is capped at their seat allocation." checked={f.strictRsvp === true} onChange={(v) => setKey("strictRsvp", v)} />
         </div>
         <SaveFooter />
       </div></>)}
