@@ -83,8 +83,26 @@ export function rowToGuestbook(row) {
 
 export function rowToRsvp(row) {
   return {
-    id: row.id, fullName: row.full_name, email: row.email, phone: row.phone, status: row.status, count: row.count,
+    id: row.id, fullName: row.full_name, email: row.email,
+    firstName: row.first_name, middleName: row.middle_name, lastName: row.last_name,
+    phone: row.phone, status: row.status, count: row.count,
     plusOne: row.plus_one, diet: row.diet, dietNotes: row.diet_notes, song: row.song, notes: row.notes,
+    createdAt: row.created_at ? Date.parse(row.created_at) : Date.now(),
+  };
+}
+
+export function guestToRow(g, clientId) {
+  return {
+    client_id: clientId,
+    first_name: g.firstName, last_name: g.lastName, middle_name: g.middleName,
+    allocation: g.allocation, email: g.email, notes: g.notes,
+  };
+}
+
+export function rowToGuest(row) {
+  return {
+    id: row.id, firstName: row.first_name, lastName: row.last_name, middleName: row.middle_name,
+    allocation: row.allocation, email: row.email, notes: row.notes,
     createdAt: row.created_at ? Date.parse(row.created_at) : Date.now(),
   };
 }

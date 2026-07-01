@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { DEFAULT_SETTINGS, SEED_SCHEDULE } from "@/lib/store.jsx";
-import { clientToState, stateToClientRow, rsvpToRow, guestbookToRow, quizToRow, rowToGuestbook, rowToRsvp, rowToQuizSub } from "@/lib/mappers.js";
+import { clientToState, stateToClientRow, rsvpToRow, guestbookToRow, quizToRow, rowToGuestbook, rowToRsvp, rowToQuizSub, guestToRow, rowToGuest } from "@/lib/mappers.js";
 
 describe("clientToState", () => {
   it("maps template_key->settings.theme and event_type->eventType, falls back to defaults", () => {
@@ -95,5 +95,33 @@ describe("rowToQuizSub", () => {
       created_at: "2026-01-01T00:00:00Z" });
     expect(q).toMatchObject({ id: "q1", name: "A", score: 3, total: 5, answers: { q1: 1 } });
     expect(typeof q.createdAt).toBe("number");
+  });
+});
+
+describe("guestToRow", () => {
+  it("maps camelCase guest -> snake_case columns + client_id", () => {
+    expect(guestToRow({ firstName: "Jeremy", lastName: "Reyes", middleName: "P",
+      allocation: 2, email: "j@ex.com", notes: "college" }, "c1")).toEqual({
+      client_id: "c1", first_name: "Jeremy", last_name: "Reyes", middle_name: "P",
+      allocation: 2, email: "j@ex.com", notes: "college",
+    });
+  });
+});
+
+describe("rowToGuest", () => {
+  it("maps snake_case row -> camelCase guest with numeric createdAt", () => {
+    const g = rowToGuest({ id: "g1", first_name: "Jeremy", last_name: "Reyes", middle_name: "P",
+      allocation: 2, email: "j@ex.com", notes: "college", created_at: "2026-01-01T00:00:00Z" });
+    expect(g).toMatchObject({ id: "g1", firstName: "Jeremy", lastName: "Reyes", middleName: "P",
+      allocation: 2, email: "j@ex.com", notes: "college" });
+    expect(typeof g.createdAt).toBe("number");
+  });
+});
+
+describe("rowToRsvp name parts", () => {
+  it("exposes first/middle/last so guests can be matched", () => {
+    const r = rowToRsvp({ id: "r1", full_name: "Jeremy P Reyes", first_name: "Jeremy",
+      middle_name: "P", last_name: "Reyes", status: "attending", count: 2 });
+    expect(r).toMatchObject({ firstName: "Jeremy", middleName: "P", lastName: "Reyes" });
   });
 });
