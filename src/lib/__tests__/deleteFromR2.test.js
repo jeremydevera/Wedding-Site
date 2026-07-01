@@ -42,4 +42,16 @@ describe("deleteFromR2", () => {
     });
     await expect(deleteFromR2("bad/key")).rejects.toThrow("delete failed");
   });
+
+  it("tags a 409 in-use rejection with code and usedBy", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 409,
+      json: async () => ({ error: "in_use", usedBy: "demo" }),
+    });
+    await expect(deleteFromR2("uuid/owner/image/hero/x-photo.jpg")).rejects.toMatchObject({
+      code: "in_use",
+      usedBy: "demo",
+    });
+  });
 });

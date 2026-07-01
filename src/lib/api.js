@@ -167,10 +167,13 @@ export async function uploadAudio(file, clientId) {
 
 // List this client's existing R2 media of one type ("image" | "audio") via the
 // auth-gated /api/media Function. Returns [{ key, name, size, uploaded }] newest
-// first. Requires a valid Supabase session (admins only).
-export async function listMedia(clientId, type) {
+// first. Requires a valid Supabase session (admins only). Pass { usage: true }
+// (superadmin only) to also annotate each item with inUse/usedBy — whether the
+// key is referenced in the owning client's content.
+export async function listMedia(clientId, type, opts) {
   const token = await freshToken();
   const qs = new URLSearchParams({ clientId: clientId || "", type: type || "image" });
+  if (opts && opts.usage) qs.set("usage", "1");
   const res = await fetch(`/api/media?${qs}`, { headers: { authorization: `Bearer ${token}` } });
   if (!res.ok) {
     let msg = `library load failed (${res.status})`;
@@ -182,7 +185,10 @@ export async function listMedia(clientId, type) {
 }
 
 // Delete an R2 object by its bare key via the auth-gated DELETE /api/media
-// Function. Superadmin media manager only. Returns true on success, throws on error.
+// Function. Superadmin media manager only. Returns true on success, throws on
+// error. When the server hard-blocks the delete because the file is still
+// referenced by a client (HTTP 409), the thrown Error carries code "in_use" and
+// usedBy (the client's subdomain) so the UI can show a specific block message.
 export async function deleteFromR2(key) {
   const token = await freshToken();
   const res = await fetch("/api/media", {
@@ -191,9 +197,11 @@ export async function deleteFromR2(key) {
     body: JSON.stringify({ key }),
   });
   if (!res.ok) {
-    let msg = `delete failed (${res.status})`;
-    try { const e = await res.json(); if (e && e.error) msg = e.error; } catch (_) {}
-    throw new Error(msg);
+    let msg = `delete failed (${res.status})`, data = null;
+    try { data = await res.json(); if (data && data.error) msg = data.error; } catch (_) {}
+    const err = new Error(msg);
+    if (res.status === 409) { err.code = "in_use"; err.usedBy = data && data.usedBy; }
+    throw err;
   }
   return true;
 }
