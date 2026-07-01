@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase.js";
 import { Store } from "@/lib/store.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
-import { clientToState, stateToClientRow, rowToGuestbook, rowToRsvp, rowToQuizSub, rsvpToRow, guestbookToRow, quizToRow } from "@/lib/mappers.js";
+import { clientToState, stateToClientRow, rowToGuestbook, rowToRsvp, rowToQuizSub, rsvpToRow, guestbookToRow, quizToRow, guestToRow, rowToGuest } from "@/lib/mappers.js";
 import { loadSession } from "@/lib/auth.js";
 
 // Boot: load the active client + approved guestbook, hydrate the store cache.
@@ -96,18 +96,21 @@ export async function postQuiz(sub) {
 export async function loadAdminData() {
   const clientId = Store.get().clientId;
   if (!clientId) return;
-  const [rs, gb, qz] = await Promise.all([
+  const [rs, gb, qz, gu] = await Promise.all([
     supabase.from("rsvps").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
     supabase.from("guestbook").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
     supabase.from("quiz_answers").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
+    supabase.from("guests").select("*").eq("client_id", clientId).order("created_at", { ascending: true }),
   ]);
   if (rs.error) console.warn("[api] rsvps load failed:", rs.error.message);
   if (gb.error) console.warn("[api] guestbook load failed:", gb.error.message);
   if (qz.error) console.warn("[api] quiz load failed:", qz.error.message);
+  if (gu.error) console.warn("[api] guests load failed:", gu.error.message);
   Store.setSubmissions({
     rsvps: (rs.data || []).map(rowToRsvp),
     guestbook: (gb.data || []).map(rowToGuestbook),
     quizSubs: (qz.data || []).map(rowToQuizSub),
+    guests: (gu.data || []).map(rowToGuest),
   });
 }
 
@@ -124,6 +127,23 @@ export async function deleteGuestbookDb(id) {
 export async function deleteRsvpDb(id) {
   const { error } = await supabase.from("rsvps").delete().eq("id", id);
   if (error) { console.warn("[api] rsvp delete failed:", error.message); throw error; }
+}
+
+// Owner/superadmin guest-list CRUD (RLS scopes writes to the owner's client).
+export async function addGuestDb(guest) {
+  const clientId = Store.get().clientId;
+  const { data, error } = await supabase.from("guests").insert(guestToRow(guest, clientId)).select().single();
+  if (error) { console.warn("[api] guest insert failed:", error.message); throw error; }
+  return rowToGuest(data);
+}
+export async function updateGuestDb(id, guest) {
+  const clientId = Store.get().clientId;
+  const { error } = await supabase.from("guests").update(guestToRow(guest, clientId)).eq("id", id);
+  if (error) { console.warn("[api] guest update failed:", error.message); throw error; }
+}
+export async function deleteGuestDb(id) {
+  const { error } = await supabase.from("guests").delete().eq("id", id);
+  if (error) { console.warn("[api] guest delete failed:", error.message); throw error; }
 }
 
 // Persist the current client's settings + content (theme, names, schedule, story,
