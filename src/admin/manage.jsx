@@ -15,6 +15,7 @@ import { visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, modul
 import { ClientsAdmin, SuperOverview } from "@/admin/superadmin.jsx";
 import { LocationPicker } from "@/ui/location-picker.jsx";
 import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
+import { MediaPickerModal } from "@/admin/MediaPicker.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // Save state shared from the AdminApp shell down to each section's footer, so the
@@ -53,6 +54,7 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
   const ref = useRef(null);
   const [cropSrc, setCropSrc] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const aspect = (() => { const m = String(ratio).split("/").map((n) => parseFloat(n)); return (m.length === 2 && m[1]) ? m[0] / m[1] : 1; })();
   function pick(file) {
     if (!file) return;
@@ -63,6 +65,7 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
   // not base64, so the client content row stays lean. Existing base64 values
   // still render fine (an <img src> takes either).
   async function applyCrop(dataUrl) {
+    setPickerOpen(false);
     setCropSrc(null);
     setBusy(true);
     try {
@@ -94,12 +97,21 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
           )}
         </div>
         <div className="imgup__actions">
-          <Button variant="ghost" size="sm" disabled={busy} onClick={() => ref.current && ref.current.click()}>{Icon.upload({})} {busy ? "Uploading…" : (value ? "Replace" : "Upload")}</Button>
+          <Button variant="ghost" size="sm" disabled={busy} onClick={() => setPickerOpen(true)}>{Icon.upload({})} {busy ? "Uploading…" : (value ? "Replace" : "Add photo")}</Button>
           {value && !busy && <Button variant="ghost" size="sm" onClick={() => setCropSrc(value)}>{Icon.crop({})} Crop</Button>}
           {value && !busy && <Button variant="ghost" size="sm" onClick={() => onChange("")}>Remove</Button>}
         </div>
-        <input ref={ref} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => pick(e.target.files[0])} />
+        <input ref={ref} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { setPickerOpen(false); pick(e.target.files[0]); }} />
       </div>
+      <MediaPickerModal
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        type="image"
+        clientId={clientId}
+        uploadLabel={value ? "Replace photo" : "Choose a photo"}
+        onUploadNew={() => ref.current && ref.current.click()}
+        onPick={(key) => onChange(key)}
+      />
       <CropModal open={!!cropSrc} src={cropSrc} aspect={aspect} frameSrc={framePreview} onCancel={() => setCropSrc(null)} onApply={applyCrop} />
     </div>
   );
