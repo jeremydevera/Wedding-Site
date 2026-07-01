@@ -50,6 +50,22 @@ export async function rsvpNameTaken(first, middle, last) {
   return !!data;
 }
 
+// Update-or-insert an RSVP by fuzzy name match via the rsvp_upsert RPC. Used by
+// the public form's "update my response" path (an anon guest can't UPDATE the
+// rsvps table directly under RLS). `form` is the same shape passed to postRsvp.
+export async function upsertRsvp(form) {
+  const clientId = Store.get().clientId;
+  const { error } = await supabase.rpc("rsvp_upsert", {
+    p_client_id: clientId,
+    p_first: form.firstName || "", p_middle: form.middleName || "", p_last: form.lastName || "",
+    p_full_name: form.fullName || "", p_email: form.email || "", p_phone: form.phone || "",
+    p_status: form.status, p_count: form.count || 0,
+    p_plus_one: form.plusOne || "", p_diet: form.diet || "None", p_diet_notes: form.dietNotes || "",
+    p_song: form.song || "", p_notes: form.notes || "",
+  });
+  if (error) throw error;
+}
+
 export async function postGuestbook(entry) {
   const clientId = Store.get().clientId;
   if (!clientId) throw new Error("No client loaded");
