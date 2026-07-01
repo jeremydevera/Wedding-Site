@@ -1256,6 +1256,42 @@ body.env-sealed .decor { display: none; }
 .medialib__pick:hover { color: var(--accent); }
 .medialib__row audio { width: 100%; height: 34px; }
 
+/* Audio as square tiles (superadmin R2 library) — shares .medialib--grid so the
+   columns line up with the image grid. A gradient "art" panel holds an animated
+   equalizer with a centered play/pause toggle; delete + in-use badge overlay it. */
+.medialib__cell--audio { position: relative; cursor: default; }
+.medialib__art {
+  position: relative; aspect-ratio: 1 / 1; display: grid; place-items: center;
+  background: radial-gradient(135% 120% at 50% 0%, color-mix(in oklab, var(--accent) 16%, var(--surface)) 0%, var(--surface-2) 72%);
+  border-bottom: 1px solid var(--line);
+}
+.medialib__wave { display: flex; align-items: flex-end; gap: 3px; height: 40%; }
+.medialib__wave i { width: 4px; border-radius: 2px; height: 45%; opacity: .6; background: color-mix(in oklab, var(--accent) 62%, var(--muted)); }
+.medialib__wave i:nth-child(1) { height: 32%; }
+.medialib__wave i:nth-child(2) { height: 64%; }
+.medialib__wave i:nth-child(3) { height: 44%; }
+.medialib__wave i:nth-child(4) { height: 92%; }
+.medialib__wave i:nth-child(5) { height: 52%; }
+.medialib__wave i:nth-child(6) { height: 74%; }
+.medialib__wave i:nth-child(7) { height: 38%; }
+.medialib__cell--audio.is-playing .medialib__wave i { animation: eq .95s ease-in-out infinite; }
+.medialib__cell--audio.is-playing .medialib__wave i:nth-child(even) { animation-delay: -.5s; }
+@keyframes eq { 0%, 100% { height: 28%; } 50% { height: 96%; } }
+.medialib__play {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 46px; height: 46px; border-radius: 999px; padding: 0;
+  display: grid; place-items: center; cursor: pointer;
+  background: var(--surface); color: var(--accent); border: 1px solid var(--line);
+  box-shadow: 0 8px 22px -10px rgba(15, 23, 42, .5);
+  transition: transform .16s cubic-bezier(.2, .7, .3, 1), background .16s ease, color .16s ease;
+}
+.medialib__play svg { width: 22px; height: 22px; }
+.medialib__play:hover { transform: translate(-50%, -50%) scale(1.08); }
+.medialib__cell--audio.is-playing .medialib__play { background: var(--accent); color: #fff; border-color: var(--accent); }
+.medialib__sub { font-size: 10px; color: var(--muted); padding: 0 6px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.medialib__badge { position: absolute; top: 6px; left: 6px; z-index: 1; }
+.medialib__del { position: absolute; top: 6px; right: 6px; z-index: 1; background: rgba(255, 255, 255, .9); }
+
 .crop { display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .crop__view { position: relative; overflow: hidden; border-radius: var(--radius); background: #111; cursor: grab; touch-action: none; }
 .crop__view:active { cursor: grabbing; }

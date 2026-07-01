@@ -9,7 +9,7 @@ import { Button, confirmDialog, Field, Icon, Input, Pager, Select, toast, usePag
 import { listMedia, deleteFromR2 } from "@/lib/api.js";
 import { fileNameFromKey } from "@/lib/mediaLibrary.js";
 import { mediaUrl } from "@/lib/media.js";
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 
 const MODULES = ["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"];
 
@@ -413,16 +413,27 @@ export function R2LibraryAdmin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(null);
+  const [playingKey, setPlayingKey] = useState(null);   // audio tile currently playing
+  const audioRef = useRef(null);
 
   useEffect(() => {
     let live = true;
     setLoading(true);
     setError(null);
+    setPlayingKey(null);   // switching type unmounts the <audio>, so drop stale play state
     listMedia(null, type, { usage: true })
       .then((data) => { if (live) { setItems(data); setLoading(false); } })
       .catch((e) => { if (live) { setError((e && e.message) || "load failed"); setLoading(false); } });
     return () => { live = false; };
   }, [type]);
+
+  function togglePlay(it) {
+    const a = audioRef.current;
+    if (!a) return;
+    if (playingKey === it.key) { a.pause(); setPlayingKey(null); return; }
+    a.src = mediaUrl(it.key);
+    a.play().then(() => setPlayingKey(it.key)).catch(() => setPlayingKey(null));
+  }
 
   const visible = clientFilter.trim()
     ? items.filter((it) => it.key.split("/")[0].toLowerCase().includes(clientFilter.trim().toLowerCase()))
@@ -505,26 +516,42 @@ export function R2LibraryAdmin() {
           {!loading && !error && visible.length === 0 && <p className="medialib__msg">No files.</p>}
 
           {!loading && !error && type === "audio" && visible.length > 0 && (
-            <ul className="medialib medialib--audio">
-              {visible.map((it) => (
-                <li key={it.key} className="medialib__row" style={{ gap: 8 }}>
-                  <span className="medialib__pick" style={{ flex: 1 }}>
-                    {it.name}
-                    <span style={{ color: "var(--muted)", fontSize: 12, marginLeft: 8 }}>{it.key.split("/")[0]}</span>
-                    {it.inUse && <span className="tag tag--hidden" style={{ marginLeft: 8 }}>In use</span>}
-                  </span>
-                  <audio src={mediaUrl(it.key)} controls preload="none" />
-                  <button
-                    type="button"
-                    className={"icon-btn" + (it.inUse ? "" : " icon-btn--danger")}
-                    aria-label="Delete"
-                    title={it.inUse ? `In use by ${it.usedBy || "a client"} — can't delete` : "Delete"}
-                    disabled={deleting === it.key}
-                    onClick={() => onDeleteClick(it)}
-                  >{Icon.trash({})}</button>
-                </li>
-              ))}
-            </ul>
+            <div className="medialib medialib--grid">
+              {visible.map((it) => {
+                const playing = playingKey === it.key;
+                return (
+                  <div
+                    key={it.key}
+                    className={"medialib__cell medialib__cell--audio" + (playing ? " is-playing" : "")}
+                    title={it.inUse ? `${it.name} — in use by ${it.usedBy || "a client"}` : it.name}
+                  >
+                    <div className="medialib__art">
+                      {it.inUse && <span className="tag tag--hidden medialib__badge">In use</span>}
+                      <button
+                        type="button"
+                        className={"icon-btn medialib__del" + (it.inUse ? "" : " icon-btn--danger")}
+                        aria-label="Delete"
+                        title={it.inUse ? `In use by ${it.usedBy || "a client"} — can't delete` : "Delete"}
+                        disabled={deleting === it.key}
+                        onClick={() => onDeleteClick(it)}
+                      >{Icon.trash({})}</button>
+                      <span className="medialib__wave" aria-hidden="true">
+                        {Array.from({ length: 7 }).map((_, i) => <i key={i} />)}
+                      </span>
+                      <button
+                        type="button"
+                        className="medialib__play"
+                        aria-label={playing ? "Pause" : "Play"}
+                        onClick={() => togglePlay(it)}
+                      >{(playing ? Icon.pause : Icon.play)({})}</button>
+                    </div>
+                    <span className="medialib__name" title={it.name}>{it.name}</span>
+                    <span className="medialib__sub">{it.key.split("/")[0]}</span>
+                  </div>
+                );
+              })}
+              <audio ref={audioRef} onEnded={() => setPlayingKey(null)} preload="none" />
+            </div>
           )}
 
           {!loading && !error && type === "image" && visible.length > 0 && (
