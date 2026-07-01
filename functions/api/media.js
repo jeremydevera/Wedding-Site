@@ -1,8 +1,7 @@
 // functions/api/media.js
-// Cloudflare Pages Function — GET /api/media?clientId=<id>&type=image|audio
-// Auth-gated listing of the client's existing R2 media (binding: env.MEDIA).
-// Mirrors functions/api/upload.js auth + key conventions. Returns bare keys the
-// caller renders via mediaUrl(); no file bodies. Scoped to /api/* via _routes.json.
+// Cloudflare Pages Function — GET /api/media?type=image|audio
+// Auth-gated global listing of R2 media by type across all clients (binding: env.MEDIA).
+// Returns bare keys the caller renders via mediaUrl(). Scoped to /api/* via _routes.json.
 
 const TYPES = new Set(["image", "audio"]);
 
@@ -35,17 +34,17 @@ export async function onRequestGet(context) {
   }
 
   const url = new URL(request.url);
-  const clientId = String(url.searchParams.get("clientId") || "shared").replace(/[^a-zA-Z0-9-]/g, "").slice(0, 64) || "shared";
   const typeParam = String(url.searchParams.get("type") || "image");
   const type = TYPES.has(typeParam) ? typeParam : "image";
-  const prefix = `${clientId}/owner/${type}/`;
 
   const objects = [];
   try {
     let cursor;
     do {
-      const page = await env.MEDIA.list({ prefix, cursor });
-      for (const o of page.objects || []) objects.push(o);
+      const page = await env.MEDIA.list({ cursor });
+      for (const o of page.objects || []) {
+        if (o.key.split("/")[2] === type) objects.push(o);
+      }
       cursor = page.truncated ? page.cursor : undefined;
     } while (cursor);
   } catch (e) {
