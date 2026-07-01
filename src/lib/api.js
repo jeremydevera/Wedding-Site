@@ -136,6 +136,24 @@ export async function uploadAudio(file, clientId) {
   return { url: key, path: key, key };
 }
 
+// List this client's existing R2 media of one type ("image" | "audio") via the
+// auth-gated /api/media Function. Returns [{ key, name, size, uploaded }] newest
+// first. Requires a valid Supabase session (admins only).
+export async function listMedia(clientId, type) {
+  const { data } = await supabase.auth.getSession();
+  const token = data && data.session && data.session.access_token;
+  if (!token) throw new Error("Not signed in");
+  const qs = new URLSearchParams({ clientId: clientId || "", type: type || "image" });
+  const res = await fetch(`/api/media?${qs}`, { headers: { authorization: `Bearer ${token}` } });
+  if (!res.ok) {
+    let msg = `library load failed (${res.status})`;
+    try { const e = await res.json(); if (e && e.error) msg = e.error; } catch (_) {}
+    throw new Error(msg);
+  }
+  const body = await res.json();
+  return Array.isArray(body.items) ? body.items : [];
+}
+
 // Send an HTML email via the auth-gated /api/send-email Function (Resend).
 // Used by the RSVP "Email results" action. Requires a valid admin session.
 export async function sendEmail({ to, subject, html }) {
