@@ -29,6 +29,16 @@ export function isValidOptionalEmail(email) {
   return v === "" || EMAIL_RE.test(v);
 }
 
+// Largest party size the count picker should offer. With no known allocation
+// (null/undefined/absurd), fall back to the form's global cap of 8; a known
+// allocation caps at min(allocation, 8). Strict-RSVP only — callers pass the
+// value from the rsvp_guest_allocation probe.
+export function maxPartySize(allocation) {
+  const n = Math.floor(Number(allocation));
+  if (!Number.isFinite(n) || n < 1) return 8;
+  return Math.min(8, n);
+}
+
 // Caterer-facing tallies from the RSVP list. attendingHeads sums `count` across
 // attending parties; diets counts each non-"None" diet among attending parties.
 export function rsvpStats(rsvps) {

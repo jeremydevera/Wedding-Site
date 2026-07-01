@@ -1,8 +1,8 @@
 import React from "react";
 import { go } from "@/lib/nav.js";
 import { Store, useStore } from "@/lib/store.jsx";
-import { postRsvp, rsvpNameTaken, upsertRsvp } from "@/lib/api.js";
-import { isRsvpClosed, joinPlusOnes, isValidOptionalEmail } from "@/lib/rsvp.js";
+import { postRsvp, rsvpNameTaken, upsertRsvp, guestAllocation } from "@/lib/api.js";
+import { isRsvpClosed, joinPlusOnes, isValidOptionalEmail, maxPartySize } from "@/lib/rsvp.js";
 import { Button, Field, Icon, Input, Select, Textarea, confirmDialog } from "@/ui/components.jsx";
 import { PageHero } from "@/pages/PublicPages.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
@@ -30,6 +30,31 @@ export function RSVPPage() {
   };
 
   const attending = form.status === "attending";
+  const strict = settings.strictRsvp === true;
+
+  // Strict RSVP: once a first+last name is typed, quietly look up the guest's
+  // seat allocation (the RPC returns a number or null — never the list itself).
+  // Debounced; a stale response is ignored. A lookup failure just means no live
+  // hint — the submit gate re-checks and is the source of truth.
+  const [alloc, setAlloc] = useState(null);
+  useEffect(() => {
+    if (!strict) return;
+    if (!form.firstName.trim() || !form.lastName.trim()) { setAlloc(null); return; }
+    let live = true;
+    const t = setTimeout(() => {
+      guestAllocation(form.firstName, form.middleName, form.lastName)
+        .then((n) => { if (live) setAlloc(n); })
+        .catch(() => { if (live) setAlloc(null); });
+    }, 450);
+    return () => { live = false; clearTimeout(t); };
+  }, [strict, form.firstName, form.middleName, form.lastName]);
+
+  // Cap the count picker at the invitation's allocation (8 when unknown), and
+  // clamp an already-picked count down if the allocation arrives lower.
+  const maxCount = strict ? maxPartySize(alloc) : 8;
+  useEffect(() => {
+    setForm((f) => (parseInt(f.count, 10) > maxCount ? { ...f, count: maxCount } : f));
+  }, [maxCount]);
 
   function validate() {
     const er = {};
@@ -57,6 +82,27 @@ export function RSVPPage() {
     const payload = { ...form, fullName, count, plusOne };
     setSubmitting(true);
     try {
+      // Strict RSVP: only invited guests may respond, capped at their seat
+      // allocation. Checked server-side at submit (the live hint is advisory,
+      // so editing the name after the lookup can't bypass the gate).
+      if (strict) {
+        const seats = await guestAllocation(form.firstName, form.middleName, form.lastName);
+        if (seats == null) {
+          setSubmitting(false);
+          await confirmDialog({
+            title: "We can't find your name",
+            message: `${fullName} isn't on the guest list for this event. Please double-check the spelling matches your invitation, or contact the couple.`,
+            confirmLabel: "OK",
+            okOnly: true,
+          });
+          return;
+        }
+        if (attending && count > seats) {
+          setSubmitting(false);
+          setErrors({ count: `Your invitation reserves ${seats} ${seats === 1 ? "seat" : "seats"} — please choose up to ${seats}.` });
+          return;
+        }
+      }
       // Duplicate name? Offer to update the existing response instead of blocking.
       // Anon guests can't read their prior row (RLS), so an update overwrites
       // (no pre-fill) via the rsvp_upsert RPC.
@@ -168,9 +214,10 @@ export function RSVPPage() {
             {attending && (
               <div className="fade-up">
                 <div className="field-row field-row--2">
-                  <Field label="Number attending" required error={errors.count} id="r-count" hint="Including yourself">
+                  <Field label="Number attending" required error={errors.count} id="r-count"
+                    hint={strict && alloc != null ? `Your invitation reserves ${alloc} ${alloc === 1 ? "seat" : "seats"}` : "Including yourself"}>
                     <Select id="r-count" value={form.count} onChange={set("count")}>
-                      {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => <option key={n} value={n}>{n}</option>)}
+                      {Array.from({ length: maxCount }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}
                     </Select>
                   </Field>
                   <Field label="Dietary preference" id="r-diet">

@@ -1,5 +1,23 @@
 import { describe, it, expect } from "vitest";
-import { isRsvpClosed, joinPlusOnes, isValidOptionalEmail, rsvpStats } from "@/lib/rsvp.js";
+import { isRsvpClosed, joinPlusOnes, isValidOptionalEmail, rsvpStats, maxPartySize } from "@/lib/rsvp.js";
+
+describe("maxPartySize", () => {
+  it("defaults to 8 when no allocation is known", () => {
+    expect(maxPartySize(null)).toBe(8);
+    expect(maxPartySize(undefined)).toBe(8);
+    expect(maxPartySize(0)).toBe(8);
+  });
+  it("caps at the allocation, never above 8", () => {
+    expect(maxPartySize(1)).toBe(1);
+    expect(maxPartySize(2)).toBe(2);
+    expect(maxPartySize(8)).toBe(8);
+    expect(maxPartySize(12)).toBe(8);
+  });
+  it("coerces strings and floors fractions", () => {
+    expect(maxPartySize("3")).toBe(3);
+    expect(maxPartySize(2.7)).toBe(2);
+  });
+});
 
 describe("isRsvpClosed", () => {
   it("is open when no deadline is set", () => {

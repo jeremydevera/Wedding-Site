@@ -18,12 +18,6 @@ Claude test run. Done items stay here as the permanent history.
 
 ## Pending
 
-### Enhancement ID: 0005 — RSVP party-size cap per invite
-- **Severity:** P2 · **Status:** Deferred (pending — reminder logged 2026-07-01) · **Added:** 2026-07-01
-- **Where:** Guest site → RSVP form (count picker) · depends on Enhancement 0004 (guest list allocation)
-- **Action:** No cap — a guest given 2 seats can still RSVP 6. Should limit the count to the allocation set on their invite (e.g. "Jeremy = 2" → max 2).
-- **Plan:** Once guests self-identify (name-select or invite code — decision also pending), max the count picker at that guest's `allocation` and reject over-cap on submit. Deferred with the gating-model decision.
-
 ### Bug ID: 0002 — [APPROVAL] Guestbook messages hidden on new clients
 - **Severity:** P2 · **Status:** Pending · **Added:** 2026-06-25
 - **Where:** Admin → Settings → Access ("Auto-approve guestbook messages" toggle)
@@ -45,6 +39,12 @@ Claude test run. Done items stay here as the permanent history.
 ---
 
 ## Done / History
+
+### Enhancement ID: 0005 — Strict RSVP gate + party-size cap per invite
+- **Severity:** P2 · **Status:** Done — 2026-07-02
+- **Where:** Guest site → RSVP form (with Strict RSVP on in Settings → Access)
+- **Action:** With Strict RSVP on: a name not on the guest list is told it isn't in the registry and can't submit; a matched guest's party size is capped at their seat allocation (live hint "Your invitation reserves N seats", capped picker, and submit re-check).
+- **Resolution:** `rsvp_guest_allocation` RPC (SECURITY DEFINER; returns only a number; dead unless the client enabled strictRsvp) + form gate/cap in `rsvp.jsx`. Strict off = form unchanged. Verified against live data (matched name → allocation, unknown → null).
 
 ### Enhancement ID: 0004 — Guest list: who-hasn't-replied + headcount
 - **Severity:** P2 · **Status:** Done — commits `7792920`–`18b2a47`, 2026-07-02

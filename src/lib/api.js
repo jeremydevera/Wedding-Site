@@ -66,6 +66,21 @@ export async function upsertRsvp(form) {
   if (error) throw error;
 }
 
+// Strict RSVP: look up the invited guest's seat allocation by name via the
+// rsvp_guest_allocation RPC (SECURITY DEFINER — returns a single number or null,
+// never the list; and always null unless the client enabled strictRsvp).
+// Throws on RPC error so the submit gate can distinguish "not on the list"
+// (null) from "couldn't check" (throw) — the live hint call-site catches.
+export async function guestAllocation(first, middle, last) {
+  const clientId = Store.get().clientId;
+  if (!clientId || !(first || "").trim() || !(last || "").trim()) return null;
+  const { data, error } = await supabase.rpc("rsvp_guest_allocation", {
+    p_client_id: clientId, p_first: first || "", p_middle: middle || "", p_last: last || "",
+  });
+  if (error) throw error;
+  return data == null ? null : Number(data);
+}
+
 export async function postGuestbook(entry) {
   const clientId = Store.get().clientId;
   if (!clientId) throw new Error("No client loaded");
