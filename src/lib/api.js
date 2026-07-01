@@ -40,10 +40,12 @@ export async function postRsvp(form) {
 // Uses a SECURITY DEFINER RPC that returns only a boolean — guests can't read
 // the RSVP list itself (RLS). Fails open (returns false) so a check error never
 // blocks a legitimate RSVP.
-export async function rsvpNameTaken(fullName) {
+export async function rsvpNameTaken(first, middle, last) {
   const clientId = Store.get().clientId;
-  if (!clientId || !fullName) return false;
-  const { data, error } = await supabase.rpc("rsvp_name_taken", { p_client_id: clientId, p_name: fullName });
+  if (!clientId || !(first || "").trim() || !(last || "").trim()) return false;
+  const { data, error } = await supabase.rpc("rsvp_name_taken", {
+    p_client_id: clientId, p_first: first || "", p_middle: middle || "", p_last: last || "",
+  });
   if (error) { console.warn("[api] rsvp_name_taken failed:", error.message); return false; }
   return !!data;
 }

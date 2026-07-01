@@ -54,7 +54,7 @@ export function RSVPPage() {
     try {
       // Block a duplicate RSVP under the same name (checked server-side; the guest
       // list itself is never exposed). A real same-named guest can add a middle name.
-      if (await rsvpNameTaken(fullName)) {
+      if (await rsvpNameTaken(form.firstName, form.middleName, form.lastName)) {
         setErrors({ lastName: `Looks like ${fullName} has already RSVP'd. If that's not you, add your middle name so we can tell you apart.` });
         setSubmitting(false);
         return;
@@ -103,17 +103,17 @@ export function RSVPPage() {
           <form className="card card--pad-lg" onSubmit={submit} noValidate>
             <div className="field-row field-row--2">
               <Field label="First name" required error={errors.firstName} id="r-first">
-                <Input id="r-first" value={form.firstName} onChange={set("firstName")} placeholder="Jane" />
+                <Input id="r-first" value={form.firstName} onChange={set("firstName")} />
               </Field>
               <Field label="Last name" required error={errors.lastName} id="r-last">
-                <Input id="r-last" value={form.lastName} onChange={set("lastName")} placeholder="Doe" />
+                <Input id="r-last" value={form.lastName} onChange={set("lastName")} />
               </Field>
             </div>
             <Field label="Middle name" hint="Optional — helps tell apart guests with the same name" id="r-middle">
-              <Input id="r-middle" value={form.middleName} onChange={set("middleName")} placeholder="A." />
+              <Input id="r-middle" value={form.middleName} onChange={set("middleName")} />
             </Field>
             <Field label="Phone" hint="Optional" id="r-phone">
-              <Input id="r-phone" value={form.phone} onChange={set("phone")} placeholder="(555) 012-3456" />
+              <Input id="r-phone" value={form.phone} onChange={set("phone")} />
             </Field>
 
             <Field label="Will you attend?" required>
@@ -143,22 +143,22 @@ export function RSVPPage() {
                 </div>
                 {form.count > 1 && (
                   <Field label="Names of your guests" hint="So we can set the table" id="r-plus">
-                    <Input id="r-plus" value={form.plusOne} onChange={set("plusOne")} placeholder="e.g. John Doe, Sam Lee" />
+                    <Input id="r-plus" value={form.plusOne} onChange={set("plusOne")} />
                   </Field>
                 )}
                 {form.diet === "Other" && (
                   <Field label="Tell us about the dietary need" required error={errors.dietNotes} id="r-dietnote">
-                    <Input id="r-dietnote" value={form.dietNotes} onChange={set("dietNotes")} placeholder="e.g. lactose intolerant" />
+                    <Input id="r-dietnote" value={form.dietNotes} onChange={set("dietNotes")} />
                   </Field>
                 )}
                 <Field label="Song request" hint="What will get you on the dance floor?" id="r-song">
-                  <Input id="r-song" value={form.song} onChange={set("song")} placeholder="Artist — Song title" />
+                  <Input id="r-song" value={form.song} onChange={set("song")} />
                 </Field>
               </div>
             )}
 
             <Field label="A note for the couple" hint={`${form.notes.length}/1000`} error={errors.notes} id="r-notes">
-              <Textarea id="r-notes" value={form.notes} onChange={set("notes")} maxLength={1100} placeholder="Anything you'd like us to know?" />
+              <Textarea id="r-notes" value={form.notes} onChange={set("notes")} maxLength={1100} />
             </Field>
 
             <Button type="submit" variant="primary" size="lg" block disabled={submitting}>{submitting ? "Sending…" : <>Send RSVP {Icon.arrow({})}</>}</Button>

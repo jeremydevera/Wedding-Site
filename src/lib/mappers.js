@@ -55,7 +55,8 @@ export function stateToClientRow(state) {
 export function rsvpToRow(r, clientId) {
   return {
     client_id: clientId,
-    full_name: r.fullName, phone: r.phone, status: r.status, count: r.count,
+    full_name: r.fullName, first_name: r.firstName, middle_name: r.middleName, last_name: r.lastName,
+    phone: r.phone, status: r.status, count: r.count,
     plus_one: r.plusOne, diet: r.diet, diet_notes: r.dietNotes, song: r.song, notes: r.notes,
   };
 }
