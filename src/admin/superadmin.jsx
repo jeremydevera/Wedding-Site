@@ -418,7 +418,7 @@ export function R2LibraryAdmin() {
     let live = true;
     setLoading(true);
     setError(null);
-    listMedia(null, type)
+    listMedia(null, type, { usage: true })
       .then((data) => { if (live) { setItems(data); setLoading(false); } })
       .catch((e) => { if (live) { setError((e && e.message) || "load failed"); setLoading(false); } });
     return () => { live = false; };
@@ -428,7 +428,27 @@ export function R2LibraryAdmin() {
     ? items.filter((it) => it.key.split("/")[0].toLowerCase().includes(clientFilter.trim().toLowerCase()))
     : items;
 
-  async function doDelete(key) {
+  // Blocking popup for a file that's still referenced by a client's site. Also
+  // marks the item inUse locally (covers the 409 race where usage changed after
+  // the list loaded), so the button stays a hard block afterwards.
+  function blockInUse(item, usedBy) {
+    const who = usedBy || item.usedBy || item.key.split("/")[0];
+    if (usedBy) setItems((prev) => prev.map((it) => (it.key === item.key ? { ...it, inUse: true, usedBy } : it)));
+    return confirmDialog({
+      title: "Can't delete — file in use",
+      message: `"${fileNameFromKey(item.key)}" is currently used by ${who}'s site. Remove it from that site first, then delete it here.`,
+      confirmLabel: "OK",
+      okOnly: true,
+    });
+  }
+
+  function onDeleteClick(item) {
+    if (item.inUse) { blockInUse(item); return; }   // pre-marked: no server call
+    doDelete(item);
+  }
+
+  async function doDelete(item) {
+    const key = item.key;
     const ok = await confirmDialog({
       title: "Delete file?",
       message: `Delete "${fileNameFromKey(key)}"? Removes from R2 — cannot be undone.`,
@@ -442,7 +462,8 @@ export function R2LibraryAdmin() {
       setItems((prev) => prev.filter((it) => it.key !== key));
       toast("File deleted");
     } catch (e) {
-      toast("Delete failed: " + ((e && e.message) || "error"));
+      if (e && e.code === "in_use") { await blockInUse(item, e.usedBy); }   // server hard-block backstop
+      else { toast("Delete failed: " + ((e && e.message) || "error")); }
     } finally {
       setDeleting(null);
     }
@@ -490,14 +511,16 @@ export function R2LibraryAdmin() {
                   <span className="medialib__pick" style={{ flex: 1 }}>
                     {it.name}
                     <span style={{ color: "var(--muted)", fontSize: 12, marginLeft: 8 }}>{it.key.split("/")[0]}</span>
+                    {it.inUse && <span className="tag tag--hidden" style={{ marginLeft: 8 }}>In use</span>}
                   </span>
                   <audio src={mediaUrl(it.key)} controls preload="none" />
                   <button
                     type="button"
-                    className="icon-btn icon-btn--danger"
+                    className={"icon-btn" + (it.inUse ? "" : " icon-btn--danger")}
                     aria-label="Delete"
+                    title={it.inUse ? `In use by ${it.usedBy || "a client"} — can't delete` : "Delete"}
                     disabled={deleting === it.key}
-                    onClick={() => doDelete(it.key)}
+                    onClick={() => onDeleteClick(it)}
                   >{Icon.trash({})}</button>
                 </li>
               ))}
@@ -507,17 +530,19 @@ export function R2LibraryAdmin() {
           {!loading && !error && type === "image" && visible.length > 0 && (
             <div className="medialib medialib--grid">
               {visible.map((it) => (
-                <div key={it.key} className="medialib__cell" title={it.name} style={{ position: "relative" }}>
+                <div key={it.key} className="medialib__cell" title={it.inUse ? `${it.name} — in use by ${it.usedBy || "a client"}` : it.name} style={{ position: "relative" }}>
                   <img src={mediaUrl(it.key)} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = "none"; }} />
                   <span className="medialib__name">{it.name}</span>
                   <span style={{ fontSize: 11, color: "var(--muted)", display: "block" }}>{it.key.split("/")[0]}</span>
+                  {it.inUse && <span className="tag tag--hidden" style={{ position: "absolute", top: 4, left: 4 }}>In use</span>}
                   <button
                     type="button"
-                    className="icon-btn icon-btn--danger"
+                    className={"icon-btn" + (it.inUse ? "" : " icon-btn--danger")}
                     aria-label="Delete"
+                    title={it.inUse ? `In use by ${it.usedBy || "a client"} — can't delete` : "Delete"}
                     style={{ position: "absolute", top: 4, right: 4, background: "rgba(255,255,255,.85)" }}
                     disabled={deleting === it.key}
-                    onClick={() => doDelete(it.key)}
+                    onClick={() => onDeleteClick(it)}
                   >{Icon.trash({})}</button>
                 </div>
               ))}

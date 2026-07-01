@@ -1,5 +1,5 @@
 // src/admin/__tests__/r2LibraryAdmin.test.jsx
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import React from "react";
 
@@ -17,6 +17,9 @@ import { confirmDialog, toast } from "@/ui/components.jsx";
 import { R2LibraryAdmin } from "@/admin/superadmin.jsx";
 
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
+// clearAllMocks wipes call history but not implementations, so reset the confirm
+// default each test (one test overrides it to false and must not leak).
+beforeEach(() => { confirmDialog.mockResolvedValue(true); });
 
 const IMAGES = [
   { key: "c1/owner/image/hero/aaaaaaaa-photo.jpg", name: "photo.jpg", size: 50000, uploaded: "2026-06-01T00:00:00Z" },
@@ -24,10 +27,10 @@ const IMAGES = [
 ];
 
 describe("R2LibraryAdmin", () => {
-  it("fetches images on mount and renders thumbnails", async () => {
+  it("fetches images on mount (with usage annotation) and renders thumbnails", async () => {
     listMedia.mockResolvedValue(IMAGES);
     render(<R2LibraryAdmin />);
-    expect(listMedia).toHaveBeenCalledWith(null, "image");
+    expect(listMedia).toHaveBeenCalledWith(null, "image", { usage: true });
     expect(await screen.findByTitle("photo.jpg")).toBeTruthy();
     expect(screen.getByTitle("venue.jpg")).toBeTruthy();
   });
@@ -46,7 +49,7 @@ describe("R2LibraryAdmin", () => {
     render(<R2LibraryAdmin />);
     await screen.findByText(/no files/i);
     fireEvent.click(screen.getByRole("tab", { name: /audio/i }));
-    expect(listMedia).toHaveBeenCalledWith(null, "audio");
+    expect(listMedia).toHaveBeenCalledWith(null, "audio", { usage: true });
   });
 
   it("shows an error state when the fetch fails", async () => {
@@ -77,5 +80,33 @@ describe("R2LibraryAdmin", () => {
     await waitFor(() => expect(confirmDialog).toHaveBeenCalled());
     expect(deleteFromR2).not.toHaveBeenCalled();
     expect(screen.getByTitle("photo.jpg")).toBeTruthy();
+  });
+
+  it("hard-blocks a pre-marked in-use file: shows a block popup, never calls delete", async () => {
+    const inUse = [{ ...IMAGES[0], inUse: true, usedBy: "demo" }];
+    listMedia.mockResolvedValue(inUse);
+    render(<R2LibraryAdmin />);
+    expect(await screen.findByText("In use")).toBeTruthy();   // pre-marked badge
+    fireEvent.click(screen.getAllByRole("button", { name: /delete/i })[0]);
+    await waitFor(() => expect(confirmDialog).toHaveBeenCalled());
+    // block popup is OK-only and never triggers a server delete
+    expect(confirmDialog).toHaveBeenCalledWith(expect.objectContaining({ okOnly: true }));
+    expect(deleteFromR2).not.toHaveBeenCalled();
+    expect(screen.getByText("In use")).toBeTruthy();
+  });
+
+  it("handles a 409 in_use race: keeps the file and shows the block popup", async () => {
+    listMedia.mockResolvedValue(IMAGES);
+    deleteFromR2.mockRejectedValue(Object.assign(new Error("in_use"), { code: "in_use", usedBy: "demo" }));
+    render(<R2LibraryAdmin />);
+    await screen.findByTitle("photo.jpg");
+    fireEvent.click(screen.getAllByRole("button", { name: /delete/i })[0]);
+    await waitFor(() => expect(deleteFromR2).toHaveBeenCalledWith(IMAGES[0].key));
+    // second confirmDialog call is the OK-only block popup
+    await waitFor(() => expect(confirmDialog).toHaveBeenCalledWith(expect.objectContaining({ okOnly: true })));
+    expect(toast).not.toHaveBeenCalledWith("File deleted");
+    // file stays and is now marked in-use (the 409 race updates the badge)
+    expect(screen.getByTitle(/photo\.jpg/i)).toBeTruthy();
+    expect(screen.getByText("In use")).toBeTruthy();
   });
 });
