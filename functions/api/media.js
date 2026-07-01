@@ -67,13 +67,31 @@ export async function onRequestDelete(context) {
 
   const token = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
   if (!token) return json({ error: "unauthorized" }, 401);
+  let userId;
   try {
     const who = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
     });
     if (!who.ok) return json({ error: "unauthorized" }, 401);
+    const user = await who.json();
+    userId = user && user.id;
   } catch {
     return json({ error: "auth check failed" }, 502);
+  }
+  if (!userId) return json({ error: "unauthorized" }, 401);
+
+  // Delete is destructive and platform-wide (any client's key), so gate it to
+  // superadmin — unlike GET/upload, "any valid session" is not enough here.
+  try {
+    const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=role`, {
+      headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
+    });
+    if (!pr.ok) return json({ error: "role check failed" }, 502);
+    const rows = await pr.json();
+    const role = Array.isArray(rows) && rows[0] && rows[0].role;
+    if (role !== "superadmin") return json({ error: "forbidden" }, 403);
+  } catch {
+    return json({ error: "role check failed" }, 502);
   }
 
   let body;

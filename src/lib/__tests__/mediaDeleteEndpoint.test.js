@@ -16,7 +16,9 @@ function envWith(extra = {}) {
 }
 
 beforeEach(() => {
-  globalThis.fetch = vi.fn().mockResolvedValue({ ok: true });
+  globalThis.fetch = vi.fn()
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "u1" }) })       // auth/v1/user
+    .mockResolvedValueOnce({ ok: true, json: async () => [{ role: "superadmin" }] }); // profiles role
 });
 afterEach(() => { vi.restoreAllMocks(); });
 
@@ -46,6 +48,19 @@ describe("DELETE /api/media", () => {
     const body = await res.json();
     expect(body).toEqual({ ok: true });
     expect(env.MEDIA.delete).toHaveBeenCalledWith("c1/owner/image/hero/aaaaaaaa-photo.jpg");
+  });
+
+  it("403 when the caller is not a superadmin", async () => {
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "u2" }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ role: "owner" }] });
+    const env = envWith();
+    const res = await onRequestDelete({
+      request: req("https://x/api/media", { key: "c1/owner/image/hero/aaaaaaaa-photo.jpg" }, AUTH),
+      env,
+    });
+    expect(res.status).toBe(403);
+    expect(env.MEDIA.delete).not.toHaveBeenCalled();
   });
 
   it("500 when env.MEDIA.delete throws", async () => {
