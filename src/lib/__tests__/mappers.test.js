@@ -39,10 +39,10 @@ describe("stateToClientRow (reverse of clientToState)", () => {
 });
 
 describe("rsvpToRow", () => {
-  it("maps camelCase form -> snake_case columns + client_id", () => {
-    expect(rsvpToRow({ fullName: "Jane", phone: "5", status: "attending", count: 2,
-      plusOne: "Bob", diet: "Vegan", dietNotes: "", song: "s", notes: "n" }, "c1")).toEqual({
-      client_id: "c1", full_name: "Jane", phone: "5", status: "attending", count: 2,
+  it("maps camelCase form -> snake_case columns + client_id, including email", () => {
+    expect(rsvpToRow({ fullName: "Jane", email: "jane@ex.com", phone: "5", status: "attending", count: 2,
+      plusOne: "Bob", diet: "Vegan", dietNotes: "", song: "s", notes: "n" }, "c1")).toMatchObject({
+      client_id: "c1", full_name: "Jane", email: "jane@ex.com", phone: "5", status: "attending", count: 2,
       plus_one: "Bob", diet: "Vegan", diet_notes: "", song: "s", notes: "n",
     });
   });
@@ -79,11 +79,11 @@ describe("rowToGuestbook", () => {
 });
 
 describe("rowToRsvp", () => {
-  it("maps snake_case columns -> camelCase form", () => {
-    const r = rowToRsvp({ id: "r1", full_name: "Jane", phone: "5", status: "attending", count: 2,
+  it("maps snake_case columns -> camelCase form, including email", () => {
+    const r = rowToRsvp({ id: "r1", full_name: "Jane", email: "jane@ex.com", phone: "5", status: "attending", count: 2,
       plus_one: "Bob", diet: "Vegan", diet_notes: "no nuts", song: "s", notes: "n",
       created_at: "2026-01-01T00:00:00Z" });
-    expect(r).toMatchObject({ id: "r1", fullName: "Jane", phone: "5", status: "attending",
+    expect(r).toMatchObject({ id: "r1", fullName: "Jane", email: "jane@ex.com", phone: "5", status: "attending",
       count: 2, plusOne: "Bob", diet: "Vegan", dietNotes: "no nuts", song: "s", notes: "n" });
     expect(typeof r.createdAt).toBe("number");
   });
