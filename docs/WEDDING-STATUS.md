@@ -24,12 +24,6 @@ Claude test run. Done items stay here as the permanent history.
 - **Action:** No cap — a guest given 2 seats can still RSVP 6. Should limit the count to the allocation set on their invite (e.g. "Jeremy = 2" → max 2).
 - **Plan:** Once guests self-identify (name-select or invite code — decision also pending), max the count picker at that guest's `allocation` and reject over-cap on submit. Deferred with the gating-model decision.
 
-### Enhancement ID: 0004 — Guest list: who-hasn't-replied + headcount
-- **Severity:** P2 · **Status:** In Progress · **Added:** 2026-07-01
-- **Where:** Admin → Guests (new tab)
-- **Action:** Owner enters invited guests + a seat allocation each; admin reconciles against RSVPs to show who's replied vs outstanding, plus allocated-vs-confirmed headcount.
-- **Plan:** New owner-only `guests` table (RLS), Guests admin tab, name-fuzzy match RSVP↔guest (reuse `norm_name`). Public RSVP form untouched for now (cap enforcement = Enhancement 0005).
-
 ### Bug ID: 0002 — [APPROVAL] Guestbook messages hidden on new clients
 - **Severity:** P2 · **Status:** Pending · **Added:** 2026-06-25
 - **Where:** Admin → Settings → Access ("Auto-approve guestbook messages" toggle)
@@ -51,6 +45,12 @@ Claude test run. Done items stay here as the permanent history.
 ---
 
 ## Done / History
+
+### Enhancement ID: 0004 — Guest list: who-hasn't-replied + headcount
+- **Severity:** P2 · **Status:** Done — commits `7792920`–`18b2a47`, 2026-07-02
+- **Where:** Admin → Settings → Access ("Enable Strict RSVP") → Admin → Guests (new tab)
+- **Action:** Owner enters invited guests + a seat allocation each; admin reconciles against RSVPs to show who's replied vs outstanding, plus allocated-vs-confirmed headcount.
+- **Resolution:** Owner-only `guests` table (RLS, no anon read); `reconcileGuests` fuzzy name-matches RSVPs↔invites (reuses the `norm_name` logic). New "Guests" tab (gated by the Strict RSVP switch) does CRUD + shows Invited/Seats/Confirmed/Outstanding tiles + an unmatched-RSVP notice. Public RSVP form untouched; party-size cap enforcement remains Enhancement 0005 (Deferred).
 
 ### Bug ID: 0004 — RSVP "Email" shown but never collected
 - **Severity:** P3 · **Status:** Done — commit `caa05d1`, 2026-07-01
