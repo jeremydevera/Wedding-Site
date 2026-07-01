@@ -17,6 +17,7 @@ import { ClientsAdmin, R2LibraryAdmin, SuperOverview } from "@/admin/superadmin.
 import { LocationPicker } from "@/ui/location-picker.jsx";
 import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
 import { MediaPickerModal } from "@/admin/MediaPicker.jsx";
+import { RsvpCharts } from "@/admin/rsvp-charts.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // Save state shared from the AdminApp shell down to each section's footer, so the
@@ -241,10 +242,15 @@ export function GuestsAdmin() {
 
   async function saveGuest(form) {
     const payload = { ...form, allocation: Math.max(1, parseInt(form.allocation, 10) || 1) };
-    await run(async () => {
-      if (form.id) { await updateGuestDb(form.id, payload); Store.updateGuest(form.id, payload); }
-      else { const row = await addGuestDb(payload); Store.addGuest(row); }
-    });
+    try {
+      await run(async () => {
+        if (form.id) { await updateGuestDb(form.id, payload); Store.updateGuest(form.id, payload); }
+        else { const row = await addGuestDb(payload); Store.addGuest(row); }
+      });
+    } catch (e) {
+      toast("Couldn't save guest: " + (e && e.message || "error"), "err");
+      return;
+    }
     setEditing(null);
     toast("Guest saved", "success");
   }
@@ -394,6 +400,7 @@ export function RsvpsAdmin() {
 
   return (
     <div>
+      <RsvpCharts rsvps={rsvps} />
       {/* Status filter as folder tabs (like Guestbook), above the panel. */}
       <div className="folders">
         {[["all", "All"], ["attending", "Yes"], ["maybe", "Maybe"], ["not_attending", "No"]].map(([v, l]) => (
