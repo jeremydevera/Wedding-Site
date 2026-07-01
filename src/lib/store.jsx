@@ -181,6 +181,7 @@ export function defaultState() {
     playlist: [], // music tracks: { id, url, title, artist } (audio in Supabase Storage)
     guestbook: SEED_GUESTBOOK,
     rsvps: SEED_RSVPS,
+    guests: [], // owner-managed invited list (server-owned; loaded from DB in admin)
     media: SEED_MEDIA, // {id, type:'photo'|'video', category, dataUrl, src, name, message, status, size, ratio, createdAt}
     quizSubs: [], // {id, name, score, total, answers, createdAt}
     clientId: null,
@@ -248,7 +249,7 @@ export const Store = {
       ..._state,
       // server-owned, per-tenant: reset on every boot so stale localStorage
       // echoes / demo seeds from another client never bleed in
-      rsvps: [], quizSubs: [],
+      rsvps: [], quizSubs: [], guests: [],
       ...patch,
       settings: { ..._state.settings, ...(patch.settings || {}) },
       loading: false,
@@ -261,12 +262,13 @@ export const Store = {
   },
   // Replace admin submission lists with rows loaded from Supabase (owner/superadmin
   // admin views). Server-owned data — not persisted to localStorage.
-  setSubmissions({ rsvps, guestbook, quizSubs }) {
+  setSubmissions({ rsvps, guestbook, quizSubs, guests }) {
     _state = {
       ..._state,
       ...(rsvps !== undefined ? { rsvps } : {}),
       ...(guestbook !== undefined ? { guestbook } : {}),
       ...(quizSubs !== undefined ? { quizSubs } : {}),
+      ...(guests !== undefined ? { guests } : {}),
     };
     emit();
   },
@@ -290,6 +292,21 @@ export const Store = {
   },
   deleteRSVP(id) {
     _state = { ..._state, rsvps: _state.rsvps.filter((r) => r.id !== id) };
+    persist();
+    emit();
+  },
+  addGuest(guest) {
+    _state = { ..._state, guests: [{ ...guest }, ...(_state.guests || [])] };
+    persist();
+    emit();
+  },
+  updateGuest(id, patch) {
+    _state = { ..._state, guests: (_state.guests || []).map((g) => (g.id === id ? { ...g, ...patch } : g)) };
+    persist();
+    emit();
+  },
+  deleteGuest(id) {
+    _state = { ..._state, guests: (_state.guests || []).filter((g) => g.id !== id) };
     persist();
     emit();
   },
