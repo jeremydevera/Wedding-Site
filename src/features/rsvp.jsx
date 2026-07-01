@@ -2,7 +2,7 @@ import React from "react";
 import { go } from "@/lib/nav.js";
 import { Store, useStore } from "@/lib/store.jsx";
 import { postRsvp, rsvpNameTaken } from "@/lib/api.js";
-import { Button, Field, Icon, Input, Select, Textarea } from "@/ui/components.jsx";
+import { Button, Field, Icon, Input, Select, Textarea, confirmDialog } from "@/ui/components.jsx";
 import { PageHero } from "@/pages/PublicPages.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
@@ -55,8 +55,14 @@ export function RSVPPage() {
       // Block a duplicate RSVP under the same name (checked server-side; the guest
       // list itself is never exposed). A real same-named guest can add a middle name.
       if (await rsvpNameTaken(form.firstName, form.middleName, form.lastName)) {
-        setErrors({ lastName: `Looks like ${fullName} has already RSVP'd. If that's not you, add your middle name so we can tell you apart.` });
         setSubmitting(false);
+        await confirmDialog({
+          title: "You've already RSVP'd",
+          message: `Looks like ${fullName} has already responded. If that's not you, go back and add your middle name so we can tell you apart.`,
+          confirmLabel: "OK",
+          okOnly: true,
+        });
+        go("home");
         return;
       }
       await postRsvp({ ...form, fullName, count: attending ? parseInt(form.count, 10) : 0 });
@@ -158,7 +164,7 @@ export function RSVPPage() {
             )}
 
             <Field label="A note for the couple" hint={`${form.notes.length}/1000`} error={errors.notes} id="r-notes">
-              <Textarea id="r-notes" value={form.notes} onChange={set("notes")} maxLength={1100} />
+              <Textarea id="r-notes" value={form.notes} onChange={set("notes")} maxLength={1100} placeholder="Anything you'd like us to know?" />
             </Field>
 
             <Button type="submit" variant="primary" size="lg" block disabled={submitting}>{submitting ? "Sending…" : <>Send RSVP {Icon.arrow({})}</>}</Button>

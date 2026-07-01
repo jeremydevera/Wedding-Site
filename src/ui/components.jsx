@@ -338,7 +338,7 @@ export function ConfirmHost() {
           <h3 style={{ fontFamily: "var(--font-display)", fontSize: 28, marginBottom: 10 }}>{state.title || "Are you sure?"}</h3>
           {state.message && <p style={{ color: "var(--ink-soft)", maxWidth: "42ch", margin: "0 auto 24px" }}>{state.message}</p>}
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <Button variant="ghost" onClick={() => close(false)}>{state.cancelLabel || "Cancel"}</Button>
+            {!state.okOnly && <Button variant="ghost" onClick={() => close(false)}>{state.cancelLabel || "Cancel"}</Button>}
             <Button variant={state.danger ? "danger" : "primary"} onClick={() => close(true)}>{state.confirmLabel || "Confirm"}</Button>
           </div>
         </div>
