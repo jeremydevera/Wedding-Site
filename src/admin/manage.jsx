@@ -7,7 +7,8 @@ import { FX_LIST } from "@/lib/falling-fx.js";
 import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { signOut } from "@/lib/auth.js";
-import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail } from "@/lib/api.js";
+import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb } from "@/lib/api.js";
+import { reconcileGuests } from "@/lib/guests.js";
 import { mediaUrl } from "@/lib/media.js";
 import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
@@ -183,6 +184,136 @@ export function QuestionEditor({ open, question, onClose }) {
         <Button variant="ghost" onClick={onClose}>Cancel</Button>
       </div>
     </Modal>
+  );
+}
+
+// Modal body: add or edit one invited guest.
+function GuestForm({ initial, onSave, onCancel }) {
+  const [f, setF] = useState(initial);
+  const [saving, setSaving] = useState(false);
+  const set = (k) => (e) => { const v = e && e.target ? e.target.value : e; setF((s) => ({ ...s, [k]: v })); };
+  const valid = f.firstName.trim() && f.lastName.trim();
+  async function submit() {
+    if (!valid || saving) return;
+    setSaving(true);
+    try { await onSave(f); } finally { setSaving(false); }
+  }
+  return (
+    <div>
+      <SectionHead eyebrow="Guest" title={f.id ? "Edit guest" : "Add guest"} />
+      <div className="field-row field-row--2">
+        <Field label="First name" required id="g-first"><Input id="g-first" value={f.firstName} onChange={set("firstName")} /></Field>
+        <Field label="Last name" required id="g-last"><Input id="g-last" value={f.lastName} onChange={set("lastName")} /></Field>
+      </div>
+      <div className="field-row field-row--2">
+        <Field label="Middle name" hint="Optional — tells apart same-named guests" id="g-mid"><Input id="g-mid" value={f.middleName} onChange={set("middleName")} /></Field>
+        <Field label="Seats allocated" hint="Total incl. this guest (2 = guest + 1)" id="g-alloc"><Input id="g-alloc" type="number" min={1} value={f.allocation} onChange={set("allocation")} /></Field>
+      </div>
+      <Field label="Email" hint="Optional" id="g-email"><Input id="g-email" type="email" value={f.email || ""} onChange={set("email")} /></Field>
+      <Field label="Notes" hint="Optional" id="g-notes"><Input id="g-notes" value={f.notes || ""} onChange={set("notes")} /></Field>
+      <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+        <Button variant="primary" block disabled={!valid || saving} onClick={submit}>{saving ? "Saving…" : "Save guest"}</Button>
+        <Button variant="ghost" onClick={onCancel}>Cancel</Button>
+      </div>
+    </div>
+  );
+}
+
+// Guests tab — invited-list CRUD + reconciliation against RSVPs (who replied,
+// headcount). Shown only when settings.strictRsvp is on (gated in AdminApp).
+export function GuestsAdmin() {
+  const { guests, rsvps } = useStore();
+  const { run } = React.useContext(AdminSaveCtx);
+  const [filter, setFilter] = useState("all");
+  const [q, setQ] = useState("");
+  const [editing, setEditing] = useState(null);
+  const blank = { firstName: "", lastName: "", middleName: "", allocation: 2, email: "", notes: "" };
+
+  const recon = React.useMemo(() => reconcileGuests(guests, rsvps), [guests, rsvps]);
+  const byId = React.useMemo(() => new Map(recon.rows.map((x) => [x.guest.id, x])), [recon]);
+  const S = recon.summary;
+  const STAT_LABEL = { attending: "Attending", maybe: "Maybe", not_attending: "Declined" };
+
+  const hasReply = (g) => { const x = byId.get(g.id); return !!(x && x.rsvp); };
+  const bySearch = guests.filter((g) => !q || `${g.firstName} ${g.lastName}`.toLowerCase().includes(q.toLowerCase()));
+  const filtered = bySearch.filter((g) => filter === "all" ? true : filter === "replied" ? hasReply(g) : !hasReply(g));
+  const pg = usePaged(filtered, 10);
+
+  async function saveGuest(form) {
+    const payload = { ...form, allocation: Math.max(1, parseInt(form.allocation, 10) || 1) };
+    await run(async () => {
+      if (form.id) { await updateGuestDb(form.id, payload); Store.updateGuest(form.id, payload); }
+      else { const row = await addGuestDb(payload); Store.addGuest(row); }
+    });
+    setEditing(null);
+    toast("Guest saved", "success");
+  }
+  function removeGuest(g) {
+    confirmDialog({ title: "Remove guest?", message: `Remove ${g.firstName} ${g.lastName} from the invite list?`, confirmLabel: "Remove", danger: true })
+      .then((ok) => { if (ok) run(async () => { await deleteGuestDb(g.id); Store.deleteGuest(g.id); }).then(() => toast("Guest removed", "success"), () => toast("Couldn't remove")); });
+  }
+
+  return (
+    <div>
+      <div className="stat-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", marginBottom: 20 }}>
+        <div className="stat"><div className="stat__label">Invited</div><div className="stat__value">{S.invited}</div><div className="stat__sub">guests</div></div>
+        <div className="stat"><div className="stat__label">Seats allocated</div><div className="stat__value">{S.seatsAllocated}</div><div className="stat__sub">total seats</div></div>
+        <div className="stat"><div className="stat__label">Confirmed</div><div className="stat__value">{S.confirmedHeads}</div><div className="stat__sub">heads coming</div></div>
+        <div className="stat"><div className="stat__label">Outstanding</div><div className="stat__value">{S.outstanding}</div><div className="stat__sub">no reply yet</div></div>
+      </div>
+
+      {recon.unmatchedRsvps.length > 0 && (
+        <div className="card" style={{ padding: "12px 16px", marginBottom: 16, border: "1px solid var(--line)", borderRadius: 10, fontSize: 14 }}>
+          <strong>{recon.unmatchedRsvps.length}</strong> RSVP{recon.unmatchedRsvps.length > 1 ? "s" : ""} don&rsquo;t match an invited guest: {recon.unmatchedRsvps.map((r) => r.fullName).join(", ")}. Add them, or fix a name spelling.
+        </div>
+      )}
+
+      <div className="folders">
+        {[["all", "All"], ["replied", "Replied"], ["outstanding", "Outstanding"]].map(([v, l]) => (
+          <button key={v} className={"folder" + (filter === v ? " folder--active" : "")} onClick={() => setFilter(v)}>{l}</button>
+        ))}
+      </div>
+
+      <div className="panel">
+        <div className="panel__head">
+          <div className="panel__title">Guests <span style={{ color: "var(--muted)", fontSize: 15 }}>({filtered.length})</span></div>
+          <div className="admin-toolbar"><div className="admin-toolbar__end">
+            <Button variant="primary" className="admin-toolbar__action" onClick={() => setEditing({ ...blank })}>Add guest</Button>
+            <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
+          </div></div>
+        </div>
+        <div className="panel__body--flush table-wrap">
+          <table className="tbl">
+            <thead><tr><th>Name</th><th>Allocation</th><th>Status</th><th>Coming</th><th></th></tr></thead>
+            <tbody>
+              {pg.pageItems.map((g) => {
+                const x = byId.get(g.id) || { status: "none", rsvp: null };
+                return (
+                  <tr key={g.id}>
+                    <td><strong>{g.firstName} {g.lastName}</strong>{g.middleName ? <span style={{ color: "var(--muted)" }}> ({g.middleName})</span> : null}</td>
+                    <td>{g.allocation}</td>
+                    <td>{x.status === "none"
+                      ? <span style={{ color: "var(--muted)" }}>No reply</span>
+                      : <span className={"tag tag--" + x.status}>{STAT_LABEL[x.status]}</span>}</td>
+                    <td>{x.status === "attending" ? x.rsvp.count : "—"}</td>
+                    <td><div className="row-actions">
+                      <button className="icon-btn" onClick={() => setEditing({ ...blank, ...g })} aria-label="Edit">{Icon.eye({})}</button>
+                      <button className="icon-btn icon-btn--danger" onClick={() => removeGuest(g)} aria-label="Remove">{Icon.trash({})}</button>
+                    </div></td>
+                  </tr>
+                );
+              })}
+              {filtered.length === 0 && <tr><td colSpan={5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No guests yet. Add your invited guests to track replies.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <Pager page={pg.page} totalPages={pg.totalPages} total={pg.total} perPage={pg.perPage} start={pg.start} onPage={pg.setPage} noun="guests" />
+      </div>
+
+      <Modal open={!!editing} onClose={() => setEditing(null)} label="Guest">
+        {editing && <GuestForm initial={editing} onSave={saveGuest} onCancel={() => setEditing(null)} />}
+      </Modal>
+    </div>
   );
 }
 
@@ -1953,6 +2084,7 @@ export const ADMIN_TABS = [
   { key: "dashboard", label: "Dashboard", icon: "grid" },
   { key: "home", label: "Home", icon: "home" },
   { key: "rsvps", label: "RSVPs", icon: "mail" },
+  { key: "guests", label: "Guests", icon: "user" },
   // Media/Gallery shelved for now — re-add when gallery ships (see DISABLED_MODULES).
   // { key: "media", label: "Media", icon: "camera" },
   { key: "guestbook", label: "Guestbook", icon: "book" },
@@ -2031,6 +2163,7 @@ export function AdminApp() {
   } else {
     tabs = tabsForClient(visibleAdminTabs(auth.role, ADMIN_TABS), auth.role, settings.modules);
   }
+  if (!settings.strictRsvp) tabs = tabs.filter((t) => t.key !== "guests");
   const activeTab = tabs.some((t) => t.key === tab) ? tab : (tabs[0]?.key || "dashboard");
   const title = (tabs.find((t) => t.key === activeTab) || { label: "Admin" }).label;
   const onPlatformTab = activeTab === "overview" || activeTab === "clients";
@@ -2101,6 +2234,7 @@ export function AdminApp() {
           {activeTab === "dashboard" && <AdminDashboard goTab={setTab} />}
           {activeTab === "home" && <HomeAdmin />}
           {activeTab === "rsvps" && <RsvpsAdmin />}
+          {activeTab === "guests" && <GuestsAdmin />}
           {activeTab === "media" && <MediaAdmin />}
           {activeTab === "guestbook" && <GuestbookAdmin />}
           {activeTab === "schedule" && <ScheduleAdmin />}
