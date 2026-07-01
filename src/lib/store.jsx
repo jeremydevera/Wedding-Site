@@ -34,6 +34,9 @@ export const DEFAULT_SETTINGS = {
   // ISO datetime (like weddingDate). When set and in the past, the public RSVP
   // form closes. Blank = always open (backward-compatible for existing clients).
   rsvpDeadlineDate: "",
+  // Master switch for the invited-guest list feature. When on, the admin gains a
+  // "Guests" tab to manage invites + track replies. Public RSVP form is unaffected.
+  strictRsvp: false,
   hashtag: "#JeremyAndIrish2026",
   adminPassword: "wedding",
   uploadsEnabled: true,
