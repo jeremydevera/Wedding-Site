@@ -47,4 +47,13 @@ describe("DELETE /api/media", () => {
     expect(body).toEqual({ ok: true });
     expect(env.MEDIA.delete).toHaveBeenCalledWith("c1/owner/image/hero/aaaaaaaa-photo.jpg");
   });
+
+  it("500 when env.MEDIA.delete throws", async () => {
+    const env = { MEDIA: { delete: vi.fn().mockRejectedValue(new Error("r2 down")) } };
+    const res = await onRequestDelete({
+      request: req("https://x/api/media", { key: "c1/owner/image/hero/aaaaaaaa-photo.jpg" }, AUTH),
+      env,
+    });
+    expect(res.status).toBe(500);
+  });
 });
