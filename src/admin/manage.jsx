@@ -1433,9 +1433,10 @@ export function HomeAdmin() {
               </div>
               <Field label="Welcome message" id="s-welcome"><Textarea id="s-welcome" value={f.welcome} onChange={set("welcome")} /></Field>
               <div className="field-row field-row--2">
-                <Field label="RSVP deadline" id="s-rsvp"><Input id="s-rsvp" value={f.rsvpDeadline} onChange={set("rsvpDeadline")} /></Field>
-                <Field label="Hashtag" id="s-hash"><Input id="s-hash" value={f.hashtag} onChange={set("hashtag")} /></Field>
+                <Field label="RSVP deadline (display text)" id="s-rsvp" hint="Shown on the RSVP page"><Input id="s-rsvp" value={f.rsvpDeadline} onChange={set("rsvpDeadline")} /></Field>
+                <Field label="RSVP closes at" id="s-rsvpd" hint="After this the form closes. Blank = stays open."><Input id="s-rsvpd" type="datetime-local" value={f.rsvpDeadlineDate || ""} onChange={set("rsvpDeadlineDate")} /></Field>
               </div>
+              <Field label="Hashtag" id="s-hash"><Input id="s-hash" value={f.hashtag} onChange={set("hashtag")} /></Field>
             </div>
           </div>
           <SaveFooter />
