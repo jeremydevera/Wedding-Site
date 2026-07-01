@@ -1230,6 +1230,25 @@ body.env-sealed .decor { display: none; }
 .imgup__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .imgup__actions { display: flex; gap: 8px; flex-wrap: nowrap; width: max-content; max-width: none; align-self: center; }
 .imgup__actions .btn { white-space: nowrap; flex: none; }
+
+/* ── Media library picker (admin) ─────────────────────────────────────────── */
+.medialib__tabs { display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid var(--line); }
+.medialib__tab { appearance: none; background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 4px; margin-bottom: -1px; cursor: pointer; color: var(--muted); font: inherit; font-size: 14px; }
+.medialib__tab.is-on { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+.medialib__upload { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px 0; }
+.medialib__msg { color: var(--muted); font-size: 13px; padding: 8px 0; }
+.medialib__msg--err { color: oklch(0.55 0.16 25); }
+.medialib--grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; max-height: 60vh; overflow-y: auto; }
+.medialib__cell { display: flex; flex-direction: column; gap: 4px; padding: 0; background: none; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; cursor: pointer; text-align: left; }
+.medialib__cell:hover { border-color: var(--ink); }
+.medialib__cell img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; background: var(--surface-2); }
+.medialib__name { font-size: 11px; color: var(--muted); padding: 4px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.medialib--audio { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; max-height: 60vh; overflow-y: auto; }
+.medialib__row { display: flex; flex-direction: column; gap: 6px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.medialib__pick { align-self: flex-start; background: none; border: 0; padding: 0; cursor: pointer; font: inherit; font-weight: 600; color: var(--ink); }
+.medialib__pick:hover { color: var(--accent); }
+.medialib__row audio { width: 100%; height: 34px; }
+
 .crop { display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .crop__view { position: relative; overflow: hidden; border-radius: var(--radius); background: #111; cursor: grab; touch-action: none; }
 .crop__view:active { cursor: grabbing; }
