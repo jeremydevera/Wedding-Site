@@ -1863,6 +1863,7 @@ export function MusicAdmin() {
   const [uploading, setUploading] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [pickerOpen, setPickerOpen] = useState(false); // Upload new / Choose from library
 
   // Upload the file(s), then open the editor so the title/artist can be set
   // before the track is actually added — nothing is saved until "Save track".
@@ -1900,7 +1901,7 @@ export function MusicAdmin() {
     <div className="panel">
       <div className="panel__head">
         <div className="panel__title">Music Playlist <span style={{ color: "var(--muted)", fontSize: 15 }}>({tracks.length})</span></div>
-        <Button variant="primary" size="sm" disabled={uploading} onClick={() => fileRef.current && fileRef.current.click()}>{uploading ? "Uploading…" : "+ Upload audio"}</Button>
+        <Button variant="primary" size="sm" disabled={uploading} onClick={() => setPickerOpen(true)}>{uploading ? "Uploading…" : "+ Add music"}</Button>
         <input ref={fileRef} type="file" accept={AUDIO_ACCEPT} multiple style={{ display: "none" }} onChange={(e) => onFiles(e.target.files)} />
       </div>
       <div className="panel__body--flush table-wrap">
@@ -1930,6 +1931,16 @@ export function MusicAdmin() {
       <div className="panel__foot">
         <span className="panel__foot-hint">Upload a file, then set its title &amp; artist before saving. Plays as background music on the site (loops); browsers may require a tap before audio starts.</span>
       </div>
+      <MediaPickerModal
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        type="audio"
+        clientId={clientId}
+        uploading={uploading}
+        uploadLabel="Choose audio file"
+        onUploadNew={() => { setPickerOpen(false); fileRef.current && fileRef.current.click(); }}
+        onPick={(key) => { setPickerOpen(false); queueRef.current = []; setEditing({ url: key, title: "", artist: "" }); setEditOpen(true); }}
+      />
       <TrackEditor open={editOpen} track={editing} onClose={closeEditor} />
     </div>
   );
