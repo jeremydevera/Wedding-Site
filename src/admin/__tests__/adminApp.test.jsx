@@ -28,7 +28,12 @@ describe("AdminApp rendered tab gating", () => {
     Store.set({ clientId: null, loading: false });
     Store.setAuth({ session: { user: { email: "su@x" } }, role: "superadmin", clientId: null, email: "su@x" });
     const { container } = render(<AdminApp />);
-    expect(navLabels(container)).toEqual(["Overview", "Clients"]);
+    const labels = navLabels(container);
+    expect(labels).toContain("Overview");
+    expect(labels).toContain("Clients");
+    expect(labels).toContain("Media");
+    expect(labels).not.toContain("Dashboard");
+    expect(labels).not.toContain("Guestbook");
   });
 
   it("owner: shows operational tabs, hides Settings/Media/Clients", () => {

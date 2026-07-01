@@ -12,7 +12,7 @@ import { mediaUrl } from "@/lib/media.js";
 import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
 import { visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel } from "@/lib/roles.js";
-import { ClientsAdmin, SuperOverview } from "@/admin/superadmin.jsx";
+import { ClientsAdmin, R2LibraryAdmin, SuperOverview } from "@/admin/superadmin.jsx";
 import { LocationPicker } from "@/ui/location-picker.jsx";
 import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
 import { MediaPickerModal } from "@/admin/MediaPicker.jsx";
@@ -2109,6 +2109,7 @@ export function AdminApp() {
           {activeTab === "settings" && <SettingsAdmin />}
           {activeTab === "overview" && <SuperOverview />}
           {activeTab === "clients" && <ClientsAdmin />}
+          {activeTab === "r2media" && !clientId && <R2LibraryAdmin />}
           </AdminSaveCtx.Provider>
           {/* Footer: a clear end-of-content marker at the bottom of the scroll. */}
           <footer className="admin__footer">
