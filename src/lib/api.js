@@ -181,8 +181,8 @@ export async function listMedia(clientId, type) {
   return Array.isArray(body.items) ? body.items : [];
 }
 
-// Delete a file from R2 by its bare key. Requires an active admin session.
-// Throws on network error or non-ok response.
+// Delete an R2 object by its bare key via the auth-gated DELETE /api/media
+// Function. Superadmin media manager only. Returns true on success, throws on error.
 export async function deleteFromR2(key) {
   const token = await freshToken();
   const res = await fetch("/api/media", {
@@ -195,6 +195,7 @@ export async function deleteFromR2(key) {
     try { const e = await res.json(); if (e && e.error) msg = e.error; } catch (_) {}
     throw new Error(msg);
   }
+  return true;
 }
 
 // Send an HTML email via the auth-gated /api/send-email Function (Resend).
