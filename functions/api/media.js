@@ -13,7 +13,7 @@ const json = (obj, status = 200) =>
 // self-contained, matching upload.js). Change both together.
 function fileNameFromKey(key) {
   const seg = String(key || "").split("/").pop() || "";
-  return seg.replace(/^([0-9a-zA-Z]{8}|[0-9]{9,})-/, "");
+  return seg.replace(/^([0-9a-f]{8}|[0-9]{9,})-/i, "");
 }
 
 export async function onRequestGet(context) {

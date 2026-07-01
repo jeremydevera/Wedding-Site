@@ -18,5 +18,5 @@ export function libraryPrefix(clientId, type) {
 export function fileNameFromKey(key) {
   if (!key || typeof key !== "string") return "";
   const seg = key.split("/").pop() || "";
-  return seg.replace(/^([0-9a-zA-Z]{8}|[0-9]{9,})-/, "");
+  return seg.replace(/^([0-9a-f]{8}|[0-9]{9,})-/i, "");
 }

@@ -23,7 +23,7 @@ describe("libraryPrefix", () => {
 
 describe("fileNameFromKey", () => {
   it("strips the last path segment's <shortid>- prefix (8 hex)", () => {
-    expect(fileNameFromKey("87e2/owner/image/hero/k3x9a1b2-venue.jpg")).toBe("venue.jpg");
+    expect(fileNameFromKey("87e2/owner/image/hero/3a9a1b2c-venue.jpg")).toBe("venue.jpg");
   });
   it("strips a Date.now() numeric shortid fallback", () => {
     expect(fileNameFromKey("87e2/owner/audio/playlist/1719800000000-song.mp3")).toBe("song.mp3");
