@@ -31,6 +31,9 @@ export const DEFAULT_SETTINGS = {
   receptionTime: "5:30 PM",
   dressCode: "Garden formal \u2014 think soft suits and flowing dresses.",
   rsvpDeadline: "August 15, 2026",
+  // ISO datetime (like weddingDate). When set and in the past, the public RSVP
+  // form closes. Blank = always open (backward-compatible for existing clients).
+  rsvpDeadlineDate: "",
   hashtag: "#JeremyAndIrish2026",
   adminPassword: "wedding",
   uploadsEnabled: true,
