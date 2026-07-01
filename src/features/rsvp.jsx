@@ -1,7 +1,8 @@
 import React from "react";
 import { go } from "@/lib/nav.js";
 import { Store, useStore } from "@/lib/store.jsx";
-import { postRsvp, rsvpNameTaken } from "@/lib/api.js";
+import { postRsvp, rsvpNameTaken, upsertRsvp } from "@/lib/api.js";
+import { isRsvpClosed, joinPlusOnes, isValidOptionalEmail } from "@/lib/rsvp.js";
 import { Button, Field, Icon, Input, Select, Textarea, confirmDialog } from "@/ui/components.jsx";
 import { PageHero } from "@/pages/PublicPages.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
@@ -15,8 +16,8 @@ export const DIET_OPTIONS = ["None", "Vegetarian", "Vegan", "Gluten-free", "Hala
 export function RSVPPage() {
   const { settings } = useStore();
   const [form, setForm] = useState({
-    firstName: "", middleName: "", lastName: "", phone: "", status: "attending", count: 1,
-    plusOne: "", diet: "None", dietNotes: "", song: "", notes: "",
+    firstName: "", middleName: "", lastName: "", email: "", phone: "", status: "attending", count: 1,
+    guestNames: [], diet: "None", dietNotes: "", song: "", notes: "",
   });
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
@@ -34,6 +35,7 @@ export function RSVPPage() {
     const er = {};
     if (!form.firstName.trim()) er.firstName = "Please enter your first name.";
     if (!form.lastName.trim()) er.lastName = "Please enter your last name.";
+    if (!isValidOptionalEmail(form.email)) er.email = "Please enter a valid email, or leave it blank.";
     if (attending) {
       const n = parseInt(form.count, 10);
       if (!n || n < 1) er.count = "Please enter how many will attend.";
@@ -117,6 +119,9 @@ export function RSVPPage() {
             </div>
             <Field label="Middle name" hint="Optional — helps tell apart guests with the same name" id="r-middle">
               <Input id="r-middle" value={form.middleName} onChange={set("middleName")} />
+            </Field>
+            <Field label="Email" hint="Optional — so the couple can reach you about the day" error={errors.email} id="r-email">
+              <Input id="r-email" type="email" inputMode="email" value={form.email} onChange={set("email")} />
             </Field>
             <Field label="Phone" hint="Optional" id="r-phone">
               <Input id="r-phone" value={form.phone} onChange={set("phone")} />
