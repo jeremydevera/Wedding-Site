@@ -1,0 +1,54 @@
+import { describe, it, expect } from "vitest";
+import { normName, namePartsMatch, reconcileGuests } from "@/lib/guests.js";
+
+describe("normName", () => {
+  it("lowercases and strips non-alphanumerics", () => {
+    expect(normName("  De Vera! ")).toBe("devera");
+    expect(normName(null)).toBe("");
+  });
+});
+
+describe("namePartsMatch", () => {
+  const g = { first: "Jeremy", last: "Reyes", middle: "Perez" };
+  it("matches on first+last when middles are equal or absent", () => {
+    expect(namePartsMatch(g, { first: "jeremy", last: "reyes", middle: "Perez" })).toBe(true);
+    expect(namePartsMatch({ first: "A", last: "B", middle: "" }, { first: "a", last: "b", middle: "" })).toBe(true);
+  });
+  it("treats a middle initial as matching the full middle", () => {
+    expect(namePartsMatch(g, { first: "Jeremy", last: "Reyes", middle: "P" })).toBe(true);
+  });
+  it("rejects a different last name", () => {
+    expect(namePartsMatch(g, { first: "Jeremy", last: "Cruz", middle: "Perez" })).toBe(false);
+  });
+});
+
+describe("reconcileGuests", () => {
+  const guests = [
+    { id: "g1", firstName: "Jeremy", lastName: "Reyes", middleName: "", allocation: 2 },
+    { id: "g2", firstName: "Maria", lastName: "Cruz", middleName: "", allocation: 4 },
+    { id: "g3", firstName: "Tom", lastName: "Okafor", middleName: "", allocation: 1 },
+  ];
+  const rsvps = [
+    { id: "r1", fullName: "Jeremy Reyes", firstName: "Jeremy", lastName: "Reyes", middleName: "", status: "attending", count: 2 },
+    { id: "r2", fullName: "Tom Okafor", firstName: "Tom", lastName: "Okafor", middleName: "", status: "not_attending", count: 0 },
+    { id: "r3", fullName: "Gate Crasher", firstName: "Gate", lastName: "Crasher", middleName: "", status: "attending", count: 3 },
+  ];
+  it("assigns status per guest and finds outstanding + unmatched", () => {
+    const { rows, summary, unmatchedRsvps } = reconcileGuests(guests, rsvps);
+    const byId = Object.fromEntries(rows.map((x) => [x.guest.id, x]));
+    expect(byId.g1.status).toBe("attending");
+    expect(byId.g2.status).toBe("none");
+    expect(byId.g3.status).toBe("not_attending");
+    expect(summary.invited).toBe(3);
+    expect(summary.seatsAllocated).toBe(7);
+    expect(summary.replied).toBe(2);
+    expect(summary.outstanding).toBe(1);
+    expect(summary.confirmedHeads).toBe(2);
+    expect(summary.declined).toBe(1);
+    expect(unmatchedRsvps.map((r) => r.id)).toEqual(["r3"]);
+  });
+  it("handles empty inputs", () => {
+    expect(reconcileGuests([], []).summary).toMatchObject({ invited: 0, seatsAllocated: 0, confirmedHeads: 0 });
+    expect(reconcileGuests(undefined, undefined).rows).toEqual([]);
+  });
+});
