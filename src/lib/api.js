@@ -110,11 +110,26 @@ export async function saveClientData() {
 // Function. Requires a valid Supabase session (admins only). opts = { scope,
 // purpose } (type is derived server-side from the content type). Returns
 // { key, url } — callers store the bare `key`; render via mediaUrl().
+// Return a valid access token, refreshing first if the session is missing or
+// about to expire. getSession() alone can hand back an EXPIRED token — e.g. on a
+// backgrounded mobile Safari tab where the auto-refresh timer never fired — which
+// the auth-gated Functions then reject with 401 ("unauthorized"). Refresh here so
+// uploads/emails always send a live token.
+async function freshToken() {
+  let { data: { session } } = await supabase.auth.getSession();
+  const expMs = session && session.expires_at ? session.expires_at * 1000 : 0;
+  if (!session || (expMs && expMs - Date.now() < 60000)) {
+    const { data: r } = await supabase.auth.refreshSession();
+    if (r && r.session) session = r.session;
+  }
+  const token = session && session.access_token;
+  if (!token) throw new Error("Your session expired — please sign in again.");
+  return token;
+}
+
 export async function uploadToR2(file, opts, clientId) {
   const o = opts || {};
-  const { data } = await supabase.auth.getSession();
-  const token = data && data.session && data.session.access_token;
-  if (!token) throw new Error("Not signed in");
+  const token = await freshToken();
   const form = new FormData();
   form.append("file", file);
   form.append("scope", o.scope || "owner");
@@ -140,9 +155,7 @@ export async function uploadAudio(file, clientId) {
 // auth-gated /api/media Function. Returns [{ key, name, size, uploaded }] newest
 // first. Requires a valid Supabase session (admins only).
 export async function listMedia(clientId, type) {
-  const { data } = await supabase.auth.getSession();
-  const token = data && data.session && data.session.access_token;
-  if (!token) throw new Error("Not signed in");
+  const token = await freshToken();
   const qs = new URLSearchParams({ clientId: clientId || "", type: type || "image" });
   const res = await fetch(`/api/media?${qs}`, { headers: { authorization: `Bearer ${token}` } });
   if (!res.ok) {
@@ -157,9 +170,7 @@ export async function listMedia(clientId, type) {
 // Send an HTML email via the auth-gated /api/send-email Function (Resend).
 // Used by the RSVP "Email results" action. Requires a valid admin session.
 export async function sendEmail({ to, subject, html }) {
-  const { data } = await supabase.auth.getSession();
-  const token = data && data.session && data.session.access_token;
-  if (!token) throw new Error("Not signed in");
+  const token = await freshToken();
   const res = await fetch("/api/send-email", {
     method: "POST",
     headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
@@ -177,9 +188,7 @@ export async function sendEmail({ to, subject, html }) {
 // Used by the migration to move existing Supabase-hosted audio.
 async function uploadUrlToR2(sourceUrl, opts, clientId) {
   const o = opts || {};
-  const { data } = await supabase.auth.getSession();
-  const token = data && data.session && data.session.access_token;
-  if (!token) throw new Error("Not signed in");
+  const token = await freshToken();
   const form = new FormData();
   form.append("sourceUrl", sourceUrl);
   form.append("scope", o.scope || "owner");
