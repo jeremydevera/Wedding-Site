@@ -36,6 +36,18 @@ export async function postRsvp(form) {
   Store.addRSVP(form); // local echo (admin view this session)
 }
 
+// Has someone already RSVP'd under this exact name for the current client?
+// Uses a SECURITY DEFINER RPC that returns only a boolean — guests can't read
+// the RSVP list itself (RLS). Fails open (returns false) so a check error never
+// blocks a legitimate RSVP.
+export async function rsvpNameTaken(fullName) {
+  const clientId = Store.get().clientId;
+  if (!clientId || !fullName) return false;
+  const { data, error } = await supabase.rpc("rsvp_name_taken", { p_client_id: clientId, p_name: fullName });
+  if (error) { console.warn("[api] rsvp_name_taken failed:", error.message); return false; }
+  return !!data;
+}
+
 export async function postGuestbook(entry) {
   const clientId = Store.get().clientId;
   if (!clientId) throw new Error("No client loaded");
