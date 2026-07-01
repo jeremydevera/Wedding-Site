@@ -17,8 +17,9 @@ function envWith(extra = {}) {
 
 beforeEach(() => {
   globalThis.fetch = vi.fn()
-    .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "u1" }) })       // auth/v1/user
-    .mockResolvedValueOnce({ ok: true, json: async () => [{ role: "superadmin" }] }); // profiles role
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "u1" }) })            // auth/v1/user
+    .mockResolvedValueOnce({ ok: true, json: async () => [{ role: "superadmin" }] })  // profiles role
+    .mockResolvedValueOnce({ ok: true, json: async () => [{ id: "c1", subdomain: "demo", content: {} }] }); // clients content (empty → not in use)
 });
 afterEach(() => { vi.restoreAllMocks(); });
 
@@ -64,11 +65,43 @@ describe("DELETE /api/media", () => {
   });
 
   it("500 when env.MEDIA.delete throws", async () => {
+    // c1/... owner is non-UUID → clients lookup skipped; still needs auth+role mocks
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "u1" }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ role: "superadmin" }] });
     const env = { MEDIA: { delete: vi.fn().mockRejectedValue(new Error("r2 down")) } };
     const res = await onRequestDelete({
       request: req("https://x/api/media", { key: "c1/owner/image/hero/aaaaaaaa-photo.jpg" }, AUTH),
       env,
     });
     expect(res.status).toBe(500);
+  });
+
+  it("409 when the file is referenced by its client's content", async () => {
+    const uuid = "87e215c5-5c92-4bbf-aa83-875d8f728c3f";
+    const key = `${uuid}/owner/image/hero/aaaaaaaa-photo.jpg`;
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "u1" }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ role: "superadmin" }] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ id: uuid, subdomain: "demo", content: { heroImage: key } }] });
+    const env = envWith();
+    const res = await onRequestDelete({ request: req("https://x/api/media", { key }, AUTH), env });
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body).toMatchObject({ error: "in_use", usedBy: "demo" });
+    expect(env.MEDIA.delete).not.toHaveBeenCalled();
+  });
+
+  it("deletes a UUID-owned file when it is NOT referenced", async () => {
+    const uuid = "87e215c5-5c92-4bbf-aa83-875d8f728c3f";
+    const key = `${uuid}/owner/image/hero/aaaaaaaa-photo.jpg`;
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "u1" }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ role: "superadmin" }] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ id: uuid, subdomain: "demo", content: { heroImage: "some/other/key.jpg" } }] });
+    const env = envWith();
+    const res = await onRequestDelete({ request: req("https://x/api/media", { key }, AUTH), env });
+    expect(res.status).toBe(200);
+    expect(env.MEDIA.delete).toHaveBeenCalledWith(key);
   });
 });

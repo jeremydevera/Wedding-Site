@@ -63,6 +63,36 @@ describe("GET /api/media", () => {
     expect(body.items[0].name).toBe("photo.jpg");
   });
 
+  it("annotates inUse/usedBy when usage=1 (superadmin)", async () => {
+    const uuid = "87e215c5-5c92-4bbf-aa83-875d8f728c3f";
+    const usedKey = `${uuid}/owner/image/hero/aaaaaaaa-used.jpg`;
+    const freeKey = `${uuid}/owner/image/story/bbbbbbbb-free.jpg`;
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "u1" }) })            // auth/v1/user
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ role: "superadmin" }] })  // profiles role
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ id: uuid, subdomain: "demo", content: { heroImage: usedKey } }] }); // clients
+    const env = envWith([
+      { key: usedKey, size: 10, uploaded: "2026-06-01T00:00:00Z" },
+      { key: freeKey, size: 20, uploaded: "2026-05-01T00:00:00Z" },
+    ]);
+    const res = await onRequestGet({ request: req("https://x/api/media?type=image&usage=1", AUTH), env });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    const used = body.items.find((i) => i.key === usedKey);
+    const free = body.items.find((i) => i.key === freeKey);
+    expect(used.inUse).toBe(true);
+    expect(used.usedBy).toBe("demo");
+    expect(free.inUse).toBe(false);
+  });
+
+  it("403 when usage=1 requested by a non-superadmin", async () => {
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "u2" }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ role: "owner" }] });
+    const res = await onRequestGet({ request: req("https://x/api/media?type=image&usage=1", AUTH), env: envWith([]) });
+    expect(res.status).toBe(403);
+  });
+
   it("follows the cursor when the listing is truncated", async () => {
     const list = vi.fn()
       .mockResolvedValueOnce({ objects: [{ key: "c1/owner/image/a/xxxxxxxx-1.jpg", size: 1, uploaded: "2026-01-01T00:00:00Z" }], truncated: true, cursor: "C1" })
