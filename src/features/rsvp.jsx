@@ -46,7 +46,7 @@ export function RSVPPage() {
     return er;
   }
 
-  async function submit(e) {
+  async function submit(e, forceUpdate) {
     e.preventDefault();
     if (submitting) return;
     const er = validate();
@@ -57,20 +57,22 @@ export function RSVPPage() {
     const payload = { ...form, fullName, count, plusOne };
     setSubmitting(true);
     try {
-      // Block a duplicate RSVP under the same name (checked server-side; the guest
-      // list itself is never exposed). A real same-named guest can add a middle name.
-      if (await rsvpNameTaken(form.firstName, form.middleName, form.lastName)) {
+      // Duplicate name? Offer to update the existing response instead of blocking.
+      // Anon guests can't read their prior row (RLS), so an update overwrites
+      // (no pre-fill) via the rsvp_upsert RPC.
+      if (!forceUpdate && (await rsvpNameTaken(form.firstName, form.middleName, form.lastName))) {
         setSubmitting(false);
-        await confirmDialog({
+        const wantsUpdate = await confirmDialog({
           title: "You've already RSVP'd",
-          message: `Looks like ${fullName} has already responded. We've got you down — thank you!`,
-          confirmLabel: "OK",
-          okOnly: true,
+          message: `${fullName} has already responded. Would you like to update your response?`,
+          confirmLabel: "Update it",
         });
+        if (wantsUpdate) return submit(e, true);
         go("home");
         return;
       }
-      await postRsvp(payload);
+      if (forceUpdate) await upsertRsvp(payload);
+      else await postRsvp(payload);
       setSubmitted(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
@@ -97,6 +99,28 @@ export function RSVPPage() {
               </p>
               <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
                 <Button variant="primary" onClick={() => go("guestbook")}>Sign the guestbook</Button>
+                <Button variant="ghost" onClick={() => go("home")}>Back home</Button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  if (isRsvpClosed(settings.rsvpDeadlineDate, Date.now())) {
+    return (
+      <div className="fade-up">
+        <section className="block">
+          <div className="container container--narrow">
+            <div className="card card--pad-lg confirm">
+              <div className="confirm__seal">{Icon.check({})}</div>
+              <h2 className="confirm__title">RSVPs are now closed</h2>
+              <p className="confirm__text">
+                Thank you! The RSVP window closed on {settings.rsvpDeadline}. If you still
+                need to reach us, please contact the couple directly.
+              </p>
+              <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
                 <Button variant="ghost" onClick={() => go("home")}>Back home</Button>
               </div>
             </div>
