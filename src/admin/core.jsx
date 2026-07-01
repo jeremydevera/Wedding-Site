@@ -156,11 +156,73 @@ export function AdminLogin({ onAuthed }) {
 }
 
 // --- Dashboard --------------------------------------------------------------
+
+// Dependency-free donut chart (SVG, no external lib — keeps the strict CSP happy).
+// `data` = [{ label, value, color }]. Segments drawn as dash-offset arcs.
+function Donut({ data, size = 128 }) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  const r = size / 2;
+  const stroke = Math.round(size * 0.3);
+  const radius = r - stroke / 2;
+  const circ = 2 * Math.PI * radius;
+  let offset = 0;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label="breakdown chart">
+      <g transform={`rotate(-90 ${r} ${r})`}>
+        {total === 0
+          ? <circle cx={r} cy={r} r={radius} fill="none" stroke="var(--line)" strokeWidth={stroke} />
+          : data.map((d, i) => {
+              const len = (d.value / total) * circ;
+              const seg = (
+                <circle key={i} cx={r} cy={r} r={radius} fill="none" stroke={d.color}
+                  strokeWidth={stroke} strokeDasharray={`${len} ${circ - len}`} strokeDashoffset={-offset} />
+              );
+              offset += len;
+              return seg;
+            })}
+      </g>
+    </svg>
+  );
+}
+
+// A titled donut + legend (swatch · label · count · %). Shows `empty` when no data.
+function PieCard({ title, data, empty }) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  return (
+    <div>
+      <div style={{ fontSize: 12, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted)", fontWeight: 600, margin: "0 0 12px" }}>{title}</div>
+      {total === 0 ? (
+        <p style={{ color: "var(--muted)", margin: 0 }}>{empty}</p>
+      ) : (
+        <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
+          <Donut data={data} />
+          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6, minWidth: 150, flex: "1 1 150px" }}>
+            {data.map((d) => (
+              <li key={d.label} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+                <span style={{ width: 12, height: 12, borderRadius: 3, background: d.color, flex: "none" }} />
+                <span style={{ color: "var(--ink)" }}>{d.label}</span>
+                <span style={{ marginLeft: "auto", color: "var(--muted)" }}>{d.value} · {Math.round((d.value / total) * 100)}%</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AdminDashboard({ goTab }) {
   const { rsvps, media, guestbook, quizSubs } = useStore();
   const attending = rsvps.filter((r) => r.status === "attending");
   const guestCount = attending.reduce((s, r) => s + (r.count || 0), 0);
   const rstats = rsvpStats(rsvps);
+  const statusPie = [
+    { label: "Attending", value: rstats.attendingParties, color: "#5f7a3a" },
+    { label: "Maybe", value: rstats.maybe, color: "#c99a2e" },
+    { label: "Declined", value: rstats.declined, color: "#a24b3b" },
+  ].filter((d) => d.value > 0);
+  const DIET_COLORS = ["#6b7a3a", "#8c6a4a", "#4a5320", "#b7a98a", "#7a8b99", "#9a6a7a", "#c99a2e", "#5f8a7a"];
+  const dietPie = Object.entries(rstats.diets).map(([label, value], i) => ({ label, value, color: DIET_COLORS[i % DIET_COLORS.length] }));
   const photos = media.filter((m) => m.type === "photo" && m.category === "gallery");
   const videos = media.filter((m) => m.type === "video");
   const pendingMedia = media.filter((m) => m.status === "pending");
@@ -169,8 +231,6 @@ export function AdminDashboard({ goTab }) {
   const stats = [
     { label: "RSVPs", value: rsvps.length, sub: `${attending.length} attending`, tab: "rsvps" },
     { label: "Guest Count", value: guestCount, sub: "people coming", tab: "rsvps" },
-    { label: "Maybe", value: rstats.maybe, sub: "tentative", tab: "rsvps" },
-    { label: "Declined", value: rstats.declined, sub: "can't make it", tab: "rsvps" },
     ...(mediaShelved ? [] : [
       { label: "Photos", value: photos.length, sub: pendingMedia.length ? `${pendingMedia.length} to review` : "all clear", tab: "media" },
       { label: "Videos", value: videos.length, sub: "uploaded", tab: "media" },
@@ -194,20 +254,15 @@ export function AdminDashboard({ goTab }) {
         ))}
       </div>
 
-      {Object.keys(rstats.diets).length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 12, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted)", fontWeight: 600, margin: "0 0 10px" }}>Dietary needs — attending</div>
-          <div className="stat-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
-            {Object.entries(rstats.diets).map(([diet, n]) => (
-              <div key={diet} className="stat">
-                <div className="stat__label">{diet}</div>
-                <div className="stat__value">{n}</div>
-                <div className="stat__sub">{n === 1 ? "request" : "requests"}</div>
-              </div>
-            ))}
+      <div className="panel" style={{ marginBottom: 24 }}>
+        <div className="panel__head"><div className="panel__title">RSVP breakdown</div></div>
+        <div className="panel__body">
+          <div style={{ display: "grid", gap: 24, gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+            <PieCard title="Responses" data={statusPie} empty="No RSVPs yet." />
+            <PieCard title="Dietary needs — attending" data={dietPie} empty="No dietary needs yet." />
           </div>
         </div>
-      )}
+      </div>
 
       <div style={{ display: "grid", gap: 24, gridTemplateColumns: "1fr" }}>
         <div className="panel">
