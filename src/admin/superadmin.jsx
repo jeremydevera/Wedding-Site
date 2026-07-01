@@ -6,6 +6,9 @@ import { themesForEvent } from "@/config/eventTypes.js";
 import { moduleLabel } from "@/lib/roles.js";
 import { PLATFORM_DOMAIN, clientUrl, isValidSubdomain } from "@/config/site.js"; // platform config → src/config/site.js
 import { Button, confirmDialog, Field, Icon, Input, Pager, Select, toast, usePaged } from "@/ui/components.jsx";
+import { listMedia, deleteFromR2 } from "@/lib/api.js";
+import { fileNameFromKey } from "@/lib/mediaLibrary.js";
+import { mediaUrl } from "@/lib/media.js";
 const { useState, useEffect } = React;
 
 const MODULES = ["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"];
@@ -399,6 +402,129 @@ export function ClientsAdmin() {
           </form>
         </div>
       )}
+    </div>
+  );
+}
+
+export function R2LibraryAdmin() {
+  const [type, setType] = useState("image");
+  const [clientFilter, setClientFilter] = useState("");
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [deleting, setDeleting] = useState(null);
+
+  useEffect(() => {
+    let live = true;
+    setLoading(true);
+    setError(null);
+    listMedia(null, type)
+      .then((data) => { if (live) { setItems(data); setLoading(false); } })
+      .catch((e) => { if (live) { setError((e && e.message) || "load failed"); setLoading(false); } });
+    return () => { live = false; };
+  }, [type]);
+
+  const visible = clientFilter.trim()
+    ? items.filter((it) => it.key.split("/")[0].toLowerCase().includes(clientFilter.trim().toLowerCase()))
+    : items;
+
+  async function doDelete(key) {
+    const ok = await confirmDialog({
+      title: "Delete file?",
+      message: `Delete "${fileNameFromKey(key)}"? Removes from R2 — cannot be undone.`,
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
+    setDeleting(key);
+    try {
+      await deleteFromR2(key);
+      setItems((prev) => prev.filter((it) => it.key !== key));
+      toast("File deleted");
+    } catch (e) {
+      toast("Delete failed: " + ((e && e.message) || "error"));
+    } finally {
+      setDeleting(null);
+    }
+  }
+
+  return (
+    <div>
+      <div className="panel">
+        <div className="panel__head">
+          <div className="panel__title">
+            R2 Media Library
+            <span style={{ color: "var(--muted)", fontSize: 15, marginLeft: 8 }}>({visible.length})</span>
+          </div>
+        </div>
+        <div className="panel__body" style={{ paddingBottom: 8 }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
+            <div role="tablist" style={{ display: "flex", gap: 4 }}>
+              {[{ key: "image", label: "Images" }, { key: "audio", label: "Audio" }].map((t) => (
+                <button
+                  key={t.key}
+                  role="tab"
+                  aria-selected={type === t.key}
+                  className={"medialib__tab" + (type === t.key ? " is-on" : "")}
+                  onClick={() => setType(t.key)}
+                >{t.label}</button>
+              ))}
+            </div>
+            <input
+              className="input"
+              style={{ maxWidth: 220, flex: "1 1 140px" }}
+              value={clientFilter}
+              onChange={(e) => setClientFilter(e.target.value)}
+              placeholder="Filter by client…"
+            />
+          </div>
+
+          {loading && <p className="medialib__msg">Loading…</p>}
+          {!loading && error && <p className="medialib__msg medialib__msg--err">{error}</p>}
+          {!loading && !error && visible.length === 0 && <p className="medialib__msg">No files.</p>}
+
+          {!loading && !error && type === "audio" && visible.length > 0 && (
+            <ul className="medialib medialib--audio">
+              {visible.map((it) => (
+                <li key={it.key} className="medialib__row" style={{ gap: 8 }}>
+                  <span className="medialib__pick" style={{ flex: 1 }}>
+                    {it.name}
+                    <span style={{ color: "var(--muted)", fontSize: 12, marginLeft: 8 }}>{it.key.split("/")[0]}</span>
+                  </span>
+                  <audio src={mediaUrl(it.key)} controls preload="none" />
+                  <button
+                    type="button"
+                    className="icon-btn icon-btn--danger"
+                    aria-label="Delete"
+                    disabled={deleting === it.key}
+                    onClick={() => doDelete(it.key)}
+                  >{Icon.trash({})}</button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {!loading && !error && type === "image" && visible.length > 0 && (
+            <div className="medialib medialib--grid">
+              {visible.map((it) => (
+                <div key={it.key} className="medialib__cell" title={it.name} style={{ position: "relative" }}>
+                  <img src={mediaUrl(it.key)} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                  <span className="medialib__name">{it.name}</span>
+                  <span style={{ fontSize: 11, color: "var(--muted)", display: "block" }}>{it.key.split("/")[0]}</span>
+                  <button
+                    type="button"
+                    className="icon-btn icon-btn--danger"
+                    aria-label="Delete"
+                    style={{ position: "absolute", top: 4, right: 4, background: "rgba(255,255,255,.85)" }}
+                    disabled={deleting === it.key}
+                    onClick={() => doDelete(it.key)}
+                  >{Icon.trash({})}</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
