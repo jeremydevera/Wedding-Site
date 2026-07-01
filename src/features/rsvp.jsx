@@ -52,6 +52,9 @@ export function RSVPPage() {
     const er = validate();
     if (Object.keys(er).length) { setErrors(er); return; }
     const fullName = [form.firstName, form.middleName, form.lastName].map((s) => s.trim()).filter(Boolean).join(" ");
+    const count = attending ? parseInt(form.count, 10) : 0;
+    const plusOne = joinPlusOnes((form.guestNames || []).slice(0, Math.max(0, count - 1)));
+    const payload = { ...form, fullName, count, plusOne };
     setSubmitting(true);
     try {
       // Block a duplicate RSVP under the same name (checked server-side; the guest
@@ -67,7 +70,7 @@ export function RSVPPage() {
         go("home");
         return;
       }
-      await postRsvp({ ...form, fullName, count: attending ? parseInt(form.count, 10) : 0 });
+      await postRsvp(payload);
       setSubmitted(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
@@ -153,8 +156,25 @@ export function RSVPPage() {
                   </Field>
                 </div>
                 {form.count > 1 && (
-                  <Field label="Names of your guests" hint="So we can set the table" id="r-plus">
-                    <Input id="r-plus" value={form.plusOne} onChange={set("plusOne")} />
+                  <Field label="Names of your guests" hint="So we can set the table">
+                    <div style={{ display: "grid", gap: 8 }}>
+                      {Array.from({ length: form.count - 1 }, (_, i) => (
+                        <Input
+                          key={i}
+                          aria-label={`Guest ${i + 2} name`}
+                          placeholder={`Guest ${i + 2}`}
+                          value={(form.guestNames && form.guestNames[i]) || ""}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setForm((f) => {
+                              const g = [...(f.guestNames || [])];
+                              g[i] = v;
+                              return { ...f, guestNames: g };
+                            });
+                          }}
+                        />
+                      ))}
+                    </div>
                   </Field>
                 )}
                 {form.diet === "Other" && (
