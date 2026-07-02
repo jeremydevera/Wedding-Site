@@ -362,15 +362,15 @@ export function GuestsAdmin() {
     attending: bySearch.filter((g) => statusOf(g) === "attending").length,
     maybe: bySearch.filter((g) => statusOf(g) === "maybe").length,
     not_attending: bySearch.filter((g) => statusOf(g) === "not_attending").length,
-    outstanding: bySearch.filter((g) => !((byId.get(g.id) || {}).rsvp)).length,
+    outstanding: bySearch.filter((g) => statusOf(g) === "none").length,
     unmatched: unmatched.length,
   };
   const onUnmatched = filter === "unmatched";
   const showComps = filter === "attending"; // Companions column on the Attending tab
   const filtered = bySearch.filter((g) => {
     if (filter === "all" || filter === "unmatched") return true;
-    // "No reply" = hasn't submitted an RSVP (status may still default to attending).
-    if (filter === "outstanding") return !((byId.get(g.id) || {}).rsvp);
+    // "No reply" = effective status is none (auto-attending guests don't count).
+    if (filter === "outstanding") return statusOf(g) === "none";
     return statusOf(g) === filter; // attending | maybe | not_attending
   });
   const pg = usePaged(onUnmatched ? unmatched : filtered, 10);
