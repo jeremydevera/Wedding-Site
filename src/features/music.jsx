@@ -247,8 +247,10 @@ function DevicePlayer({ tracks }) {
         </div>
         <div className="device-player">
           <div className="dp-body">
-            <div className={"dp-screen" + (artUrl ? " dp-screen--art" : "")} style={artUrl && !artIsVideo ? { backgroundImage: `url(${artUrl})` } : undefined}>
-              {artIsVideo && <video className="dp-media" src={artUrl} muted loop autoPlay playsInline aria-hidden="true" />}
+            <div className={"dp-screen" + (artUrl ? " dp-screen--art" : "")}>
+              {artUrl && (artIsVideo
+                ? <video className="dp-media" src={artUrl} muted loop autoPlay playsInline aria-hidden="true" />
+                : <img className="dp-media" src={artUrl} alt="" aria-hidden="true" />)}
               {!artUrl && <div className="dp-scan" aria-hidden="true" />}
               <div className="dp-reflection" aria-hidden="true" />
               <div className="dp-screen__text">

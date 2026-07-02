@@ -122,6 +122,12 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
 // as-is so animation/video is preserved). Stores an R2 key. Separate from
 // ImageUploadField so the image-only crop flow used elsewhere stays untouched.
 const VIDEO_RE = /\.(mp4|webm|mov|m4v)$/i;
+const IMG_EXT_RE = /\.(png|jpe?g|webp|gif|avif|bmp)$/i;
+// Browsers sometimes report an empty/generic MIME (notably for .gif); the upload
+// endpoint validates by content-type, so we stamp the right type from the file
+// extension before sending — otherwise the server 415s and R2 can't serve it as
+// an animatable gif/playable video.
+const EXT_MIME = { gif: "image/gif", mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime", m4v: "video/x-m4v", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", avif: "image/avif" };
 export function TrackCoverField({ value, onChange }) {
   const { clientId } = useStore();
   const ref = useRef(null);
@@ -132,7 +138,10 @@ export function TrackCoverField({ value, onChange }) {
   async function upload(file) {
     setBusy(true);
     try {
-      const { key } = await uploadToR2(file, { scope: "owner", purpose: "trackart" }, clientId);
+      const ext = (file.name || "").split(".").pop().toLowerCase();
+      const mime = EXT_MIME[ext];
+      const f = (mime && file.type !== mime) ? new File([file], file.name, { type: mime }) : file;
+      const { key } = await uploadToR2(f, { scope: "owner", purpose: "trackart" }, clientId);
       onChange(key);
     } catch (e) { toast("Upload failed: " + (e && e.message || "error"), "err"); }
     finally { setBusy(false); }
@@ -140,9 +149,11 @@ export function TrackCoverField({ value, onChange }) {
   function pick(file) {
     if (!file) return;
     const t = file.type || "";
-    const gif = t === "image/gif" || /\.gif$/i.test(file.name || "");
-    if (t.startsWith("video/") || VIDEO_RE.test(file.name || "") || gif) return upload(file); // keep animation/video
-    if (t.startsWith("image/")) { setCropSrc(URL.createObjectURL(file)); return; } // crop static images to square
+    const name = file.name || "";
+    const gif = t === "image/gif" || /\.gif$/i.test(name);
+    const video = t.startsWith("video/") || VIDEO_RE.test(name);
+    if (video || gif) return upload(file); // keep animation/video — no crop
+    if (t.startsWith("image/") || IMG_EXT_RE.test(name)) { setCropSrc(URL.createObjectURL(file)); return; } // crop static images to square
     toast("Please choose an image, GIF, or MP4.", "err");
   }
   async function applyCrop(dataUrl) {
