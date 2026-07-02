@@ -1992,18 +1992,12 @@ export function HomeAdmin() {
       )}
       {isSuper && active === "entourage" && (
         <>
-          <div className="panel">
-            <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Entourage</div><HeadSwitch label="Show entourage on the home page" checked={f.showEntourage !== false} onChange={(v) => toggleShow("showEntourage", v)} /></div>
-          </div>
-          <EntourageAdmin />
+          <EntourageAdmin headRight={<HeadSwitch label="Show entourage on the home page" checked={f.showEntourage !== false} onChange={(v) => toggleShow("showEntourage", v)} />} />
         </>
       )}
       {isSuper && active === "attire" && (
         <>
-          <div className="panel">
-            <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Attire guide</div><HeadSwitch label="Show attire guide on the home page" checked={f.showAttire !== false} onChange={(v) => toggleShow("showAttire", v)} /></div>
-          </div>
-          <AttireAdmin />
+          <AttireAdmin headRight={<HeadSwitch label="Show attire guide on the home page" checked={f.showAttire !== false} onChange={(v) => toggleShow("showAttire", v)} />} />
         </>
       )}
       {isSuper && active === "maps" && (
@@ -2078,7 +2072,7 @@ export function EntourageGroupEditor({ open, group, onClose }) {
   );
 }
 
-export function EntourageAdmin() {
+export function EntourageAdmin({ headRight }) {
   const { entourage } = useStore();
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const groups = entourage || [];
@@ -2094,7 +2088,7 @@ export function EntourageAdmin() {
     <div className="panel">
       <div className="panel__head">
         <div className="panel__title">Entourage <span style={{ color: "var(--muted)", fontSize: 15 }}>({groups.length})</span></div>
-        <Button variant="primary" size="sm" onClick={() => { setEditGroup(null); setGroupOpen(true); }}>+ Add group</Button>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>{headRight}<Button variant="primary" size="sm" onClick={() => { setEditGroup(null); setGroupOpen(true); }}>+ Add group</Button></div>
       </div>
       <div className="panel__body">
         <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 0, marginBottom: 18 }}>Groups shown on the home page after the schedule. Add a group (e.g. Groomsmen), then add people under it. Everything saves automatically.</p>
@@ -2194,7 +2188,7 @@ export function AttireGroupEditor({ open, group, onClose }) {
   );
 }
 
-export function AttireAdmin() {
+export function AttireAdmin({ headRight }) {
   const { attire } = useStore();
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const groups = attire || [];
@@ -2206,7 +2200,7 @@ export function AttireAdmin() {
     <div className="panel">
       <div className="panel__head">
         <div className="panel__title">Attire guide <span style={{ color: "var(--muted)", fontSize: 15 }}>({groups.length})</span></div>
-        <Button variant="primary" size="sm" onClick={() => { setEditing(null); setOpen(true); }}>+ Add group</Button>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>{headRight}<Button variant="primary" size="sm" onClick={() => { setEditing(null); setOpen(true); }}>+ Add group</Button></div>
       </div>
       <div className="panel__body--flush table-wrap">
         <table className="tbl">
