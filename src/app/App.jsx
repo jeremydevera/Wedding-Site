@@ -15,7 +15,7 @@ import { GuestbookPage, QuizPage } from "@/features/social.jsx";
 import { MusicMount } from "@/features/music.jsx";
 import { AdminApp, ImageUploadField } from "@/admin/manage.jsx";
 import { hasSection } from "@/config/eventTypes.js";
-import { moduleEnabled } from "@/lib/roles.js";
+import { moduleEnabled, moduleLabel } from "@/lib/roles.js";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // ============================================================================
@@ -39,6 +39,27 @@ export const NAV_LINKS = [
   { key: "guestbook", label: "Guestbook" },
   { key: "quiz", label: "Quiz" },
 ];
+
+// A switched-off section reached by direct link: a friendly note instead of
+// silently rendering Home (BUG-0005). Nav/footer already hide disabled links —
+// this covers bookmarks, shared URLs, and stale QR codes.
+function SectionUnavailable({ section }) {
+  return (
+    <div className="fade-up">
+      <section className="block">
+        <div className="container container--narrow">
+          <div className="card card--pad-lg confirm">
+            <h2 className="confirm__title">{moduleLabel(section) || "This section"} isn't available</h2>
+            <p className="confirm__text">The couple hasn't turned this section on for their site. Head back to the main page to see everything that's live.</p>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+              <Button variant="primary" onClick={() => go("home")}>Back home</Button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
 
 // Nav links visible for the active event type (home always shows). Driven by
 // the event-type registry so adding a type (birthday, corporate) re-shapes nav.
@@ -369,8 +390,10 @@ export function App() {
   const Page = ROUTES[route] || Home;
   // apex hub or the admin route → admin shell (no public site).
   const isAdmin = view === "admin";
+  // BUG-0005: a switched-off section used to silently render Home. Show a short
+  // "not available" note instead so the guest knows the link isn't broken.
   const routeBlocked = route !== "home" && route !== "admin" && !moduleEnabled(settings.modules, route);
-  const ActivePage = routeBlocked ? Home : Page;
+  const ActivePage = routeBlocked ? SectionUnavailable : Page;
 
   return (
     <>
@@ -379,7 +402,7 @@ export function App() {
       ) : (
         <>
           <Nav route={route} />
-          <main key={route}><ActivePage /></main>
+          <main key={route}><ActivePage section={route} /></main>
           <Footer />
           {settings.decorOn && route === "home" && settings.theme !== "envelope" && (
             String(settings.decorStyle).startsWith("fx-")

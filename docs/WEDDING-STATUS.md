@@ -18,27 +18,27 @@ Claude test run. Done items stay here as the permanent history.
 
 ## Pending
 
-### Bug ID: 0002 — [APPROVAL] Guestbook messages hidden on new clients
-- **Severity:** P2 · **Status:** Pending · **Added:** 2026-06-25
-- **Where:** Admin → Settings → Access ("Auto-approve guestbook messages" toggle)
-- **Action:** New client's guest messages stay hidden even though the toggle looks ON.
-- **Plan:** Make the server default match the toggle (auto-approve ON by default).
-
 ### Bug ID: 0003 — Guest photo/video uploads don't save
 - **Severity:** P2 · **Status:** Rejected (2026-06-26 — feature not used; gallery/upload dropped) · **Added:** 2026-06-25
 - **Where:** Guest site → Upload (Share Photos) · Admin → Media
 - **Action:** ~~Uploads only live on the phone that sent them.~~ Won't fix — the photo-upload/gallery feature is not used (gallery stays off via the platform kill switch).
 - **Plan:** N/A — closed. If uploads are ever re-enabled, reopen: add a server table + save uploads so the gallery/admin sync.
 
-### Bug ID: 0005 — [APPROVAL] Turned-off section just shows Home
-- **Severity:** P3 · **Status:** Pending · **Added:** 2026-06-25
-- **Where:** Guest site → a switched-off section link (e.g. /guestbook when disabled)
-- **Action:** Opening a turned-off section silently shows the homepage with no message.
-- **Plan:** Show a short "this section isn't available" note instead.
-
 ---
 
 ## Done / History
+
+### Bug ID: 0002 — Guestbook messages hidden on new clients
+- **Severity:** P2 · **Status:** Done — migration `0013`, 2026-07-02
+- **Where:** Admin → Settings → Access ("Auto-approve guestbook messages" toggle)
+- **Action:** New client's guest messages stayed pending even though the toggle looked ON.
+- **Resolution:** The `guestbook_set_status` trigger defaulted a missing `autoApproveGuestbook` key to false while the toggle's default is true. Migration `0013` aligns the server default to true. Verified with a live trigger probe (insert on a key-less client → `approved`), probe row removed.
+
+### Bug ID: 0005 — Turned-off section just showed Home
+- **Severity:** P3 · **Status:** Done — 2026-07-02
+- **Where:** Guest site → a switched-off section link (e.g. /guestbook when disabled)
+- **Action:** Opening a turned-off section silently rendered the homepage with no message.
+- **Resolution:** `App.jsx` now renders a `SectionUnavailable` card ("<Section> isn't available" + Back home) for blocked routes instead of swapping in Home. Nav/footer still hide disabled links; this covers direct links, bookmarks, and stale QR codes.
 
 ### Enhancement ID: 0006 — Strict RSVP reconcile tools (adopt unmatched + over-allocation mark)
 - **Severity:** P3 · **Status:** Done — 2026-07-02
