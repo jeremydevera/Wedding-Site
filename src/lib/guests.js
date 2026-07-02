@@ -8,10 +8,14 @@ export function normName(s) {
   return (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+// Middle names match if equal, if one side is an initial of the other, or if
+// either side is missing (wildcard — the RSVP gate blocks truly ambiguous
+// cases by asking the guest to add their middle name, so reconcile can be lax).
 function middleMatches(a, b) {
   const x = normName(a), y = normName(b);
   if (x === y) return true;
-  if (x && y && x[0] === y[0] && (x.length === 1 || y.length === 1)) return true;
+  if (!x || !y) return true;
+  if (x[0] === y[0] && (x.length === 1 || y.length === 1)) return true;
   return false;
 }
 

@@ -52,6 +52,10 @@ describe("namePartsMatch", () => {
   it("rejects a different last name", () => {
     expect(namePartsMatch(g, { first: "Jeremy", last: "Cruz", middle: "Perez" })).toBe(false);
   });
+  it("treats a missing middle on either side as a wildcard", () => {
+    expect(namePartsMatch({ first: "Joseph", last: "Celis", middle: "L" }, { first: "Joseph", last: "Celis", middle: "" })).toBe(true);
+    expect(namePartsMatch({ first: "Joseph", last: "Celis", middle: "" }, { first: "Joseph", last: "Celis", middle: "R" })).toBe(true);
+  });
 });
 
 describe("reconcileGuests", () => {

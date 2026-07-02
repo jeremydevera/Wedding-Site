@@ -43,7 +43,7 @@ export function RSVPPage() {
     let live = true;
     const t = setTimeout(() => {
       guestAllocation(form.firstName, form.middleName, form.lastName)
-        .then((n) => { if (live) setAlloc(n); })
+        .then((res) => { if (live) setAlloc(res.status === "ok" ? res.allocation : null); })
         .catch(() => { if (live) setAlloc(null); });
     }, 450);
     return () => { live = false; clearTimeout(t); };
@@ -86,17 +86,31 @@ export function RSVPPage() {
       // allocation. Checked server-side at submit (the live hint is advisory,
       // so editing the name after the lookup can't bypass the gate).
       if (strict) {
-        const seats = await guestAllocation(form.firstName, form.middleName, form.lastName);
-        if (seats == null) {
+        const res = await guestAllocation(form.firstName, form.middleName, form.lastName);
+        if (res.status === "ambiguous") {
+          setSubmitting(false);
+          setErrors({ middleName: "Please add your middle name so we know which guest you are." });
+          await confirmDialog({
+            title: "Which one are you?",
+            message: `More than one ${fullName} is on the guest list. Please add your middle name so we know which one is you.`,
+            confirmLabel: "OK",
+            okOnly: true,
+            noIcon: true,
+          });
+          return;
+        }
+        if (res.status !== "ok") {
           setSubmitting(false);
           await confirmDialog({
             title: "We can't find your name",
             message: `${fullName} isn't on the guest list for this event. Please double-check the spelling matches your invitation, or contact the couple.`,
             confirmLabel: "OK",
             okOnly: true,
+            noIcon: true,
           });
           return;
         }
+        const seats = res.allocation;
         if (attending && count > seats) {
           setSubmitting(false);
           setErrors({ count: `Your invitation reserves ${seats} ${seats === 1 ? "seat" : "seats"} — please choose up to ${seats}.` });
@@ -160,7 +174,6 @@ export function RSVPPage() {
         <section className="block">
           <div className="container container--narrow">
             <div className="card card--pad-lg confirm">
-              <div className="confirm__seal">{Icon.check({})}</div>
               <h2 className="confirm__title">RSVPs are now closed</h2>
               <p className="confirm__text">
                 Thank you! The RSVP window closed on {settings.rsvpDeadline}. If you still
@@ -190,7 +203,7 @@ export function RSVPPage() {
                 <Input id="r-last" value={form.lastName} onChange={set("lastName")} />
               </Field>
             </div>
-            <Field label="Middle name" hint="Optional — helps tell apart guests with the same name" id="r-middle">
+            <Field label="Middle name" hint="Optional — helps tell apart guests with the same name" error={errors.middleName} id="r-middle">
               <Input id="r-middle" value={form.middleName} onChange={set("middleName")} />
             </Field>
             <Field label="Email" hint="Optional — so the couple can reach you about the day" error={errors.email} id="r-email">

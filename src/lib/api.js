@@ -67,18 +67,21 @@ export async function upsertRsvp(form) {
 }
 
 // Strict RSVP: look up the invited guest's seat allocation by name via the
-// rsvp_guest_allocation RPC (SECURITY DEFINER — returns a single number or null,
-// never the list; and always null unless the client enabled strictRsvp).
-// Throws on RPC error so the submit gate can distinguish "not on the list"
-// (null) from "couldn't check" (throw) — the live hint call-site catches.
+// rsvp_guest_allocation RPC (SECURITY DEFINER — returns a status object, never
+// the list; and always not_found unless the client enabled strictRsvp).
+// Returns { status: "ok"|"ambiguous"|"not_found", allocation: number|null }.
+// "ambiguous" = several guests share the first+last name and the middle name
+// didn't single one out. Throws on RPC error so the submit gate can distinguish
+// "not on the list" from "couldn't check" — the live hint call-site catches.
 export async function guestAllocation(first, middle, last) {
   const clientId = Store.get().clientId;
-  if (!clientId || !(first || "").trim() || !(last || "").trim()) return null;
+  if (!clientId || !(first || "").trim() || !(last || "").trim()) return { status: "not_found", allocation: null };
   const { data, error } = await supabase.rpc("rsvp_guest_allocation", {
     p_client_id: clientId, p_first: first || "", p_middle: middle || "", p_last: last || "",
   });
   if (error) throw error;
-  return data == null ? null : Number(data);
+  const d = data || {};
+  return { status: d.status || "not_found", allocation: d.allocation == null ? null : Number(d.allocation) };
 }
 
 export async function postGuestbook(entry) {
