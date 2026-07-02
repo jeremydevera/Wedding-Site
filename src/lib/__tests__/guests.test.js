@@ -80,7 +80,12 @@ describe("reconcileGuests", () => {
     expect(summary.replied).toBe(2);
     expect(summary.outstanding).toBe(1);
     expect(summary.confirmedHeads).toBe(2);
+    expect(summary.attending).toBe(1);
+    expect(summary.maybe).toBe(0);
     expect(summary.declined).toBe(1);
+    // replied counts every responder (attending + maybe + declined), so it can
+    // exceed the attending-only count — the dashboard "RSVPs" vs Attending gap.
+    expect(summary.replied).toBe(summary.attending + summary.maybe + summary.declined);
     expect(unmatchedRsvps.map((r) => r.id)).toEqual(["r3"]);
   });
   it("handles empty inputs", () => {

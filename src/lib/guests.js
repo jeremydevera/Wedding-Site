@@ -72,6 +72,12 @@ export function reconcileGuests(guests, rsvps) {
     replied,
     outstanding: gs.length - replied,
     confirmedHeads,
+    // Per-status guest counts — the ONE source both the dashboard tiles and the
+    // Guests-tab folders read, so "8 attending" can never drift between them.
+    // Note replied (guests who responded) ≥ attending: replied = attending +
+    // maybe + declined, which is why the dashboard "RSVPs" tile (replied) reads
+    // higher than the Attending folder.
+    attending: rows.filter((x) => x.status === "attending").length,
     maybe: rows.filter((x) => x.status === "maybe").length,
     declined: rows.filter((x) => x.status === "not_attending").length,
   };

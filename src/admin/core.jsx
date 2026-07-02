@@ -189,7 +189,17 @@ export function AdminDashboard({ goTab }) {
   const gbOn = moduleEnabled(settings.modules, "guestbook");
   const quizOn = moduleEnabled(settings.modules, "quiz");
   const stats = [
-    { label: "RSVPs", value: counted.length, sub: `${attending.length} attending` + (strict && forApproval > 0 ? ` · ${forApproval} for approval` : ""), tab: "rsvps" },
+    // "RSVPs" = replies received (counted.length). In strict mode that's guests
+    // who responded, which is attending + maybe + declined — so the sub spells
+    // the breakdown out; otherwise the headline (e.g. 9) looks inconsistent with
+    // the Guests tab's Attending folder (e.g. 8). Both numbers come from the one
+    // reconcileGuests summary, so they can't diverge.
+    { label: "RSVPs", value: counted.length,
+      sub: strict
+        ? `${recon.summary.attending} attending · ${recon.summary.maybe} maybe · ${recon.summary.declined} declined`
+          + (forApproval > 0 ? ` · ${forApproval} for approval` : "")
+        : `${attending.length} attending`,
+      tab: "rsvps" },
     { label: "Guest Count", value: guestCount, sub: "people coming", tab: "rsvps" },
     ...(mediaShelved ? [] : [
       { label: "Photos", value: photos.length, sub: pendingMedia.length ? `${pendingMedia.length} to review` : "all clear", tab: "media" },
