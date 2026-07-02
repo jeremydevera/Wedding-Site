@@ -2,7 +2,7 @@ import React from "react";
 import { go } from "@/lib/nav.js";
 import { scrollToTop } from "@/lib/scroll.js";
 import { Store, useStore } from "@/lib/store.jsx";
-import { postRsvp, rsvpNameTaken, upsertRsvp, guestAllocation } from "@/lib/api.js";
+import { postRsvp, rsvpNameTaken, guestAllocation } from "@/lib/api.js";
 import { isRsvpClosed, joinPlusOnes, isValidOptionalEmail, maxPartySize } from "@/lib/rsvp.js";
 import { Button, Field, Icon, Input, Select, Textarea, confirmDialog } from "@/ui/components.jsx";
 import { PageHero } from "@/pages/PublicPages.jsx";
@@ -125,7 +125,7 @@ export function RSVPPage() {
     }
   }
 
-  async function submit(e, forceUpdate) {
+  async function submit(e) {
     e.preventDefault();
     if (submitting) return;
     const er = validate();
@@ -175,22 +175,21 @@ export function RSVPPage() {
           return;
         }
       }
-      // Duplicate name? Offer to update the existing response instead of blocking.
-      // Anon guests can't read their prior row (RLS), so an update overwrites
-      // (no pre-fill) via the rsvp_upsert RPC.
-      if (!forceUpdate && (await rsvpNameTaken(form.firstName, form.middleName, form.lastName))) {
+      // Duplicate name: one response per guest — no self-service updates.
+      // Changes go through the couple (the admin can edit the reply).
+      if (await rsvpNameTaken(form.firstName, form.middleName, form.lastName)) {
         setSubmitting(false);
-        const wantsUpdate = await confirmDialog({
+        await confirmDialog({
           title: "You've already RSVP'd",
-          message: `${fullName} has already responded. Would you like to update your response?`,
-          confirmLabel: "Update it",
+          message: `${fullName} has already responded — we've got you down. If something changed, please contact the couple.`,
+          confirmLabel: "OK",
+          okOnly: true,
+          noIcon: true,
         });
-        if (wantsUpdate) return submit(e, true);
         go("home");
         return;
       }
-      if (forceUpdate) await upsertRsvp(payload);
-      else await postRsvp(payload);
+      await postRsvp(payload);
       setForm((f) => ({ ...f, count })); // success card shows the real head count
       setSubmitted(true);
       scrollToTop({ top: 0, behavior: "smooth" });
@@ -281,7 +280,7 @@ export function RSVPPage() {
                 {openTaken === "checking"
                   ? <span style={{ color: "var(--muted)" }}>Checking previous responses…</span>
                   : openTaken === true
-                    ? <span style={{ color: "var(--danger, #a33)", fontWeight: 600 }}>This name has already RSVP&rsquo;d — submitting again will offer to update it.</span>
+                    ? <span style={{ color: "var(--danger, #a33)", fontWeight: 600 }}>This name has already RSVP&rsquo;d.</span>
                     : null}
               </div>
             )}
@@ -320,8 +319,7 @@ export function RSVPPage() {
                       <Input id="r-count" value="" placeholder="—" disabled readOnly />
                     </Field>
                   )) : (
-                    <Field label="Bringing with you" required error={errors.count} id="r-count"
-                      hint="3 means you + 3 companions — 0 if it's just you">
+                    <Field label="Bringing with you" required error={errors.count} id="r-count">
                       <Input id="r-count" type="number" min={0} max={7} inputMode="numeric" value={form.count} onChange={set("count")} />
                     </Field>
                   )}
@@ -353,14 +351,6 @@ export function RSVPPage() {
                     </div>
                   </Field>
                 )}
-                {slots > 0 && (() => {
-                  const filled = (form.guestNames || []).slice(0, slots).filter((s) => (s || "").trim()).length;
-                  return (
-                    <div style={{ fontSize: 14, color: "var(--muted)", marginTop: -8, marginBottom: 16 }} aria-live="polite">
-                      Total attending: <strong style={{ color: "var(--ink)" }}>{filled + 1}</strong> (you + {filled} {filled === 1 ? "companion" : "companions"})
-                    </div>
-                  );
-                })()}
                 {form.diet === "Other" && (
                   <Field label="Tell us about the dietary need" required error={errors.dietNotes} id="r-dietnote">
                     <Input id="r-dietnote" value={form.dietNotes} onChange={set("dietNotes")} />
