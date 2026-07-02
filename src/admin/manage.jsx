@@ -8,7 +8,7 @@ import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { signOut } from "@/lib/auth.js";
 import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb } from "@/lib/api.js";
-import { reconcileGuests, guestFromRsvp } from "@/lib/guests.js";
+import { reconcileGuests, guestFromRsvp, normName } from "@/lib/guests.js";
 import { mediaUrl } from "@/lib/media.js";
 import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
@@ -243,14 +243,16 @@ export function QuestionEditor({ open, question, onClose }) {
 
 // Modal body: add or edit one invited guest.
 function GuestForm({ initial, onSave, onCancel }) {
-  const [f, setF] = useState(initial);
+  // The owner thinks in "how many can they bring" (plus-ones); the data model
+  // stores `allocation` = total seats incl. the guest. Convert at the edges.
+  const [f, setF] = useState({ ...initial, plusOnes: Math.max(0, (Number(initial.allocation) || 1) - 1) });
   const [saving, setSaving] = useState(false);
   const set = (k) => (e) => { const v = e && e.target ? e.target.value : e; setF((s) => ({ ...s, [k]: v })); };
   const valid = f.firstName.trim() && f.lastName.trim();
   async function submit() {
     if (!valid || saving) return;
     setSaving(true);
-    try { await onSave(f); } finally { setSaving(false); }
+    try { await onSave({ ...f, allocation: Math.max(0, parseInt(f.plusOnes, 10) || 0) + 1 }); } finally { setSaving(false); }
   }
   return (
     <div>
@@ -261,7 +263,7 @@ function GuestForm({ initial, onSave, onCancel }) {
       </div>
       <div className="field-row field-row--2">
         <Field label="Middle name" hint="Optional — tells apart same-named guests" id="g-mid"><Input id="g-mid" value={f.middleName} onChange={set("middleName")} /></Field>
-        <Field label="Seats allocated" hint="Total incl. this guest (2 = guest + 1)" id="g-alloc"><Input id="g-alloc" type="number" min={1} value={f.allocation} onChange={set("allocation")} /></Field>
+        <Field label="Allowed plus 1s" hint="How many they can bring along — 3 means a party of 4 with them" id="g-alloc"><Input id="g-alloc" type="number" min={0} value={f.plusOnes} onChange={set("plusOnes")} /></Field>
       </div>
       <Field label="Email" hint="Optional" id="g-email"><Input id="g-email" type="email" value={f.email || ""} onChange={set("email")} /></Field>
       <Field label="Notes" hint="Optional" id="g-notes"><Input id="g-notes" value={f.notes || ""} onChange={set("notes")} /></Field>
@@ -312,6 +314,22 @@ export function GuestsAdmin() {
 
   async function saveGuest(form) {
     const payload = { ...form, allocation: Math.max(1, parseInt(form.allocation, 10) || 1) };
+    // Duplicate guard: exact same normalized first+middle+last already invited
+    // (a different middle name is a legitimately different person, e.g. L vs R).
+    const dup = guests.find((g) => g.id !== form.id
+      && normName(g.firstName) === normName(form.firstName)
+      && normName(g.lastName) === normName(form.lastName)
+      && normName(g.middleName) === normName(form.middleName));
+    if (dup) {
+      await confirmDialog({
+        title: "Already on the list",
+        message: `${form.firstName} ${form.lastName} is already on the guest list. If this is a different person, add a middle name to tell them apart.`,
+        confirmLabel: "OK",
+        okOnly: true,
+        noIcon: true,
+      });
+      return;
+    }
     try {
       await run(async () => {
         if (form.id) { await updateGuestDb(form.id, payload); Store.updateGuest(form.id, payload); }
@@ -386,7 +404,7 @@ export function GuestsAdmin() {
             </table>
           ) : (
             <table className="tbl">
-              <thead><tr><th>Name</th><th>Contact</th><th>Allocation</th><th>Status</th><th>Party size</th><th></th></tr></thead>
+              <thead><tr><th>Name</th><th>Contact</th><th>Plus 1s</th><th>Status</th><th>Party size</th><th></th></tr></thead>
               <tbody>
                 {pg.pageItems.map((g) => {
                   const x = byId.get(g.id) || { status: "none", rsvp: null };
@@ -396,7 +414,7 @@ export function GuestsAdmin() {
                     <tr key={g.id}>
                       <td><strong>{g.firstName} {g.lastName}</strong>{g.middleName ? <span style={{ color: "var(--muted)" }}> ({g.middleName})</span> : null}</td>
                       <td>{phone || <span style={{ color: "var(--muted)" }}>—</span>}{email && <div style={{ fontSize: 13, color: "var(--muted)" }}>{email}</div>}</td>
-                      <td>{g.allocation}</td>
+                      <td>{Math.max(0, (Number(g.allocation) || 1) - 1)}</td>
                       <td>{x.status === "none"
                         ? <span style={{ color: "var(--muted)" }}>No reply</span>
                         : <span className={"tag tag--" + x.status}>{STAT_LABEL[x.status]}</span>}</td>

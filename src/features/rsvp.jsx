@@ -72,11 +72,24 @@ export function RSVPPage() {
     return er;
   }
 
+  // Show validation errors AND bring the first offending field into view —
+  // on a long mobile form the message is otherwise off-screen.
+  const FIELD_IDS = { firstName: "r-first", lastName: "r-last", middleName: "r-middle", email: "r-email", count: "r-count", dietNotes: "r-dietnote", notes: "r-notes" };
+  function showErrors(er) {
+    setErrors(er);
+    const first = ["firstName", "lastName", "middleName", "email", "count", "dietNotes", "notes"].find((k) => er[k]);
+    const el = first && document.getElementById(FIELD_IDS[first]);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      try { el.focus({ preventScroll: true }); } catch (_) {}
+    }
+  }
+
   async function submit(e, forceUpdate) {
     e.preventDefault();
     if (submitting) return;
     const er = validate();
-    if (Object.keys(er).length) { setErrors(er); return; }
+    if (Object.keys(er).length) { showErrors(er); return; }
     const fullName = [form.firstName, form.middleName, form.lastName].map((s) => s.trim()).filter(Boolean).join(" ");
     const count = attending ? parseInt(form.count, 10) : 0;
     const plusOne = joinPlusOnes((form.guestNames || []).slice(0, Math.max(0, count - 1)));
@@ -90,7 +103,7 @@ export function RSVPPage() {
         const res = await guestAllocation(form.firstName, form.middleName, form.lastName);
         if (res.status === "ambiguous") {
           setSubmitting(false);
-          setErrors({ middleName: "Please add your middle name so we know which guest you are." });
+          showErrors({ middleName: "Please add your middle name so we know which guest you are." });
           await confirmDialog({
             title: "Which one are you?",
             message: `More than one ${fullName} is on the guest list. Please add your middle name so we know which one is you.`,
@@ -114,7 +127,7 @@ export function RSVPPage() {
         const seats = res.allocation;
         if (attending && count > seats) {
           setSubmitting(false);
-          setErrors({ count: `Your invitation reserves ${seats} ${seats === 1 ? "seat" : "seats"} — please choose up to ${seats}.` });
+          showErrors({ count: `Your invitation reserves ${seats} ${seats === 1 ? "seat" : "seats"} — please choose up to ${seats}.` });
           return;
         }
       }
