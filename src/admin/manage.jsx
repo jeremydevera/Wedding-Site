@@ -284,26 +284,29 @@ function GuestForm({ initial, companions, onSave, onCancel }) {
   return (
     <div>
       <SectionHead eyebrow="Guest" title={f.id ? "Edit guest" : "Add guest"} />
-      <div className="field-row field-row--2">
+      <div className="field-row field-row--3">
         <Field label="First name" required id="g-first"><Input id="g-first" value={f.firstName} onChange={set("firstName")} /></Field>
+        <Field label="Middle name" id="g-mid"><Input id="g-mid" value={f.middleName} onChange={set("middleName")} /></Field>
         <Field label="Last name" required id="g-last"><Input id="g-last" value={f.lastName} onChange={set("lastName")} /></Field>
       </div>
-      <div className="field-row field-row--2">
-        <Field label="Middle name" hint="Optional — tells apart same-named guests" id="g-mid"><Input id="g-mid" value={f.middleName} onChange={set("middleName")} /></Field>
-        <Field label="Allotted seats" id="g-alloc"><Input id="g-alloc" type="number" min={1} value={f.allocation} onChange={set("allocation")} /></Field>
-      </div>
       {f.id ? (
-        <div className="field-row field-row--2">
+        <>
+          <div className="field-row field-row--2">
+            <Field label="Allotted seats" id="g-alloc"><Input id="g-alloc" type="number" min={1} value={f.allocation} onChange={set("allocation")} /></Field>
+            <Field label="Status" id="g-status">
+              <Select id="g-status" value={f.status || "attending"} onChange={set("status")}>
+                {[["attending", "Attending"], ["maybe", "Maybe"], ["not_attending", "Declined"], ["none", "No reply"]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </Select>
+            </Field>
+          </div>
           <Field label="Email" hint="Optional" id="g-email"><Input id="g-email" type="email" value={f.email || ""} onChange={set("email")} /></Field>
-          <Field label="Status" id="g-status">
-            <Select id="g-status" value={f.status || "attending"} onChange={set("status")}>
-              {[["attending", "Attending"], ["maybe", "Maybe"], ["not_attending", "Declined"], ["none", "No reply"]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </Select>
-          </Field>
-        </div>
+        </>
       ) : (
         <>
-          <Field label="Email" hint="Optional" id="g-email"><Input id="g-email" type="email" value={f.email || ""} onChange={set("email")} /></Field>
+          <div className="field-row field-row--2">
+            <Field label="Allotted seats" id="g-alloc"><Input id="g-alloc" type="number" min={1} value={f.allocation} onChange={set("allocation")} /></Field>
+            <Field label="Email" hint="Optional" id="g-email"><Input id="g-email" type="email" value={f.email || ""} onChange={set("email")} /></Field>
+          </div>
           <AdminToggle label="Wait for their RSVP?" desc="On — they confirm through the RSVP form first. Off — counted as attending right away."
             checked={f.status === "none"} onChange={(v) => setF((s) => ({ ...s, status: v ? "none" : "attending" }))} />
         </>

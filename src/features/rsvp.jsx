@@ -281,17 +281,17 @@ export function RSVPPage() {
       <section className="block" style={{ paddingTop: 20 }}>
         <div className="container container--narrow">
           <form className="card card--pad-lg" onSubmit={submit} noValidate>
-            <div className="field-row field-row--2">
+            <div className="field-row field-row--3">
               <Field label="First name" required error={errors.firstName} id="r-first">
                 <Input id="r-first" value={form.firstName} onChange={set("firstName")} />
+              </Field>
+              <Field label="Middle name" error={errors.middleName} id="r-middle">
+                <Input id="r-middle" value={form.middleName} onChange={set("middleName")} />
               </Field>
               <Field label="Last name" required error={errors.lastName} id="r-last">
                 <Input id="r-last" value={form.lastName} onChange={set("lastName")} />
               </Field>
             </div>
-            <Field label="Middle name" error={errors.middleName} id="r-middle">
-              <Input id="r-middle" value={form.middleName} onChange={set("middleName")} />
-            </Field>
             {strict && lookup && (
               <div style={{ marginTop: -8, marginBottom: 16, fontSize: 14 }} aria-live="polite">
                 {lookup === "checking"
@@ -334,16 +334,19 @@ export function RSVPPage() {
               <div className="fade-up">
                 <div className="field-row field-row--2">
                   {strict ? (alloc != null ? (
-                    <Field label="Number attending" required error={errors.count} id="r-count"
-                      hint={`Your invitation reserves ${alloc} ${alloc === 1 ? "seat" : "seats"}`}>
-                      <Select id="r-count" value={form.count} onChange={set("count")}>
-                        {Array.from({ length: maxCount }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}
+                    // Labelled "Plus 1s" (extra guests besides the responder), but
+                    // form.count stays the TOTAL head count everywhere else — so the
+                    // picker shows 0..alloc-1 and maps to count = picked + 1.
+                    <Field label="Plus 1s" required error={errors.count} id="r-count"
+                      hint={`Your invitation reserves ${alloc} ${alloc === 1 ? "seat" : "seats"} — you plus up to ${alloc - 1} ${alloc - 1 === 1 ? "guest" : "guests"}`}>
+                      <Select id="r-count" value={(parseInt(form.count, 10) || 1) - 1} onChange={(e) => set("count")(String((parseInt(e.target.value, 10) || 0) + 1))}>
+                        {Array.from({ length: maxCount }, (_, i) => i).map((n) => <option key={n} value={n}>{n}</option>)}
                       </Select>
                     </Field>
                   ) : (
                     // Strict mode, name not verified yet: keep the picker locked so a
                     // guest can't choose a party size before their seats are known.
-                    <Field label="Number attending" id="r-count">
+                    <Field label="Plus 1s" id="r-count">
                       <Input id="r-count" value="" placeholder="—" disabled readOnly />
                     </Field>
                   )) : (
