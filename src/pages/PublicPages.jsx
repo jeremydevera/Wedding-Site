@@ -3,6 +3,7 @@ import { go } from "@/lib/nav.js";
 import { onSiteScroll, scrollOffset, siteScrollEl } from "@/lib/scroll.js";
 import { mediaUrl } from "@/lib/media.js";
 import { useStore } from "@/lib/store.jsx";
+import { moduleEnabled } from "@/lib/roles.js";
 import { egTintGradient } from "@/themes";
 import { Button, Countdown, FloatingDecor, Icon, Placeholder, SectionHead, mapDirUrl, mapEmbedUrl } from "@/ui/components.jsx";
 import { VinylPlayer } from "@/features/music.jsx";
@@ -356,8 +357,9 @@ export function Home() {
       </section>
       )}
 
-      {/* MAP — venue location right after the invitation (map only, framed) */}
-      {s.showMap !== false && homeMapUrl && (
+      {/* MAP — venue location right after the invitation (map only, framed).
+          Hidden when the Venue module is off (matches nav + /venue route). */}
+      {moduleEnabled(s.modules, "venue") && s.showMap !== false && homeMapUrl && (
         <section className="block" id="home-map">
           <div className="container">
             <SectionHead center eyebrow="The Venue" title="Where we'll celebrate" />
