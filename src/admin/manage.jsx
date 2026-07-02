@@ -307,8 +307,8 @@ function GuestForm({ initial, companions, onSave, onCancel }) {
             <Field label="Allotted seats" id="g-alloc"><Input id="g-alloc" type="number" min={1} value={f.allocation} onChange={set("allocation")} /></Field>
             <Field label="Email" hint="Optional" id="g-email"><Input id="g-email" type="email" value={f.email || ""} onChange={set("email")} /></Field>
           </div>
-          <AdminToggle label={`Confirmed to attend? — ${f.status === "none" ? "Waiting for RSVP" : "Confirmed"}`}
-            checked={f.status !== "none"} onChange={(v) => setF((s) => ({ ...s, status: v ? "attending" : "none" }))} />
+          <AdminToggle label={`Wait for their RSVP? — ${f.status === "none" ? "Yes, waiting" : "No, confirmed"}`}
+            checked={f.status === "none"} onChange={(v) => setF((s) => ({ ...s, status: v ? "none" : "attending" }))} />
         </>
       )}
       <Field label="Notes" hint="Optional" id="g-notes"><Input id="g-notes" value={f.notes || ""} onChange={set("notes")} /></Field>
