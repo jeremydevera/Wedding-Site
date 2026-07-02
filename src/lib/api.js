@@ -62,6 +62,7 @@ export async function upsertRsvp(form) {
     p_status: form.status, p_count: form.count || 0,
     p_plus_one: form.plusOne || "", p_diet: form.diet || "None", p_diet_notes: form.dietNotes || "",
     p_song: form.song || "", p_notes: form.notes || "",
+    p_companions: Array.isArray(form.companions) ? form.companions : [],
   });
   if (error) throw error;
 }

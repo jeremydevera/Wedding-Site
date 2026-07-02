@@ -3,6 +3,7 @@
 // the SQL public.norm_name (migrations 0007/0008); reconcileGuests matches guests
 // to RSVPs by fuzzy name and produces per-guest status + a headcount summary.
 // ============================================================================
+import { headsOf } from "./rsvp.js";
 
 export function normName(s) {
   return (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -44,7 +45,7 @@ export function reconcileGuests(guests, rsvps) {
   const unmatchedRsvps = rs.filter(({ i }) => !used.has(i)).map(({ r }) => r);
   const replied = rows.filter((x) => x.rsvp).length;
   const confirmedHeads = rows.reduce(
-    (s, x) => s + (x.status === "attending" ? (Number(x.rsvp.count) || 0) : 0), 0);
+    (s, x) => s + (x.status === "attending" ? headsOf(x.rsvp) : 0), 0);
 
   const summary = {
     invited: gs.length,

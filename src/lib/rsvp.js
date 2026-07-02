@@ -40,7 +40,16 @@ export function maxPartySize(allocation) {
   return n;
 }
 
-// Caterer-facing tallies from the RSVP list. attendingHeads sums `count` across
+// Real head count of one RSVP: named companions + the guest themselves when
+// the companions array has entries; otherwise fall back to the picked count
+// (legacy rows / open mode where names are optional).
+export function headsOf(rsvp) {
+  const r = rsvp || {};
+  const named = Array.isArray(r.companions) ? r.companions.filter((s) => (s || "").trim()).length : 0;
+  return named > 0 ? named + 1 : (Number(r.count) || 0);
+}
+
+// Caterer-facing tallies from the RSVP list. attendingHeads sums headsOf across
 // attending parties; diets counts each non-"None" diet among attending parties.
 export function rsvpStats(rsvps) {
   const list = rsvps || [];
@@ -52,7 +61,7 @@ export function rsvpStats(rsvps) {
   return {
     total: list.length,
     attendingParties: attending.length,
-    attendingHeads: attending.reduce((s, r) => s + (Number(r.count) || 0), 0),
+    attendingHeads: attending.reduce((s, r) => s + headsOf(r), 0),
     maybe: list.filter((r) => r.status === "maybe").length,
     declined: list.filter((r) => r.status === "not_attending").length,
     diets,

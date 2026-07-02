@@ -9,6 +9,7 @@ import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fm
 import { signOut } from "@/lib/auth.js";
 import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb } from "@/lib/api.js";
 import { reconcileGuests, guestFromRsvp, normName } from "@/lib/guests.js";
+import { headsOf } from "@/lib/rsvp.js";
 import { mediaUrl } from "@/lib/media.js";
 import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
@@ -441,12 +442,15 @@ export function GuestsAdmin() {
                         : <span className={"tag tag--" + x.status}>{STAT_LABEL[x.status]}</span>}</td>
                       {filter === "attending" && (
                         <td>
-                          {x.rsvp && x.rsvp.plusOne
-                            ? x.rsvp.plusOne
-                            : (x.rsvp && Number(x.rsvp.count) > 1
+                          {(() => {
+                            const comps = x.rsvp && Array.isArray(x.rsvp.companions) ? x.rsvp.companions.filter((s) => (s || "").trim()) : [];
+                            if (comps.length) return comps.join(", ");
+                            if (x.rsvp && x.rsvp.plusOne) return x.rsvp.plusOne; // legacy string rows
+                            return x.rsvp && Number(x.rsvp.count) > 1
                               ? `${Number(x.rsvp.count) - 1} unnamed`
-                              : <span style={{ color: "var(--muted)" }}>none</span>)}
-                          {x.rsvp && Number(x.rsvp.count) > Number(g.allocation) && (
+                              : <span style={{ color: "var(--muted)" }}>none</span>;
+                          })()}
+                          {x.rsvp && headsOf(x.rsvp) > Number(g.allocation) && (
                             <span style={{ color: "var(--danger, #a33)", fontWeight: 700, fontSize: 11, letterSpacing: ".06em", textTransform: "uppercase", marginLeft: 6 }} title="More than the allotted seats">over</span>
                           )}
                         </td>

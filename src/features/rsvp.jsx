@@ -106,7 +106,7 @@ export function RSVPPage() {
     // picking 9 slots but naming 5 companions means a party of 6. The picker
     // only sets how many name slots appear. Open mode keeps the picked number.
     const count = attending ? (strict ? companions.length + 1 : picked) : 0;
-    const payload = { ...form, fullName, count, plusOne };
+    const payload = { ...form, fullName, count, plusOne, companions };
     setSubmitting(true);
     try {
       // Strict RSVP: only invited guests may respond, capped at their seat

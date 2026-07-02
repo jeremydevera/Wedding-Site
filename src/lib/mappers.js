@@ -58,6 +58,7 @@ export function rsvpToRow(r, clientId) {
     full_name: r.fullName, email: r.email, first_name: r.firstName, middle_name: r.middleName, last_name: r.lastName,
     phone: r.phone, status: r.status, count: r.count,
     plus_one: r.plusOne, diet: r.diet, diet_notes: r.dietNotes, song: r.song, notes: r.notes,
+    companions: Array.isArray(r.companions) ? r.companions : [],
   };
 }
 
@@ -87,6 +88,7 @@ export function rowToRsvp(row) {
     firstName: row.first_name, middleName: row.middle_name, lastName: row.last_name,
     phone: row.phone, status: row.status, count: row.count,
     plusOne: row.plus_one, diet: row.diet, dietNotes: row.diet_notes, song: row.song, notes: row.notes,
+    companions: Array.isArray(row.companions) ? row.companions : [],
     createdAt: row.created_at ? Date.parse(row.created_at) : Date.now(),
   };
 }

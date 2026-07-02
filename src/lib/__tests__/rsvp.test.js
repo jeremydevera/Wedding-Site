@@ -1,5 +1,20 @@
 import { describe, it, expect } from "vitest";
-import { isRsvpClosed, joinPlusOnes, isValidOptionalEmail, rsvpStats, maxPartySize } from "@/lib/rsvp.js";
+import { isRsvpClosed, joinPlusOnes, isValidOptionalEmail, rsvpStats, maxPartySize, headsOf } from "@/lib/rsvp.js";
+
+describe("headsOf", () => {
+  it("counts named companions + the guest when companions exist", () => {
+    expect(headsOf({ count: 9, companions: ["A", "B", "C", "D", "E"] })).toBe(6);
+    expect(headsOf({ count: 2, companions: ["A"] })).toBe(2);
+  });
+  it("falls back to the picked count when no companions are recorded", () => {
+    expect(headsOf({ count: 4, companions: [] })).toBe(4);
+    expect(headsOf({ count: 3 })).toBe(3);
+    expect(headsOf({ count: 0 })).toBe(0);
+  });
+  it("ignores blank entries in the array", () => {
+    expect(headsOf({ count: 5, companions: ["A", "", "  ", "B"] })).toBe(3);
+  });
+});
 
 describe("maxPartySize", () => {
   it("defaults to 8 when no allocation is known", () => {
