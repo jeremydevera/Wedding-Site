@@ -2141,7 +2141,7 @@ export function EntourageAdmin({ headRight }) {
         <div className="panel__title">Entourage <span style={{ color: "var(--muted)", fontSize: 15 }}>({groups.length})</span></div>
         {headRight}
       </div>
-      <div className="panel__body">
+      <div className="panel__body" style={{ maxWidth: 900, margin: "0 auto" }}>
         <div className="admin-toolbar" style={{ marginBottom: 16 }}><div className="admin-toolbar__end"><Button variant="primary" className="admin-toolbar__action" onClick={() => { setEditGroup(null); setGroupOpen(true); }}>+ Add group</Button></div></div>
         <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 0, marginBottom: 18 }}>Groups shown on the home page after the schedule. Add a group (e.g. Groomsmen), then add people under it. Everything saves automatically.</p>
         {groups.length === 0 && <p style={{ color: "var(--muted)", textAlign: "center", padding: "30px 0" }}>No groups yet — add your first one above.</p>}
@@ -2255,7 +2255,7 @@ export function AttireAdmin({ headRight }) {
         {headRight}
       </div>
       <div className="admin-toolbar" style={{ padding: "14px 16px" }}><div className="admin-toolbar__end"><Button variant="primary" className="admin-toolbar__action" onClick={() => { setEditing(null); setOpen(true); }}>+ Add group</Button></div></div>
-      <div className="panel__body--flush table-wrap">
+      <div className="panel__body--flush table-wrap" style={{ maxWidth: 900, margin: "0 auto" }}>
         <table className="tbl">
           <thead><tr><th>#</th><th>Preview</th><th>Name</th><th>Palette</th><th></th></tr></thead>
           <tbody>
@@ -2431,7 +2431,7 @@ export function MusicAdmin() {
         <Button variant="primary" size="sm" disabled={uploading} onClick={() => setPickerOpen(true)}>{uploading ? "Uploading…" : "+ Add music"}</Button>
         <input ref={fileRef} type="file" accept={AUDIO_ACCEPT} multiple style={{ display: "none" }} onChange={(e) => onFiles(e.target.files)} />
       </div>
-      <div className="panel__body--flush table-wrap">
+      <div className="panel__body--flush table-wrap" style={{ maxWidth: 900, margin: "0 auto" }}>
         <table className="tbl">
           <thead><tr><th>#</th><th>Cover</th><th>Title</th><th>Artist</th><th>Preview</th><th></th></tr></thead>
           <tbody>
