@@ -99,6 +99,16 @@ describe("reconcileGuests", () => {
     expect(summary.confirmedHeads).toBe(4);    // Ana's full allotted party
     expect(summary.outstanding).toBe(2);       // neither has replied yet
   });
+  it("prefers an exact-middle reply over a wildcard match when both fit", () => {
+    const gs = [{ id: "a", firstName: "Ana", lastName: "Cruz", middleName: "L", allocation: 2, status: "attending" }];
+    const rs = [
+      { id: "r1", fullName: "Ana Cruz", firstName: "Ana", lastName: "Cruz", middleName: "", status: "maybe", count: 1 },
+      { id: "r2", fullName: "Ana L Cruz", firstName: "Ana", lastName: "Cruz", middleName: "L", status: "attending", count: 2 },
+    ];
+    const { rows } = reconcileGuests(gs, rs);
+    expect(rows[0].rsvp.id).toBe("r2"); // exact middle beats the wildcard row listed first
+    expect(rows[0].status).toBe("attending");
+  });
   it("lets a reply override the owner-set status (declining flips to not_attending)", () => {
     const gs = [{ id: "a", firstName: "Ana", lastName: "Cruz", middleName: "", allocation: 4, status: "attending" }];
     const rs = [{ id: "r1", fullName: "Ana Cruz", firstName: "Ana", lastName: "Cruz", middleName: "", status: "not_attending", count: 0 }];

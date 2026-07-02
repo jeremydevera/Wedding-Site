@@ -26,16 +26,29 @@ export function namePartsMatch(a, b) {
     && middleMatches(a.middle, b.middle);
 }
 
+// Like namePartsMatch but WITHOUT the empty-middle wildcard — used to prefer an
+// exact/initial middle match before falling back to wildcard candidates.
+function namePartsMatchExact(a, b) {
+  const x = normName(a.middle), y = normName(b.middle);
+  const middleExact = x === y || (x && y && x[0] === y[0] && (x.length === 1 || y.length === 1));
+  return normName(a.first) === normName(b.first)
+    && normName(a.last) === normName(b.last)
+    && middleExact;
+}
+
 export function reconcileGuests(guests, rsvps) {
   const gs = guests || [];
   const rs = (rsvps || []).map((r, i) => ({ r, i }));
   const used = new Set();
 
   const rows = gs.map((g) => {
-    const hit = rs.find(({ r, i }) => !used.has(i) && namePartsMatch(
-      { first: g.firstName, last: g.lastName, middle: g.middleName },
-      { first: r.firstName, last: r.lastName, middle: r.middleName },
-    ));
+    const gp = { first: g.firstName, last: g.lastName, middle: g.middleName };
+    const rp = (r) => ({ first: r.firstName, last: r.lastName, middle: r.middleName });
+    // Two tiers, mirroring the SQL gate: exact/initial middle first, then the
+    // empty-middle wildcard — so a stale middle-less reply can't shadow the
+    // right one.
+    const hit = rs.find(({ r, i }) => !used.has(i) && namePartsMatchExact(gp, rp(r)))
+      || rs.find(({ r, i }) => !used.has(i) && namePartsMatch(gp, rp(r)));
     if (hit) used.add(hit.i);
     const rsvp = hit ? hit.r : null;
     // A reply always wins; otherwise the owner-set guest status applies
