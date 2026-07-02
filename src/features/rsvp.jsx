@@ -315,7 +315,7 @@ export function RSVPPage() {
                   ) : (
                     // Strict mode, name not verified yet: keep the picker locked so a
                     // guest can't choose a party size before their seats are known.
-                    <Field label="Number attending" id="r-count" hint="Enter your name above first — your seats unlock once we find you">
+                    <Field label="Number attending" id="r-count">
                       <Input id="r-count" value="" placeholder="—" disabled readOnly />
                     </Field>
                   )) : (
