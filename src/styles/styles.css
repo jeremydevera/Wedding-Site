@@ -724,7 +724,7 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
   display: flex;
   color: var(--accent);
 }
-.stat__icon svg { width: 20px; height: 20px; }
+.stat__icon svg { width: 28px; height: 28px; }
 .stat__label { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .stat__value { font-family: var(--font-display); font-size: 44px; line-height: 1; margin-top: 8px; color: var(--ink); }
 .stat__sub { font-size: 13px; color: var(--accent); margin-top: 6px; }
