@@ -363,10 +363,8 @@ export function GuestsAdmin() {
   return (
     <div>
       <div className="stat-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", marginBottom: 20 }}>
-        <div className="stat"><div className="stat__label">Invited</div><div className="stat__value">{S.invited}</div><div className="stat__sub">guests</div></div>
-        <div className="stat"><div className="stat__label">Seats allocated</div><div className="stat__value">{S.seatsAllocated}</div><div className="stat__sub">total seats</div></div>
-        <div className="stat"><div className="stat__label">Confirmed</div><div className="stat__value">{S.confirmedHeads}</div><div className="stat__sub">heads coming</div></div>
-        <div className="stat"><div className="stat__label">Outstanding</div><div className="stat__value">{S.outstanding}</div><div className="stat__sub">no reply yet</div></div>
+        <div className="stat"><div className="stat__label">Accepted</div><div className="stat__value">{recon.rows.filter((x) => x.status === "attending").length}</div><div className="stat__sub">guests said yes</div></div>
+        <div className="stat"><div className="stat__label">Total head count</div><div className="stat__value">{S.confirmedHeads}</div><div className="stat__sub">people coming</div></div>
       </div>
 
       <div className="folders">
@@ -386,7 +384,7 @@ export function GuestsAdmin() {
         <div className="panel__body--flush table-wrap">
           {onUnmatched ? (
             <table className="tbl">
-              <thead><tr><th>Name</th><th>Contact</th><th>Party size</th><th>Status</th><th></th></tr></thead>
+              <thead><tr><th>Name</th><th>Contact</th><th>Head count</th><th>Status</th><th></th></tr></thead>
               <tbody>
                 {pg.pageItems.map((r) => (
                   <tr key={r.id}>
@@ -404,7 +402,7 @@ export function GuestsAdmin() {
             </table>
           ) : (
             <table className="tbl">
-              <thead><tr><th>Name</th><th>Contact</th><th>Plus 1s</th><th>Status</th><th>Party size</th><th></th></tr></thead>
+              <thead><tr><th>Name</th><th>Contact</th><th>Plus 1s</th><th>Status</th><th>Head count</th><th></th></tr></thead>
               <tbody>
                 {pg.pageItems.map((g) => {
                   const x = byId.get(g.id) || { status: "none", rsvp: null };
