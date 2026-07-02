@@ -99,8 +99,13 @@ export function RSVPPage() {
     const er = validate();
     if (Object.keys(er).length) { showErrors(er); return; }
     const fullName = [form.firstName, form.middleName, form.lastName].map((s) => s.trim()).filter(Boolean).join(" ");
-    const count = attending ? parseInt(form.count, 10) : 0;
-    const plusOne = joinPlusOnes((form.guestNames || []).slice(0, Math.max(0, count - 1)));
+    const picked = attending ? parseInt(form.count, 10) : 0;
+    const companions = (form.guestNames || []).slice(0, Math.max(0, picked - 1)).map((s) => (s || "").trim()).filter(Boolean);
+    const plusOne = companions.join(", ");
+    // Strict mode: the real head count is who they NAMED plus themselves —
+    // picking 9 slots but naming 5 companions means a party of 6. The picker
+    // only sets how many name slots appear. Open mode keeps the picked number.
+    const count = attending ? (strict ? companions.length + 1 : picked) : 0;
     const payload = { ...form, fullName, count, plusOne };
     setSubmitting(true);
     try {
@@ -155,6 +160,7 @@ export function RSVPPage() {
       }
       if (forceUpdate) await upsertRsvp(payload);
       else await postRsvp(payload);
+      setForm((f) => ({ ...f, count })); // success card shows the real head count
       setSubmitted(true);
       scrollToTop({ top: 0, behavior: "smooth" });
     } catch (err) {
@@ -302,6 +308,14 @@ export function RSVPPage() {
                     </div>
                   </Field>
                 )}
+                {strict && form.count > 1 && (() => {
+                  const filled = (form.guestNames || []).slice(0, Math.max(0, parseInt(form.count, 10) - 1)).filter((s) => (s || "").trim()).length;
+                  return (
+                    <div style={{ fontSize: 14, color: "var(--muted)", marginTop: -8, marginBottom: 16 }} aria-live="polite">
+                      Total attending: <strong style={{ color: "var(--ink)" }}>{filled + 1}</strong> (you + {filled} {filled === 1 ? "companion" : "companions"})
+                    </div>
+                  );
+                })()}
                 {form.diet === "Other" && (
                   <Field label="Tell us about the dietary need" required error={errors.dietNotes} id="r-dietnote">
                     <Input id="r-dietnote" value={form.dietNotes} onChange={set("dietNotes")} />
