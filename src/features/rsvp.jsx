@@ -260,12 +260,20 @@ export function RSVPPage() {
             {attending && (
               <div className="fade-up">
                 <div className="field-row field-row--2">
-                  <Field label="Number attending" required error={errors.count} id="r-count"
-                    hint={strict && alloc != null ? `Your invitation reserves ${alloc} ${alloc === 1 ? "seat" : "seats"}` : "Including yourself"}>
-                    <Select id="r-count" value={form.count} onChange={set("count")}>
-                      {Array.from({ length: maxCount }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}
-                    </Select>
-                  </Field>
+                  {(!strict || alloc != null) ? (
+                    <Field label="Number attending" required error={errors.count} id="r-count"
+                      hint={strict && alloc != null ? `Your invitation reserves ${alloc} ${alloc === 1 ? "seat" : "seats"}` : "Including yourself"}>
+                      <Select id="r-count" value={form.count} onChange={set("count")}>
+                        {Array.from({ length: maxCount }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}
+                      </Select>
+                    </Field>
+                  ) : (
+                    // Strict mode, name not verified yet: keep the picker locked so a
+                    // guest can't choose a party size before their seats are known.
+                    <Field label="Number attending" id="r-count" hint="Enter your name above first — your seats unlock once we find you">
+                      <Input id="r-count" value="" placeholder="—" disabled readOnly />
+                    </Field>
+                  )}
                   <Field label="Dietary preference" id="r-diet">
                     <Select id="r-diet" value={form.diet} onChange={set("diet")}>
                       {DIET_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}

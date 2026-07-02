@@ -425,7 +425,7 @@ export function GuestsAdmin() {
             </table>
           ) : (
             <table className="tbl">
-              <thead><tr><th>Name</th><th>Contact</th><th>Allotted seats</th><th>Status</th><th>Head count</th><th></th></tr></thead>
+              <thead><tr><th>Name</th><th>Contact</th><th>Allotted seats</th><th>Status</th>{filter === "attending" && <th>Companions</th>}<th></th></tr></thead>
               <tbody>
                 {pg.pageItems.map((g) => {
                   const x = byId.get(g.id) || { status: "none", rsvp: null };
@@ -439,11 +439,18 @@ export function GuestsAdmin() {
                       <td>{x.status === "none"
                         ? <span style={{ color: "var(--muted)" }}>No reply</span>
                         : <span className={"tag tag--" + x.status}>{STAT_LABEL[x.status]}</span>}</td>
-                      <td>{x.status === "attending"
-                        ? (Number(x.rsvp.count) > Number(g.allocation)
-                          ? <span style={{ color: "var(--danger, #a33)", fontWeight: 700 }} title="More than the allocated seats">{x.rsvp.count} <span style={{ fontSize: 11, letterSpacing: ".06em", textTransform: "uppercase" }}>over</span></span>
-                          : x.rsvp.count)
-                        : "—"}</td>
+                      {filter === "attending" && (
+                        <td>
+                          {x.rsvp && x.rsvp.plusOne
+                            ? x.rsvp.plusOne
+                            : (x.rsvp && Number(x.rsvp.count) > 1
+                              ? `${Number(x.rsvp.count) - 1} unnamed`
+                              : <span style={{ color: "var(--muted)" }}>none</span>)}
+                          {x.rsvp && Number(x.rsvp.count) > Number(g.allocation) && (
+                            <span style={{ color: "var(--danger, #a33)", fontWeight: 700, fontSize: 11, letterSpacing: ".06em", textTransform: "uppercase", marginLeft: 6 }} title="More than the allotted seats">over</span>
+                          )}
+                        </td>
+                      )}
                       <td><div className="row-actions">
                         <button className="icon-btn" onClick={() => setEditing({ ...blank, ...g })} aria-label="Edit" title="Edit guest">{Icon.edit({})}</button>
                         <button className="icon-btn icon-btn--danger" onClick={() => removeGuest(g)} aria-label="Remove">{Icon.trash({})}</button>
@@ -451,7 +458,7 @@ export function GuestsAdmin() {
                     </tr>
                   );
                 })}
-                {filtered.length === 0 && <tr><td colSpan={6} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No guests yet. Add your invited guests to track replies.</td></tr>}
+                {filtered.length === 0 && <tr><td colSpan={filter === "attending" ? 6 : 5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No guests yet. Add your invited guests to track replies.</td></tr>}
               </tbody>
             </table>
           )}
