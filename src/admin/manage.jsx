@@ -1171,6 +1171,18 @@ export function AdminToggle({ checked, onChange, label, desc }) {
   );
 }
 
+// Bare switch (no label row) for a panel header — the visible show/hide control
+// for a home section. `label` is the accessible name / tooltip only.
+export function HeadSwitch({ checked, onChange, label }) {
+  return (
+    <button type="button" onClick={() => onChange(!checked)} aria-pressed={checked} title={label} aria-label={label}
+      style={{ position: "relative", width: 46, height: 26, borderRadius: 100, border: "none", cursor: "pointer", background: checked ? "var(--accent)" : "var(--line)", transition: "background .2s", flex: "none" }}>
+      <span style={{ position: "absolute", top: 3, left: checked ? 23 : 3, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left .2s", boxShadow: "0 1px 3px rgba(0,0,0,.3)" }} />
+    </button>
+  );
+}
+const HEAD_ROW = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 };
+
 // Add / edit a single schedule moment (modal — mirrors QuestionEditor).
 export function ScheduleEditor({ open, index, item, onClose }) {
   const { schedule } = useStore();
@@ -1919,11 +1931,8 @@ export function HomeAdmin() {
 
       {isSuper && active === "timeline" && (
         <div className="panel">
-          <div className="panel__head"><div className="panel__title">Home timeline layout</div></div>
+          <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Home timeline</div><HeadSwitch label="Show timeline on the home page" checked={f.showTimeline !== false} onChange={(v) => toggleShow("showTimeline", v)} /></div>
           <div className="panel__body">
-            <AdminToggle label="Show timeline on the home page" desc="The “A glimpse of the schedule” section. Turn off to hide it from guests. Saves instantly."
-              checked={f.showTimeline !== false} onChange={(v) => toggleShow("showTimeline", v)} />
-            <div style={{ height: 20 }} />
             <p style={{ color: "var(--muted)", margin: "0 0 18px", fontSize: 14 }}>
               How the “A glimpse of the schedule” timeline shows on the home page. Edit the events themselves in the Schedule tab. Saves instantly.
             </p>
@@ -1950,10 +1959,8 @@ export function HomeAdmin() {
       {isSuper && active === "music" && (
         <>
           <div className="panel">
+            <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Music player</div><HeadSwitch label="Show music player on the home page" checked={f.showMusic !== false} onChange={(v) => toggleShow("showMusic", v)} /></div>
             <div className="panel__body">
-              <AdminToggle label="Show music player on the home page" desc="Turn the playlist section on or off for guests. Saves instantly."
-                checked={f.showMusic !== false} onChange={(v) => toggleShow("showMusic", v)} />
-              <div style={{ height: 14 }} />
               <AdminToggle label="Autoplay music on load" desc="Start the playlist automatically (on the first tap or scroll). When off, guests press play themselves. Saves instantly."
                 checked={f.musicAutoplay !== false} onChange={(v) => toggleShow("musicAutoplay", v)} />
               <div style={{ height: 20 }} />
@@ -1986,10 +1993,7 @@ export function HomeAdmin() {
       {isSuper && active === "entourage" && (
         <>
           <div className="panel">
-            <div className="panel__body">
-              <AdminToggle label="Show entourage on the home page" desc="Turn the entourage section on or off for guests. Saves instantly."
-                checked={f.showEntourage !== false} onChange={(v) => toggleShow("showEntourage", v)} />
-            </div>
+            <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Entourage</div><HeadSwitch label="Show entourage on the home page" checked={f.showEntourage !== false} onChange={(v) => toggleShow("showEntourage", v)} /></div>
           </div>
           <EntourageAdmin />
         </>
@@ -1997,10 +2001,7 @@ export function HomeAdmin() {
       {isSuper && active === "attire" && (
         <>
           <div className="panel">
-            <div className="panel__body">
-              <AdminToggle label="Show attire guide on the home page" desc="The attire guide shown after the schedule. Saves instantly."
-                checked={f.showAttire !== false} onChange={(v) => toggleShow("showAttire", v)} />
-            </div>
+            <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Attire guide</div><HeadSwitch label="Show attire guide on the home page" checked={f.showAttire !== false} onChange={(v) => toggleShow("showAttire", v)} /></div>
           </div>
           <AttireAdmin />
         </>
@@ -2008,11 +2009,8 @@ export function HomeAdmin() {
       {isSuper && active === "maps" && (
         <>
           <div className="panel">
-            <div className="panel__head"><div className="panel__title">Google Maps</div></div>
+            <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Google Maps</div><HeadSwitch label="Show map on the home page" checked={f.showMap !== false} onChange={(v) => toggleShow("showMap", v)} /></div>
             <div className="panel__body">
-              <AdminToggle label="Show map on the home page" desc="The venue map shown right after the invitation. Saves instantly."
-                checked={f.showMap !== false} onChange={(v) => toggleShow("showMap", v)} />
-              <div style={{ height: 20 }} />
               <Field label="Venue name" id="m-vn"><Input id="m-vn" value={f.venueName} onChange={set("venueName")} /></Field>
               <Field label="Venue address" id="m-va"><Input id="m-va" value={f.venueAddress} onChange={set("venueAddress")} /></Field>
               <Field label="Map location" hint="Search a place, then click the map or drag the pin to the exact spot. This map is shared with the Venue page. Click Save changes to publish." id="m-map">
