@@ -280,7 +280,10 @@ export function Modal({ open, onClose, children, wide, solid, label = "Dialog" }
   // resolve the modal's position:fixed against the page instead of the viewport,
   // cutting it off (and hiding it on mobile). Re-apply .admin--sa when opened
   // from the console so it keeps the neutral admin palette, not the event theme.
-  const inAdmin = typeof document !== "undefined" && !!document.querySelector(".admin--sa");
+  // Any admin console (owner `.admin` OR superadmin `.admin--sa`) → render on the
+  // solid neutral admin surface, so a translucent/blurred client theme (e.g.
+  // "glass") never washes out the modal/toast/dialog.
+  const inAdmin = typeof document !== "undefined" && !!document.querySelector(".admin");
   return createPortal(
     <div className={"modal" + (inAdmin ? " admin--sa" : "")} role="dialog" aria-modal="true" aria-label={label}>
       <div className="modal__backdrop" onClick={onClose} />
@@ -309,7 +312,10 @@ export function ToastHost() {
   // (.admin--sa = Mulish + neutral surfaces) so the toast matches the console
   // instead of inheriting the public event theme's font. On the public site it
   // stays themed. (Mirrors how the confirm dialog + modal handle this.)
-  const inAdmin = typeof document !== "undefined" && !!document.querySelector(".admin--sa");
+  // Any admin console (owner `.admin` OR superadmin `.admin--sa`) → render on the
+  // solid neutral admin surface, so a translucent/blurred client theme (e.g.
+  // "glass") never washes out the modal/toast/dialog.
+  const inAdmin = typeof document !== "undefined" && !!document.querySelector(".admin");
   return (
     <div className={"toast-host" + (inAdmin ? " admin--sa" : "")} aria-live="polite">
       {toasts.map((t) => (
@@ -336,7 +342,10 @@ export function ConfirmHost() {
   // confirmDialog is used from the admin console; render the modal inside the
   // admin palette when it's mounted so it matches the admin look (neutral
   // surface, Mulish, blue accent) instead of inheriting the event theme.
-  const inAdmin = typeof document !== "undefined" && !!document.querySelector(".admin--sa");
+  // Any admin console (owner `.admin` OR superadmin `.admin--sa`) → render on the
+  // solid neutral admin surface, so a translucent/blurred client theme (e.g.
+  // "glass") never washes out the modal/toast/dialog.
+  const inAdmin = typeof document !== "undefined" && !!document.querySelector(".admin");
   return (
     <div className={inAdmin ? "admin--sa" : undefined}>
     <Modal open={!!state} onClose={() => close(false)} label="Confirm" solid>
