@@ -1,5 +1,22 @@
 import { describe, it, expect } from "vitest";
-import { normName, namePartsMatch, reconcileGuests } from "@/lib/guests.js";
+import { normName, namePartsMatch, reconcileGuests, guestFromRsvp } from "@/lib/guests.js";
+
+describe("guestFromRsvp", () => {
+  it("uses name parts and count when present", () => {
+    expect(guestFromRsvp({ firstName: "Jeremy", middleName: "P", lastName: "Reyes", count: 3, email: "j@ex.com", status: "attending" }))
+      .toEqual({ firstName: "Jeremy", middleName: "P", lastName: "Reyes", allocation: 3, email: "j@ex.com", notes: "" });
+  });
+  it("splits fullName when parts are missing (first / middle... / last)", () => {
+    expect(guestFromRsvp({ fullName: "Maria Luisa Dela Cruz", count: 1 }))
+      .toMatchObject({ firstName: "Maria", middleName: "Luisa Dela", lastName: "Cruz" });
+    expect(guestFromRsvp({ fullName: "Ana Cruz" })).toMatchObject({ firstName: "Ana", middleName: "", lastName: "Cruz" });
+    expect(guestFromRsvp({ fullName: "Prince" })).toMatchObject({ firstName: "Prince", middleName: "", lastName: "" });
+  });
+  it("defaults allocation to at least 1 and email/notes to empty", () => {
+    expect(guestFromRsvp({ fullName: "Tom Okafor", count: 0 })).toMatchObject({ allocation: 1, email: "", notes: "" });
+    expect(guestFromRsvp({ fullName: "Tom Okafor" }).allocation).toBe(1);
+  });
+});
 
 describe("normName", () => {
   it("lowercases and strips non-alphanumerics", () => {

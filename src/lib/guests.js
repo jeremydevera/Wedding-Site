@@ -54,3 +54,25 @@ export function reconcileGuests(guests, rsvps) {
 
   return { rows, summary, unmatchedRsvps };
 }
+
+// Build a guest-list draft from an existing RSVP ("Add to list" on unmatched
+// RSVPs). Prefers stored name parts; falls back to splitting fullName (first
+// token / middle tokens / last token). Their replied party size becomes the
+// allocation (min 1).
+export function guestFromRsvp(rsvp) {
+  const r = rsvp || {};
+  let first = (r.firstName || "").trim();
+  let middle = (r.middleName || "").trim();
+  let last = (r.lastName || "").trim();
+  if (!first && !last) {
+    const parts = (r.fullName || "").trim().split(/\s+/).filter(Boolean);
+    first = parts[0] || "";
+    last = parts.length > 1 ? parts[parts.length - 1] : "";
+    middle = parts.slice(1, -1).join(" ");
+  }
+  return {
+    firstName: first, middleName: middle, lastName: last,
+    allocation: Math.max(1, Number(r.count) || 1),
+    email: r.email || "", notes: "",
+  };
+}
