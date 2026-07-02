@@ -1861,8 +1861,12 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* Fluid recreation of a matte click-wheel player. All sizing is in cqw (of the
    .device-player width) so it scales cleanly from desktop to phone. Wired to the
    same audio engine as the vinyl skin. */
-.device-player { container-type: inline-size; width: min(697px, 100%); margin: 0 auto; }
+.device-player { width: min(697px, 100%); margin: 0 auto; }
+/* container-query context lives on the device body (not .device-player) so the
+   desktop row layout can widen .device-player without inflating the cqw-sized
+   device. */
 .dp-body {
+  container-type: inline-size;
   position: relative; width: 100%; aspect-ratio: 697 / 372;
   display: flex; align-items: center; justify-content: space-around; gap: 2cqw;
   padding: 0 3cqw;
@@ -1927,6 +1931,15 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .dp-play svg { width: 34%; height: 34%; }
 .device-aside { margin-top: 26px; align-self: stretch; border-left: none; border-top: 1px solid var(--line); padding: 16px 0 0; }
 .device-player .vinyl-list { max-height: 200px; overflow-y: auto; }
+/* Desktop: playlist sits to the RIGHT of the device (like the vinyl skin).
+   .device-player becomes a centered flex row; the device keeps its cqw size
+   (basis capped), the playlist takes the remaining width with a left divider. */
+@media (min-width: 900px) {
+  .device-player { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 36px; width: 100%; max-width: 1080px; }
+  .dp-body { flex: 0 0 min(640px, 56%); width: auto; }
+  .device-aside { flex: 1 1 auto; min-width: 0; margin-top: 0; padding: 0 0 0 36px; border-top: none; border-left: 1px solid var(--line); align-self: center; }
+  .device-player .vinyl-list { max-height: 328px; }
+}
 /* Mobile: cap the retro playlist at ~2 tracks (row ≈ 60px + gap), rest scroll —
    matches the vinyl skin. After the 200px rule above so it wins at ≤640px. */
 @media (max-width: 640px) { .device-player .vinyl-list { max-height: 124px; } }
