@@ -309,7 +309,7 @@ export function Home() {
             {s.partnerA}<span className="amp">&amp;</span>{s.partnerB}
           </h1>
           <div className="hero__date">{s.weddingDateLabel}</div>
-          <Countdown targetIso={s.weddingDate} />
+          {s.showCountdown !== false && <Countdown targetIso={s.weddingDate} />}
           <p className="hero__welcome">{s.welcome}</p>
         </div>
         <div className="hero__scroll">Scroll</div>
@@ -332,7 +332,7 @@ export function Home() {
               {s.inviteBody}
             </p>
             <div style={{ color: "var(--ink-soft)", letterSpacing: ".12em", textTransform: "uppercase", fontSize: 14, margin: "18px 0 26px" }}>{s.weddingDateLabel}</div>
-            <Countdown targetIso={s.weddingDate} light />
+            {s.showCountdown !== false && <Countdown targetIso={s.weddingDate} light />}
             <div style={{ marginTop: 30 }}>
               <Button variant="primary" size="lg" onClick={() => go("rsvp")}>{Icon.check({})} Respond now</Button>
             </div>

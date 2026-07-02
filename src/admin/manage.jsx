@@ -1893,6 +1893,7 @@ export function HomeAdmin() {
                 <Field label="Wedding date & time" hint="Drives the countdown" id="s-date"><Input id="s-date" type="datetime-local" value={f.weddingDate} onChange={set("weddingDate")} /></Field>
                 <Field label="Display date label" id="s-datel"><Input id="s-datel" value={f.weddingDateLabel} onChange={set("weddingDateLabel")} /></Field>
               </div>
+              <AdminToggle label="Show countdown timer" desc="The live days/hours/minutes counter on the home page. Turn off to hide it." checked={f.showCountdown !== false} onChange={(v) => setKey("showCountdown", v)} />
               <Field label="Welcome message" id="s-welcome"><Textarea id="s-welcome" value={f.welcome} onChange={set("welcome")} /></Field>
               <div className="field-row field-row--2">
                 <Field label="RSVP deadline (display text)" id="s-rsvp" hint="Shown on the RSVP page"><Input id="s-rsvp" value={f.rsvpDeadline} onChange={set("rsvpDeadline")} /></Field>
