@@ -366,6 +366,7 @@ export function GuestsAdmin() {
     unmatched: unmatched.length,
   };
   const onUnmatched = filter === "unmatched";
+  const showComps = filter === "all" || filter === "attending"; // Companions column on these tabs
   const filtered = bySearch.filter((g) => {
     if (filter === "all" || filter === "unmatched") return true;
     // "No reply" = hasn't submitted an RSVP (status may still default to attending).
@@ -571,7 +572,7 @@ export function GuestsAdmin() {
             </table>
           ) : (
             <table className="tbl">
-              <thead><tr><th>Name</th><th>Contact</th><th>Allotted seats</th><th>Status</th>{filter === "attending" && <th>Companions</th>}<th></th></tr></thead>
+              <thead><tr><th>Name</th><th>Contact</th><th>Allotted seats</th><th>Status</th>{showComps && <th>Companions</th>}<th></th></tr></thead>
               <tbody>
                 {pg.pageItems.map((g) => {
                   const x = byId.get(g.id) || { status: "none", rsvp: null };
@@ -585,7 +586,7 @@ export function GuestsAdmin() {
                       <td>{x.status === "none"
                         ? <span style={{ color: "var(--muted)" }}>No reply</span>
                         : <span className={"tag tag--" + x.status}>{STAT_LABEL[x.status]}</span>}</td>
-                      {filter === "attending" && (
+                      {showComps && (
                         <td>
                           {(() => {
                             const comps = x.rsvp && Array.isArray(x.rsvp.companions) ? x.rsvp.companions.filter((s) => (s || "").trim()) : [];
@@ -607,7 +608,7 @@ export function GuestsAdmin() {
                     </tr>
                   );
                 })}
-                {filtered.length === 0 && <tr><td colSpan={filter === "attending" ? 6 : 5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No guests yet. Add your invited guests to track replies.</td></tr>}
+                {filtered.length === 0 && <tr><td colSpan={showComps ? 6 : 5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No guests yet. Add your invited guests to track replies.</td></tr>}
               </tbody>
             </table>
           )}
