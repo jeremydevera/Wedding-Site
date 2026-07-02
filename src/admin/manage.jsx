@@ -1893,7 +1893,7 @@ export function HomeAdmin() {
         <>
           <div className="panel">
             <div className="panel__head"><div className="panel__title">Couple & Event</div></div>
-            <div className="panel__body">
+            <div className="panel__body" style={{ maxWidth: 900 }}>
               <div className="field-row field-row--2">
                 <Field label="Partner A" id="s-a"><Input id="s-a" value={f.partnerA} onChange={set("partnerA")} /></Field>
                 <Field label="Partner B" id="s-b"><Input id="s-b" value={f.partnerB} onChange={set("partnerB")} /></Field>
@@ -1902,12 +1902,13 @@ export function HomeAdmin() {
                 <Field label="Wedding date & time" hint="Drives the countdown" id="s-date"><Input id="s-date" type="datetime-local" value={f.weddingDate} onChange={set("weddingDate")} /></Field>
                 <Field label="Display date label" id="s-datel"><Input id="s-datel" value={f.weddingDateLabel} onChange={set("weddingDateLabel")} /></Field>
               </div>
-              <AdminToggle label="Show countdown timer" desc="The live days/hours/minutes counter on the home page. Turn off to hide it." checked={f.showCountdown !== false} onChange={(v) => toggleShow("showCountdown", v)} />
-              <Field label="Welcome message" id="s-welcome"><Textarea id="s-welcome" value={f.welcome} onChange={set("welcome")} /></Field>
-              <div className="field-row field-row--2">
-                <Field label="RSVP deadline (display text)" id="s-rsvp" hint="Shown on the RSVP page"><Input id="s-rsvp" value={f.rsvpDeadline} onChange={set("rsvpDeadline")} /></Field>
-                <Field label="RSVP closes at" id="s-rsvpd" hint="After this the form closes. Blank = stays open."><Input id="s-rsvpd" type="datetime-local" value={f.rsvpDeadlineDate || ""} onChange={set("rsvpDeadlineDate")} /></Field>
+              {/* narrow wrapper so the switch sits next to its label, not far across the wide panel */}
+              <div style={{ maxWidth: 460 }}>
+                <AdminToggle label="Show countdown timer" desc="The live days/hours/minutes counter on the home page. Turn off to hide it." checked={f.showCountdown !== false} onChange={(v) => toggleShow("showCountdown", v)} />
               </div>
+              <Field label="Welcome message" id="s-welcome"><Textarea id="s-welcome" rows={3} value={f.welcome} onChange={set("welcome")} /></Field>
+              <Field label="RSVP deadline (display text)" id="s-rsvp" hint="Shown on the RSVP page — e.g. “August 15, 2027”"><Input id="s-rsvp" value={f.rsvpDeadline} onChange={set("rsvpDeadline")} /></Field>
+              <Field label="RSVP closes at" id="s-rsvpd" hint="Optional. Pick a date/time to auto-close the form; leave blank to keep it open."><Input id="s-rsvpd" type="datetime-local" value={f.rsvpDeadlineDate || ""} onChange={set("rsvpDeadlineDate")} style={{ maxWidth: 320 }} /></Field>
               <Field label="Hashtag" id="s-hash"><Input id="s-hash" value={f.hashtag} onChange={set("hashtag")} /></Field>
             </div>
           </div>
