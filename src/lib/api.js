@@ -147,6 +147,15 @@ export async function deleteRsvpDb(id) {
   const { error } = await supabase.from("rsvps").delete().eq("id", id);
   if (error) { console.warn("[api] rsvp delete failed:", error.message); throw error; }
 }
+// Admin edit of a reply's companion list (owner update policy, 0016). Keeps the
+// legacy plus_one string and the head count in step with the array.
+export async function updateRsvpCompanionsDb(id, companions) {
+  const list = (companions || []).map((s) => (s || "").trim()).filter(Boolean);
+  const patch = { companions: list, plus_one: list.join(", "), count: list.length + 1 };
+  const { error } = await supabase.from("rsvps").update(patch).eq("id", id);
+  if (error) { console.warn("[api] rsvp companions update failed:", error.message); throw error; }
+  return { companions: list, plusOne: patch.plus_one, count: patch.count };
+}
 
 // Owner/superadmin guest-list CRUD (RLS scopes writes to the owner's client).
 export async function addGuestDb(guest) {

@@ -301,6 +301,11 @@ export const Store = {
     persist();
     emit();
   },
+  updateRSVP(id, patch) {
+    _state = { ..._state, rsvps: _state.rsvps.map((r) => (r.id === id ? { ...r, ...patch } : r)) };
+    persist();
+    emit();
+  },
   addGuest(guest) {
     _state = { ..._state, guests: [{ ...guest }, ...(_state.guests || [])] };
     persist();
