@@ -185,7 +185,7 @@ export function RSVPPage() {
         if (!strict) {
           await confirmDialog({
             title: "You've already RSVP'd",
-            message: `${fullName} has already responded — we've got you down. If something changed, please contact the couple.`,
+            message: `This name has already responded — we've got you down. If something changed, please contact the couple.`,
             confirmLabel: "OK",
             okOnly: true,
             noIcon: true,
@@ -195,7 +195,7 @@ export function RSVPPage() {
         }
         const wantsUpdate = await confirmDialog({
           title: "You've already RSVP'd",
-          message: `${fullName} has already responded. Update your response with these details?`,
+          message: `This name has already responded. Update your response with these details?`,
           confirmLabel: "Update it",
           noIcon: true,
         });
