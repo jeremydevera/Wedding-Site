@@ -33,9 +33,12 @@ describe("RSVPPage under Strict RSVP", () => {
     expect(container.querySelectorAll("#r-count option").length).toBe(0);
   });
 
-  it("offers all 8 count options when strict is off", () => {
+  it("open mode: bringing-with-you is a numeric textbox, not a dropdown", () => {
     Store.updateSettings({ strictRsvp: false, rsvpDeadlineDate: "" });
     const { container } = render(<RSVPPage />);
-    expect(container.querySelectorAll("#r-count option").length).toBe(8);
+    const el = container.querySelector("#r-count");
+    expect(el).toBeTruthy();
+    expect(el.tagName).toBe("INPUT");
+    expect(el.getAttribute("type")).toBe("number");
   });
 });

@@ -17,7 +17,7 @@ export const DIET_OPTIONS = ["None", "Vegetarian", "Vegan", "Gluten-free", "Hala
 export function RSVPPage() {
   const { settings } = useStore();
   const [form, setForm] = useState({
-    firstName: "", middleName: "", lastName: "", email: "", phone: "", status: "attending", count: 1,
+    firstName: "", middleName: "", lastName: "", email: "", phone: "", status: "attending", count: 0,
     guestNames: [], diet: "None", dietNotes: "", song: "", notes: "",
   });
   const [errors, setErrors] = useState({});
@@ -54,12 +54,39 @@ export function RSVPPage() {
   }, [strict, form.firstName, form.middleName, form.lastName]);
   const alloc = lookup && lookup !== "checking" && lookup.status === "ok" ? lookup.allocation : null;
 
-  // Cap the count picker at the invitation's allocation (8 when unknown), and
-  // clamp an already-picked count down if the allocation arrives lower.
+  // Open mode: same live pattern, but against prior replies — tell the guest
+  // right away if this name has already responded.
+  const [openTaken, setOpenTaken] = useState(null); // null | "checking" | boolean
+  useEffect(() => {
+    if (strict) return;
+    if (!form.firstName.trim() || !form.lastName.trim()) { setOpenTaken(null); return; }
+    setOpenTaken("checking");
+    let live = true;
+    const t = setTimeout(() => {
+      rsvpNameTaken(form.firstName, form.middleName, form.lastName)
+        .then((v) => { if (live) setOpenTaken(!!v); })
+        .catch(() => { if (live) setOpenTaken(null); });
+    }, 450);
+    return () => { live = false; clearTimeout(t); };
+  }, [strict, form.firstName, form.middleName, form.lastName]);
+
+  // Strict: the picker is TOTAL attending (allocation-capped) and unlocks at 1
+  // once the name is verified. Open: the typed number IS the companions they
+  // bring ("3" = you + 3), so no picker cap beyond the party-of-8 total rule.
   const maxCount = strict ? maxPartySize(alloc) : 8;
   useEffect(() => {
-    setForm((f) => (parseInt(f.count, 10) > maxCount ? { ...f, count: maxCount } : f));
-  }, [maxCount]);
+    if (!strict) return;
+    setForm((f) => {
+      const c = parseInt(f.count, 10) || 0;
+      if (alloc != null && c < 1) return { ...f, count: 1 };
+      return c > maxCount ? { ...f, count: maxCount } : f;
+    });
+  }, [strict, maxCount, alloc]);
+
+  // Companion-name slots shown under the count field.
+  const slots = attending
+    ? (strict ? Math.max(0, (parseInt(form.count, 10) || 0) - 1) : Math.min(7, Math.max(0, parseInt(form.count, 10) || 0)))
+    : 0;
 
   function validate() {
     const er = {};
@@ -68,12 +95,17 @@ export function RSVPPage() {
     if (!isValidOptionalEmail(form.email)) er.email = "Please enter a valid email, or leave it blank.";
     if (attending) {
       const n = parseInt(form.count, 10);
-      if (!n || n < 1) er.count = "Please enter how many will attend.";
-      // The cap is the guest's allocation under Strict RSVP (can exceed 8),
-      // else the open form's default of 8.
-      if (n > maxCount) er.count = strict && alloc
-        ? `Your invitation reserves ${maxCount} ${maxCount === 1 ? "seat" : "seats"}.`
-        : "For parties larger than 8, please contact the couple directly.";
+      if (strict) {
+        if (!n || n < 1) er.count = "Please enter how many will attend.";
+        // The cap is the guest's allocation (can exceed 8).
+        if (n > maxCount) er.count = alloc
+          ? `Your invitation reserves ${maxCount} ${maxCount === 1 ? "seat" : "seats"}.`
+          : "For parties larger than 8, please contact the couple directly.";
+      } else {
+        // Open mode: the number is companions brought along (0 = just you).
+        if (Number.isNaN(n) || n < 0) er.count = "How many are you bringing? Enter 0 if it's just you.";
+        if (n > 7) er.count = "For parties larger than 8, please contact the couple directly.";
+      }
     }
     if (form.diet === "Other" && !form.dietNotes.trim()) er.dietNotes = "Please describe the dietary need.";
     if (form.notes.length > 1000) er.notes = "Please keep notes under 1000 characters.";
@@ -99,13 +131,12 @@ export function RSVPPage() {
     const er = validate();
     if (Object.keys(er).length) { showErrors(er); return; }
     const fullName = [form.firstName, form.middleName, form.lastName].map((s) => s.trim()).filter(Boolean).join(" ");
-    const picked = attending ? parseInt(form.count, 10) : 0;
-    const companions = (form.guestNames || []).slice(0, Math.max(0, picked - 1)).map((s) => (s || "").trim()).filter(Boolean);
+    const picked = attending ? (parseInt(form.count, 10) || 0) : 0;
+    const companions = (form.guestNames || []).slice(0, slots).map((s) => (s || "").trim()).filter(Boolean);
     const plusOne = companions.join(", ");
-    // Strict mode: the real head count is who they NAMED plus themselves —
-    // picking 9 slots but naming 5 companions means a party of 6. The picker
-    // only sets how many name slots appear. Open mode keeps the picked number.
-    const count = attending ? (strict ? companions.length + 1 : picked) : 0;
+    // Head count: strict = who they NAMED plus themselves (slots are advisory);
+    // open = typed companions + themselves (names optional there).
+    const count = attending ? (strict ? companions.length + 1 : picked + 1) : 0;
     const payload = { ...form, fullName, count, plusOne, companions };
     setSubmitting(true);
     try {
@@ -245,6 +276,15 @@ export function RSVPPage() {
                       : <span style={{ color: "var(--danger, #a33)" }}>We can't find this name on the guest list — please check the spelling.</span>}
               </div>
             )}
+            {!strict && openTaken && (
+              <div style={{ marginTop: -8, marginBottom: 16, fontSize: 14 }} aria-live="polite">
+                {openTaken === "checking"
+                  ? <span style={{ color: "var(--muted)" }}>Checking previous responses…</span>
+                  : openTaken === true
+                    ? <span style={{ color: "var(--danger, #a33)", fontWeight: 600 }}>This name has already RSVP&rsquo;d — submitting again will offer to update it.</span>
+                    : null}
+              </div>
+            )}
             <Field label="Email" hint="Optional — so the couple can reach you about the day" error={errors.email} id="r-email">
               <Input id="r-email" type="email" inputMode="email" value={form.email} onChange={set("email")} />
             </Field>
@@ -266,9 +306,9 @@ export function RSVPPage() {
             {attending && (
               <div className="fade-up">
                 <div className="field-row field-row--2">
-                  {(!strict || alloc != null) ? (
+                  {strict ? (alloc != null ? (
                     <Field label="Number attending" required error={errors.count} id="r-count"
-                      hint={strict && alloc != null ? `Your invitation reserves ${alloc} ${alloc === 1 ? "seat" : "seats"}` : "Including yourself"}>
+                      hint={`Your invitation reserves ${alloc} ${alloc === 1 ? "seat" : "seats"}`}>
                       <Select id="r-count" value={form.count} onChange={set("count")}>
                         {Array.from({ length: maxCount }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}
                       </Select>
@@ -279,6 +319,11 @@ export function RSVPPage() {
                     <Field label="Number attending" id="r-count" hint="Enter your name above first — your seats unlock once we find you">
                       <Input id="r-count" value="" placeholder="—" disabled readOnly />
                     </Field>
+                  )) : (
+                    <Field label="Bringing with you" required error={errors.count} id="r-count"
+                      hint="3 means you + 3 companions — 0 if it's just you">
+                      <Input id="r-count" type="number" min={0} max={7} inputMode="numeric" value={form.count} onChange={set("count")} />
+                    </Field>
                   )}
                   <Field label="Dietary preference" id="r-diet">
                     <Select id="r-diet" value={form.diet} onChange={set("diet")}>
@@ -286,10 +331,10 @@ export function RSVPPage() {
                     </Select>
                   </Field>
                 </div>
-                {form.count > 1 && (
+                {slots > 0 && (
                   <Field label="Names of your guests" hint="So we can set the table">
                     <div style={{ display: "grid", gap: 8 }}>
-                      {Array.from({ length: form.count - 1 }, (_, i) => (
+                      {Array.from({ length: slots }, (_, i) => (
                         <Input
                           key={i}
                           aria-label={`Guest ${i + 2} name`}
@@ -308,8 +353,8 @@ export function RSVPPage() {
                     </div>
                   </Field>
                 )}
-                {strict && form.count > 1 && (() => {
-                  const filled = (form.guestNames || []).slice(0, Math.max(0, parseInt(form.count, 10) - 1)).filter((s) => (s || "").trim()).length;
+                {slots > 0 && (() => {
+                  const filled = (form.guestNames || []).slice(0, slots).filter((s) => (s || "").trim()).length;
                   return (
                     <div style={{ fontSize: 14, color: "var(--muted)", marginTop: -8, marginBottom: 16 }} aria-live="polite">
                       Total attending: <strong style={{ color: "var(--ink)" }}>{filled + 1}</strong> (you + {filled} {filled === 1 ? "companion" : "companions"})
