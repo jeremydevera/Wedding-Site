@@ -1,6 +1,7 @@
 import React from "react";
 import {
   Chart as ChartJS,
+  DoughnutController, BarController, LineController,
   ArcElement, Tooltip, Legend,
   CategoryScale, LinearScale, BarElement,
   PointElement, LineElement, Filler,
@@ -11,6 +12,7 @@ import { rsvpStats } from "@/lib/rsvp.js";
 const { useRef, useEffect, useMemo } = React;
 
 ChartJS.register(
+  DoughnutController, BarController, LineController,
   ArcElement, Tooltip, Legend,
   CategoryScale, LinearScale, BarElement,
   PointElement, LineElement, Filler,
