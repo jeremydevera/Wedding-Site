@@ -193,14 +193,14 @@ export function AdminDashboard({ goTab }) {
     // read from the one reconcileGuests summary (same field the Guests tab's
     // Attending folder counts, so they can never disagree). Sub is just
     // "confirmed"; maybe/declined/for-approval live in the Guests tab folders.
-    { label: "RSVPs", value: strict ? recon.summary.attending : attending.length, sub: "confirmed", tab: "rsvps" },
-    { label: "Guest Count", value: guestCount, sub: "people coming", tab: "rsvps" },
+    { label: "RSVPs", value: strict ? recon.summary.attending : attending.length, sub: "confirmed", tab: "rsvps", icon: "check" },
+    { label: "Guest Count", value: guestCount, sub: "people coming", tab: "rsvps", icon: "user" },
     ...(mediaShelved ? [] : [
-      { label: "Photos", value: photos.length, sub: pendingMedia.length ? `${pendingMedia.length} to review` : "all clear", tab: "media" },
-      { label: "Videos", value: videos.length, sub: "uploaded", tab: "media" },
+      { label: "Photos", value: photos.length, sub: pendingMedia.length ? `${pendingMedia.length} to review` : "all clear", tab: "media", icon: "camera" },
+      { label: "Videos", value: videos.length, sub: "uploaded", tab: "media", icon: "play" },
     ]),
-    ...(gbOn ? [{ label: "Guestbook", value: guestbook.length, sub: "messages", tab: "guestbook" }] : []),
-    ...(quizOn ? [{ label: "Quiz Plays", value: quizSubs.length, sub: "submissions", tab: "quiz" }] : []),
+    ...(gbOn ? [{ label: "Guestbook", value: guestbook.length, sub: "messages", tab: "guestbook", icon: "book" }] : []),
+    ...(quizOn ? [{ label: "Quiz Plays", value: quizSubs.length, sub: "submissions", tab: "quiz", icon: "quiz" }] : []),
   ];
   const recentRsvps = rsvps.slice(0, 5);
   const recentMedia = media.slice(0, 6);
@@ -211,6 +211,7 @@ export function AdminDashboard({ goTab }) {
       <div className="stat-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
         {stats.map((s) => (
           <button key={s.label} className="stat" onClick={() => goTab(s.tab)} style={{ cursor: "pointer", textAlign: "left", font: "inherit", color: "inherit" }}>
+            {s.icon && <span className="stat__icon" aria-hidden="true">{Icon[s.icon]({})}</span>}
             <div className="stat__label">{s.label}</div>
             <div className="stat__value">{s.value}</div>
             <div className="stat__sub">{s.sub}</div>

@@ -69,7 +69,7 @@ function DonutCard({ title, hint, canvasRef, centerNum, centerLbl, legend, empty
       {legend.length === 0 ? (
         <div className="rsvp-chart-empty">{empty}</div>
       ) : (
-        <>
+        <div className="rsvp-chart-body">
           <div className="rsvp-donut-wrap">
             <canvas ref={canvasRef} />
             <div className="rsvp-donut-center">
@@ -86,7 +86,7 @@ function DonutCard({ title, hint, canvasRef, centerNum, centerLbl, legend, empty
               </div>
             ))}
           </div>
-        </>
+        </div>
       )}
     </div>
   );
