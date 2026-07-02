@@ -266,9 +266,9 @@ export function QuestionEditor({ open, question, onClose }) {
 }
 
 // Modal body: add or edit one invited guest. `companions` are the names from
-// the guest's matched RSVP reply — shown for context; removable when the
-// controller passes onRemoveCompanion (updates the reply itself).
-function GuestForm({ initial, companions, onRemoveCompanion, onSave, onCancel }) {
+// the guest's matched RSVP reply — editable/removable when the controller
+// passes onEditCompanion/onRemoveCompanion (both update the reply itself).
+function GuestForm({ initial, companions, onEditCompanion, onRemoveCompanion, onSave, onCancel }) {
   // `allocation` = the max attendees this guest may RSVP, including themselves.
   // The number the owner types IS the guest's cap — no conversion.
   const [f, setF] = useState(initial);
@@ -294,16 +294,17 @@ function GuestForm({ initial, companions, onRemoveCompanion, onSave, onCancel })
       <Field label="Email" hint="Optional" id="g-email"><Input id="g-email" type="email" value={f.email || ""} onChange={set("email")} /></Field>
       <Field label="Notes" hint="Optional" id="g-notes"><Input id="g-notes" value={f.notes || ""} onChange={set("notes")} /></Field>
       {companions && companions.length > 0 && (
-        <Field label="Companions" hint="From their RSVP reply — removing one lowers their head count">
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        <Field label="Companions" hint="From their RSVP reply — rename a companion (Enter to save) or remove one">
+          <div style={{ display: "grid", gap: 8 }}>
             {companions.map((c, i) => (
-              <span key={i} style={{ background: "var(--line)", borderRadius: 100, padding: "4px 12px", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}>
-                {c}
+              <div key={c + "|" + i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <Input defaultValue={c} aria-label={`Companion ${i + 1}`} readOnly={!onEditCompanion}
+                  onBlur={(e) => onEditCompanion && onEditCompanion(i, e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.target.blur(); } }} />
                 {onRemoveCompanion && (
-                  <button type="button" onClick={() => onRemoveCompanion(i)} aria-label={`Remove ${c}`}
-                    style={{ border: "none", background: "none", cursor: "pointer", padding: 0, lineHeight: 1, fontSize: 15, fontWeight: 700, color: "var(--danger, #a33)" }}>×</button>
+                  <button type="button" className="icon-btn icon-btn--danger" onClick={() => onRemoveCompanion(i)} aria-label={`Remove ${c}`}>{Icon.trash({})}</button>
                 )}
-              </span>
+              </div>
             ))}
           </div>
         </Field>
@@ -423,6 +424,20 @@ export function GuestsAdmin() {
       toast("Couldn't remove: " + (e && e.message || "error"), "err");
     }
   }
+  // Rename one companion on a matched reply (blank = ignored; use remove).
+  async function editCompanion(rsvp, comps, idx, name) {
+    const v = (name || "").trim();
+    if (!v || v === comps[idx]) return;
+    try {
+      await run(async () => {
+        const patch = await updateRsvpCompanionsDb(rsvp.id, comps.map((c, i) => (i === idx ? v : c)));
+        Store.updateRSVP(rsvp.id, patch);
+      });
+      toast("Companion updated", "success");
+    } catch (e) {
+      toast("Couldn't update: " + (e && e.message || "error"), "err");
+    }
+  }
   // "Add to list": create a guest entry straight from an unmatched RSVP. Once
   // inserted, reconcileGuests recomputes and the row leaves the Unmatched tab.
   async function adoptRsvp(r) {
@@ -530,6 +545,7 @@ export function GuestsAdmin() {
           const comps = arr.length ? arr : (r && r.plusOne ? String(r.plusOne).split(", ") : []);
           return (
             <GuestForm initial={editing} companions={comps}
+              onEditCompanion={r ? (i, v) => editCompanion(r, comps, i, v) : null}
               onRemoveCompanion={r ? (i) => removeCompanion(r, comps, i) : null}
               onSave={saveGuest} onCancel={() => setEditing(null)} />
           );
