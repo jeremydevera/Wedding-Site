@@ -1862,11 +1862,13 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    .device-player width) so it scales cleanly from desktop to phone. Wired to the
    same audio engine as the vinyl skin. */
 .device-player { width: min(697px, 100%); margin: 0 auto; }
-/* container-query context lives on the device body (not .device-player) so the
-   desktop row layout can widen .device-player without inflating the cqw-sized
-   device. */
+/* container-query context lives on .dp-frame (a wrapper sized to the DEVICE),
+   NOT on .device-player (which widens for the desktop row) and NOT on .dp-body
+   itself — an element's cqw units resolve against its ANCESTOR container, so if
+   the container were .dp-body its own cqw props (shadow/radius/padding) would
+   fall back to the viewport and balloon (a huge shadow-halo behind the device). */
+.dp-frame { container-type: inline-size; width: min(697px, 100%); }
 .dp-body {
-  container-type: inline-size;
   position: relative; width: 100%; aspect-ratio: 697 / 372;
   display: flex; align-items: center; justify-content: space-around; gap: 2cqw;
   padding: 0 3cqw;
@@ -1936,7 +1938,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    (basis capped), the playlist takes the remaining width with a left divider. */
 @media (min-width: 900px) {
   .device-player { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 36px; width: 100%; max-width: 1080px; }
-  .dp-body { flex: 0 0 min(640px, 56%); width: auto; }
+  .dp-frame { flex: 0 0 min(640px, 56%); }
   .device-aside { flex: 1 1 auto; min-width: 0; margin-top: 0; padding: 0 0 0 36px; border-top: none; border-left: 1px solid var(--line); align-self: center; }
   .device-player .vinyl-list { max-height: 328px; }
 }

@@ -246,6 +246,7 @@ function DevicePlayer({ tracks }) {
           <h2 className="sec-head__title">{many ? "Our Playlist" : "Press Play"}</h2>
         </div>
         <div className="device-player">
+          <div className="dp-frame">
           <div className="dp-body">
             <div className={"dp-screen" + (artUrl ? " dp-screen--art" : "")}>
               {artUrl && (artIsVideo
@@ -288,6 +289,7 @@ function DevicePlayer({ tracks }) {
                 </button>
               </div>
             </div>
+          </div>
           </div>
 
           {many && (
