@@ -292,14 +292,22 @@ function GuestForm({ initial, companions, onSave, onCancel }) {
         <Field label="Middle name" hint="Optional — tells apart same-named guests" id="g-mid"><Input id="g-mid" value={f.middleName} onChange={set("middleName")} /></Field>
         <Field label="Allotted seats" hint="Max people they can RSVP, including themselves — 9 means up to 9" id="g-alloc"><Input id="g-alloc" type="number" min={1} value={f.allocation} onChange={set("allocation")} /></Field>
       </div>
-      <div className="field-row field-row--2">
-        <Field label="Email" hint="Optional" id="g-email"><Input id="g-email" type="email" value={f.email || ""} onChange={set("email")} /></Field>
-        <Field label="Status" hint="New guests count as attending" id="g-status">
-          <Select id="g-status" value={f.status || "attending"} onChange={set("status")}>
-            {[["attending", "Attending"], ["maybe", "Maybe"], ["not_attending", "Declined"], ["none", "No reply"]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-          </Select>
-        </Field>
-      </div>
+      {f.id ? (
+        <div className="field-row field-row--2">
+          <Field label="Email" hint="Optional" id="g-email"><Input id="g-email" type="email" value={f.email || ""} onChange={set("email")} /></Field>
+          <Field label="Status" id="g-status">
+            <Select id="g-status" value={f.status || "attending"} onChange={set("status")}>
+              {[["attending", "Attending"], ["maybe", "Maybe"], ["not_attending", "Declined"], ["none", "No reply"]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </Select>
+          </Field>
+        </div>
+      ) : (
+        <>
+          <Field label="Email" hint="Optional" id="g-email"><Input id="g-email" type="email" value={f.email || ""} onChange={set("email")} /></Field>
+          <AdminToggle label="Wait for their RSVP?" desc="On — they confirm through the RSVP form first. Off — counted as attending right away."
+            checked={f.status === "none"} onChange={(v) => setF((s) => ({ ...s, status: v ? "none" : "attending" }))} />
+        </>
+      )}
       <Field label="Notes" hint="Optional" id="g-notes"><Input id="g-notes" value={f.notes || ""} onChange={set("notes")} /></Field>
       {comps.length > 0 && (
         <Field label="Companions" hint="From their RSVP reply — changes apply when you save">
