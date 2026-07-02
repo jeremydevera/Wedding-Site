@@ -1683,6 +1683,27 @@ export function HomeAdmin() {
               <div style={{ height: 14 }} />
               <AdminToggle label="Autoplay music on load" desc="Start the playlist automatically (on the first tap or scroll). When off, guests press play themselves. Saves instantly."
                 checked={f.musicAutoplay !== false} onChange={(v) => toggleShow("musicAutoplay", v)} />
+              <div style={{ height: 20 }} />
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>Player style</div>
+              <p style={{ color: "var(--muted)", margin: "0 0 14px", fontSize: 14 }}>
+                How the home music player looks. Saves instantly.
+              </p>
+              <div className="tl-pick">
+                {[
+                  { v: "vinyl", label: "Vinyl", sub: "Spinning record, matches your wedding theme",
+                    art: <svg viewBox="0 0 64 48" width="64" height="48" fill="none"><circle cx="32" cy="24" r="17" stroke="currentColor" strokeWidth="2.5" /><circle cx="32" cy="24" r="6" fill="currentColor" opacity="0.5" /><circle cx="32" cy="24" r="1.8" fill="currentColor" /><circle cx="32" cy="24" r="11.5" stroke="currentColor" strokeWidth="1" opacity="0.4" /></svg> },
+                  { v: "device", label: "Retro Device", sub: "Matte player with a click wheel",
+                    art: <svg viewBox="0 0 64 48" width="64" height="48" fill="none"><rect x="8" y="8" width="48" height="32" rx="6" stroke="currentColor" strokeWidth="2.5" /><rect x="13" y="13" width="20" height="22" rx="3" fill="currentColor" opacity="0.35" /><circle cx="45" cy="24" r="8" stroke="currentColor" strokeWidth="2.5" /><circle cx="45" cy="24" r="2.5" fill="currentColor" /></svg> },
+                ].map((o) => (
+                  <button key={o.v} type="button"
+                    className={"tl-pick__opt" + ((f.playerSkin || "vinyl") === o.v ? " is-active" : "")}
+                    onClick={() => toggleShow("playerSkin", o.v)}>
+                    <span className="tl-pick__art">{o.art}</span>
+                    <span className="tl-pick__label">{o.label}</span>
+                    <span className="tl-pick__sub">{o.sub}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           <R2MigratePanel />
@@ -2283,8 +2304,8 @@ export function AdminApp() {
           <AdminSaveCtx.Provider value={{ saving, dirty, save: saveChanges, run: runSaving }}>
           {activeTab === "dashboard" && <AdminDashboard goTab={setTab} />}
           {activeTab === "home" && <HomeAdmin />}
-          {/* One RSVPs tab that adapts: strict = guest-list-first (with a Replies
-              folder inside), open = the classic replies table. */}
+          {/* One RSVPs tab that adapts: strict = the guest-list view, open = the
+              classic replies table. */}
           {activeTab === "rsvps" && (settings.strictRsvp ? <GuestsAdmin /> : <RsvpsAdmin />)}
           {activeTab === "media" && <MediaAdmin />}
           {activeTab === "guestbook" && <GuestbookAdmin />}
