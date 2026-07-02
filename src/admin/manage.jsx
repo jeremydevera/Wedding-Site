@@ -2091,7 +2091,7 @@ export function EntourageAdmin({ headRight }) {
         {headRight}
       </div>
       <div className="panel__body">
-        <div style={{ marginBottom: 16, display: "flex", justifyContent: "flex-end" }}><Button variant="primary" size="sm" onClick={() => { setEditGroup(null); setGroupOpen(true); }}>+ Add group</Button></div>
+        <div className="admin-toolbar" style={{ marginBottom: 16 }}><div className="admin-toolbar__end"><Button variant="primary" className="admin-toolbar__action" onClick={() => { setEditGroup(null); setGroupOpen(true); }}>+ Add group</Button></div></div>
         <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 0, marginBottom: 18 }}>Groups shown on the home page after the schedule. Add a group (e.g. Groomsmen), then add people under it. Everything saves automatically.</p>
         {groups.length === 0 && <p style={{ color: "var(--muted)", textAlign: "center", padding: "30px 0" }}>No groups yet — add your first one above.</p>}
         {groups.map((g, gi) => (
@@ -2203,7 +2203,7 @@ export function AttireAdmin({ headRight }) {
         <div className="panel__title">Attire guide <span style={{ color: "var(--muted)", fontSize: 15 }}>({groups.length})</span></div>
         {headRight}
       </div>
-      <div style={{ padding: "14px 16px 0", display: "flex", justifyContent: "flex-end" }}><Button variant="primary" size="sm" onClick={() => { setEditing(null); setOpen(true); }}>+ Add group</Button></div>
+      <div className="admin-toolbar" style={{ padding: "14px 16px 0" }}><div className="admin-toolbar__end"><Button variant="primary" className="admin-toolbar__action" onClick={() => { setEditing(null); setOpen(true); }}>+ Add group</Button></div></div>
       <div className="panel__body--flush table-wrap">
         <table className="tbl">
           <thead><tr><th>#</th><th>Preview</th><th>Name</th><th>Palette</th><th></th></tr></thead>
