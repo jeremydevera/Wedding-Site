@@ -2,7 +2,7 @@ import React from "react";
 import qrcode from "qrcode-generator";
 import { go } from "@/lib/nav.js";
 import { resolveSubdomain } from "@/lib/tenant.js";
-import { DISABLED_MODULES } from "@/lib/roles.js";
+import { DISABLED_MODULES, moduleEnabled } from "@/lib/roles.js";
 import { useStore } from "@/lib/store.jsx";
 import { reconcileGuests } from "@/lib/guests.js";
 import { headsOf } from "@/lib/rsvp.js";
@@ -185,6 +185,9 @@ export function AdminDashboard({ goTab }) {
   const pendingMedia = media.filter((m) => m.status === "pending");
   // Photos/Videos belong to the shelved gallery feature — hide their cards too.
   const mediaShelved = DISABLED_MODULES.has("gallery");
+  // Hide a section's dashboard card when its module is switched off in Settings.
+  const gbOn = moduleEnabled(settings.modules, "guestbook");
+  const quizOn = moduleEnabled(settings.modules, "quiz");
   const stats = [
     { label: "RSVPs", value: counted.length, sub: `${attending.length} attending` + (strict && forApproval > 0 ? ` · ${forApproval} for approval` : ""), tab: "rsvps" },
     { label: "Guest Count", value: guestCount, sub: "people coming", tab: "rsvps" },
@@ -192,8 +195,8 @@ export function AdminDashboard({ goTab }) {
       { label: "Photos", value: photos.length, sub: pendingMedia.length ? `${pendingMedia.length} to review` : "all clear", tab: "media" },
       { label: "Videos", value: videos.length, sub: "uploaded", tab: "media" },
     ]),
-    { label: "Guestbook", value: guestbook.length, sub: "messages", tab: "guestbook" },
-    { label: "Quiz Plays", value: quizSubs.length, sub: "submissions", tab: "quiz" },
+    ...(gbOn ? [{ label: "Guestbook", value: guestbook.length, sub: "messages", tab: "guestbook" }] : []),
+    ...(quizOn ? [{ label: "Quiz Plays", value: quizSubs.length, sub: "submissions", tab: "quiz" }] : []),
   ];
   const recentRsvps = rsvps.slice(0, 5);
   const recentMedia = media.slice(0, 6);
@@ -237,6 +240,7 @@ export function AdminDashboard({ goTab }) {
           </div>
         </div>
 
+        {gbOn && (
         <div style={{ display: "grid", gap: 24, gridTemplateColumns: "1fr" }} className="dash-2col">
           <div className="panel">
             <div className="panel__head"><div className="panel__title">Recent Messages</div><Button variant="ghost" size="sm" onClick={() => goTab("guestbook")}>Moderate</Button></div>
@@ -250,6 +254,7 @@ export function AdminDashboard({ goTab }) {
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   );
