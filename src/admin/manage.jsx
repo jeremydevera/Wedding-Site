@@ -1171,9 +1171,9 @@ export function QrAdmin() {
   );
 }
 
-export function AdminToggle({ checked, onChange, label, desc }) {
+export function AdminToggle({ checked, onChange, label, desc, noRule }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "13px 0", borderBottom: "1px solid var(--line)" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "13px 0", borderBottom: noRule ? "none" : "1px solid var(--line)" }}>
       <div><div style={{ fontWeight: 600 }}>{label}</div>{desc && <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2 }}>{desc}</div>}</div>
       <button type="button" onClick={() => onChange(!checked)} aria-pressed={checked} style={{ position: "relative", width: 46, height: 26, borderRadius: 100, border: "none", cursor: "pointer", background: checked ? "var(--accent)" : "var(--line)", transition: "background .2s", flex: "none" }}>
         <span style={{ position: "absolute", top: 3, left: checked ? 23 : 3, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left .2s", boxShadow: "0 1px 3px rgba(0,0,0,.3)" }} />
@@ -1910,7 +1910,7 @@ export function HomeAdmin() {
               </div>
               {/* narrow wrapper so the switch sits next to its label, not far across the wide panel */}
               <div style={{ maxWidth: 460 }}>
-                <AdminToggle label="Show countdown timer" desc="The live days/hours/minutes counter on the home page. Turn off to hide it." checked={f.showCountdown !== false} onChange={(v) => toggleShow("showCountdown", v)} />
+                <AdminToggle noRule label="Show countdown timer" desc="The live days/hours/minutes counter on the home page. Turn off to hide it." checked={f.showCountdown !== false} onChange={(v) => toggleShow("showCountdown", v)} />
               </div>
               <Field label="Welcome message" id="s-welcome"><Textarea id="s-welcome" rows={3} value={f.welcome} onChange={set("welcome")} /></Field>
               <Field label="RSVP deadline (display text)" id="s-rsvp" hint="Shown on the RSVP page — e.g. “August 15, 2027”"><Input id="s-rsvp" value={f.rsvpDeadline} onChange={set("rsvpDeadline")} /></Field>
