@@ -143,8 +143,10 @@ export function RSVPPage() {
       // Strict RSVP: only invited guests may respond, capped at their seat
       // allocation. Checked server-side at submit (the live hint is advisory,
       // so editing the name after the lookup can't bypass the gate).
+      let gateRes = null;
       if (strict) {
         const res = await guestAllocation(form.firstName, form.middleName, form.lastName);
+        gateRes = res;
         if (res.status === "ambiguous") {
           setSubmitting(false);
           showErrors({ middleName: "Please add your middle name so we know which guest you are." });
@@ -187,6 +189,20 @@ export function RSVPPage() {
           noIcon: true,
         });
         go("home");
+        return;
+      }
+      // Owner-curated list: an added guest already counts as attending, so a
+      // "yes" adds nothing — inform and stop. Declines/maybes still record
+      // (the reply overrides the listed status).
+      if (strict && attending && gateRes && gateRes.guestStatus === "attending") {
+        setSubmitting(false);
+        await confirmDialog({
+          title: "You're already listed",
+          message: `${fullName} is already on the guest list as attending — no need to RSVP. If your plans change, you can decline here or contact the couple.`,
+          confirmLabel: "OK",
+          okOnly: true,
+          noIcon: true,
+        });
         return;
       }
       await postRsvp(payload);

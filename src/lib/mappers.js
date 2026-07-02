@@ -98,6 +98,7 @@ export function guestToRow(g, clientId) {
     client_id: clientId,
     first_name: g.firstName, last_name: g.lastName, middle_name: g.middleName,
     allocation: g.allocation, email: g.email, notes: g.notes,
+    status: g.status || "attending",
   };
 }
 
@@ -105,6 +106,7 @@ export function rowToGuest(row) {
   return {
     id: row.id, firstName: row.first_name, lastName: row.last_name, middleName: row.middle_name,
     allocation: row.allocation, email: row.email, notes: row.notes,
+    status: row.status || "attending",
     createdAt: row.created_at ? Date.parse(row.created_at) : Date.now(),
   };
 }

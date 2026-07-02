@@ -87,4 +87,23 @@ describe("reconcileGuests", () => {
     expect(reconcileGuests([], []).summary).toMatchObject({ invited: 0, seatsAllocated: 0, confirmedHeads: 0 });
     expect(reconcileGuests(undefined, undefined).rows).toEqual([]);
   });
+  it("falls back to the owner-set guest status when there is no reply, counting the allocation as heads", () => {
+    const gs = [
+      { id: "a", firstName: "Ana", lastName: "Cruz", middleName: "", allocation: 4, status: "attending" },
+      { id: "b", firstName: "Ben", lastName: "Diaz", middleName: "", allocation: 2, status: "none" },
+    ];
+    const { rows, summary } = reconcileGuests(gs, []);
+    const byId = Object.fromEntries(rows.map((x) => [x.guest.id, x]));
+    expect(byId.a.status).toBe("attending");   // owner-listed = attending, no reply needed
+    expect(byId.b.status).toBe("none");
+    expect(summary.confirmedHeads).toBe(4);    // Ana's full allotted party
+    expect(summary.outstanding).toBe(2);       // neither has replied yet
+  });
+  it("lets a reply override the owner-set status (declining flips to not_attending)", () => {
+    const gs = [{ id: "a", firstName: "Ana", lastName: "Cruz", middleName: "", allocation: 4, status: "attending" }];
+    const rs = [{ id: "r1", fullName: "Ana Cruz", firstName: "Ana", lastName: "Cruz", middleName: "", status: "not_attending", count: 0 }];
+    const { rows, summary } = reconcileGuests(gs, rs);
+    expect(rows[0].status).toBe("not_attending");
+    expect(summary.confirmedHeads).toBe(0);
+  });
 });

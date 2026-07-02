@@ -82,7 +82,16 @@ export async function guestAllocation(first, middle, last) {
   });
   if (error) throw error;
   const d = data || {};
-  return { status: d.status || "not_found", allocation: d.allocation == null ? null : Number(d.allocation) };
+  return {
+    status: d.status || "not_found",
+    allocation: d.allocation == null ? null : Number(d.allocation),
+    guestStatus: d.guest_status || null,
+  };
+}
+// Admin edit of a reply's status (owner-update RLS, 0016).
+export async function updateRsvpStatusDb(id, status) {
+  const { error } = await supabase.from("rsvps").update({ status }).eq("id", id);
+  if (error) { console.warn("[api] rsvp status update failed:", error.message); throw error; }
 }
 
 export async function postGuestbook(entry) {

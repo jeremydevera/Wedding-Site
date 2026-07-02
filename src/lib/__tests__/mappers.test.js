@@ -104,6 +104,7 @@ describe("guestToRow", () => {
       allocation: 2, email: "j@ex.com", notes: "college" }, "c1")).toEqual({
       client_id: "c1", first_name: "Jeremy", last_name: "Reyes", middle_name: "P",
       allocation: 2, email: "j@ex.com", notes: "college",
+      status: "attending", // owner-added guests count as attending by default
     });
   });
 });

@@ -7,7 +7,7 @@ import { FX_LIST } from "@/lib/falling-fx.js";
 import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { signOut } from "@/lib/auth.js";
-import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb } from "@/lib/api.js";
+import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb } from "@/lib/api.js";
 import { reconcileGuests, guestFromRsvp, normName } from "@/lib/guests.js";
 import { headsOf } from "@/lib/rsvp.js";
 import { mediaUrl } from "@/lib/media.js";
@@ -292,7 +292,14 @@ function GuestForm({ initial, companions, onSave, onCancel }) {
         <Field label="Middle name" hint="Optional — tells apart same-named guests" id="g-mid"><Input id="g-mid" value={f.middleName} onChange={set("middleName")} /></Field>
         <Field label="Allotted seats" hint="Max people they can RSVP, including themselves — 9 means up to 9" id="g-alloc"><Input id="g-alloc" type="number" min={1} value={f.allocation} onChange={set("allocation")} /></Field>
       </div>
-      <Field label="Email" hint="Optional" id="g-email"><Input id="g-email" type="email" value={f.email || ""} onChange={set("email")} /></Field>
+      <div className="field-row field-row--2">
+        <Field label="Email" hint="Optional" id="g-email"><Input id="g-email" type="email" value={f.email || ""} onChange={set("email")} /></Field>
+        <Field label="Status" hint="New guests count as attending" id="g-status">
+          <Select id="g-status" value={f.status || "attending"} onChange={set("status")}>
+            {[["attending", "Attending"], ["maybe", "Maybe"], ["not_attending", "Declined"], ["none", "No reply"]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </Select>
+        </Field>
+      </div>
       <Field label="Notes" hint="Optional" id="g-notes"><Input id="g-notes" value={f.notes || ""} onChange={set("notes")} /></Field>
       {comps.length > 0 && (
         <Field label="Companions" hint="From their RSVP reply — changes apply when you save">
@@ -326,7 +333,7 @@ export function GuestsAdmin() {
   const [emailOpen, setEmailOpen] = useState(false);
   const [emailTo, setEmailTo] = useState("");
   const [emailSending, setEmailSending] = useState(false);
-  const blank = { firstName: "", lastName: "", middleName: "", allocation: 2, email: "", notes: "" };
+  const blank = { firstName: "", lastName: "", middleName: "", allocation: 2, email: "", notes: "", status: "attending" };
 
   const recon = React.useMemo(() => reconcileGuests(guests, rsvps), [guests, rsvps]);
   const byId = React.useMemo(() => new Map(recon.rows.map((x) => [x.guest.id, x])), [recon]);
@@ -344,13 +351,14 @@ export function GuestsAdmin() {
     attending: bySearch.filter((g) => statusOf(g) === "attending").length,
     maybe: bySearch.filter((g) => statusOf(g) === "maybe").length,
     not_attending: bySearch.filter((g) => statusOf(g) === "not_attending").length,
-    outstanding: bySearch.filter((g) => statusOf(g) === "none").length,
+    outstanding: bySearch.filter((g) => !((byId.get(g.id) || {}).rsvp)).length,
     unmatched: unmatched.length,
   };
   const onUnmatched = filter === "unmatched";
   const filtered = bySearch.filter((g) => {
     if (filter === "all" || filter === "unmatched") return true;
-    if (filter === "outstanding") return statusOf(g) === "none";
+    // "No reply" = hasn't submitted an RSVP (status may still default to attending).
+    if (filter === "outstanding") return !((byId.get(g.id) || {}).rsvp);
     return statusOf(g) === filter; // attending | maybe | not_attending
   });
   const pg = usePaged(onUnmatched ? unmatched : filtered, 10);
@@ -398,6 +406,9 @@ export function GuestsAdmin() {
         : (rsvpRow.plusOne ? String(rsvpRow.plusOne).split(", ") : []))
       : [];
     const compsChanged = rsvpRow && JSON.stringify(nextComps) !== JSON.stringify(origComps);
+    // Effective status is the reply's when one exists — so an admin status
+    // change on a replied guest writes through to the reply itself.
+    const statusChanged = rsvpRow && payload.status && payload.status !== "none" && payload.status !== rsvpRow.status;
     try {
       await run(async () => {
         if (form.id) { await updateGuestDb(form.id, payload); Store.updateGuest(form.id, payload); }
@@ -405,6 +416,10 @@ export function GuestsAdmin() {
         if (compsChanged) {
           const patch = await updateRsvpCompanionsDb(rsvpRow.id, nextComps);
           Store.updateRSVP(rsvpRow.id, patch);
+        }
+        if (statusChanged) {
+          await updateRsvpStatusDb(rsvpRow.id, payload.status);
+          Store.updateRSVP(rsvpRow.id, { status: payload.status });
         }
       });
     } catch (e) {

@@ -4,7 +4,7 @@ import { go } from "@/lib/nav.js";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { DISABLED_MODULES } from "@/lib/roles.js";
 import { useStore } from "@/lib/store.jsx";
-import { matchedRsvps } from "@/lib/guests.js";
+import { reconcileGuests } from "@/lib/guests.js";
 import { headsOf } from "@/lib/rsvp.js";
 import { signIn } from "@/lib/auth.js";
 import { Button, Field, Icon, Input, Monogram, Placeholder, toast } from "@/ui/components.jsx";
@@ -166,15 +166,20 @@ export function AdminDashboard({ goTab }) {
   // Strict RSVP: only replies matched to an invited guest count toward the
   // tiles/charts — unmatched ones sit in the RSVPs tab's "For Approval".
   const strict = settings.strictRsvp === true;
-  const counted = React.useMemo(
-    () => (strict ? matchedRsvps(guests, rsvps) : rsvps),
+  // Strict: guests are owner-curated — an added guest counts as attending with
+  // their full allotted party until a reply says otherwise (reconcile rules).
+  const recon = React.useMemo(
+    () => (strict ? reconcileGuests(guests, rsvps) : null),
     [strict, guests, rsvps],
   );
+  const counted = strict ? recon.rows.filter((x) => x.rsvp).map((x) => x.rsvp) : rsvps;
   const forApproval = rsvps.length - counted.length;
-  const attending = counted.filter((r) => r.status === "attending");
-  // headsOf keeps this tile identical to the RSVP tab's Total head count
-  // (named companions + guest; falls back to the picked count).
-  const guestCount = attending.reduce((s, r) => s + headsOf(r), 0);
+  const attending = strict
+    ? recon.rows.filter((x) => x.status === "attending")
+    : counted.filter((r) => r.status === "attending");
+  const guestCount = strict
+    ? recon.summary.confirmedHeads
+    : attending.reduce((s, r) => s + headsOf(r), 0);
   const photos = media.filter((m) => m.type === "photo" && m.category === "gallery");
   const videos = media.filter((m) => m.type === "video");
   const pendingMedia = media.filter((m) => m.status === "pending");

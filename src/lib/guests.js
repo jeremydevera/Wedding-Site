@@ -38,14 +38,18 @@ export function reconcileGuests(guests, rsvps) {
     ));
     if (hit) used.add(hit.i);
     const rsvp = hit ? hit.r : null;
-    const status = rsvp ? rsvp.status : "none";
+    // A reply always wins; otherwise the owner-set guest status applies
+    // (owner-added guests default to "attending" — no reply required).
+    const status = rsvp ? rsvp.status : (g.status || "none");
     return { guest: g, rsvp, status };
   });
 
   const unmatchedRsvps = rs.filter(({ i }) => !used.has(i)).map(({ r }) => r);
   const replied = rows.filter((x) => x.rsvp).length;
+  // Attending WITH a reply counts who they named (+themselves); attending
+  // WITHOUT a reply counts their full allotted party (owner-curated list).
   const confirmedHeads = rows.reduce(
-    (s, x) => s + (x.status === "attending" ? headsOf(x.rsvp) : 0), 0);
+    (s, x) => s + (x.status === "attending" ? (x.rsvp ? headsOf(x.rsvp) : (Number(x.guest.allocation) || 0)) : 0), 0);
 
   const summary = {
     invited: gs.length,
