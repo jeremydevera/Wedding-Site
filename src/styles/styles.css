@@ -295,6 +295,11 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
    can't blow its track past its twin and make the columns lopsided. */
 @media (min-width: 640px) { .field-row--2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 @media (min-width: 640px) { .field-row--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* Companions column: on desktop fix the width and let a long name list wrap
+   (taller row) instead of stretching the column. Mobile keeps table scroll. */
+@media (min-width: 861px) {
+  .tbl th.col-comp, .tbl td.col-comp { width: 260px; max-width: 260px; white-space: normal; word-break: break-word; }
+}
 /* Native date/time inputs carry a large intrinsic min-width + control chrome;
    let them shrink to the column and behave like a normal text field. */
 input[type="datetime-local"].input,
