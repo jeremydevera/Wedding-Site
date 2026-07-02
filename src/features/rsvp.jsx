@@ -2,7 +2,7 @@ import React from "react";
 import { go } from "@/lib/nav.js";
 import { scrollToTop } from "@/lib/scroll.js";
 import { Store, useStore } from "@/lib/store.jsx";
-import { postRsvp, rsvpNameTaken, guestAllocation } from "@/lib/api.js";
+import { postRsvp, rsvpNameTaken, upsertRsvp, guestAllocation } from "@/lib/api.js";
 import { isRsvpClosed, joinPlusOnes, isValidOptionalEmail, maxPartySize } from "@/lib/rsvp.js";
 import { Button, Field, Icon, Input, Select, Textarea, confirmDialog } from "@/ui/components.jsx";
 import { PageHero } from "@/pages/PublicPages.jsx";
@@ -125,7 +125,7 @@ export function RSVPPage() {
     }
   }
 
-  async function submit(e) {
+  async function submit(e, forceUpdate) {
     e.preventDefault();
     if (submitting) return;
     const er = validate();
@@ -177,35 +177,47 @@ export function RSVPPage() {
           return;
         }
       }
-      // Duplicate name: one response per guest — no self-service updates.
-      // Changes go through the couple (the admin can edit the reply).
-      if (await rsvpNameTaken(form.firstName, form.middleName, form.lastName)) {
+      // Duplicate name. Strict mode: verified guests may UPDATE their response
+      // (coming or not + companions, via the rsvp_upsert RPC). Open mode stays
+      // one-response-per-name — changes go through the couple.
+      if (!forceUpdate && (await rsvpNameTaken(form.firstName, form.middleName, form.lastName))) {
         setSubmitting(false);
-        await confirmDialog({
+        if (!strict) {
+          await confirmDialog({
+            title: "You've already RSVP'd",
+            message: `${fullName} has already responded — we've got you down. If something changed, please contact the couple.`,
+            confirmLabel: "OK",
+            okOnly: true,
+            noIcon: true,
+          });
+          go("home");
+          return;
+        }
+        const wantsUpdate = await confirmDialog({
           title: "You've already RSVP'd",
-          message: `${fullName} has already responded — we've got you down. If something changed, please contact the couple.`,
-          confirmLabel: "OK",
-          okOnly: true,
+          message: `${fullName} has already responded. Update your response with these details?`,
+          confirmLabel: "Update it",
           noIcon: true,
         });
-        go("home");
+        if (wantsUpdate) return submit(e, true);
         return;
       }
-      // Owner-curated list: an added guest already counts as attending, so a
-      // "yes" adds nothing — inform and stop. Declines/maybes still record
-      // (the reply overrides the listed status).
-      if (strict && attending && gateRes && gateRes.guestStatus === "attending") {
+      // Owner-curated list: a listed guest already counts as attending, so a
+      // fresh "yes" is redundant — but let them save it to record companions
+      // and details. Declines/maybes always record (the reply overrides).
+      if (!forceUpdate && strict && attending && gateRes && gateRes.guestStatus === "attending") {
         setSubmitting(false);
-        await confirmDialog({
+        const proceed = await confirmDialog({
           title: "You're already listed",
-          message: `${fullName} is already on the guest list as attending — no need to RSVP. If your plans change, you can decline here or contact the couple.`,
-          confirmLabel: "OK",
-          okOnly: true,
+          message: `${fullName} is already on the guest list as attending. Save this response to record your details${companions.length ? " and companions" : ""}?`,
+          confirmLabel: "Save my response",
           noIcon: true,
         });
-        return;
+        if (!proceed) return;
+        setSubmitting(true);
       }
-      await postRsvp(payload);
+      if (forceUpdate) await upsertRsvp(payload);
+      else await postRsvp(payload);
       setForm((f) => ({ ...f, count })); // success card shows the real head count
       setSubmitted(true);
       scrollToTop({ top: 0, behavior: "smooth" });
