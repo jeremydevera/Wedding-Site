@@ -2203,7 +2203,7 @@ export function AttireAdmin({ headRight }) {
         <div className="panel__title">Attire guide <span style={{ color: "var(--muted)", fontSize: 15 }}>({groups.length})</span></div>
         {headRight}
       </div>
-      <div className="admin-toolbar" style={{ padding: "14px 16px 0" }}><div className="admin-toolbar__end"><Button variant="primary" className="admin-toolbar__action" onClick={() => { setEditing(null); setOpen(true); }}>+ Add group</Button></div></div>
+      <div className="admin-toolbar" style={{ padding: "14px 16px" }}><div className="admin-toolbar__end"><Button variant="primary" className="admin-toolbar__action" onClick={() => { setEditing(null); setOpen(true); }}>+ Add group</Button></div></div>
       <div className="panel__body--flush table-wrap">
         <table className="tbl">
           <thead><tr><th>#</th><th>Preview</th><th>Name</th><th>Palette</th><th></th></tr></thead>
