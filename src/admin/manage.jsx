@@ -236,8 +236,18 @@ export function GuestsAdmin() {
 
   const hasReply = (g) => { const x = byId.get(g.id); return !!(x && x.rsvp); };
   const bySearch = guests.filter((g) => !q || `${g.firstName} ${g.lastName}`.toLowerCase().includes(q.toLowerCase()));
-  const filtered = bySearch.filter((g) => filter === "all" ? true : filter === "replied" ? hasReply(g) : !hasReply(g));
-  const pg = usePaged(filtered, 10);
+  // Unmatched = RSVPs with no invited-guest match; they get their own tab so a
+  // long list doesn't stack above the table as a giant notice card.
+  const unmatched = recon.unmatchedRsvps.filter((r) => !q || (r.fullName || "").toLowerCase().includes(q.toLowerCase()));
+  const counts = {
+    all: bySearch.length,
+    replied: bySearch.filter(hasReply).length,
+    outstanding: bySearch.filter((g) => !hasReply(g)).length,
+    unmatched: unmatched.length,
+  };
+  const onUnmatched = filter === "unmatched";
+  const filtered = bySearch.filter((g) => filter === "all" || filter === "unmatched" ? true : filter === "replied" ? hasReply(g) : !hasReply(g));
+  const pg = usePaged(onUnmatched ? unmatched : filtered, 10);
 
   async function saveGuest(form) {
     const payload = { ...form, allocation: Math.max(1, parseInt(form.allocation, 10) || 1) };
@@ -258,7 +268,7 @@ export function GuestsAdmin() {
       .then((ok) => { if (ok) run(async () => { await deleteGuestDb(g.id); Store.deleteGuest(g.id); }).then(() => toast("Guest removed", "success"), () => toast("Couldn't remove")); });
   }
   // "Add to list": create a guest entry straight from an unmatched RSVP. Once
-  // inserted, reconcileGuests recomputes and the row leaves the notice.
+  // inserted, reconcileGuests recomputes and the row leaves the Unmatched tab.
   async function adoptRsvp(r) {
     try {
       await run(async () => {
@@ -280,66 +290,69 @@ export function GuestsAdmin() {
         <div className="stat"><div className="stat__label">Outstanding</div><div className="stat__value">{S.outstanding}</div><div className="stat__sub">no reply yet</div></div>
       </div>
 
-      {recon.unmatchedRsvps.length > 0 && (
-        <div className="card" style={{ padding: "12px 16px", marginBottom: 16, border: "1px solid var(--line)", borderRadius: 10, fontSize: 14 }}>
-          <div style={{ marginBottom: 8 }}>
-            <strong>{recon.unmatchedRsvps.length}</strong> RSVP{recon.unmatchedRsvps.length > 1 ? "s" : ""} don&rsquo;t match an invited guest — add them, or fix a name spelling:
-          </div>
-          <div style={{ display: "grid", gap: 6 }}>
-            {recon.unmatchedRsvps.map((r) => (
-              <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                <span><strong>{r.fullName}</strong>{r.status === "attending" && r.count > 0 ? <span style={{ color: "var(--muted)" }}> · {r.count} {r.count > 1 ? "guests" : "guest"}</span> : null}</span>
-                <Button variant="ghost" size="sm" onClick={() => adoptRsvp(r)}>Add to list</Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       <div className="folders">
-        {[["all", "All"], ["replied", "Replied"], ["outstanding", "Outstanding"]].map(([v, l]) => (
-          <button key={v} className={"folder" + (filter === v ? " folder--active" : "")} onClick={() => setFilter(v)}>{l}</button>
+        {[["all", "All"], ["replied", "Replied"], ["outstanding", "Outstanding"], ["unmatched", "Unmatched"]].map(([v, l]) => (
+          <button key={v} className={"folder" + (filter === v ? " folder--active" : "")} onMouseDown={(e) => e.preventDefault()} onClick={() => setFilter(v)}>{l} ({counts[v]})</button>
         ))}
       </div>
 
       <div className="panel">
         <div className="panel__head">
-          <div className="panel__title">Guests <span style={{ color: "var(--muted)", fontSize: 15 }}>({filtered.length})</span></div>
+          <div className="panel__title">{onUnmatched ? "Unmatched RSVPs" : "Guests"} <span style={{ color: "var(--muted)", fontSize: 15 }}>({onUnmatched ? unmatched.length : filtered.length})</span></div>
           <div className="admin-toolbar"><div className="admin-toolbar__end">
             <Button variant="primary" className="admin-toolbar__action" onClick={() => setEditing({ ...blank })}>Add guest</Button>
             <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
           </div></div>
         </div>
         <div className="panel__body--flush table-wrap">
-          <table className="tbl">
-            <thead><tr><th>Name</th><th>Allocation</th><th>Status</th><th>Coming</th><th></th></tr></thead>
-            <tbody>
-              {pg.pageItems.map((g) => {
-                const x = byId.get(g.id) || { status: "none", rsvp: null };
-                return (
-                  <tr key={g.id}>
-                    <td><strong>{g.firstName} {g.lastName}</strong>{g.middleName ? <span style={{ color: "var(--muted)" }}> ({g.middleName})</span> : null}</td>
-                    <td>{g.allocation}</td>
-                    <td>{x.status === "none"
-                      ? <span style={{ color: "var(--muted)" }}>No reply</span>
-                      : <span className={"tag tag--" + x.status}>{STAT_LABEL[x.status]}</span>}</td>
-                    <td>{x.status === "attending"
-                      ? (Number(x.rsvp.count) > Number(g.allocation)
-                        ? <span style={{ color: "var(--danger, #a33)", fontWeight: 700 }} title="More than the allocated seats">{x.rsvp.count} <span style={{ fontSize: 11, letterSpacing: ".06em", textTransform: "uppercase" }}>over</span></span>
-                        : x.rsvp.count)
-                      : "—"}</td>
-                    <td><div className="row-actions">
-                      <button className="icon-btn" onClick={() => setEditing({ ...blank, ...g })} aria-label="Edit">{Icon.eye({})}</button>
-                      <button className="icon-btn icon-btn--danger" onClick={() => removeGuest(g)} aria-label="Remove">{Icon.trash({})}</button>
-                    </div></td>
+          {onUnmatched ? (
+            <table className="tbl">
+              <thead><tr><th>Name</th><th>Party</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                {pg.pageItems.map((r) => (
+                  <tr key={r.id}>
+                    <td><strong>{r.fullName}</strong>{r.plusOne && <div style={{ fontSize: 13, color: "var(--muted)" }}>+ {r.plusOne}</div>}</td>
+                    <td>{r.status === "attending" ? r.count : "—"}</td>
+                    <td><span className={"tag tag--" + r.status}>{(STAT_LABEL[r.status] || r.status || "").toString().replace("_", " ")}</span></td>
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      <Button variant="primary" size="sm" onClick={() => adoptRsvp(r)}>Add to list</Button>
+                    </td>
                   </tr>
-                );
-              })}
-              {filtered.length === 0 && <tr><td colSpan={5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No guests yet. Add your invited guests to track replies.</td></tr>}
-            </tbody>
-          </table>
+                ))}
+                {unmatched.length === 0 && <tr><td colSpan={4} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>Every RSVP matches an invited guest. 🎉</td></tr>}
+              </tbody>
+            </table>
+          ) : (
+            <table className="tbl">
+              <thead><tr><th>Name</th><th>Allocation</th><th>Status</th><th>Coming</th><th></th></tr></thead>
+              <tbody>
+                {pg.pageItems.map((g) => {
+                  const x = byId.get(g.id) || { status: "none", rsvp: null };
+                  return (
+                    <tr key={g.id}>
+                      <td><strong>{g.firstName} {g.lastName}</strong>{g.middleName ? <span style={{ color: "var(--muted)" }}> ({g.middleName})</span> : null}</td>
+                      <td>{g.allocation}</td>
+                      <td>{x.status === "none"
+                        ? <span style={{ color: "var(--muted)" }}>No reply</span>
+                        : <span className={"tag tag--" + x.status}>{STAT_LABEL[x.status]}</span>}</td>
+                      <td>{x.status === "attending"
+                        ? (Number(x.rsvp.count) > Number(g.allocation)
+                          ? <span style={{ color: "var(--danger, #a33)", fontWeight: 700 }} title="More than the allocated seats">{x.rsvp.count} <span style={{ fontSize: 11, letterSpacing: ".06em", textTransform: "uppercase" }}>over</span></span>
+                          : x.rsvp.count)
+                        : "—"}</td>
+                      <td><div className="row-actions">
+                        <button className="icon-btn" onClick={() => setEditing({ ...blank, ...g })} aria-label="Edit">{Icon.eye({})}</button>
+                        <button className="icon-btn icon-btn--danger" onClick={() => removeGuest(g)} aria-label="Remove">{Icon.trash({})}</button>
+                      </div></td>
+                    </tr>
+                  );
+                })}
+                {filtered.length === 0 && <tr><td colSpan={5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No guests yet. Add your invited guests to track replies.</td></tr>}
+              </tbody>
+            </table>
+          )}
         </div>
-        <Pager page={pg.page} totalPages={pg.totalPages} total={pg.total} perPage={pg.perPage} start={pg.start} onPage={pg.setPage} noun="guests" />
+        <Pager page={pg.page} totalPages={pg.totalPages} total={pg.total} perPage={pg.perPage} start={pg.start} onPage={pg.setPage} noun={onUnmatched ? "RSVPs" : "guests"} />
       </div>
 
       <Modal open={!!editing} onClose={() => setEditing(null)} label="Guest">
