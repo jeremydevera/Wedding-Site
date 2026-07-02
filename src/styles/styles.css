@@ -720,14 +720,11 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 .stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; position: relative; }
 .stat__icon {
   position: absolute;
-  top: 16px; right: 16px;
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  top: 18px; right: 18px;
+  display: flex;
   color: var(--accent);
 }
-.stat__icon svg { width: 18px; height: 18px; }
+.stat__icon svg { width: 20px; height: 20px; }
 .stat__label { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .stat__value { font-family: var(--font-display); font-size: 44px; line-height: 1; margin-top: 8px; color: var(--ink); }
 .stat__sub { font-size: 13px; color: var(--accent); margin-top: 6px; }
