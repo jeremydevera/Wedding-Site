@@ -1,16 +1,47 @@
 import React from "react";
 import { Chart as ChartJS, DoughnutController, ArcElement, Tooltip, Legend } from "chart.js";
 import { rsvpStats } from "@/lib/rsvp.js";
+import { useStore } from "@/lib/store.jsx";
 
 const { useRef, useEffect, useMemo } = React;
 
 ChartJS.register(DoughnutController, ArcElement, Tooltip, Legend);
 
-// Default palette (not tied to the client's site theme).
-// Attendance: green / amber / terracotta.
-const STATUS_COLORS = ["#5f7a3a", "#c99a2e", "#a24b3b"];
-// Dietary: muted earth tones, one per slice.
-const DIET_COLORS = ["#6b7a3a", "#8c6a4a", "#4a5320", "#b7a98a", "#7a8b99", "#9a6a7a", "#c99a2e", "#5f8a7a"];
+// Fallback palette — only used if theme-var resolution fails (non-browser env).
+const STATUS_FALLBACK = ["#5f7a3a", "#c99a2e", "#a24b3b"];
+const DIET_FALLBACK = ["#6b7a3a", "#8c6a4a", "#4a5320", "#b7a98a", "#7a8b99", "#9a6a7a", "#c99a2e", "#5f8a7a"];
+
+// Chart.js hands colors straight to canvas fillStyle, which can't evaluate
+// var()/color-mix() — so resolve the theme's CSS custom properties to literal
+// rgb by round-tripping each through a 1x1 canvas.
+function themePalette() {
+  try {
+    const cs = getComputedStyle(document.documentElement);
+    const cnv = document.createElement("canvas");
+    cnv.width = cnv.height = 1;
+    const ctx = cnv.getContext("2d", { willReadFrequently: true });
+    const rgbOf = (name) => {
+      ctx.fillStyle = cs.getPropertyValue(name).trim();
+      ctx.clearRect(0, 0, 1, 1);
+      ctx.fillRect(0, 0, 1, 1);
+      const d = ctx.getImageData(0, 0, 1, 1).data;
+      return [d[0], d[1], d[2]];
+    };
+    const accent = rgbOf("--accent"), gold = rgbOf("--gold"), ink = rgbOf("--ink"),
+      inkSoft = rgbOf("--ink-soft"), surface = rgbOf("--surface");
+    const mix = (a, b, t) => a.map((x, i) => Math.round(x + (b[i] - x) * t));
+    const css = (c) => `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+    return {
+      // Attending = full accent; Maybe = soft accent tint; Declined = neutral grey.
+      status: [css(accent), css(mix(accent, surface, 0.55)), css(mix(ink, surface, 0.6))],
+      // Dietary: ramp built from the theme's accent/gold/ink so every slice stays on-palette.
+      diet: [accent, gold, mix(accent, surface, 0.4), mix(gold, surface, 0.4),
+        inkSoft, mix(accent, surface, 0.68), mix(gold, surface, 0.68), mix(ink, surface, 0.5)].map(css),
+    };
+  } catch {
+    return { status: STATUS_FALLBACK, diet: DIET_FALLBACK };
+  }
+}
 
 const TIP = {
   backgroundColor: "rgba(42, 39, 34, 0.92)",
@@ -93,11 +124,15 @@ function DonutCard({ title, hint, canvasRef, centerNum, centerLbl, legend, empty
 }
 
 export function RsvpCharts({ rsvps }) {
+  const { settings } = useStore();
   const stats = useMemo(() => rsvpStats(rsvps), [rsvps]);
   const dietEntries = useMemo(
     () => Object.entries(stats.diets).sort((a, b) => b[1] - a[1]).slice(0, 8),
     [stats.diets],
   );
+  // Slice colors come from the client's applied theme (accent/gold/ink vars);
+  // recompute when the owner switches theme or tweaks the accent.
+  const palette = useMemo(() => themePalette(), [settings.theme, settings.themeAccent]);
 
   const statusRef = useRef(null);
   const dietRef   = useRef(null);
@@ -105,14 +140,14 @@ export function RsvpCharts({ rsvps }) {
   useChart(statusRef, () => donutConfig(
     ["Attending", "Maybe", "Declined"],
     [stats.attendingParties, stats.maybe, stats.declined],
-    STATUS_COLORS,
-  ), [stats.attendingParties, stats.maybe, stats.declined]);
+    palette.status,
+  ), [stats.attendingParties, stats.maybe, stats.declined, palette]);
 
   useChart(dietRef, () => donutConfig(
     dietEntries.map(([k]) => k),
     dietEntries.map(([, v]) => v),
-    dietEntries.map((_, i) => DIET_COLORS[i % DIET_COLORS.length]),
-  ), [dietEntries]);
+    dietEntries.map((_, i) => palette.diet[i % palette.diet.length]),
+  ), [dietEntries, palette]);
 
   if (!rsvps.length) return null;
 
@@ -126,9 +161,9 @@ export function RsvpCharts({ rsvps }) {
           canvasRef={statusRef}
           centerNum={stats.total} centerLbl="parties"
           legend={[
-            ["Attending", STATUS_COLORS[0], stats.attendingParties],
-            ["Maybe",     STATUS_COLORS[1], stats.maybe],
-            ["Declined",  STATUS_COLORS[2], stats.declined],
+            ["Attending", palette.status[0], stats.attendingParties],
+            ["Maybe",     palette.status[1], stats.maybe],
+            ["Declined",  palette.status[2], stats.declined],
           ]}
           empty="No RSVPs yet"
         />
@@ -136,7 +171,7 @@ export function RsvpCharts({ rsvps }) {
           title="Dietary" hint="attending only"
           canvasRef={dietRef}
           centerNum={dietTotal} centerLbl="guests"
-          legend={dietEntries.map(([k, v], i) => [k, DIET_COLORS[i % DIET_COLORS.length], v])}
+          legend={dietEntries.map(([k, v], i) => [k, palette.diet[i % palette.diet.length], v])}
           empty="No special requirements noted"
         />
       </div>
