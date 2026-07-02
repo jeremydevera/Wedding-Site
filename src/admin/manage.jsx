@@ -314,11 +314,12 @@ export function GuestsAdmin() {
         <div className="panel__body--flush table-wrap">
           {onUnmatched ? (
             <table className="tbl">
-              <thead><tr><th>Name</th><th>Party</th><th>Status</th><th></th></tr></thead>
+              <thead><tr><th>Name</th><th>Contact</th><th>Party size</th><th>Status</th><th></th></tr></thead>
               <tbody>
                 {pg.pageItems.map((r) => (
                   <tr key={r.id}>
                     <td><strong>{r.fullName}</strong>{r.plusOne && <div style={{ fontSize: 13, color: "var(--muted)" }}>+ {r.plusOne}</div>}</td>
+                    <td>{r.phone || <span style={{ color: "var(--muted)" }}>—</span>}{r.email && <div style={{ fontSize: 13, color: "var(--muted)" }}>{r.email}</div>}</td>
                     <td>{r.status === "attending" ? r.count : "—"}</td>
                     <td><span className={"tag tag--" + r.status}>{(STAT_LABEL[r.status] || r.status || "").toString().replace("_", " ")}</span></td>
                     <td style={{ whiteSpace: "nowrap" }}>
@@ -326,18 +327,21 @@ export function GuestsAdmin() {
                     </td>
                   </tr>
                 ))}
-                {unmatched.length === 0 && <tr><td colSpan={4} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>Every RSVP matches an invited guest. 🎉</td></tr>}
+                {unmatched.length === 0 && <tr><td colSpan={5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>Every RSVP matches an invited guest. 🎉</td></tr>}
               </tbody>
             </table>
           ) : (
             <table className="tbl">
-              <thead><tr><th>Name</th><th>Allocation</th><th>Status</th><th>Coming</th><th></th></tr></thead>
+              <thead><tr><th>Name</th><th>Contact</th><th>Allocation</th><th>Status</th><th>Party size</th><th></th></tr></thead>
               <tbody>
                 {pg.pageItems.map((g) => {
                   const x = byId.get(g.id) || { status: "none", rsvp: null };
+                  const phone = (x.rsvp && x.rsvp.phone) || "";
+                  const email = (x.rsvp && x.rsvp.email) || g.email || "";
                   return (
                     <tr key={g.id}>
                       <td><strong>{g.firstName} {g.lastName}</strong>{g.middleName ? <span style={{ color: "var(--muted)" }}> ({g.middleName})</span> : null}</td>
+                      <td>{phone || <span style={{ color: "var(--muted)" }}>—</span>}{email && <div style={{ fontSize: 13, color: "var(--muted)" }}>{email}</div>}</td>
                       <td>{g.allocation}</td>
                       <td>{x.status === "none"
                         ? <span style={{ color: "var(--muted)" }}>No reply</span>
@@ -354,7 +358,7 @@ export function GuestsAdmin() {
                     </tr>
                   );
                 })}
-                {filtered.length === 0 && <tr><td colSpan={5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No guests yet. Add your invited guests to track replies.</td></tr>}
+                {filtered.length === 0 && <tr><td colSpan={6} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No guests yet. Add your invited guests to track replies.</td></tr>}
               </tbody>
             </table>
           )}
