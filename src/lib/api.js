@@ -214,7 +214,7 @@ async function freshToken() {
   // Final guard: never send an expired/absent token — the auth-gated Functions
   // would just reject it as "unauthorized", which reads as a cryptic failure.
   // Throw a clear, actionable message so the caller can prompt a re-login.
-  if (!valid(session, 0)) throw new Error("Your session expired — please sign in again.");
+  if (!valid(session, 0)) throw new Error("Your session expired — please log out and log back in, then try again.");
   return session.access_token;
 }
 
@@ -293,6 +293,9 @@ export async function sendEmail({ to, subject, html, attachments }) {
     body: JSON.stringify({ to, subject, html, ...(attachments ? { attachments } : {}) }),
   });
   if (!res.ok) {
+    // A 401 here means the token was rejected server-side (revoked/expired
+    // session). Show the same actionable re-login message, not raw "unauthorized".
+    if (res.status === 401) throw new Error("Your session expired — please log out and log back in, then try again.");
     let msg = `send failed (${res.status})`;
     try { const e = await res.json(); if (e && e.error) msg = e.error; } catch (_) {}
     throw new Error(msg);
