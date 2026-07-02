@@ -531,11 +531,6 @@ export function GuestsAdmin() {
 
   return (
     <div>
-      <div className="stat-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", marginBottom: 20 }}>
-        <div className="stat"><div className="stat__label">Accepted</div><div className="stat__value">{recon.rows.filter((x) => x.status === "attending").length}</div><div className="stat__sub">guests said yes</div></div>
-        <div className="stat"><div className="stat__label">Total head count</div><div className="stat__value">{S.confirmedHeads}</div><div className="stat__sub">people coming</div></div>
-      </div>
-
       <div className="folders">
         {[["all", "All"], ["attending", "Attending"], ["maybe", "Maybe"], ["not_attending", "Declined"], ["outstanding", "No reply"], ["unmatched", "For Approval"]].map(([v, l]) => (
           <button key={v} className={"folder" + (filter === v ? " folder--active" : "")} onMouseDown={(e) => e.preventDefault()} onClick={() => setFilter(v)}>{l} ({counts[v]})</button>
