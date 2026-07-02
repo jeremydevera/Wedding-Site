@@ -266,16 +266,16 @@ export function QuestionEditor({ open, question, onClose }) {
 
 // Modal body: add or edit one invited guest.
 function GuestForm({ initial, onSave, onCancel }) {
-  // The owner thinks in "how many can they bring" (plus-ones); the data model
-  // stores `allocation` = total seats incl. the guest. Convert at the edges.
-  const [f, setF] = useState({ ...initial, plusOnes: Math.max(0, (Number(initial.allocation) || 1) - 1) });
+  // `allocation` = the max attendees this guest may RSVP, including themselves.
+  // The number the owner types IS the guest's cap — no conversion.
+  const [f, setF] = useState(initial);
   const [saving, setSaving] = useState(false);
   const set = (k) => (e) => { const v = e && e.target ? e.target.value : e; setF((s) => ({ ...s, [k]: v })); };
   const valid = f.firstName.trim() && f.lastName.trim();
   async function submit() {
     if (!valid || saving) return;
     setSaving(true);
-    try { await onSave({ ...f, allocation: Math.max(0, parseInt(f.plusOnes, 10) || 0) + 1 }); } finally { setSaving(false); }
+    try { await onSave(f); } finally { setSaving(false); }
   }
   return (
     <div>
@@ -286,7 +286,7 @@ function GuestForm({ initial, onSave, onCancel }) {
       </div>
       <div className="field-row field-row--2">
         <Field label="Middle name" hint="Optional — tells apart same-named guests" id="g-mid"><Input id="g-mid" value={f.middleName} onChange={set("middleName")} /></Field>
-        <Field label="Allowed plus 1s" hint="How many they can bring along — 3 means a party of 4 with them" id="g-alloc"><Input id="g-alloc" type="number" min={0} value={f.plusOnes} onChange={set("plusOnes")} /></Field>
+        <Field label="Allotted seats" hint="Max people they can RSVP, including themselves — 9 means up to 9" id="g-alloc"><Input id="g-alloc" type="number" min={1} value={f.allocation} onChange={set("allocation")} /></Field>
       </div>
       <Field label="Email" hint="Optional" id="g-email"><Input id="g-email" type="email" value={f.email || ""} onChange={set("email")} /></Field>
       <Field label="Notes" hint="Optional" id="g-notes"><Input id="g-notes" value={f.notes || ""} onChange={set("notes")} /></Field>
@@ -425,7 +425,7 @@ export function GuestsAdmin() {
             </table>
           ) : (
             <table className="tbl">
-              <thead><tr><th>Name</th><th>Contact</th><th>Plus 1s</th><th>Status</th><th>Head count</th><th></th></tr></thead>
+              <thead><tr><th>Name</th><th>Contact</th><th>Allotted seats</th><th>Status</th><th>Head count</th><th></th></tr></thead>
               <tbody>
                 {pg.pageItems.map((g) => {
                   const x = byId.get(g.id) || { status: "none", rsvp: null };
@@ -435,7 +435,7 @@ export function GuestsAdmin() {
                     <tr key={g.id}>
                       <td><strong>{g.firstName} {g.lastName}</strong>{g.middleName ? <span style={{ color: "var(--muted)" }}> ({g.middleName})</span> : null}</td>
                       <td>{phone || <span style={{ color: "var(--muted)" }}>—</span>}{email && <div style={{ fontSize: 13, color: "var(--muted)" }}>{email}</div>}</td>
-                      <td>{Math.max(0, (Number(g.allocation) || 1) - 1)}</td>
+                      <td>{g.allocation}</td>
                       <td>{x.status === "none"
                         ? <span style={{ color: "var(--muted)" }}>No reply</span>
                         : <span className={"tag tag--" + x.status}>{STAT_LABEL[x.status]}</span>}</td>

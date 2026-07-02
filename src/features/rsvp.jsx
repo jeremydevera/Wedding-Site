@@ -225,7 +225,7 @@ export function RSVPPage() {
                 <Input id="r-last" value={form.lastName} onChange={set("lastName")} />
               </Field>
             </div>
-            <Field label="Middle name" hint="Optional — helps tell apart guests with the same name" error={errors.middleName} id="r-middle">
+            <Field label="Middle name" error={errors.middleName} id="r-middle">
               <Input id="r-middle" value={form.middleName} onChange={set("middleName")} />
             </Field>
             {strict && lookup && (
@@ -233,7 +233,7 @@ export function RSVPPage() {
                 {lookup === "checking"
                   ? <span style={{ color: "var(--muted)" }}>Checking the guest list…</span>
                   : lookup.status === "ok"
-                    ? <span style={{ color: "var(--accent)" }}>✓ You're on the guest list — {lookup.allocation} {lookup.allocation === 1 ? "seat" : "seats"} reserved</span>
+                    ? <span style={{ color: "#2e7d32", fontWeight: 600 }}>✓ You're on the guest list — {lookup.allocation} {lookup.allocation === 1 ? "seat" : "seats"} reserved</span>
                     : lookup.status === "ambiguous"
                       ? <span style={{ color: "var(--danger, #a33)" }}>More than one guest has this name — please add your middle name.</span>
                       : <span style={{ color: "var(--danger, #a33)" }}>We can't find this name on the guest list — please check the spelling.</span>}
