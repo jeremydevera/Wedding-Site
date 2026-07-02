@@ -572,7 +572,7 @@ export function GuestsAdmin() {
             </table>
           ) : (
             <table className="tbl">
-              <thead><tr><th>Name</th><th>Contact</th><th>Allotted seats</th><th>Status</th>{showComps && <th>Companions</th>}<th></th></tr></thead>
+              <thead><tr><th>Name</th><th>Contact</th><th>Allotted seats</th><th>Status</th>{showComps && <th className="col-comp">Companions</th>}<th></th></tr></thead>
               <tbody>
                 {pg.pageItems.map((g) => {
                   const x = byId.get(g.id) || { status: "none", rsvp: null };
@@ -587,7 +587,7 @@ export function GuestsAdmin() {
                         ? <span style={{ color: "var(--muted)" }}>No reply</span>
                         : <span className={"tag tag--" + x.status}>{STAT_LABEL[x.status]}</span>}</td>
                       {showComps && (
-                        <td>
+                        <td className="col-comp">
                           {(() => {
                             const comps = x.rsvp && Array.isArray(x.rsvp.companions) ? x.rsvp.companions.filter((s) => (s || "").trim()) : [];
                             if (comps.length) return comps.join(", ");
