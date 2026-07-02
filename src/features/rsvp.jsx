@@ -358,13 +358,13 @@ export function RSVPPage() {
                   </Field>
                 </div>
                 {slots > 0 && (
-                  <Field label="Names of your guests" hint="So we can set the table">
+                  <Field label="Names of the guests you're bringing" hint="You're Guest 1 — add the full name of everyone else attending with you, so we can set the table.">
                     <div style={{ display: "grid", gap: 8 }}>
                       {Array.from({ length: slots }, (_, i) => (
                         <Input
                           key={i}
-                          aria-label={`Guest ${i + 2} name`}
-                          placeholder={`Guest ${i + 2}`}
+                          aria-label={`Guest ${i + 2} full name`}
+                          placeholder={`Guest ${i + 2} — full name`}
                           value={(form.guestNames && form.guestNames[i]) || ""}
                           onChange={(e) => {
                             const v = e.target.value;
