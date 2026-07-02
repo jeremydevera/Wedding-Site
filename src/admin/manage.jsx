@@ -457,19 +457,29 @@ export function GuestsAdmin() {
 
   const byStatus = (st) => recon.rows.filter((x) => x.status === st).length;
 
-  // Rows for EVERY tab — a Tab column marks each row's folder (Attending /
-  // Maybe / Declined / No reply / For Approval). Shared by CSV + email export.
+  // Total companions ("plus 1s") across attending parties = heads − primaries.
+  const totalPlusOnes = Math.max(0, S.confirmedHeads - byStatus("attending"));
+
+  // Rows for the spreadsheet, GROUPED by tab with a labelled section header
+  // before each block (a CSV can't hold real sheet-tabs, so this separates
+  // Attending / Maybe / Declined / No reply / For Approval clearly).
   function guestListRows() {
-    const header = ["Tab", "Name", "Phone", "Email", "Allotted seats", "Head count", "Companions", "Notes"];
-    const guestRows = recon.rows.map((x) => {
+    const header = ["Name", "Phone", "Email", "Allotted seats", "Head count", "Companions", "Notes"];
+    const guestRow = (x) => {
       const g = x.guest;
-      return [tabLabel(x.status), [g.firstName, g.middleName, g.lastName].filter(Boolean).join(" "),
+      return [[g.firstName, g.middleName, g.lastName].filter(Boolean).join(" "),
         (x.rsvp && x.rsvp.phone) || "", (x.rsvp && x.rsvp.email) || g.email || "",
         g.allocation, headsOfRow(x), compsOf(x.rsvp), g.notes || ""];
-    });
-    const approvalRows = recon.unmatchedRsvps.map((r) => ["For Approval", r.fullName, r.phone || "", r.email || "",
-      "", r.status === "attending" ? headsOf(r) : "", compsOf(r), ""]);
-    return [header, ...guestRows, ...approvalRows];
+    };
+    const out = [header];
+    for (const [st, lbl] of [["attending", "Attending"], ["maybe", "Maybe"], ["not_attending", "Declined"], ["none", "No reply"]]) {
+      const block = recon.rows.filter((x) => x.status === st).map(guestRow);
+      if (block.length) { out.push([], [`${lbl} (${block.length})`], ...block); }
+    }
+    const appr = recon.unmatchedRsvps.map((r) => [r.fullName, r.phone || "", r.email || "", "",
+      r.status === "attending" ? headsOf(r) : "", compsOf(r), ""]);
+    if (appr.length) { out.push([], [`For Approval (${appr.length})`], ...appr); }
+    return out;
   }
   function exportGuestsCsv() {
     const who = [settings.partnerA, settings.partnerB].filter(Boolean).join(" & ") || "Guests";
@@ -488,7 +498,8 @@ export function GuestsAdmin() {
       <p style="color:#666;margin:0 0 18px">${esc(who)} · ${esc(today)}</p>
       <table style="border-collapse:collapse;width:100%;font-size:15px">
         ${line("Invited", S.invited)}
-        ${line("Attending", byStatus("attending"), `· ${S.confirmedHeads} heads`)}
+        ${line("Attending", byStatus("attending"))}
+        ${line("Plus 1s", totalPlusOnes)}
         ${line("Maybe", byStatus("maybe"))}
         ${line("Declined", byStatus("not_attending"))}
         ${line("No reply", byStatus("none"))}
