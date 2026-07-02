@@ -1857,8 +1857,10 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   position: relative; z-index: 1; width: 49.5cqw; aspect-ratio: 345 / 313;
   border-radius: 4cqw; overflow: hidden; border: 0.55cqw solid #1e1e1e;
   background: linear-gradient(150deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 34%, #101014) 58%, #0c0c10 100%);
-  color: #fff;
+  background-size: cover; background-position: center; color: #fff;
 }
+/* darken the bottom of a photo cover so the title/artist text stays legible */
+.dp-screen--art::before { content: ""; position: absolute; inset: 0; z-index: 0; background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.4) 100%); pointer-events: none; }
 .dp-scan { position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(90deg, rgba(2,2,2,0.10) 0 0.6cqw, rgba(2,2,2,0) 0.6cqw 3cqw); }
 .dp-reflection { position: absolute; top: 0; left: 0; width: 30%; height: 100%; opacity: 0.35; transform: translateX(60%) skewX(-30deg); filter: blur(2px); background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%); pointer-events: none; }
 .dp-screen__text { position: absolute; left: 0; right: 0; bottom: 2cqw; padding: 0 3cqw 2cqw; background: linear-gradient(180deg, rgba(2,2,2,0) 0%, rgba(2,2,2,0.85) 70%); }

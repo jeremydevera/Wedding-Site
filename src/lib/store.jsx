@@ -540,9 +540,10 @@ export const Store = {
     _state = { ..._state, attire: arr };
     persist(); emit();
   },
-  // ---- Music playlist (audio in Supabase Storage; rows hold url+title+artist) ----
+  // ---- Music playlist (audio in Supabase Storage; rows hold url+title+artist+art) ----
+  // `art` is an optional R2 cover-image key shown on the Retro Device player screen.
   addTrack(track) {
-    _state = { ..._state, playlist: [...(_state.playlist || []), { id: uid(), url: track.url, title: track.title || "Untitled", artist: track.artist || "" }] };
+    _state = { ..._state, playlist: [...(_state.playlist || []), { id: uid(), url: track.url, title: track.title || "Untitled", artist: track.artist || "", art: track.art || "" }] };
     persist(); emit();
   },
   updateTrack(id, patch) {

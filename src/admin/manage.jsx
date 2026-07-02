@@ -1980,11 +1980,11 @@ const AUDIO_ACCEPT = "audio/*,.mp3,.m4a,.aac,.wav,.ogg,.oga,.opus,.flac";
 export function TrackEditor({ open, track, onClose }) {
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const { clientId } = useStore();
-  const [f, setF] = useState({ title: "", artist: "", url: "" });
+  const [f, setF] = useState({ title: "", artist: "", url: "", art: "" });
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  useEffect(() => { if (track) setF({ title: track.title || "", artist: track.artist || "", url: track.url || "" }); }, [track, open]);
+  useEffect(() => { if (track) setF({ title: track.title || "", artist: track.artist || "", url: track.url || "", art: track.art || "" }); }, [track, open]);
   async function onReplace(files) {
     const file = [...(files || [])].find(isAudioFile);
     if (!file) { toast("Please choose an audio file.", "err"); if (fileRef.current) fileRef.current.value = ""; return; }
@@ -2000,7 +2000,7 @@ export function TrackEditor({ open, track, onClose }) {
   async function save() {
     if (!track) return;
     if (!f.title.trim()) { toast("Please enter a title.", "err"); return; }
-    const patch = { title: f.title.trim(), artist: f.artist.trim(), url: f.url };
+    const patch = { title: f.title.trim(), artist: f.artist.trim(), url: f.url, art: f.art || "" };
     if (track.id) Store.updateTrack(track.id, patch); else Store.addTrack(patch);
     await persistChanges();
     onClose();
@@ -2027,6 +2027,9 @@ export function TrackEditor({ open, track, onClose }) {
         onUploadNew={() => fileRef.current && fileRef.current.click()}
         onPick={(key) => setF((p) => ({ ...p, url: key }))}
       />
+      <Field label="Cover image" id="trk-art" hint="Shown on the Retro Device player screen. Square works best. Optional — falls back to a themed gradient.">
+        <ImageUploadField purpose="trackart" ratio="1 / 1" value={f.art} onChange={(v) => setF((p) => ({ ...p, art: v || "" }))} />
+      </Field>
       <div style={{ display: "flex", gap: 12, marginTop: 8, justifyContent: "flex-end" }}>
         <Button variant="ghost" onClick={onClose}>Cancel</Button>
         <Button variant="primary" onClick={save} disabled={uploading}>Save track</Button>
