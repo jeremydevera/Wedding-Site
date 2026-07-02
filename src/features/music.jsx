@@ -12,6 +12,7 @@ let _audio = null;
 let _tracks = [];
 let _loadedUrl = null;
 let _st = { playing: false, time: 0, duration: 0, index: 0 };
+let _vol = 1; // 0..1, adjusted by the device player's wheel; vinyl skin has no volume UI
 const _subs = new Set();
 const _emit = () => _subs.forEach((f) => f());
 
@@ -19,6 +20,7 @@ function el() {
   if (_audio || typeof window === "undefined") return _audio;
   _audio = new window.Audio();
   _audio.preload = "metadata";
+  _audio.volume = _vol;
   _audio.ontimeupdate = () => { _st = { ..._st, time: _audio.currentTime }; _emit(); };
   _audio.onloadedmetadata = () => { _st = { ..._st, duration: _audio.duration || 0 }; _emit(); };
   _audio.onplay = () => { _st = { ..._st, playing: true }; _emit(); };
@@ -46,6 +48,7 @@ export function nextTrack() { if (!_tracks.length) return; load((_st.index + 1) 
 export function prevTrack() { if (!_tracks.length) return; load((_st.index - 1 + _tracks.length) % _tracks.length); play(); }
 export function playIndex(i) { if (i === _st.index) { toggle(); return; } load(i); play(); }
 export function seekFrac(f) { const a = el(); if (a && _st.duration) a.currentTime = Math.max(0, Math.min(1, f)) * _st.duration; }
+export function bumpVolume(delta) { const a = el(); _vol = Math.max(0, Math.min(1, _vol + delta)); if (a) a.volume = _vol; }
 function useMusic() {
   const [, force] = useState(0);
   useEffect(() => { const fn = () => force((n) => n + 1); _subs.add(fn); return () => _subs.delete(fn); }, []);
@@ -114,10 +117,18 @@ function Equalizer({ on }) {
   return <span className={"vinyl-eq" + (on ? " is-on" : "")} aria-hidden="true"><i /><i /><i /><i /></span>;
 }
 
+// Dispatcher: the home player renders either the vinyl skin (default) or the
+// retro device, chosen by settings.playerSkin (Home → Music playlist admin).
+export function VinylPlayer({ tracks }) {
+  const { settings } = useStore();
+  const skin = settings && settings.playerSkin === "device" ? "device" : "vinyl";
+  return skin === "device" ? <DevicePlayer tracks={tracks} /> : <VinylSkin tracks={tracks} />;
+}
+
 // Home vinyl player: a themed card (wedding tokens) wrapping the unchanged dark
 // disk, plus — when there is more than one song — a themed playlist below.
 // Its own titled section; wired to the shared audio engine.
-export function VinylPlayer({ tracks }) {
+function VinylSkin({ tracks }) {
   const st = useMusic();
   const uid = "vp-" + React.useId().replace(/:/g, "");
   const listRef = useRef(null);
@@ -193,6 +204,108 @@ export function VinylPlayer({ tracks }) {
                 );
               })}
             </ol>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// Retro-device skin: a fluid matte player with a click wheel, wired to the same
+// shared audio engine. Layout scales via container-query units (see .device-*
+// in styles.css) so it fits the responsive site — unlike the fixed-px original.
+// Screen art is a themed gradient (tracks carry audio + title/artist, no cover).
+function DevicePlayer({ tracks }) {
+  const st = useMusic();
+  const listRef = useRef(null);
+  const activeRef = useRef(null);
+  const [tilt, setTilt] = useState("");     // wheel lean: "" | left | right | up | down
+  const [pressed, setPressed] = useState(false); // centre play button
+  const list = tracks || [];
+  useEffect(() => {
+    const ol = listRef.current, li = activeRef.current;
+    if (!ol || !li) return;
+    const o = ol.getBoundingClientRect(), r = li.getBoundingClientRect();
+    ol.scrollTo({ top: Math.max(0, ol.scrollTop + (r.top - o.top) - (ol.clientHeight - li.clientHeight) / 2), behavior: "smooth" });
+  }, [st.index, list.length]);
+  if (!list.length) return null;
+  const cur = list[st.index] || list[0];
+  const frac = st.duration ? st.time / st.duration : 0;
+  const many = list.length > 1;
+  const clearWheel = () => { setTilt(""); setPressed(false); };
+  return (
+    <section className="block" id="home-playlist">
+      <div className="container">
+        <div className="sec-head sec-head--center">
+          <div className="eyebrow">Our Song</div>
+          <h2 className="sec-head__title">{many ? "Our Playlist" : "Press Play"}</h2>
+        </div>
+        <div className="device-player">
+          <div className="dp-body">
+            <div className="dp-screen">
+              <div className="dp-scan" aria-hidden="true" />
+              <div className="dp-reflection" aria-hidden="true" />
+              <div className="dp-screen__text">
+                <div className="dp-kicker">Now Playing</div>
+                <div className="dp-title">{cur.title}</div>
+                <div className="dp-artist">{cur.artist || " "}</div>
+              </div>
+              <div className="dp-progress" onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); seekFrac((e.clientX - r.left) / r.width); }} role="progressbar" aria-valuenow={Math.round(frac * 100)}>
+                <span className="dp-fill" style={{ width: (frac * 100) + "%" }} />
+              </div>
+            </div>
+
+            <div className="dp-wheel">
+              <div className={"dp-overlay" + (tilt ? " " + tilt : "")} onMouseLeave={clearWheel} onMouseUp={clearWheel}>
+                <button className="dp-w dp-up" aria-label="Volume up" disabled={!many && false}
+                  onPointerDown={() => setTilt("up")} onClick={() => bumpVolume(0.1)}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M13 4a1 1 0 0 0-2 0v7H4a1 1 0 1 0 0 2h7v7a1 1 0 1 0 2 0v-7h7a1 1 0 1 0 0-2h-7z" /></svg>
+                </button>
+                <button className="dp-w dp-prev" aria-label="Previous track" disabled={!many}
+                  onPointerDown={() => setTilt("left")} onClick={prevTrack}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zM20 6v12L9 12z" /></svg>
+                </button>
+                <button className="dp-w dp-next" aria-label="Next track" disabled={!many}
+                  onPointerDown={() => setTilt("right")} onClick={nextTrack}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM4 6l11 6-11 6z" /></svg>
+                </button>
+                <button className="dp-w dp-down" aria-label="Volume down"
+                  onPointerDown={() => setTilt("down")} onClick={() => bumpVolume(-0.1)}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M4 11h16a1 1 0 1 1 0 2H4a1 1 0 1 1 0-2z" /></svg>
+                </button>
+                <button className={"dp-play" + (pressed ? " pressed" : "")} aria-label={st.playing ? "Pause" : "Play"}
+                  onPointerDown={() => setPressed(true)} onPointerUp={() => setPressed(false)} onClick={toggle}>
+                  {st.playing
+                    ? <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="5" width="4" height="14" rx="1" /><rect x="13.5" y="5" width="4" height="14" rx="1" /></svg>
+                    : <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {many && (
+            <div className="vinyl-aside device-aside">
+              <div className="vinyl-aside__head">Playlist</div>
+              <ol className="vinyl-list" ref={listRef}>
+                {list.map((t, i) => {
+                  const active = i === st.index;
+                  return (
+                    <li key={t.id || i} ref={active ? activeRef : null} className={"vinyl-list__item" + (active ? " is-active" : "")}>
+                      <button onClick={() => playIndex(i)} aria-label={(active && st.playing ? "Pause " : "Play ") + t.title}>
+                        <span className="vinyl-list__num">
+                          {active ? <Equalizer on={st.playing} /> : <span className="vinyl-list__n">{i + 1}</span>}
+                          <svg className="vinyl-list__cue" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                        </span>
+                        <span className="vinyl-list__text">
+                          <span className="vinyl-list__title">{t.title}</span>
+                          {t.artist ? <span className="vinyl-list__artist">{t.artist}</span> : null}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
             </div>
           )}
         </div>

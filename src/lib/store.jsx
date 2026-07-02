@@ -59,6 +59,9 @@ export const DEFAULT_SETTINGS = {
   showMap: true,
   showAttire: true,
   musicAutoplay: true,
+  // Home music player look: "vinyl" (spinning record, theme-aware) or "device"
+  // (retro click-wheel player). Read with a default so existing clients stay vinyl.
+  playerSkin: "vinyl",
   decorOn: false,
   decorStyle: "petals",
   scheduleStyle: "line",
