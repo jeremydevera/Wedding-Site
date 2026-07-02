@@ -457,8 +457,14 @@ export function GuestsAdmin() {
 
   const byStatus = (st) => recon.rows.filter((x) => x.status === st).length;
 
-  // Total companions ("plus 1s") across attending parties = heads − primaries.
-  const totalPlusOnes = Math.max(0, S.confirmedHeads - byStatus("attending"));
+  // "Plus 1s" = companions actually NAMED on attending replies — not derived
+  // from head count (which counts a no-reply guest's full allotment, adding
+  // assumed plus-ones nobody named).
+  const totalPlusOnes = recon.rows.reduce((s, x) => {
+    if (x.status !== "attending" || !x.rsvp) return s;
+    const c = compsOf(x.rsvp);
+    return s + (c ? c.split(", ").filter(Boolean).length : 0);
+  }, 0);
 
   // Rows for the spreadsheet, GROUPED by tab with a labelled section header
   // before each block (a CSV can't hold real sheet-tabs, so this separates
