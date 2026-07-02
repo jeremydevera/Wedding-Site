@@ -312,12 +312,14 @@ export function RSVPPage() {
                     : null}
               </div>
             )}
-            <Field label="Email" hint="Optional" error={errors.email} id="r-email">
-              <Input id="r-email" type="email" inputMode="email" value={form.email} onChange={set("email")} />
-            </Field>
-            <Field label="Phone" hint="Optional" id="r-phone">
-              <Input id="r-phone" value={form.phone} onChange={set("phone")} />
-            </Field>
+            <div className="field-row field-row--2">
+              <Field label="Email" hint="Optional" error={errors.email} id="r-email">
+                <Input id="r-email" type="email" inputMode="email" value={form.email} onChange={set("email")} />
+              </Field>
+              <Field label="Phone" hint="Optional" id="r-phone">
+                <Input id="r-phone" value={form.phone} onChange={set("phone")} />
+              </Field>
+            </div>
 
             <Field label="Will you attend?" required>
               <div className="pills">
