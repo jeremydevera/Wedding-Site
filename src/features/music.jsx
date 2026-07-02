@@ -251,7 +251,6 @@ function DevicePlayer({ tracks }) {
               {artUrl && (artIsVideo
                 ? <video className="dp-media" src={artUrl} muted loop autoPlay playsInline aria-hidden="true" />
                 : <img className="dp-media" src={artUrl} alt="" aria-hidden="true" />)}
-              {!artUrl && <div className="dp-scan" aria-hidden="true" />}
               <div className="dp-reflection" aria-hidden="true" />
               <div className="dp-screen__text">
                 <div className="dp-kicker">Now Playing</div>
