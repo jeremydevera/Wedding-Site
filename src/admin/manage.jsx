@@ -13,7 +13,7 @@ import { headsOf } from "@/lib/rsvp.js";
 import { mediaUrl } from "@/lib/media.js";
 import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
-import { visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel } from "@/lib/roles.js";
+import { visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel, moduleEnabled } from "@/lib/roles.js";
 import { ClientsAdmin, R2LibraryAdmin, SuperOverview } from "@/admin/superadmin.jsx";
 import { LocationPicker } from "@/ui/location-picker.jsx";
 import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
@@ -2496,6 +2496,73 @@ export const ADMIN_TABS = [
   { key: "settings", label: "Settings", icon: "gear" },
 ];
 
+// Admin notification bell — flags new RSVPs, quiz plays, and guestbook messages
+// since the operator last opened it. "Seen" is a timestamp kept in localStorage
+// per client; opening the panel marks everything up to now as seen.
+function timeAgo(ts) {
+  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60); if (m < 60) return m + "m ago";
+  const h = Math.floor(m / 60); if (h < 24) return h + "h ago";
+  const d = Math.floor(h / 24); if (d < 7) return d + "d ago";
+  return fmtDate(ts);
+}
+function NotificationBell({ goTab }) {
+  const { rsvps, guestbook, quizSubs, clientId, settings } = useStore();
+  const [open, setOpen] = useState(false);
+  const key = "evermore_notif_seen_" + (clientId || "x");
+  const [seen, setSeen] = useState(() => { try { return Number(localStorage.getItem(key) || 0); } catch (_) { return 0; } });
+
+  const gbOn = moduleEnabled(settings.modules, "guestbook");
+  const quizOn = moduleEnabled(settings.modules, "quiz");
+  const items = useMemo(() => {
+    const a = [];
+    const stLabel = { attending: "is attending", maybe: "replied maybe", not_attending: "can't make it" };
+    (rsvps || []).forEach((r) => a.push({ id: "r" + r.id, tab: "rsvps", icon: "mail", who: r.fullName || "Someone", text: stLabel[r.status] || "RSVP'd", at: r.createdAt || 0 }));
+    if (gbOn) (guestbook || []).forEach((g) => a.push({ id: "g" + g.id, tab: "guestbook", icon: "book", who: g.name || "Someone", text: "signed the guestbook", at: g.createdAt || 0 }));
+    if (quizOn) (quizSubs || []).forEach((q) => a.push({ id: "q" + q.id, tab: "quiz", icon: "quiz", who: q.name || "Someone", text: `took the quiz (${q.score}/${q.total})`, at: q.createdAt || 0 }));
+    return a.sort((x, y) => y.at - x.at);
+  }, [rsvps, guestbook, quizSubs, gbOn, quizOn]);
+
+  const unseen = items.filter((i) => i.at > seen).length;
+  // opening the panel marks everything up to now as seen
+  useEffect(() => {
+    if (!open) return;
+    const now = Date.now();
+    try { localStorage.setItem(key, String(now)); } catch (_) {}
+    setSeen(now);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div className="notif">
+      <button type="button" className="notif__btn" aria-label={`Notifications${unseen ? ` (${unseen} new)` : ""}`} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        {Icon.bell({ style: { width: 22, height: 22 } })}
+        {unseen > 0 && <span className="notif__badge">{unseen > 9 ? "9+" : unseen}</span>}
+      </button>
+      {open && (
+        <>
+          <div className="notif__backdrop" onClick={() => setOpen(false)} />
+          <div className="notif__panel" role="dialog" aria-label="Notifications">
+            <div className="notif__head">Activity</div>
+            <div className="notif__list">
+              {items.length === 0 ? (
+                <div className="notif__empty">No activity yet.</div>
+              ) : items.slice(0, 20).map((it, i) => (
+                <button key={it.id} type="button" className={"notif__item" + (i < unseen ? " is-new" : "")}
+                  onClick={() => { goTab(it.tab); setOpen(false); }}>
+                  <span className="notif__icon">{(Icon[it.icon] || Icon.bell)({ style: { width: 16, height: 16 } })}</span>
+                  <span className="notif__text"><strong>{it.who}</strong> {it.text}</span>
+                  <span className="notif__time">{timeAgo(it.at)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function AdminApp() {
   const { settings, auth, clientId } = useStore();
   const [tab, setTab] = useState("dashboard");
@@ -2625,6 +2692,7 @@ export function AdminApp() {
         <div className="admin__topbar">
           <div className="admin__topbar-left">
             <button type="button" className="admin__burger" onClick={() => setMenuOpen((o) => !o)} aria-label="Menu" aria-expanded={menuOpen}>{Icon.menu({})}</button>
+            {clientId && <NotificationBell goTab={setTab} />}
             <div className="admin__title">{title}</div>
           </div>
         </div>
