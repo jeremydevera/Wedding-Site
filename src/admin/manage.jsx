@@ -1861,21 +1861,39 @@ export function SettingsAdmin() {
 
 // Home — the home page's core info: couple/event details (moved here from
 // Settings → General) plus the welcome/invitation section guests see.
-// "RSVP closes at" datetime input. A native datetime-local shows a messy
-// "mm/dd/yyyy, --:-- --" placeholder when empty; render it as a plain text field
-// with a friendly placeholder until focused, then swap to the real picker.
+// "RSVP closes at" picker. A native datetime-local always shows the confusing
+// "mm/dd/yyyy, --:-- --" segments. So we never render the native field as text:
+// the visible box is a read-only input that shows either a friendly formatted
+// date or a plain placeholder, and the actual native picker (hidden) is opened
+// via showPicker() on click. Users only ever see clean text.
 function ClosesAtInput({ value, onChange }) {
-  const [type, setType] = useState(value ? "datetime-local" : "text");
+  const ref = useRef(null);
+  const fmt = (v) => {
+    if (!v) return "";
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? v : d.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+  };
+  const openPicker = () => {
+    const el = ref.current;
+    if (!el) return;
+    try { el.showPicker ? el.showPicker() : el.focus(); } catch (_) { el.focus(); }
+  };
   return (
-    <Input
-      id="s-rsvpd"
-      type={type}
-      placeholder="Leave blank to keep the form open"
-      value={value || ""}
-      onChange={onChange}
-      onFocus={() => setType("datetime-local")}
-      onBlur={(e) => { if (!e.target.value) setType("text"); }}
-    />
+    <div style={{ position: "relative" }}>
+      <Input id="s-rsvpd" readOnly value={fmt(value)} placeholder="Leave blank to keep the form open"
+        onClick={openPicker} style={{ cursor: "pointer", paddingRight: value ? 66 : 42 }} />
+      <button type="button" onClick={openPicker} aria-label="Pick a close date"
+        style={{ position: "absolute", top: "50%", right: 8, transform: "translateY(-50%)", display: "grid", placeItems: "center", width: 30, height: 30, background: "none", border: "none", color: "var(--muted)", cursor: "pointer" }}>
+        {Icon.calendar({ style: { width: 18, height: 18 } })}
+      </button>
+      {value && (
+        <button type="button" onClick={() => onChange("")} aria-label="Clear close date"
+          style={{ position: "absolute", top: "50%", right: 38, transform: "translateY(-50%)", display: "grid", placeItems: "center", width: 26, height: 26, background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 20, lineHeight: 1 }}>&times;</button>
+      )}
+      {/* real native picker, visually hidden — opened via showPicker() above */}
+      <input ref={ref} type="datetime-local" value={value || ""} onChange={onChange} tabIndex={-1} aria-hidden="true"
+        style={{ position: "absolute", left: 12, bottom: 0, width: 1, height: 1, opacity: 0, pointerEvents: "none" }} />
+    </div>
   );
 }
 
