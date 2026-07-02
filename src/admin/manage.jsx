@@ -266,19 +266,20 @@ export function QuestionEditor({ open, question, onClose }) {
 }
 
 // Modal body: add or edit one invited guest. `companions` are the names from
-// the guest's matched RSVP reply — editable/removable when the controller
-// passes onEditCompanion/onRemoveCompanion (both update the reply itself).
-function GuestForm({ initial, companions, onEditCompanion, onRemoveCompanion, onSave, onCancel }) {
+// the guest's matched RSVP reply — edits/removals are STAGED locally and only
+// persist when "Save guest" is pressed (Cancel discards everything).
+function GuestForm({ initial, companions, onSave, onCancel }) {
   // `allocation` = the max attendees this guest may RSVP, including themselves.
   // The number the owner types IS the guest's cap — no conversion.
   const [f, setF] = useState(initial);
+  const [comps, setComps] = useState(companions || []);
   const [saving, setSaving] = useState(false);
   const set = (k) => (e) => { const v = e && e.target ? e.target.value : e; setF((s) => ({ ...s, [k]: v })); };
   const valid = f.firstName.trim() && f.lastName.trim();
   async function submit() {
     if (!valid || saving) return;
     setSaving(true);
-    try { await onSave(f); } finally { setSaving(false); }
+    try { await onSave(f, comps); } finally { setSaving(false); }
   }
   return (
     <div>
@@ -293,17 +294,14 @@ function GuestForm({ initial, companions, onEditCompanion, onRemoveCompanion, on
       </div>
       <Field label="Email" hint="Optional" id="g-email"><Input id="g-email" type="email" value={f.email || ""} onChange={set("email")} /></Field>
       <Field label="Notes" hint="Optional" id="g-notes"><Input id="g-notes" value={f.notes || ""} onChange={set("notes")} /></Field>
-      {companions && companions.length > 0 && (
-        <Field label="Companions" hint="From their RSVP reply — rename a companion (Enter to save) or remove one">
+      {comps.length > 0 && (
+        <Field label="Companions" hint="From their RSVP reply — changes apply when you save">
           <div style={{ display: "grid", gap: 8 }}>
-            {companions.map((c, i) => (
-              <div key={c + "|" + i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <Input defaultValue={c} aria-label={`Companion ${i + 1}`} readOnly={!onEditCompanion}
-                  onBlur={(e) => onEditCompanion && onEditCompanion(i, e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.target.blur(); } }} />
-                {onRemoveCompanion && (
-                  <button type="button" className="icon-btn icon-btn--danger" onClick={() => onRemoveCompanion(i)} aria-label={`Remove ${c}`}>{Icon.trash({})}</button>
-                )}
+            {comps.map((c, i) => (
+              <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <Input value={c} aria-label={`Companion ${i + 1}`}
+                  onChange={(e) => { const v = e.target.value; setComps((p) => p.map((x, j) => (j === i ? v : x))); }} />
+                <button type="button" className="icon-btn icon-btn--danger" onClick={() => setComps((p) => p.filter((_, j) => j !== i))} aria-label={`Remove ${c}`}>{Icon.trash({})}</button>
               </div>
             ))}
           </div>
@@ -357,7 +355,7 @@ export function GuestsAdmin() {
   });
   const pg = usePaged(onUnmatched ? unmatched : filtered, 10);
 
-  async function saveGuest(form) {
+  async function saveGuest(form, stagedComps) {
     const payload = { ...form, allocation: Math.max(1, parseInt(form.allocation, 10) || 1) };
     // Duplicate guard: exact same normalized first+middle+last already invited
     // (a different middle name is a legitimately different person, e.g. L vs R).
@@ -390,10 +388,24 @@ export function GuestsAdmin() {
         if (!ok) return;
       }
     }
+    // Staged companion edits (renames/removals in the modal) persist here, in
+    // the same save — not per keystroke/blur.
+    const rsvpRow = form.id ? ((byId.get(form.id) || {}).rsvp || null) : null;
+    const nextComps = (stagedComps || []).map((s) => (s || "").trim()).filter(Boolean);
+    const origComps = rsvpRow
+      ? (Array.isArray(rsvpRow.companions) && rsvpRow.companions.filter((s) => (s || "").trim()).length
+        ? rsvpRow.companions.filter((s) => (s || "").trim())
+        : (rsvpRow.plusOne ? String(rsvpRow.plusOne).split(", ") : []))
+      : [];
+    const compsChanged = rsvpRow && JSON.stringify(nextComps) !== JSON.stringify(origComps);
     try {
       await run(async () => {
         if (form.id) { await updateGuestDb(form.id, payload); Store.updateGuest(form.id, payload); }
         else { const row = await addGuestDb(payload); Store.addGuest(row); }
+        if (compsChanged) {
+          const patch = await updateRsvpCompanionsDb(rsvpRow.id, nextComps);
+          Store.updateRSVP(rsvpRow.id, patch);
+        }
       });
     } catch (e) {
       toast("Couldn't save guest: " + (e && e.message || "error"), "err");
@@ -405,27 +417,6 @@ export function GuestsAdmin() {
   function removeGuest(g) {
     confirmDialog({ title: "Remove guest?", message: `Remove ${g.firstName} ${g.lastName} from the invite list?`, confirmLabel: "Remove", danger: true })
       .then((ok) => { if (ok) run(async () => { await deleteGuestDb(g.id); Store.deleteGuest(g.id); }).then(() => toast("Guest removed", "success"), () => toast("Couldn't remove")); });
-  }
-  // Remove one companion from a matched reply (admin edit; owner-update RLS,
-  // migration 0016). Head count + plus_one string stay in step server-side.
-  async function removeCompanion(rsvp, comps, idx) {
-    const name = comps[idx];
-    const ok = await confirmDialog({
-      title: "Remove companion?",
-      message: `Remove ${name} from ${rsvp.fullName}'s RSVP? Their head count will drop by one.`,
-      confirmLabel: "Remove",
-      danger: true,
-    });
-    if (!ok) return;
-    try {
-      await run(async () => {
-        const patch = await updateRsvpCompanionsDb(rsvp.id, comps.filter((_, i) => i !== idx));
-        Store.updateRSVP(rsvp.id, patch);
-      });
-      toast("Companion removed", "success");
-    } catch (e) {
-      toast("Couldn't remove: " + (e && e.message || "error"), "err");
-    }
   }
   // CSV of what's on screen: guests for the guest tabs, replies on For Approval.
   function exportGuestsCsv() {
@@ -501,20 +492,6 @@ export function GuestsAdmin() {
     }
   }
 
-  // Rename one companion on a matched reply (blank = ignored; use remove).
-  async function editCompanion(rsvp, comps, idx, name) {
-    const v = (name || "").trim();
-    if (!v || v === comps[idx]) return;
-    try {
-      await run(async () => {
-        const patch = await updateRsvpCompanionsDb(rsvp.id, comps.map((c, i) => (i === idx ? v : c)));
-        Store.updateRSVP(rsvp.id, patch);
-      });
-      toast("Companion updated", "success");
-    } catch (e) {
-      toast("Couldn't update: " + (e && e.message || "error"), "err");
-    }
-  }
   // "Add to list": create a guest entry straight from an unmatched RSVP. Once
   // inserted, reconcileGuests recomputes and the row leaves the Unmatched tab.
   async function adoptRsvp(r) {
@@ -619,8 +596,6 @@ export function GuestsAdmin() {
           const comps = arr.length ? arr : (r && r.plusOne ? String(r.plusOne).split(", ") : []);
           return (
             <GuestForm initial={editing} companions={comps}
-              onEditCompanion={r ? (i, v) => editCompanion(r, comps, i, v) : null}
-              onRemoveCompanion={r ? (i) => removeCompanion(r, comps, i) : null}
               onSave={saveGuest} onCancel={() => setEditing(null)} />
           );
         })()}
