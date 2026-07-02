@@ -1,5 +1,6 @@
 import React from "react";
 import { go } from "@/lib/nav.js";
+import { onSiteScroll, scrollOffset, siteScrollEl } from "@/lib/scroll.js";
 import { mediaUrl } from "@/lib/media.js";
 import { useStore } from "@/lib/store.jsx";
 import { egTintGradient } from "@/themes";
@@ -113,7 +114,7 @@ export function EnvelopeHero() {
     if (!bg) return;
     let atTop = true;
     const onScroll = () => {
-      const y = window.scrollY || document.documentElement.scrollTop || 0;
+      const y = scrollOffset(); // shell scroller on mobile, else the document
       if (y <= 2) {
         if (!atTop) {
           atTop = true;
@@ -125,8 +126,7 @@ export function EnvelopeHero() {
         atTop = false;
       }
     };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return onSiteScroll(onScroll);
   }, [open]);
 
   // replay the heart slide-up every time it scrolls back into view
@@ -151,6 +151,13 @@ export function EnvelopeHero() {
   const scrollDown = () => {
     const hero = document.getElementById("env-hero");
     const next = hero && hero.nextElementSibling;
+    const sc = siteScrollEl(); // mobile shell scroller (null on desktop)
+    if (next && sc) {
+      // rect delta is robust no matter which element is the offsetParent
+      const delta = next.getBoundingClientRect().top - sc.getBoundingClientRect().top - 60;
+      sc.scrollBy({ top: delta, behavior: "smooth" });
+      return;
+    }
     const top = next ? next.offsetTop - 60 : window.innerHeight;
     window.scrollTo({ top, behavior: "smooth" });
   };

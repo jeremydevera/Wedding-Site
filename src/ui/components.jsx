@@ -250,6 +250,16 @@ export function Modal({ open, onClose, children, wide, solid, label = "Dialog" }
       adminBody.style.overflow = "hidden";
       return () => { adminBody.style.overflow = prevOv; };
     }
+    // Public mobile shell: #site-scroll is the scroller (not the document), so
+    // lock ITS overflow — same as admin. The body-position-fixed trick below is
+    // for the desktop/document-scroll case; using it here would do nothing (the
+    // document isn't the scroller) and reintroduce the iOS input bug.
+    const siteScroll = typeof document !== "undefined" && document.getElementById("site-scroll");
+    if (siteScroll && siteScroll.scrollHeight > siteScroll.clientHeight + 4) {
+      const prevOv = siteScroll.style.overflow;
+      siteScroll.style.overflow = "hidden";
+      return () => { siteScroll.style.overflow = prevOv; };
+    }
     // position:fixed (not just overflow:hidden) so iOS Safari can't scroll the
     // background; restore the exact scroll position on close.
     const scrollY = window.scrollY || document.documentElement.scrollTop || 0;

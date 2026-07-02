@@ -1,5 +1,6 @@
 import React from "react";
 import { go } from "@/lib/nav.js";
+import { scrollToTop } from "@/lib/scroll.js";
 import { Store, useStore } from "@/lib/store.jsx";
 import { postRsvp, rsvpNameTaken, upsertRsvp, guestAllocation } from "@/lib/api.js";
 import { isRsvpClosed, joinPlusOnes, isValidOptionalEmail, maxPartySize } from "@/lib/rsvp.js";
@@ -134,7 +135,7 @@ export function RSVPPage() {
       if (forceUpdate) await upsertRsvp(payload);
       else await postRsvp(payload);
       setSubmitted(true);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      scrollToTop({ top: 0, behavior: "smooth" });
     } catch (err) {
       setErrors({ notes: "Could not submit right now. Please try again." });
     } finally {

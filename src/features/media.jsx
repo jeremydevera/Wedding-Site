@@ -1,5 +1,6 @@
 import React from "react";
 import { go } from "@/lib/nav.js";
+import { scrollToTop } from "@/lib/scroll.js";
 import { Store, uid, useStore } from "@/lib/store.jsx";
 import { Button, Field, Icon, Input, Modal, Placeholder } from "@/ui/components.jsx";
 import { PageHero } from "@/pages/PublicPages.jsx";
@@ -112,7 +113,7 @@ export function UploadFlow({ category = "gallery", title, eyebrow, lead, accept 
       status: category === "gallery" ? (Store.get().settings.autoApproveMedia ? "approved" : "pending") : "approved", size: it.size,
     })));
     setProgress(100);
-    setTimeout(() => { setBusy(false); setDone(true); window.scrollTo({ top: 0, behavior: "smooth" }); }, 400);
+    setTimeout(() => { setBusy(false); setDone(true); scrollToTop({ top: 0, behavior: "smooth" }); }, 400);
   }
 
   if (done) {

@@ -1,5 +1,6 @@
 import React from "react";
 import { go } from "@/lib/nav.js";
+import { scrollToTop } from "@/lib/scroll.js";
 import { Store, useStore } from "@/lib/store.jsx";
 import { postGuestbook, postQuiz } from "@/lib/api.js";
 import { hasPlayedQuiz, markQuizPlayed, clearQuizPlayed } from "@/lib/quiz-attempt.js";
@@ -104,7 +105,7 @@ export function GuestbookPage() {
             </div>
           )}
           <Pager page={gb.page} totalPages={gb.totalPages} total={gb.total} perPage={gb.perPage} start={gb.start} noun="messages"
-            onPage={(p) => { gb.setPage(p); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
+            onPage={(p) => { gb.setPage(p); scrollToTop({ top: 0, behavior: "smooth" }); }} />
         </div>
       </section>
 

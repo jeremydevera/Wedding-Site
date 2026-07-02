@@ -1,6 +1,7 @@
 import React from "react";
 
 import { go } from "@/lib/nav.js";
+import { scrollToTop } from "@/lib/scroll.js";
 import { Store, useStore } from "@/lib/store.jsx";
 import { loadClientData } from "@/lib/api.js";
 import { resolveSubdomain } from "@/lib/tenant.js";
@@ -76,7 +77,7 @@ export function useRoute() {
   };
   const [route, setRoute] = useState(parse());
   useEffect(() => {
-    const onNav = () => { setRoute(parse()); window.scrollTo({ top: 0 }); };
+    const onNav = () => { setRoute(parse()); scrollToTop({ top: 0 }); };
     window.addEventListener("popstate", onNav); // back/forward
     window.addEventListener("nav", onNav);      // go() pushState
     return () => { window.removeEventListener("popstate", onNav); window.removeEventListener("nav", onNav); };
@@ -400,17 +401,23 @@ export function App() {
       {isAdmin ? (
         <AdminApp />
       ) : (
-        <>
+        // Flex-scroll shell (mobile): nav is an in-flow child and only
+        // .site-scroll scrolls, so the document can't scroll and the header
+        // can't detach/vanish on iOS Safari — same fix as the admin shell.
+        // Desktop is unaffected (CSS scopes it to <=860px; nav stays fixed).
+        <div className="site-shell">
           <Nav route={route} />
-          <main key={route}><ActivePage section={route} /></main>
-          <Footer />
+          <div className="site-scroll" id="site-scroll">
+            <main key={route}><ActivePage section={route} /></main>
+            <Footer />
+          </div>
           {settings.decorOn && route === "home" && settings.theme !== "envelope" && (
             String(settings.decorStyle).startsWith("fx-")
               ? <FallingFx id={settings.decorStyle.slice(3)} />
               : <FloatingDecor on style={settings.decorStyle} />
           )}
           <MusicMount />
-        </>
+        </div>
       )}
       <ToastHost />
       <ConfirmHost />
