@@ -1887,7 +1887,7 @@ function ClosesAtInput({ value, onChange }) {
         {Icon.calendar({ style: { width: 18, height: 18 } })}
       </button>
       {value && (
-        <button type="button" onClick={() => onChange("")} aria-label="Clear close date"
+        <button type="button" onClick={() => onChange({ target: { value: "" } })} aria-label="Clear close date"
           style={{ position: "absolute", top: "50%", right: 38, transform: "translateY(-50%)", display: "grid", placeItems: "center", width: 26, height: 26, background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 20, lineHeight: 1 }}>&times;</button>
       )}
       {/* real native picker, visually hidden — opened via showPicker() above */}
