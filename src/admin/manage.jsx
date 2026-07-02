@@ -338,7 +338,7 @@ function GuestForm({ initial, companions, onSave, onCancel }) {
 export function GuestsAdmin() {
   const { guests, rsvps, settings } = useStore();
   const { run } = React.useContext(AdminSaveCtx);
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState("attending");
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState(null);
   const [emailOpen, setEmailOpen] = useState(false);
@@ -366,7 +366,7 @@ export function GuestsAdmin() {
     unmatched: unmatched.length,
   };
   const onUnmatched = filter === "unmatched";
-  const showComps = filter === "all" || filter === "attending"; // Companions column on these tabs
+  const showComps = filter === "attending"; // Companions column on the Attending tab
   const filtered = bySearch.filter((g) => {
     if (filter === "all" || filter === "unmatched") return true;
     // "No reply" = hasn't submitted an RSVP (status may still default to attending).
@@ -536,7 +536,7 @@ export function GuestsAdmin() {
   return (
     <div>
       <div className="folders">
-        {[["all", "All"], ["attending", "Attending"], ["maybe", "Maybe"], ["not_attending", "Declined"], ["outstanding", "No reply"], ["unmatched", "For Approval"]].map(([v, l]) => (
+        {[["attending", "Attending"], ["maybe", "Maybe"], ["not_attending", "Declined"], ["outstanding", "No reply"], ["unmatched", "For Approval"]].map(([v, l]) => (
           <button key={v} className={"folder" + (filter === v ? " folder--active" : "")} onMouseDown={(e) => e.preventDefault()} onClick={() => setFilter(v)}>{l} ({counts[v]})</button>
         ))}
       </div>
