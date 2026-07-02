@@ -751,7 +751,7 @@ export function RsvpsAdmin() {
         </div>
         <div className="panel__body--flush table-wrap">
           <table className="tbl">
-            <thead><tr><th>Name</th><th>Contact</th><th>Status</th><th>Guests</th><th>Dietary</th><th>Submitted</th><th></th></tr></thead>
+            <thead><tr><th>Name</th><th>Contact</th><th>Status</th><th>Guests</th><th>Dietary</th><th>Notes</th><th>Submitted</th><th></th></tr></thead>
             <tbody>
               {pg.pageItems.map((r) => (
                 <tr key={r.id}>
@@ -760,6 +760,7 @@ export function RsvpsAdmin() {
                   <td><span className={"tag tag--" + r.status}>{r.status.replace("_", " ")}</span></td>
                   <td>{r.count}</td>
                   <td>{r.diet === "None" ? <span style={{ color: "var(--muted)" }}>—</span> : r.diet}</td>
+                  <td style={{ maxWidth: 240 }}>{r.notes ? <span title={r.notes} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.notes}</span> : <span style={{ color: "var(--muted)" }}>—</span>}</td>
                   <td style={{ color: "var(--muted)", whiteSpace: "nowrap" }}>{fmtDate(r.createdAt)}</td>
                   <td>
                     <div className="row-actions">
@@ -769,7 +770,7 @@ export function RsvpsAdmin() {
                   </td>
                 </tr>
               ))}
-              {filtered.length === 0 && <tr><td colSpan={7} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No matching RSVPs.</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={8} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No matching RSVPs.</td></tr>}
             </tbody>
           </table>
         </div>
