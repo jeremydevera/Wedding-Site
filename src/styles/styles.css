@@ -1840,7 +1840,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 
 .rsvp-charts__row {
   display: grid;
-  grid-template-columns: 240px 1fr 1fr;
+  grid-template-columns: 264px 1fr 1fr;
   gap: 12px;
 }
 .rsvp-chart-card {
@@ -1850,7 +1850,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   padding: 18px 20px;
   display: flex;
   flex-direction: column;
-  min-height: 250px;
+  min-height: 264px;
   animation: rsvp-kpi-in .45s ease both;
 }
 .rsvp-chart-card__head {
@@ -1877,7 +1877,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   align-items: center;
   justify-content: center;
 }
-.rsvp-donut-wrap { min-height: 150px; }
+.rsvp-donut-wrap { min-height: 168px; }
 .rsvp-donut-center {
   position: absolute;
   top: 50%; left: 50%;
@@ -1888,10 +1888,11 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .rsvp-donut-num {
   display: block;
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: 24px;
   line-height: 1;
   color: var(--ink);
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 .rsvp-donut-lbl {
   display: block;

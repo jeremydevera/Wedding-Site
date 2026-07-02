@@ -31,9 +31,10 @@ function cssColorHex(varName, fallback) {
 // effects (after the theme vars are applied to :root).
 function themePalette() {
   return {
-    accent: cssColorHex("--accent", "#5f7a3a"),   // primary series
-    gold:   cssColorHex("--gold", "#c99a2e"),     // secondary series
-    muted:  cssColorHex("--muted", "#8a8578"),    // labels, grid, "declined"
+    accent:  cssColorHex("--accent", "#5f7a3a"),   // primary series
+    gold:    cssColorHex("--gold", "#c99a2e"),     // secondary series
+    muted:   cssColorHex("--muted", "#8a8578"),    // labels, grid, "declined"
+    surface: cssColorHex("--surface", "#ffffff"),  // slice seams (matches card bg)
   };
 }
 
@@ -98,10 +99,13 @@ export function RsvpCharts({ rsvps }) {
   const barRef   = useRef(null);
   const lineRef  = useRef(null);
 
-  // Attendance donut — attending: accent, maybe: gold, declined: muted
+  // Attendance donut — attending: accent, maybe: gold, declined: muted.
+  // Thick ring (small hole), rounded slice corners, surface-colored seams
+  // between slices, gentle radial pull on hover.
   useAmChart(donutRef, (root, p) => {
     const chart = root.container.children.push(am5percent.PieChart.new(root, {
-      innerRadius: am5.percent(76),
+      innerRadius: am5.percent(48),
+      radius: am5.percent(92),
     }));
     const series = chart.series.push(am5percent.PieSeries.new(root, {
       valueField: "value", categoryField: "category",
@@ -109,8 +113,13 @@ export function RsvpCharts({ rsvps }) {
     series.get("colors").set("colors", [amColor(p.accent), amColor(p.gold), amColor(p.muted)]);
     series.labels.template.set("forceHidden", true);
     series.ticks.template.set("forceHidden", true);
-    series.slices.template.setAll({ strokeOpacity: 0, toggleKey: "none", tooltipText: "{category}: {value}" });
-    series.slices.template.states.create("hover", { scale: 1.04 });
+    series.slices.template.setAll({
+      cornerRadius: 6,
+      stroke: amColor(p.surface), strokeWidth: 2, strokeOpacity: 1,
+      shadowColor: am5.color(0x000000), shadowBlur: 8, shadowOpacity: 0.08, shadowOffsetY: 2,
+      toggleKey: "none", tooltipText: "{category}: {value}",
+    });
+    series.slices.template.states.create("hover", { shiftRadius: 7 });
     series.data.setAll([
       { category: "Attending", value: stats.attendingParties },
       { category: "Maybe",     value: stats.maybe },
@@ -123,7 +132,8 @@ export function RsvpCharts({ rsvps }) {
   useAmChart(barRef, (root, p) => {
     if (!dietEntries.length) return;
     const chart = root.container.children.push(am5xy.XYChart.new(root, {
-      panX: false, panY: false, wheelX: "none", wheelY: "none", paddingLeft: 0,
+      panX: false, panY: false, wheelX: "none", wheelY: "none",
+      paddingLeft: 0, paddingRight: 28, // room for the count labels past the bar ends
     }));
     const yRend = am5xy.AxisRendererY.new(root, { inversed: true, minGridDistance: 12 });
     yRend.grid.template.set("forceHidden", true);
@@ -137,8 +147,17 @@ export function RsvpCharts({ rsvps }) {
       tooltip: am5.Tooltip.new(root, { labelText: "{categoryY}: {valueX}" }),
     }));
     series.columns.template.setAll({
-      height: 16, cornerRadiusTR: 4, cornerRadiusBR: 4, strokeOpacity: 0, templateField: "colSettings",
+      height: 18, cornerRadiusTR: 5, cornerRadiusBR: 5, strokeOpacity: 0, templateField: "colSettings",
     });
+    // Count label pinned just past the end of each bar.
+    series.bullets.push(() => am5.Bullet.new(root, {
+      locationX: 1,
+      sprite: am5.Label.new(root, {
+        text: "{valueX}", populateText: true,
+        fill: amColor(p.muted), fontSize: 11, fontWeight: "600",
+        centerY: am5.p50, dx: 6,
+      }),
+    }));
     const data = dietEntries.map(([diet, count], i) => ({
       diet, count,
       colSettings: { fill: amColor(p.accent), fillOpacity: Math.max(0.35, 0.95 - i * 0.1) },
@@ -166,20 +185,28 @@ export function RsvpCharts({ rsvps }) {
     const yRend = am5xy.AxisRendererY.new(root, {});
     styleAxis(yRend, p);
     const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, { min: 0, maxPrecision: 0, renderer: yRend }));
-    const mkSeries = (name, field, color, width, fillOpacity) => {
+    const mkSeries = (name, field, color, width, topOpacity) => {
       const s = chart.series.push(am5xy.SmoothedXLineSeries.new(root, {
         name, xAxis, yAxis, valueYField: field, categoryXField: "day",
         stroke: amColor(color), fill: amColor(color),
         tooltip: am5.Tooltip.new(root, { labelText: "{name}: {valueY}" }),
       }));
       s.strokes.template.setAll({ strokeWidth: width });
-      s.fills.template.setAll({ fillOpacity, visible: true });
+      // Area fades from the line color down to transparent — reads as a wash,
+      // not a block, so the two series can overlap without mud.
+      s.fills.template.setAll({
+        visible: true, fillOpacity: 1,
+        fillGradient: am5.LinearGradient.new(root, {
+          rotation: 90,
+          stops: [{ color: amColor(color), opacity: topOpacity }, { color: amColor(color), opacity: 0 }],
+        }),
+      });
       s.data.setAll(data);
       s.appear(800);
       return s;
     };
-    mkSeries("Responses", "total", p.accent, 2, 0.10);
-    mkSeries("Guests", "attending", p.gold, 1.5, 0.07);
+    mkSeries("Responses", "total", p.accent, 2.25, 0.22);
+    mkSeries("Guests", "attending", p.gold, 1.5, 0.12);
     const legend = chart.children.push(am5.Legend.new(root, { centerX: am5.percent(50), x: am5.percent(50) }));
     legend.labels.template.setAll({ fill: amColor(p.muted), fontSize: 11 });
     legend.markers.template.setAll({ width: 8, height: 8 });
