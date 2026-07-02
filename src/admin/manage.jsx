@@ -1964,7 +1964,7 @@ export function HomeAdmin() {
         <>
           <div className="panel">
             <div className="panel__head"><div className="panel__title">Home page — invitation</div></div>
-            <div className="panel__body">
+            <div className="panel__body" style={{ maxWidth: 900, margin: "0 auto" }}>
               <p style={{ color: "var(--muted)", margin: "0 0 18px", fontSize: 14 }}>
                 The welcome section guests see on your home page, under the hero.
               </p>
@@ -2055,7 +2055,7 @@ export function HomeAdmin() {
         <>
           <div className="panel">
             <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Google Maps</div><HeadSwitch label="Show map on the home page" checked={f.showMap !== false} onChange={(v) => toggleShow("showMap", v)} /></div>
-            <div className="panel__body">
+            <div className="panel__body" style={{ maxWidth: 900, margin: "0 auto" }}>
               <Field label="Venue name" id="m-vn"><Input id="m-vn" value={f.venueName} onChange={set("venueName")} /></Field>
               <Field label="Venue address" id="m-va"><Input id="m-va" value={f.venueAddress} onChange={set("venueAddress")} /></Field>
               <Field label="Map location" hint="Search a place, then click the map or drag the pin to the exact spot. This map is shared with the Venue page. Click Save changes to publish." id="m-map">
