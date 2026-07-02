@@ -320,11 +320,14 @@ function GuestForm({ initial, companions, onEditCompanion, onRemoveCompanion, on
 // Guests tab — invited-list CRUD + reconciliation against RSVPs (who replied,
 // headcount). Shown only when settings.strictRsvp is on (gated in AdminApp).
 export function GuestsAdmin() {
-  const { guests, rsvps } = useStore();
+  const { guests, rsvps, settings } = useStore();
   const { run } = React.useContext(AdminSaveCtx);
   const [filter, setFilter] = useState("all");
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState(null);
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [emailTo, setEmailTo] = useState("");
+  const [emailSending, setEmailSending] = useState(false);
   const blank = { firstName: "", lastName: "", middleName: "", allocation: 2, email: "", notes: "" };
 
   const recon = React.useMemo(() => reconcileGuests(guests, rsvps), [guests, rsvps]);
@@ -424,6 +427,80 @@ export function GuestsAdmin() {
       toast("Couldn't remove: " + (e && e.message || "error"), "err");
     }
   }
+  // CSV of what's on screen: guests for the guest tabs, replies on For Approval.
+  function exportGuestsCsv() {
+    const who = [settings.partnerA, settings.partnerB].filter(Boolean).join(" & ") || "Guests";
+    const compsOf = (r) => {
+      if (!r) return "";
+      const arr = Array.isArray(r.companions) ? r.companions.filter((s) => (s || "").trim()) : [];
+      return arr.length ? arr.join(", ") : (r.plusOne || "");
+    };
+    let name, rows;
+    if (onUnmatched) {
+      name = `${who} - RSVPs for approval.csv`;
+      rows = [["Full Name", "Phone", "Email", "Status", "Head Count", "Companions", "Submitted"],
+        ...unmatched.map((r) => [r.fullName, r.phone, r.email, (STAT_LABEL[r.status] || r.status), headsOf(r), compsOf(r), fmtDate(r.createdAt)])];
+    } else {
+      const label = { all: "", attending: " - Attending", maybe: " - Maybe", not_attending: " - Declined", outstanding: " - No reply" }[filter] || "";
+      name = `${who} - Guest list${label}.csv`;
+      rows = [["First Name", "Middle Name", "Last Name", "Phone", "Email", "Allotted Seats", "Status", "Head Count", "Companions", "Notes"],
+        ...filtered.map((g) => {
+          const x = byId.get(g.id) || { status: "none", rsvp: null };
+          return [g.firstName, g.middleName, g.lastName,
+            (x.rsvp && x.rsvp.phone) || "", (x.rsvp && x.rsvp.email) || g.email || "",
+            g.allocation, x.status === "none" ? "No reply" : STAT_LABEL[x.status],
+            x.status === "attending" ? headsOf(x.rsvp) : "", compsOf(x.rsvp), g.notes || ""];
+        })];
+    }
+    downloadCSV(name, rows);
+  }
+
+  // Email the guest list (summary + table) via the auth-gated send-email Function.
+  async function emailGuestList(to) {
+    const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    const accepted = recon.rows.filter((x) => x.status === "attending").length;
+    const rows = recon.rows.map((x) => {
+      const g = x.guest;
+      const comps = x.rsvp && Array.isArray(x.rsvp.companions) ? x.rsvp.companions.filter((s) => (s || "").trim()).join(", ") : (x.rsvp && x.rsvp.plusOne) || "";
+      return `<tr>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee">${esc(g.firstName)} ${esc(g.lastName)}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:center">${esc(g.allocation)}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee">${x.status === "none" ? "No reply" : esc(STAT_LABEL[x.status])}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:center">${x.status === "attending" ? headsOf(x.rsvp) : ""}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee">${esc(comps)}</td>
+      </tr>`;
+    }).join("");
+    const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#222;max-width:680px;margin:0 auto">
+      <h2 style="margin:0 0 4px">Guest list</h2>
+      <p style="color:#666;margin:0 0 16px">${esc(settings.partnerA)} &amp; ${esc(settings.partnerB)}</p>
+      <p style="margin:0 0 16px">
+        <strong>${S.invited}</strong> invited &nbsp;·&nbsp;
+        <strong>${accepted}</strong> accepted (${S.confirmedHeads} heads) &nbsp;·&nbsp;
+        ${S.outstanding} no reply &nbsp;·&nbsp; ${recon.unmatchedRsvps.length} for approval
+      </p>
+      <table style="border-collapse:collapse;width:100%;font-size:14px">
+        <thead><tr style="text-align:left;background:#f6f6f6">
+          <th style="padding:8px 10px">Name</th><th style="padding:8px 10px;text-align:center">Allotted</th>
+          <th style="padding:8px 10px">Status</th><th style="padding:8px 10px;text-align:center">Heads</th>
+          <th style="padding:8px 10px">Companions</th>
+        </tr></thead>
+        <tbody>${rows || '<tr><td colspan="5" style="padding:14px;color:#888">No guests yet.</td></tr>'}</tbody>
+      </table>
+    </div>`;
+    const who = [settings.partnerA, settings.partnerB].filter(Boolean).join(" & ");
+    const today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    setEmailSending(true);
+    try {
+      await sendEmail({ to: (to || "").trim(), subject: `${who ? who + " — " : ""}Guest list · ${today}`, html });
+      toast("Email sent", "success");
+      setEmailOpen(false);
+    } catch (e) {
+      toast("Couldn't send: " + (e && e.message || "error"), "err");
+    } finally {
+      setEmailSending(false);
+    }
+  }
+
   // Rename one companion on a matched reply (blank = ignored; use remove).
   async function editCompanion(rsvp, comps, idx, name) {
     const v = (name || "").trim();
@@ -469,6 +546,8 @@ export function GuestsAdmin() {
         <div className="panel__head">
           <div className="panel__title">{onUnmatched ? "RSVPs for approval" : "Guests"} <span style={{ color: "var(--muted)", fontSize: 15 }}>({onUnmatched ? unmatched.length : filtered.length})</span></div>
           <div className="admin-toolbar"><div className="admin-toolbar__end">
+            <Button variant="ghost" className="admin-toolbar__action" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>{Icon.mail({})} Email</Button>
+            <Button variant="ghost" className="admin-toolbar__action" onClick={exportGuestsCsv}>{Icon.download({})} Export</Button>
             <Button variant="primary" className="admin-toolbar__action" onClick={() => setEditing({ ...blank })}>Add guest</Button>
             <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
           </div></div>
@@ -550,6 +629,14 @@ export function GuestsAdmin() {
               onSave={saveGuest} onCancel={() => setEditing(null)} />
           );
         })()}
+      </Modal>
+
+      <Modal open={emailOpen} onClose={() => setEmailOpen(false)} label="Email guest list">
+        <SectionHead eyebrow="Guests" title="Email the guest list" />
+        <Field label="Send to" id="guests-email-to" hint="We'll email the guest list (summary + full table) to this address.">
+          <Input id="guests-email-to" type="email" inputMode="email" value={emailTo} onChange={(e) => setEmailTo(e.target.value)} placeholder="name@example.com" />
+        </Field>
+        <Button variant="primary" block disabled={!emailTo.trim() || emailSending} onClick={() => emailGuestList(emailTo)}>{emailSending ? "Sending…" : "Send guest list"}</Button>
       </Modal>
     </div>
   );

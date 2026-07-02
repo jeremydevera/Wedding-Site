@@ -5,6 +5,7 @@ import { resolveSubdomain } from "@/lib/tenant.js";
 import { DISABLED_MODULES } from "@/lib/roles.js";
 import { useStore } from "@/lib/store.jsx";
 import { matchedRsvps } from "@/lib/guests.js";
+import { headsOf } from "@/lib/rsvp.js";
 import { signIn } from "@/lib/auth.js";
 import { Button, Field, Icon, Input, Monogram, Placeholder, toast } from "@/ui/components.jsx";
 // Lazy: amCharts is heavy — split into its own chunk, loaded only when the
@@ -171,7 +172,9 @@ export function AdminDashboard({ goTab }) {
   );
   const forApproval = rsvps.length - counted.length;
   const attending = counted.filter((r) => r.status === "attending");
-  const guestCount = attending.reduce((s, r) => s + (r.count || 0), 0);
+  // headsOf keeps this tile identical to the RSVP tab's Total head count
+  // (named companions + guest; falls back to the picked count).
+  const guestCount = attending.reduce((s, r) => s + headsOf(r), 0);
   const photos = media.filter((m) => m.type === "photo" && m.category === "gallery");
   const videos = media.filter((m) => m.type === "video");
   const pendingMedia = media.filter((m) => m.status === "pending");
