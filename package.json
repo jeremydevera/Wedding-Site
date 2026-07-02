@@ -12,8 +12,8 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@amcharts/amcharts5": "^5.19.1",
     "@supabase/supabase-js": "^2.108.2",
+    "chart.js": "^4.5.1",
     "leaflet": "^1.9.4",
     "qrcode-generator": "^1.4.4",
     "react": "^18.3.1",

@@ -1914,9 +1914,8 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .rsvp-legend-label { flex: 1; color: var(--ink-soft); }
 .rsvp-legend-val { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 
-/* Bar + line chart hosts (amCharts renders into the absolutely-filled div) */
+/* Bar + line chart hosts (Chart.js canvas fills the relative box) */
 .rsvp-chart-canvas { flex: 1; position: relative; min-height: 170px; }
-.rsvp-chart-el { position: absolute; inset: 0; }
 .rsvp-chart-empty {
   flex: 1;
   display: flex;

@@ -1,12 +1,20 @@
 import React from "react";
-import * as am5 from "@amcharts/amcharts5";
-import * as am5percent from "@amcharts/amcharts5/percent";
-import * as am5xy from "@amcharts/amcharts5/xy";
-import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
+import {
+  Chart as ChartJS,
+  ArcElement, Tooltip, Legend,
+  CategoryScale, LinearScale, BarElement,
+  PointElement, LineElement, Filler,
+} from "chart.js";
 import { useStore } from "@/lib/store.jsx";
 import { rsvpStats } from "@/lib/rsvp.js";
 
 const { useRef, useEffect, useMemo } = React;
+
+ChartJS.register(
+  ArcElement, Tooltip, Legend,
+  CategoryScale, LinearScale, BarElement,
+  PointElement, LineElement, Filler,
+);
 
 // Resolve a theme CSS variable (e.g. "--accent") to a hex color string. The
 // vars hold oklch()/color-mix() values, so we let the browser compute the final
@@ -27,33 +35,69 @@ function cssColorHex(varName, fallback) {
   }
 }
 
-// Read the client theme's palette for the charts. Called inside the chart
-// effects (after the theme vars are applied to :root).
+// Read the client theme's palette for the charts (after theme vars are applied).
 function themePalette() {
   return {
-    accent:  cssColorHex("--accent", "#5f7a3a"),   // primary series
-    gold:    cssColorHex("--gold", "#c99a2e"),     // secondary series
-    muted:   cssColorHex("--muted", "#8a8578"),    // labels, grid, "declined"
-    surface: cssColorHex("--surface", "#ffffff"),  // slice seams (matches card bg)
+    accent: cssColorHex("--accent", "#5f7a3a"),   // primary series + "attending"
+    gold:   cssColorHex("--gold", "#c99a2e"),     // secondary line series
+    muted:  cssColorHex("--muted", "#8a8578"),    // labels, grid
+    ink:    cssColorHex("--ink", "#2a2722"),      // tooltip bg
   };
 }
 
-const amColor = (hex) => am5.color(hex);
+// Status colors for the attendance donut. Attending follows the theme accent;
+// maybe/declined are fixed semantic hues (amber / terracotta) so the three
+// stay clearly distinguishable on every theme.
+const MAYBE_COLOR = "#c99a2e";
+const DECLINED_COLOR = "#a24b3b";
 
-// Soft axis styling shared by the XY charts: faint grid, muted small labels.
-function styleAxis(renderer, pal) {
-  renderer.labels.template.setAll({ fill: amColor(pal.muted), fontSize: 11, fillOpacity: 0.9 });
-  renderer.grid.template.setAll({ stroke: amColor(pal.muted), strokeOpacity: 0.12 });
+// hex + alpha -> rgba() string (for gradients/soft fills)
+function hexA(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
 }
 
-// Mount an amCharts root on a ref'd div; dispose on unmount/deps change.
-function useAmChart(ref, build, deps) {
+function tipStyle(pal) {
+  return {
+    backgroundColor: hexA(pal.ink, 0.92),
+    titleColor: "#fff",
+    bodyColor: "rgba(255,255,255,0.85)",
+    padding: { x: 12, y: 8 },
+    cornerRadius: 8,
+    boxWidth: 8, boxHeight: 8, boxPadding: 4,
+    displayColors: false,
+  };
+}
+
+// Draws each bar's value just past its end (horizontal bars only).
+const barValuePlugin = {
+  id: "barValues",
+  afterDatasetsDraw(chart) {
+    const opts = chart.options.plugins.barValues;
+    if (!opts) return;
+    const { ctx } = chart;
+    const meta = chart.getDatasetMeta(0);
+    const ds = chart.data.datasets[0];
+    ctx.save();
+    ctx.font = "600 11px " + (opts.font || "sans-serif");
+    ctx.fillStyle = opts.color;
+    ctx.textBaseline = "middle";
+    meta.data.forEach((bar, i) => {
+      const v = ds.data[i];
+      if (v != null) ctx.fillText(String(v), bar.x + 6, bar.y);
+    });
+    ctx.restore();
+  },
+};
+
+// Mount a Chart.js instance on a ref'd canvas; destroy on unmount/deps change.
+function useChart(ref, getConfig, deps) {
+  const inst = useRef(null);
   useEffect(() => {
     if (!ref.current) return;
-    const root = am5.Root.new(ref.current);
-    root.setThemes([am5themes_Animated.new(root)]);
-    build(root, themePalette());
-    return () => root.dispose();
+    if (inst.current) { inst.current.destroy(); inst.current = null; }
+    inst.current = new ChartJS(ref.current, getConfig(themePalette()));
+    return () => { if (inst.current) { inst.current.destroy(); inst.current = null; } };
   }, deps); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
@@ -99,119 +143,141 @@ export function RsvpCharts({ rsvps }) {
   const barRef   = useRef(null);
   const lineRef  = useRef(null);
 
-  // Attendance donut — attending: accent, maybe: gold, declined: muted.
-  // Thick ring (small hole), rounded slice corners, surface-colored seams
-  // between slices, gentle radial pull on hover.
-  useAmChart(donutRef, (root, p) => {
-    const chart = root.container.children.push(am5percent.PieChart.new(root, {
-      innerRadius: am5.percent(48),
-      radius: am5.percent(92),
-    }));
-    const series = chart.series.push(am5percent.PieSeries.new(root, {
-      valueField: "value", categoryField: "category",
-    }));
-    series.get("colors").set("colors", [amColor(p.accent), amColor(p.gold), amColor(p.muted)]);
-    series.labels.template.set("forceHidden", true);
-    series.ticks.template.set("forceHidden", true);
-    series.slices.template.setAll({
-      cornerRadius: 6,
-      stroke: amColor(p.surface), strokeWidth: 2, strokeOpacity: 1,
-      shadowColor: am5.color(0x000000), shadowBlur: 8, shadowOpacity: 0.08, shadowOffsetY: 2,
-      toggleKey: "none", tooltipText: "{category}: {value}",
-    });
-    series.slices.template.states.create("hover", { shiftRadius: 7 });
-    series.data.setAll([
-      { category: "Attending", value: stats.attendingParties },
-      { category: "Maybe",     value: stats.maybe },
-      { category: "Declined",  value: stats.declined },
-    ]);
-    series.appear(900, 80);
-  }, [stats.attendingParties, stats.maybe, stats.declined, theme]);
+  // Attendance donut — thick ring (48% hole), borderless slices,
+  // attending: theme accent, maybe: amber, declined: terracotta.
+  useChart(donutRef, (p) => ({
+    type: "doughnut",
+    data: {
+      labels: ["Attending", "Maybe", "Declined"],
+      datasets: [{
+        data: [stats.attendingParties, stats.maybe, stats.declined],
+        backgroundColor: [p.accent, MAYBE_COLOR, DECLINED_COLOR],
+        borderWidth: 0,
+        borderRadius: 6,
+        hoverOffset: 8,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: "48%",
+      layout: { padding: 8 }, // room for hoverOffset so slices don't clip
+      plugins: {
+        legend: { display: false },
+        tooltip: { ...tipStyle(p), callbacks: { label: (c) => ` ${c.label}: ${c.parsed}` } },
+      },
+      animation: { duration: 900, easing: "easeInOutQuart" },
+    },
+  }), [stats.attendingParties, stats.maybe, stats.declined, theme]);
 
-  // Dietary horizontal bar — accent shades (opacity ramp)
-  useAmChart(barRef, (root, p) => {
-    if (!dietEntries.length) return;
-    const chart = root.container.children.push(am5xy.XYChart.new(root, {
-      panX: false, panY: false, wheelX: "none", wheelY: "none",
-      paddingLeft: 0, paddingRight: 28, // room for the count labels past the bar ends
-    }));
-    const yRend = am5xy.AxisRendererY.new(root, { inversed: true, minGridDistance: 12 });
-    yRend.grid.template.set("forceHidden", true);
-    yRend.labels.template.setAll({ fill: amColor(p.muted), fontSize: 12 });
-    const yAxis = chart.yAxes.push(am5xy.CategoryAxis.new(root, { categoryField: "diet", renderer: yRend }));
-    const xRend = am5xy.AxisRendererX.new(root, {});
-    styleAxis(xRend, p);
-    const xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, { min: 0, maxPrecision: 0, renderer: xRend }));
-    const series = chart.series.push(am5xy.ColumnSeries.new(root, {
-      xAxis, yAxis, valueXField: "count", categoryYField: "diet",
-      tooltip: am5.Tooltip.new(root, { labelText: "{categoryY}: {valueX}" }),
-    }));
-    series.columns.template.setAll({
-      height: 18, cornerRadiusTR: 5, cornerRadiusBR: 5, strokeOpacity: 0, templateField: "colSettings",
-    });
-    // Count label pinned just past the end of each bar.
-    series.bullets.push(() => am5.Bullet.new(root, {
-      locationX: 1,
-      sprite: am5.Label.new(root, {
-        text: "{valueX}", populateText: true,
-        fill: amColor(p.muted), fontSize: 11, fontWeight: "600",
-        centerY: am5.p50, dx: 6,
-      }),
-    }));
-    const data = dietEntries.map(([diet, count], i) => ({
-      diet, count,
-      colSettings: { fill: amColor(p.accent), fillOpacity: Math.max(0.35, 0.95 - i * 0.1) },
-    }));
-    yAxis.data.setAll(data);
-    series.data.setAll(data);
-    series.appear(700);
-  }, [dietEntries, theme]);
+  // Dietary horizontal bar — accent opacity ramp, count labels past bar ends
+  useChart(barRef, (p) => ({
+    type: "bar",
+    data: {
+      labels: dietEntries.map(([k]) => k),
+      datasets: [{
+        data: dietEntries.map(([, v]) => v),
+        backgroundColor: dietEntries.map((_, i) => hexA(p.accent, Math.max(0.35, 0.95 - i * 0.1))),
+        borderRadius: 5,
+        borderSkipped: false,
+        barThickness: 18,
+      }],
+    },
+    plugins: [barValuePlugin],
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { right: 26 } }, // room for the count labels
+      plugins: {
+        legend: { display: false },
+        tooltip: tipStyle(p),
+        barValues: { color: p.muted },
+      },
+      scales: {
+        x: {
+          grid: { color: hexA(p.muted, 0.12) },
+          ticks: { stepSize: 1, precision: 0, color: p.muted, font: { size: 11 } },
+          border: { display: false },
+          beginAtZero: true,
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: p.muted, font: { size: 12 } },
+          border: { display: false },
+        },
+      },
+      animation: { duration: 700, easing: "easeInOutQuart" },
+    },
+  }), [dietEntries, theme]);
 
-  // RSVPs over time — responses: accent, guests: gold
-  useAmChart(lineRef, (root, p) => {
-    if (timeline.labels.length < 2) return;
-    const data = timeline.labels.map((day, i) => ({
-      day, total: timeline.total[i], attending: timeline.attending[i],
-    }));
-    const chart = root.container.children.push(am5xy.XYChart.new(root, {
-      panX: false, panY: false, wheelX: "none", wheelY: "none", layout: root.verticalLayout,
-    }));
-    const cursor = chart.set("cursor", am5xy.XYCursor.new(root, { behavior: "none" }));
-    cursor.lineY.set("visible", false);
-    const xRend = am5xy.AxisRendererX.new(root, { minGridDistance: 60 });
-    styleAxis(xRend, p);
-    const xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, { categoryField: "day", renderer: xRend }));
-    xAxis.data.setAll(data);
-    const yRend = am5xy.AxisRendererY.new(root, {});
-    styleAxis(yRend, p);
-    const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, { min: 0, maxPrecision: 0, renderer: yRend }));
-    const mkSeries = (name, field, color, width, topOpacity) => {
-      const s = chart.series.push(am5xy.SmoothedXLineSeries.new(root, {
-        name, xAxis, yAxis, valueYField: field, categoryXField: "day",
-        stroke: amColor(color), fill: amColor(color),
-        tooltip: am5.Tooltip.new(root, { labelText: "{name}: {valueY}" }),
-      }));
-      s.strokes.template.setAll({ strokeWidth: width });
-      // Area fades from the line color down to transparent — reads as a wash,
-      // not a block, so the two series can overlap without mud.
-      s.fills.template.setAll({
-        visible: true, fillOpacity: 1,
-        fillGradient: am5.LinearGradient.new(root, {
-          rotation: 90,
-          stops: [{ color: amColor(color), opacity: topOpacity }, { color: amColor(color), opacity: 0 }],
-        }),
-      });
-      s.data.setAll(data);
-      s.appear(800);
-      return s;
+  // RSVPs over time — cumulative smoothed areas with gradient fade fills
+  useChart(lineRef, (p) => {
+    const grad = (color, top) => (c) => {
+      const { chartArea, ctx } = c.chart;
+      if (!chartArea) return hexA(color, 0);
+      const g = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+      g.addColorStop(0, hexA(color, top));
+      g.addColorStop(1, hexA(color, 0));
+      return g;
     };
-    mkSeries("Responses", "total", p.accent, 2.25, 0.22);
-    mkSeries("Guests", "attending", p.gold, 1.5, 0.12);
-    const legend = chart.children.push(am5.Legend.new(root, { centerX: am5.percent(50), x: am5.percent(50) }));
-    legend.labels.template.setAll({ fill: amColor(p.muted), fontSize: 11 });
-    legend.markers.template.setAll({ width: 8, height: 8 });
-    legend.data.setAll(chart.series.values);
-    chart.appear(800, 100);
+    return {
+      type: "line",
+      data: {
+        labels: timeline.labels,
+        datasets: [
+          {
+            label: "Responses",
+            data: timeline.total,
+            borderColor: p.accent,
+            backgroundColor: grad(p.accent, 0.22),
+            borderWidth: 2.25,
+            pointRadius: timeline.labels.length > 20 ? 0 : 3,
+            pointHoverRadius: 5,
+            pointBackgroundColor: p.accent,
+            fill: true,
+            tension: 0.4,
+          },
+          {
+            label: "Guests",
+            data: timeline.attending,
+            borderColor: p.gold,
+            backgroundColor: grad(p.gold, 0.12),
+            borderWidth: 1.5,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            fill: true,
+            tension: 0.4,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            labels: { boxWidth: 8, boxHeight: 8, padding: 14, color: p.muted, font: { size: 11 } },
+          },
+          tooltip: { ...tipStyle(p), mode: "index", intersect: false, displayColors: true },
+        },
+        scales: {
+          x: {
+            grid: { color: hexA(p.muted, 0.12) },
+            ticks: { maxTicksLimit: 8, color: p.muted, font: { size: 11 } },
+            border: { display: false },
+          },
+          y: {
+            grid: { color: hexA(p.muted, 0.12) },
+            ticks: { stepSize: 1, precision: 0, color: p.muted, font: { size: 11 } },
+            border: { display: false },
+            beginAtZero: true,
+          },
+        },
+        animation: { duration: 800, easing: "easeInOutQuart" },
+        interaction: { mode: "nearest", axis: "x", intersect: false },
+      },
+    };
   }, [timeline, theme]);
 
   if (!rsvps.length) return null;
@@ -226,14 +292,14 @@ export function RsvpCharts({ rsvps }) {
             <span className="rsvp-chart-card__hint">by party</span>
           </div>
           <div className="rsvp-donut-wrap">
-            <div ref={donutRef} className="rsvp-chart-el" />
+            <canvas ref={donutRef} />
             <div className="rsvp-donut-center">
               <span className="rsvp-donut-num">{stats.total}</span>
               <span className="rsvp-donut-lbl">parties</span>
             </div>
           </div>
           <div className="rsvp-chart-legend">
-            {[["Attending", pal.accent, stats.attendingParties], ["Maybe", pal.gold, stats.maybe], ["Declined", pal.muted, stats.declined]].map(([l, c, v]) => (
+            {[["Attending", pal.accent, stats.attendingParties], ["Maybe", MAYBE_COLOR, stats.maybe], ["Declined", DECLINED_COLOR, stats.declined]].map(([l, c, v]) => (
               <div key={l} className="rsvp-legend-row">
                 <span className="rsvp-legend-dot" style={{ background: c }} />
                 <span className="rsvp-legend-label">{l}</span>
@@ -250,7 +316,7 @@ export function RsvpCharts({ rsvps }) {
             <span className="rsvp-chart-card__hint">attending only</span>
           </div>
           {dietEntries.length > 0
-            ? <div className="rsvp-chart-canvas"><div ref={barRef} className="rsvp-chart-el" /></div>
+            ? <div className="rsvp-chart-canvas"><canvas ref={barRef} /></div>
             : <div className="rsvp-chart-empty">No special requirements noted</div>
           }
         </div>
@@ -262,7 +328,7 @@ export function RsvpCharts({ rsvps }) {
             <span className="rsvp-chart-card__hint">cumulative</span>
           </div>
           {timeline.labels.length > 1
-            ? <div className="rsvp-chart-canvas"><div ref={lineRef} className="rsvp-chart-el" /></div>
+            ? <div className="rsvp-chart-canvas"><canvas ref={lineRef} /></div>
             : <div className="rsvp-chart-empty">Not enough data yet</div>
           }
         </div>
