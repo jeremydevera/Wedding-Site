@@ -819,7 +819,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 }
 .admin--sa .btn svg { width: 15px; height: 15px; }
 .admin--sa .btn:hover, .admin--sa .btn:active { transform: none; box-shadow: none; }
-.admin--sa .btn--sm { padding: 5px 11px; font-size: 12px; }
+.admin--sa .btn--sm { padding: 8px 14px; font-size: 12px; min-height: 36px; }
 .admin--sa .btn--lg { padding: 9px 16px; font-size: 14px; }
 /* primary: filled accent with a lighter top-rim (Supabase's signature bevel) */
 .admin--sa .btn--primary { background: var(--accent); color: #fff; border-color: color-mix(in oklch, white 32%, var(--accent)); }
