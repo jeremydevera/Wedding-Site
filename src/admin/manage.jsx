@@ -265,8 +265,9 @@ export function QuestionEditor({ open, question, onClose }) {
   );
 }
 
-// Modal body: add or edit one invited guest.
-function GuestForm({ initial, onSave, onCancel }) {
+// Modal body: add or edit one invited guest. `companions` (read-only) are the
+// names from the guest's matched RSVP reply — shown for context while editing.
+function GuestForm({ initial, companions, onSave, onCancel }) {
   // `allocation` = the max attendees this guest may RSVP, including themselves.
   // The number the owner types IS the guest's cap — no conversion.
   const [f, setF] = useState(initial);
@@ -291,6 +292,15 @@ function GuestForm({ initial, onSave, onCancel }) {
       </div>
       <Field label="Email" hint="Optional" id="g-email"><Input id="g-email" type="email" value={f.email || ""} onChange={set("email")} /></Field>
       <Field label="Notes" hint="Optional" id="g-notes"><Input id="g-notes" value={f.notes || ""} onChange={set("notes")} /></Field>
+      {companions && companions.length > 0 && (
+        <Field label="Companions" hint="From their RSVP reply — the guest updates these by editing their RSVP">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {companions.map((c, i) => (
+              <span key={i} style={{ background: "var(--line)", borderRadius: 100, padding: "4px 12px", fontSize: 13 }}>{c}</span>
+            ))}
+          </div>
+        </Field>
+      )}
       <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
         <Button variant="primary" block disabled={!valid || saving} onClick={submit}>{saving ? "Saving…" : "Save guest"}</Button>
         <Button variant="ghost" onClick={onCancel}>Cancel</Button>
@@ -471,7 +481,12 @@ export function GuestsAdmin() {
       </div>
 
       <Modal open={!!editing} onClose={() => setEditing(null)} label="Guest">
-        {editing && <GuestForm initial={editing} onSave={saveGuest} onCancel={() => setEditing(null)} />}
+        {editing && <GuestForm initial={editing} companions={(() => {
+          const r = editing.id ? (byId.get(editing.id) || {}).rsvp : null;
+          if (!r) return [];
+          const arr = Array.isArray(r.companions) ? r.companions.filter((s) => (s || "").trim()) : [];
+          return arr.length ? arr : (r.plusOne ? String(r.plusOne).split(", ") : []);
+        })()} onSave={saveGuest} onCancel={() => setEditing(null)} />}
       </Modal>
     </div>
   );
