@@ -341,7 +341,7 @@ export function GuestsAdmin() {
                           : x.rsvp.count)
                         : "—"}</td>
                       <td><div className="row-actions">
-                        <button className="icon-btn" onClick={() => setEditing({ ...blank, ...g })} aria-label="Edit">{Icon.eye({})}</button>
+                        <button className="icon-btn" onClick={() => setEditing({ ...blank, ...g })} aria-label="Edit" title="Edit guest">{Icon.edit({})}</button>
                         <button className="icon-btn icon-btn--danger" onClick={() => removeGuest(g)} aria-label="Remove">{Icon.trash({})}</button>
                       </div></td>
                     </tr>
