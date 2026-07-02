@@ -87,7 +87,7 @@ describe("reconcileGuests", () => {
     expect(reconcileGuests([], []).summary).toMatchObject({ invited: 0, seatsAllocated: 0, confirmedHeads: 0 });
     expect(reconcileGuests(undefined, undefined).rows).toEqual([]);
   });
-  it("falls back to the owner-set guest status when there is no reply, counting the allocation as heads", () => {
+  it("counts a no-reply attending guest as just themselves (1), not their allotment", () => {
     const gs = [
       { id: "a", firstName: "Ana", lastName: "Cruz", middleName: "", allocation: 4, status: "attending" },
       { id: "b", firstName: "Ben", lastName: "Diaz", middleName: "", allocation: 2, status: "none" },
@@ -96,7 +96,7 @@ describe("reconcileGuests", () => {
     const byId = Object.fromEntries(rows.map((x) => [x.guest.id, x]));
     expect(byId.a.status).toBe("attending");   // owner-listed = attending, no reply needed
     expect(byId.b.status).toBe("none");
-    expect(summary.confirmedHeads).toBe(4);    // Ana's full allotted party
+    expect(summary.confirmedHeads).toBe(1);    // Ana = herself only until companions are named
     expect(summary.outstanding).toBe(2);       // neither has replied yet
   });
   it("prefers an exact-middle reply over a wildcard match when both fit", () => {

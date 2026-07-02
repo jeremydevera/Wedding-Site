@@ -59,10 +59,12 @@ export function reconcileGuests(guests, rsvps) {
 
   const unmatchedRsvps = rs.filter(({ i }) => !used.has(i)).map(({ r }) => r);
   const replied = rows.filter((x) => x.rsvp).length;
-  // Attending WITH a reply counts who they named (+themselves); attending
-  // WITHOUT a reply counts their full allotted party (owner-curated list).
+  // One rule everywhere: heads = named companions + the guest. Blanks and unused
+  // allotment never count. A reply → named companions + 1; an attending guest
+  // with no reply (no names given) → just themselves (1). Allocation is only a
+  // cap, never a head count.
   const confirmedHeads = rows.reduce(
-    (s, x) => s + (x.status === "attending" ? (x.rsvp ? headsOf(x.rsvp) : (Number(x.guest.allocation) || 0)) : 0), 0);
+    (s, x) => s + (x.status === "attending" ? (x.rsvp ? headsOf(x.rsvp) : 1) : 0), 0);
 
   const summary = {
     invited: gs.length,
