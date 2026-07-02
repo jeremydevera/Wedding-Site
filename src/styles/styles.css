@@ -1833,47 +1833,6 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* --- RSVP Charts ----------------------------------------------------------- */
 .rsvp-charts { margin-bottom: 24px; }
 
-.rsvp-charts__kpis {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 14px;
-}
-.rsvp-kpi {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 18px 20px 14px;
-  position: relative;
-  overflow: hidden;
-  animation: rsvp-kpi-in .4s ease both;
-}
-.rsvp-kpi::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: var(--gold);
-  opacity: 0.55;
-}
-.rsvp-kpi__num {
-  font-family: var(--font-display);
-  font-size: 34px;
-  line-height: 1;
-  color: var(--gold);
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  margin-bottom: 7px;
-}
-.rsvp-kpi__label {
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--ink);
-  font-weight: 700;
-}
-.rsvp-kpi__sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
-
 @keyframes rsvp-kpi-in {
   from { opacity: 0; transform: translateY(7px); }
   to   { opacity: 1; transform: none; }

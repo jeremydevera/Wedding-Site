@@ -17,9 +17,6 @@ import { ClientsAdmin, R2LibraryAdmin, SuperOverview } from "@/admin/superadmin.
 import { LocationPicker } from "@/ui/location-picker.jsx";
 import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
 import { MediaPickerModal } from "@/admin/MediaPicker.jsx";
-// Lazy: amCharts is heavy (~1MB) — split it into its own chunk so the public
-// site and non-RSVP admin tabs never download it.
-const RsvpCharts = React.lazy(() => import("@/admin/rsvp-charts.jsx"));
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // Save state shared from the AdminApp shell down to each section's footer, so the
@@ -402,7 +399,6 @@ export function RsvpsAdmin() {
 
   return (
     <div>
-      <React.Suspense fallback={null}><RsvpCharts rsvps={rsvps} /></React.Suspense>
       {/* Status filter as folder tabs (like Guestbook), above the panel. */}
       <div className="folders">
         {[["all", "All"], ["attending", "Yes"], ["maybe", "Maybe"], ["not_attending", "No"]].map(([v, l]) => (

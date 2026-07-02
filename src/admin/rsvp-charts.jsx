@@ -3,18 +3,46 @@ import * as am5 from "@amcharts/amcharts5";
 import * as am5percent from "@amcharts/amcharts5/percent";
 import * as am5xy from "@amcharts/amcharts5/xy";
 import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
+import { useStore } from "@/lib/store.jsx";
 import { rsvpStats } from "@/lib/rsvp.js";
 
 const { useRef, useEffect, useMemo } = React;
 
-const GOLD = 0xd4a853, COPPER = 0xa07c50, ROSE = 0x9a5f5f, MUTED = 0xb4aea2;
-const BAR_SHADES = [0xd4a853, 0xc49848, 0xb48838, 0xa47840, 0x9a7048, 0xa07c50, 0x886040, 0x785838];
-const HEX = { gold: "#d4a853", copper: "#a07c50", rose: "#9a5f5f" };
+// Resolve a theme CSS variable (e.g. "--accent") to a hex color string. The
+// vars hold oklch()/color-mix() values, so we let the browser compute the final
+// rgb by reading it off a probe element. Falls back when unset/unparseable.
+function cssColorHex(varName, fallback) {
+  try {
+    const el = document.createElement("span");
+    el.style.color = `var(${varName}, ${fallback})`;
+    document.body.appendChild(el);
+    const rgb = getComputedStyle(el).color;
+    document.body.removeChild(el);
+    const m = rgb.match(/(\d+(?:\.\d+)?)[, ]+(\d+(?:\.\d+)?)[, ]+(\d+(?:\.\d+)?)/);
+    if (!m) return fallback;
+    const h = (n) => Math.max(0, Math.min(255, Math.round(+n))).toString(16).padStart(2, "0");
+    return `#${h(m[1])}${h(m[2])}${h(m[3])}`;
+  } catch (_) {
+    return fallback;
+  }
+}
+
+// Read the client theme's palette for the charts. Called inside the chart
+// effects (after the theme vars are applied to :root).
+function themePalette() {
+  return {
+    accent: cssColorHex("--accent", "#5f7a3a"),   // primary series
+    gold:   cssColorHex("--gold", "#c99a2e"),     // secondary series
+    muted:  cssColorHex("--muted", "#8a8578"),    // labels, grid, "declined"
+  };
+}
+
+const amColor = (hex) => am5.color(hex);
 
 // Soft axis styling shared by the XY charts: faint grid, muted small labels.
-function styleAxis(renderer) {
-  renderer.labels.template.setAll({ fill: am5.color(MUTED), fontSize: 11, fillOpacity: 0.85 });
-  renderer.grid.template.setAll({ stroke: am5.color(MUTED), strokeOpacity: 0.08 });
+function styleAxis(renderer, pal) {
+  renderer.labels.template.setAll({ fill: amColor(pal.muted), fontSize: 11, fillOpacity: 0.9 });
+  renderer.grid.template.setAll({ stroke: amColor(pal.muted), strokeOpacity: 0.12 });
 }
 
 // Mount an amCharts root on a ref'd div; dispose on unmount/deps change.
@@ -23,7 +51,7 @@ function useAmChart(ref, build, deps) {
     if (!ref.current) return;
     const root = am5.Root.new(ref.current);
     root.setThemes([am5themes_Animated.new(root)]);
-    build(root);
+    build(root, themePalette());
     return () => root.dispose();
   }, deps); // eslint-disable-line react-hooks/exhaustive-deps
 }
@@ -55,26 +83,30 @@ function buildTimeline(rsvps) {
 }
 
 export function RsvpCharts({ rsvps }) {
+  const { settings } = useStore();
+  const theme = settings.theme; // charts re-key their colors when the site theme changes
   const stats    = useMemo(() => rsvpStats(rsvps), [rsvps]);
   const timeline = useMemo(() => buildTimeline(rsvps), [rsvps]);
   const dietEntries = useMemo(
     () => Object.entries(stats.diets).sort((a, b) => b[1] - a[1]).slice(0, 8),
     [stats.diets],
   );
+  // Legend swatches (HTML side) — same palette the charts resolve on mount.
+  const pal = useMemo(() => themePalette(), [theme]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const donutRef = useRef(null);
   const barRef   = useRef(null);
   const lineRef  = useRef(null);
 
-  // Attendance donut
-  useAmChart(donutRef, (root) => {
+  // Attendance donut — attending: accent, maybe: gold, declined: muted
+  useAmChart(donutRef, (root, p) => {
     const chart = root.container.children.push(am5percent.PieChart.new(root, {
       innerRadius: am5.percent(76),
     }));
     const series = chart.series.push(am5percent.PieSeries.new(root, {
       valueField: "value", categoryField: "category",
     }));
-    series.get("colors").set("colors", [am5.color(GOLD), am5.color(COPPER), am5.color(ROSE)]);
+    series.get("colors").set("colors", [amColor(p.accent), amColor(p.gold), amColor(p.muted)]);
     series.labels.template.set("forceHidden", true);
     series.ticks.template.set("forceHidden", true);
     series.slices.template.setAll({ strokeOpacity: 0, toggleKey: "none", tooltipText: "{category}: {value}" });
@@ -85,20 +117,20 @@ export function RsvpCharts({ rsvps }) {
       { category: "Declined",  value: stats.declined },
     ]);
     series.appear(900, 80);
-  }, [stats.attendingParties, stats.maybe, stats.declined]);
+  }, [stats.attendingParties, stats.maybe, stats.declined, theme]);
 
-  // Dietary horizontal bar
-  useAmChart(barRef, (root) => {
+  // Dietary horizontal bar — accent shades (opacity ramp)
+  useAmChart(barRef, (root, p) => {
     if (!dietEntries.length) return;
     const chart = root.container.children.push(am5xy.XYChart.new(root, {
       panX: false, panY: false, wheelX: "none", wheelY: "none", paddingLeft: 0,
     }));
     const yRend = am5xy.AxisRendererY.new(root, { inversed: true, minGridDistance: 12 });
     yRend.grid.template.set("forceHidden", true);
-    yRend.labels.template.setAll({ fill: am5.color(MUTED), fontSize: 12 });
+    yRend.labels.template.setAll({ fill: amColor(p.muted), fontSize: 12 });
     const yAxis = chart.yAxes.push(am5xy.CategoryAxis.new(root, { categoryField: "diet", renderer: yRend }));
     const xRend = am5xy.AxisRendererX.new(root, {});
-    styleAxis(xRend);
+    styleAxis(xRend, p);
     const xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, { min: 0, maxPrecision: 0, renderer: xRend }));
     const series = chart.series.push(am5xy.ColumnSeries.new(root, {
       xAxis, yAxis, valueXField: "count", categoryYField: "diet",
@@ -108,15 +140,16 @@ export function RsvpCharts({ rsvps }) {
       height: 16, cornerRadiusTR: 4, cornerRadiusBR: 4, strokeOpacity: 0, templateField: "colSettings",
     });
     const data = dietEntries.map(([diet, count], i) => ({
-      diet, count, colSettings: { fill: am5.color(BAR_SHADES[i] != null ? BAR_SHADES[i] : COPPER) },
+      diet, count,
+      colSettings: { fill: amColor(p.accent), fillOpacity: Math.max(0.35, 0.95 - i * 0.1) },
     }));
     yAxis.data.setAll(data);
     series.data.setAll(data);
     series.appear(700);
-  }, [dietEntries]);
+  }, [dietEntries, theme]);
 
-  // RSVPs over time (cumulative smoothed area)
-  useAmChart(lineRef, (root) => {
+  // RSVPs over time — responses: accent, guests: gold
+  useAmChart(lineRef, (root, p) => {
     if (timeline.labels.length < 2) return;
     const data = timeline.labels.map((day, i) => ({
       day, total: timeline.total[i], attending: timeline.attending[i],
@@ -127,16 +160,16 @@ export function RsvpCharts({ rsvps }) {
     const cursor = chart.set("cursor", am5xy.XYCursor.new(root, { behavior: "none" }));
     cursor.lineY.set("visible", false);
     const xRend = am5xy.AxisRendererX.new(root, { minGridDistance: 60 });
-    styleAxis(xRend);
+    styleAxis(xRend, p);
     const xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, { categoryField: "day", renderer: xRend }));
     xAxis.data.setAll(data);
     const yRend = am5xy.AxisRendererY.new(root, {});
-    styleAxis(yRend);
+    styleAxis(yRend, p);
     const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, { min: 0, maxPrecision: 0, renderer: yRend }));
     const mkSeries = (name, field, color, width, fillOpacity) => {
       const s = chart.series.push(am5xy.SmoothedXLineSeries.new(root, {
         name, xAxis, yAxis, valueYField: field, categoryXField: "day",
-        stroke: am5.color(color), fill: am5.color(color),
+        stroke: amColor(color), fill: amColor(color),
         tooltip: am5.Tooltip.new(root, { labelText: "{name}: {valueY}" }),
       }));
       s.strokes.template.setAll({ strokeWidth: width });
@@ -145,39 +178,22 @@ export function RsvpCharts({ rsvps }) {
       s.appear(800);
       return s;
     };
-    mkSeries("Responses", "total", GOLD, 2, 0.10);
-    mkSeries("Guests", "attending", COPPER, 1.5, 0.07);
+    mkSeries("Responses", "total", p.accent, 2, 0.10);
+    mkSeries("Guests", "attending", p.gold, 1.5, 0.07);
     const legend = chart.children.push(am5.Legend.new(root, { centerX: am5.percent(50), x: am5.percent(50) }));
-    legend.labels.template.setAll({ fill: am5.color(MUTED), fontSize: 11 });
+    legend.labels.template.setAll({ fill: amColor(p.muted), fontSize: 11 });
     legend.markers.template.setAll({ width: 8, height: 8 });
     legend.data.setAll(chart.series.values);
     chart.appear(800, 100);
-  }, [timeline]);
+  }, [timeline, theme]);
 
   if (!rsvps.length) return null;
 
-  const kpis = [
-    { label: "Responses", value: stats.total,           sub: "submitted" },
-    { label: "Attending", value: stats.attendingHeads,  sub: "guests" },
-    { label: "Maybe",     value: stats.maybe,           sub: "parties" },
-    { label: "Declined",  value: stats.declined,        sub: "parties" },
-  ];
-
   return (
     <div className="rsvp-charts">
-      <div className="rsvp-charts__kpis">
-        {kpis.map((k, i) => (
-          <div key={k.label} className="rsvp-kpi" style={{ animationDelay: `${i * 65}ms` }}>
-            <div className="rsvp-kpi__num">{k.value}</div>
-            <div className="rsvp-kpi__label">{k.label}</div>
-            <div className="rsvp-kpi__sub">{k.sub}</div>
-          </div>
-        ))}
-      </div>
-
       <div className="rsvp-charts__row">
         {/* Attendance donut */}
-        <div className="rsvp-chart-card" style={{ animationDelay: "60ms" }}>
+        <div className="rsvp-chart-card">
           <div className="rsvp-chart-card__head">
             <span className="rsvp-chart-card__title">Attendance</span>
             <span className="rsvp-chart-card__hint">by party</span>
@@ -190,7 +206,7 @@ export function RsvpCharts({ rsvps }) {
             </div>
           </div>
           <div className="rsvp-chart-legend">
-            {[["Attending", HEX.gold, stats.attendingParties], ["Maybe", HEX.copper, stats.maybe], ["Declined", HEX.rose, stats.declined]].map(([l, c, v]) => (
+            {[["Attending", pal.accent, stats.attendingParties], ["Maybe", pal.gold, stats.maybe], ["Declined", pal.muted, stats.declined]].map(([l, c, v]) => (
               <div key={l} className="rsvp-legend-row">
                 <span className="rsvp-legend-dot" style={{ background: c }} />
                 <span className="rsvp-legend-label">{l}</span>
@@ -201,7 +217,7 @@ export function RsvpCharts({ rsvps }) {
         </div>
 
         {/* Dietary bar */}
-        <div className="rsvp-chart-card" style={{ animationDelay: "120ms" }}>
+        <div className="rsvp-chart-card">
           <div className="rsvp-chart-card__head">
             <span className="rsvp-chart-card__title">Dietary</span>
             <span className="rsvp-chart-card__hint">attending only</span>
@@ -213,7 +229,7 @@ export function RsvpCharts({ rsvps }) {
         </div>
 
         {/* Over time line */}
-        <div className="rsvp-chart-card" style={{ animationDelay: "180ms" }}>
+        <div className="rsvp-chart-card">
           <div className="rsvp-chart-card__head">
             <span className="rsvp-chart-card__title">Over Time</span>
             <span className="rsvp-chart-card__hint">cumulative</span>
