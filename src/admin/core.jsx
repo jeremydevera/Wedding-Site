@@ -191,14 +191,9 @@ export function AdminDashboard({ goTab }) {
   const stats = [
     // "RSVPs" headline = ATTENDING total only (owner request) — in strict mode
     // read from the one reconcileGuests summary (same field the Guests tab's
-    // Attending folder counts, so they can never disagree). Maybe/declined/
-    // for-approval live in the sub.
-    { label: "RSVPs", value: strict ? recon.summary.attending : attending.length,
-      sub: strict
-        ? `attending · ${recon.summary.maybe} maybe · ${recon.summary.declined} declined`
-          + (forApproval > 0 ? ` · ${forApproval} for approval` : "")
-        : `attending of ${counted.length} replies`,
-      tab: "rsvps" },
+    // Attending folder counts, so they can never disagree). Sub is just
+    // "confirmed"; maybe/declined/for-approval live in the Guests tab folders.
+    { label: "RSVPs", value: strict ? recon.summary.attending : attending.length, sub: "confirmed", tab: "rsvps" },
     { label: "Guest Count", value: guestCount, sub: "people coming", tab: "rsvps" },
     ...(mediaShelved ? [] : [
       { label: "Photos", value: photos.length, sub: pendingMedia.length ? `${pendingMedia.length} to review` : "all clear", tab: "media" },
