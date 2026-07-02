@@ -247,11 +247,10 @@ export function GuestsAdmin() {
     not_attending: bySearch.filter((g) => statusOf(g) === "not_attending").length,
     outstanding: bySearch.filter((g) => statusOf(g) === "none").length,
     unmatched: unmatched.length,
-    replies: rsvps.length,
   };
   const onUnmatched = filter === "unmatched";
   const filtered = bySearch.filter((g) => {
-    if (filter === "all" || filter === "unmatched" || filter === "replies") return true;
+    if (filter === "all" || filter === "unmatched") return true;
     if (filter === "outstanding") return statusOf(g) === "none";
     return statusOf(g) === filter; // attending | maybe | not_attending
   });
@@ -299,18 +298,14 @@ export function GuestsAdmin() {
       </div>
 
       <div className="folders">
-        {[["all", "All"], ["attending", "Attending"], ["maybe", "Maybe"], ["not_attending", "Declined"], ["outstanding", "No reply"], ["unmatched", "Unmatched"], ["replies", "Replies"]].map(([v, l]) => (
+        {[["all", "All"], ["attending", "Attending"], ["maybe", "Maybe"], ["not_attending", "Declined"], ["outstanding", "No reply"], ["unmatched", "For Approval"]].map(([v, l]) => (
           <button key={v} className={"folder" + (filter === v ? " folder--active" : "")} onMouseDown={(e) => e.preventDefault()} onClick={() => setFilter(v)}>{l} ({counts[v]})</button>
         ))}
       </div>
 
-      {/* Replies = the classic replies view (its own sub-folders, search, CSV,
-          email results, detail, delete) embedded under this tab — enabling
-          Strict RSVP never costs the reply tools. */}
-      {filter === "replies" ? <RsvpsAdmin /> : (
       <div className="panel">
         <div className="panel__head">
-          <div className="panel__title">{onUnmatched ? "Unmatched RSVPs" : "Guests"} <span style={{ color: "var(--muted)", fontSize: 15 }}>({onUnmatched ? unmatched.length : filtered.length})</span></div>
+          <div className="panel__title">{onUnmatched ? "RSVPs for approval" : "Guests"} <span style={{ color: "var(--muted)", fontSize: 15 }}>({onUnmatched ? unmatched.length : filtered.length})</span></div>
           <div className="admin-toolbar"><div className="admin-toolbar__end">
             <Button variant="primary" className="admin-toolbar__action" onClick={() => setEditing({ ...blank })}>Add guest</Button>
             <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
@@ -366,7 +361,6 @@ export function GuestsAdmin() {
         </div>
         <Pager page={pg.page} totalPages={pg.totalPages} total={pg.total} perPage={pg.perPage} start={pg.start} onPage={pg.setPage} noun={onUnmatched ? "RSVPs" : "guests"} />
       </div>
-      )}
 
       <Modal open={!!editing} onClose={() => setEditing(null)} label="Guest">
         {editing && <GuestForm initial={editing} onSave={saveGuest} onCancel={() => setEditing(null)} />}
