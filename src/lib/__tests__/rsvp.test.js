@@ -7,11 +7,12 @@ describe("maxPartySize", () => {
     expect(maxPartySize(undefined)).toBe(8);
     expect(maxPartySize(0)).toBe(8);
   });
-  it("caps at the allocation, never above 8", () => {
+  it("caps at exactly the allocation — even above the open-form default of 8", () => {
     expect(maxPartySize(1)).toBe(1);
     expect(maxPartySize(2)).toBe(2);
     expect(maxPartySize(8)).toBe(8);
-    expect(maxPartySize(12)).toBe(8);
+    expect(maxPartySize(10)).toBe(10);
+    expect(maxPartySize(12)).toBe(12);
   });
   it("coerces strings and floors fractions", () => {
     expect(maxPartySize("3")).toBe(3);

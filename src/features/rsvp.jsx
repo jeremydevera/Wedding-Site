@@ -33,22 +33,26 @@ export function RSVPPage() {
   const attending = form.status === "attending";
   const strict = settings.strictRsvp === true;
 
-  // Strict RSVP: once a first+last name is typed, quietly look up the guest's
-  // seat allocation (the RPC returns a number or null — never the list itself).
-  // Debounced; a stale response is ignored. A lookup failure just means no live
-  // hint — the submit gate re-checks and is the source of truth.
-  const [alloc, setAlloc] = useState(null);
+  // Strict RSVP: once a first+last name is typed, look up the guest on the list
+  // (the RPC returns only a status + a number — never the list itself) and show
+  // live feedback: "checking…" while the debounce is pending, then found /
+  // not-found / add-your-middle-name. Debounced; a stale response is ignored.
+  // A lookup failure clears the hint — the submit gate re-checks and is the
+  // source of truth either way.
+  const [lookup, setLookup] = useState(null); // null | "checking" | { status, allocation }
   useEffect(() => {
     if (!strict) return;
-    if (!form.firstName.trim() || !form.lastName.trim()) { setAlloc(null); return; }
+    if (!form.firstName.trim() || !form.lastName.trim()) { setLookup(null); return; }
+    setLookup("checking");
     let live = true;
     const t = setTimeout(() => {
       guestAllocation(form.firstName, form.middleName, form.lastName)
-        .then((res) => { if (live) setAlloc(res.status === "ok" ? res.allocation : null); })
-        .catch(() => { if (live) setAlloc(null); });
+        .then((res) => { if (live) setLookup(res); })
+        .catch(() => { if (live) setLookup(null); });
     }, 450);
     return () => { live = false; clearTimeout(t); };
   }, [strict, form.firstName, form.middleName, form.lastName]);
+  const alloc = lookup && lookup !== "checking" && lookup.status === "ok" ? lookup.allocation : null;
 
   // Cap the count picker at the invitation's allocation (8 when unknown), and
   // clamp an already-picked count down if the allocation arrives lower.
@@ -65,7 +69,11 @@ export function RSVPPage() {
     if (attending) {
       const n = parseInt(form.count, 10);
       if (!n || n < 1) er.count = "Please enter how many will attend.";
-      if (n > 8) er.count = "For parties larger than 8, please contact the couple directly.";
+      // The cap is the guest's allocation under Strict RSVP (can exceed 8),
+      // else the open form's default of 8.
+      if (n > maxCount) er.count = strict && alloc
+        ? `Your invitation reserves ${maxCount} ${maxCount === 1 ? "seat" : "seats"}.`
+        : "For parties larger than 8, please contact the couple directly.";
     }
     if (form.diet === "Other" && !form.dietNotes.trim()) er.dietNotes = "Please describe the dietary need.";
     if (form.notes.length > 1000) er.notes = "Please keep notes under 1000 characters.";
@@ -220,6 +228,17 @@ export function RSVPPage() {
             <Field label="Middle name" hint="Optional — helps tell apart guests with the same name" error={errors.middleName} id="r-middle">
               <Input id="r-middle" value={form.middleName} onChange={set("middleName")} />
             </Field>
+            {strict && lookup && (
+              <div style={{ marginTop: -8, marginBottom: 16, fontSize: 14 }} aria-live="polite">
+                {lookup === "checking"
+                  ? <span style={{ color: "var(--muted)" }}>Checking the guest list…</span>
+                  : lookup.status === "ok"
+                    ? <span style={{ color: "var(--accent)" }}>✓ You're on the guest list — {lookup.allocation} {lookup.allocation === 1 ? "seat" : "seats"} reserved</span>
+                    : lookup.status === "ambiguous"
+                      ? <span style={{ color: "var(--danger, #a33)" }}>More than one guest has this name — please add your middle name.</span>
+                      : <span style={{ color: "var(--danger, #a33)" }}>We can't find this name on the guest list — please check the spelling.</span>}
+              </div>
+            )}
             <Field label="Email" hint="Optional — so the couple can reach you about the day" error={errors.email} id="r-email">
               <Input id="r-email" type="email" inputMode="email" value={form.email} onChange={set("email")} />
             </Field>
