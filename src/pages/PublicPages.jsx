@@ -380,7 +380,9 @@ export function Home() {
         </section>
       )}
 
-      {/* SCHEDULE PREVIEW */}
+      {/* SCHEDULE PREVIEW — hidden when the timeline toggle is off or the
+          Schedule module is disabled (matches nav + /schedule route). */}
+      {s.showTimeline !== false && moduleEnabled(s.modules, "schedule") && (
       <section className="block block--tint" id="home-schedule">
         <div className="container">
           <SectionHead center eyebrow="The Day" title="A glimpse of the schedule" />
@@ -392,6 +394,7 @@ export function Home() {
           )}
         </div>
       </section>
+      )}
 
       {/* ATTIRE GUIDE — right after the schedule glimpse */}
       {s.showAttire !== false && <AttireView groups={attire} />}

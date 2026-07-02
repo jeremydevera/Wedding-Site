@@ -55,6 +55,7 @@ export const DEFAULT_SETTINGS = {
   // Home-page section visibility (toggled in the admin Home tab). Default on;
   // read as `!== false` everywhere so existing clients without the flag show.
   showMusic: true,
+  showTimeline: true,
   showEntourage: true,
   showMap: true,
   showAttire: true,

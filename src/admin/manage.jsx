@@ -1921,6 +1921,9 @@ export function HomeAdmin() {
         <div className="panel">
           <div className="panel__head"><div className="panel__title">Home timeline layout</div></div>
           <div className="panel__body">
+            <AdminToggle label="Show timeline on the home page" desc="The “A glimpse of the schedule” section. Turn off to hide it from guests. Saves instantly."
+              checked={f.showTimeline !== false} onChange={(v) => toggleShow("showTimeline", v)} />
+            <div style={{ height: 20 }} />
             <p style={{ color: "var(--muted)", margin: "0 0 18px", fontSize: 14 }}>
               How the “A glimpse of the schedule” timeline shows on the home page. Edit the events themselves in the Schedule tab. Saves instantly.
             </p>
