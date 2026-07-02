@@ -446,60 +446,56 @@ export function GuestsAdmin() {
       .then((ok) => { if (ok) run(async () => { await deleteGuestDb(g.id); Store.deleteGuest(g.id); }).then(() => toast("Guest removed", "success"), () => toast("Couldn't remove")); });
   }
   // CSV of what's on screen: guests for the guest tabs, replies on For Approval.
+  // Companion names for a reply (array first, legacy string fallback).
+  const compsOf = (r) => {
+    if (!r) return "";
+    const arr = Array.isArray(r.companions) ? r.companions.filter((s) => (s || "").trim()) : [];
+    return arr.length ? arr.join(", ") : (r.plusOne || "");
+  };
+  const tabLabel = (st) => (st === "none" ? "No reply" : (STAT_LABEL[st] || st || ""));
+  const headsOfRow = (x) => (x.status === "attending" ? (x.rsvp ? headsOf(x.rsvp) : (Number(x.guest.allocation) || 0)) : "");
+
+  // One CSV covering EVERY tab — a Tab column marks each row's folder
+  // (Attending / Maybe / Declined / No reply / For Approval).
   function exportGuestsCsv() {
     const who = [settings.partnerA, settings.partnerB].filter(Boolean).join(" & ") || "Guests";
-    const compsOf = (r) => {
-      if (!r) return "";
-      const arr = Array.isArray(r.companions) ? r.companions.filter((s) => (s || "").trim()) : [];
-      return arr.length ? arr.join(", ") : (r.plusOne || "");
-    };
-    let name, rows;
-    if (onUnmatched) {
-      name = `${who} - RSVPs for approval.csv`;
-      rows = [["Full Name", "Phone", "Email", "Status", "Head Count", "Companions", "Submitted"],
-        ...unmatched.map((r) => [r.fullName, r.phone, r.email, (STAT_LABEL[r.status] || r.status), headsOf(r), compsOf(r), fmtDate(r.createdAt)])];
-    } else {
-      const label = { all: "", attending: " - Attending", maybe: " - Maybe", not_attending: " - Declined", outstanding: " - No reply" }[filter] || "";
-      name = `${who} - Guest list${label}.csv`;
-      rows = [["First Name", "Middle Name", "Last Name", "Phone", "Email", "Allotted Seats", "Status", "Head Count", "Companions", "Notes"],
-        ...filtered.map((g) => {
-          const x = byId.get(g.id) || { status: "none", rsvp: null };
-          return [g.firstName, g.middleName, g.lastName,
-            (x.rsvp && x.rsvp.phone) || "", (x.rsvp && x.rsvp.email) || g.email || "",
-            g.allocation, x.status === "none" ? "No reply" : STAT_LABEL[x.status],
-            x.status === "attending" ? headsOf(x.rsvp) : "", compsOf(x.rsvp), g.notes || ""];
-        })];
-    }
-    downloadCSV(name, rows);
+    const header = ["Tab", "Name", "Phone", "Email", "Allotted seats", "Head count", "Companions", "Notes"];
+    const guestRows = recon.rows.map((x) => {
+      const g = x.guest;
+      return [tabLabel(x.status), [g.firstName, g.middleName, g.lastName].filter(Boolean).join(" "),
+        (x.rsvp && x.rsvp.phone) || "", (x.rsvp && x.rsvp.email) || g.email || "",
+        g.allocation, headsOfRow(x), compsOf(x.rsvp), g.notes || ""];
+    });
+    const approvalRows = recon.unmatchedRsvps.map((r) => ["For Approval", r.fullName, r.phone || "", r.email || "",
+      "", r.status === "attending" ? headsOf(r) : "", compsOf(r), ""]);
+    downloadCSV(`${who} - Guest list.csv`, [header, ...guestRows, ...approvalRows]);
   }
 
-  // Email the guest list (summary + table) via the auth-gated send-email Function.
+  // Email the full guest list — same rows + counts as the tabs on screen.
   async function emailGuestList(to) {
     const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-    const accepted = recon.rows.filter((x) => x.status === "attending").length;
-    const rows = recon.rows.map((x) => {
+    const byStatus = (st) => recon.rows.filter((x) => x.status === st).length;
+    const td = (v, center) => `<td style="padding:6px 10px;border-bottom:1px solid #eee${center ? ";text-align:center" : ""}">${esc(v)}</td>`;
+    const guestTrs = recon.rows.map((x) => {
       const g = x.guest;
-      const comps = x.rsvp && Array.isArray(x.rsvp.companions) ? x.rsvp.companions.filter((s) => (s || "").trim()).join(", ") : (x.rsvp && x.rsvp.plusOne) || "";
-      return `<tr>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee">${esc(g.firstName)} ${esc(g.lastName)}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:center">${esc(g.allocation)}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee">${x.status === "none" ? "No reply" : esc(STAT_LABEL[x.status])}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:center">${x.status === "attending" ? headsOf(x.rsvp) : ""}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee">${esc(comps)}</td>
-      </tr>`;
-    }).join("");
+      return `<tr>${td(`${g.firstName} ${g.lastName}`.trim())}${td(tabLabel(x.status))}${td(g.allocation, true)}${td(headsOfRow(x), true)}${td(compsOf(x.rsvp))}</tr>`;
+    });
+    const approvalTrs = recon.unmatchedRsvps.map((r) =>
+      `<tr>${td(r.fullName)}${td("For Approval")}${td("", true)}${td(r.status === "attending" ? headsOf(r) : "", true)}${td(compsOf(r))}</tr>`);
+    const rows = [...guestTrs, ...approvalTrs].join("");
     const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#222;max-width:680px;margin:0 auto">
       <h2 style="margin:0 0 4px">Guest list</h2>
       <p style="color:#666;margin:0 0 16px">${esc(settings.partnerA)} &amp; ${esc(settings.partnerB)}</p>
       <p style="margin:0 0 16px">
         <strong>${S.invited}</strong> invited &nbsp;·&nbsp;
-        <strong>${accepted}</strong> accepted (${S.confirmedHeads} heads) &nbsp;·&nbsp;
-        ${S.outstanding} no reply &nbsp;·&nbsp; ${recon.unmatchedRsvps.length} for approval
+        <strong>${byStatus("attending")}</strong> attending (${S.confirmedHeads} heads) &nbsp;·&nbsp;
+        ${byStatus("maybe")} maybe &nbsp;·&nbsp; ${byStatus("not_attending")} declined &nbsp;·&nbsp;
+        ${byStatus("none")} no reply &nbsp;·&nbsp; ${recon.unmatchedRsvps.length} for approval
       </p>
       <table style="border-collapse:collapse;width:100%;font-size:14px">
         <thead><tr style="text-align:left;background:#f6f6f6">
-          <th style="padding:8px 10px">Name</th><th style="padding:8px 10px;text-align:center">Allotted</th>
-          <th style="padding:8px 10px">Status</th><th style="padding:8px 10px;text-align:center">Heads</th>
+          <th style="padding:8px 10px">Name</th><th style="padding:8px 10px">Tab</th>
+          <th style="padding:8px 10px;text-align:center">Allotted</th><th style="padding:8px 10px;text-align:center">Heads</th>
           <th style="padding:8px 10px">Companions</th>
         </tr></thead>
         <tbody>${rows || '<tr><td colspan="5" style="padding:14px;color:#888">No guests yet.</td></tr>'}</tbody>
