@@ -244,6 +244,7 @@ export function GuestsAdmin() {
     replied: bySearch.filter(hasReply).length,
     outstanding: bySearch.filter((g) => !hasReply(g)).length,
     unmatched: unmatched.length,
+    replies: rsvps.length,
   };
   const onUnmatched = filter === "unmatched";
   const filtered = bySearch.filter((g) => filter === "all" || filter === "unmatched" ? true : filter === "replied" ? hasReply(g) : !hasReply(g));
@@ -291,11 +292,15 @@ export function GuestsAdmin() {
       </div>
 
       <div className="folders">
-        {[["all", "All"], ["replied", "Replied"], ["outstanding", "Outstanding"], ["unmatched", "Unmatched"]].map(([v, l]) => (
+        {[["all", "All"], ["replied", "Replied"], ["outstanding", "Outstanding"], ["unmatched", "Unmatched"], ["replies", "Replies"]].map(([v, l]) => (
           <button key={v} className={"folder" + (filter === v ? " folder--active" : "")} onMouseDown={(e) => e.preventDefault()} onClick={() => setFilter(v)}>{l} ({counts[v]})</button>
         ))}
       </div>
 
+      {/* Replies = the classic replies view (its own sub-folders, search, CSV,
+          email results, detail, delete) embedded under this tab — enabling
+          Strict RSVP never costs the reply tools. */}
+      {filter === "replies" ? <RsvpsAdmin /> : (
       <div className="panel">
         <div className="panel__head">
           <div className="panel__title">{onUnmatched ? "Unmatched RSVPs" : "Guests"} <span style={{ color: "var(--muted)", fontSize: 15 }}>({onUnmatched ? unmatched.length : filtered.length})</span></div>
@@ -354,6 +359,7 @@ export function GuestsAdmin() {
         </div>
         <Pager page={pg.page} totalPages={pg.totalPages} total={pg.total} perPage={pg.perPage} start={pg.start} onPage={pg.setPage} noun={onUnmatched ? "RSVPs" : "guests"} />
       </div>
+      )}
 
       <Modal open={!!editing} onClose={() => setEditing(null)} label="Guest">
         {editing && <GuestForm initial={editing} onSave={saveGuest} onCancel={() => setEditing(null)} />}
@@ -2129,7 +2135,6 @@ export const ADMIN_TABS = [
   { key: "dashboard", label: "Dashboard", icon: "grid" },
   { key: "home", label: "Home", icon: "home" },
   { key: "rsvps", label: "RSVPs", icon: "mail" },
-  { key: "guests", label: "Guests", icon: "user" },
   // Media/Gallery shelved for now — re-add when gallery ships (see DISABLED_MODULES).
   // { key: "media", label: "Media", icon: "camera" },
   { key: "guestbook", label: "Guestbook", icon: "book" },
@@ -2208,7 +2213,6 @@ export function AdminApp() {
   } else {
     tabs = tabsForClient(visibleAdminTabs(auth.role, ADMIN_TABS), auth.role, settings.modules);
   }
-  if (!settings.strictRsvp) tabs = tabs.filter((t) => t.key !== "guests");
   const activeTab = tabs.some((t) => t.key === tab) ? tab : (tabs[0]?.key || "dashboard");
   const title = (tabs.find((t) => t.key === activeTab) || { label: "Admin" }).label;
   const onPlatformTab = activeTab === "overview" || activeTab === "clients";
@@ -2278,8 +2282,9 @@ export function AdminApp() {
           <AdminSaveCtx.Provider value={{ saving, dirty, save: saveChanges, run: runSaving }}>
           {activeTab === "dashboard" && <AdminDashboard goTab={setTab} />}
           {activeTab === "home" && <HomeAdmin />}
-          {activeTab === "rsvps" && <RsvpsAdmin />}
-          {activeTab === "guests" && <GuestsAdmin />}
+          {/* One RSVPs tab that adapts: strict = guest-list-first (with a Replies
+              folder inside), open = the classic replies table. */}
+          {activeTab === "rsvps" && (settings.strictRsvp ? <GuestsAdmin /> : <RsvpsAdmin />)}
           {activeTab === "media" && <MediaAdmin />}
           {activeTab === "guestbook" && <GuestbookAdmin />}
           {activeTab === "schedule" && <ScheduleAdmin />}

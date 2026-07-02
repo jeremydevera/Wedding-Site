@@ -12,7 +12,7 @@ Claude test run. Done items stay here as the permanent history.
 
 ## Next IDs
 - Next Bug ID: **0006**
-- Next Enhancement ID: **0007**
+- Next Enhancement ID: **0008**
 
 ---
 
@@ -27,6 +27,12 @@ Claude test run. Done items stay here as the permanent history.
 ---
 
 ## Done / History
+
+### Enhancement ID: 0007 — One RSVPs tab (Guests tab merged in)
+- **Severity:** P3 · **Status:** Done — 2026-07-02
+- **Where:** Admin sidebar → RSVPs
+- **Action:** RSVPs and Guests as two sidebar items was confusing — same concept, two places.
+- **Resolution:** Single "RSVPs" tab that adapts to the Strict RSVP switch. Strict off = classic replies view (unchanged). Strict on = guest-list view (tiles, All/Replied/Outstanding/Unmatched) plus a "Replies" folder embedding the full classic view (search, CSV, email results, detail, delete). Guests tab removed from the sidebar.
 
 ### Bug ID: 0002 — Guestbook messages hidden on new clients
 - **Severity:** P2 · **Status:** Done — migration `0013`, 2026-07-02
