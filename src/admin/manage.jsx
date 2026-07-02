@@ -234,20 +234,27 @@ export function GuestsAdmin() {
   const S = recon.summary;
   const STAT_LABEL = { attending: "Attending", maybe: "Maybe", not_attending: "Declined" };
 
-  const hasReply = (g) => { const x = byId.get(g.id); return !!(x && x.rsvp); };
+  // Reply status per guest ("none" = invited but no reply yet).
+  const statusOf = (g) => { const x = byId.get(g.id); return x ? x.status : "none"; };
   const bySearch = guests.filter((g) => !q || `${g.firstName} ${g.lastName}`.toLowerCase().includes(q.toLowerCase()));
   // Unmatched = RSVPs with no invited-guest match; they get their own tab so a
   // long list doesn't stack above the table as a giant notice card.
   const unmatched = recon.unmatchedRsvps.filter((r) => !q || (r.fullName || "").toLowerCase().includes(q.toLowerCase()));
   const counts = {
     all: bySearch.length,
-    replied: bySearch.filter(hasReply).length,
-    outstanding: bySearch.filter((g) => !hasReply(g)).length,
+    attending: bySearch.filter((g) => statusOf(g) === "attending").length,
+    maybe: bySearch.filter((g) => statusOf(g) === "maybe").length,
+    not_attending: bySearch.filter((g) => statusOf(g) === "not_attending").length,
+    outstanding: bySearch.filter((g) => statusOf(g) === "none").length,
     unmatched: unmatched.length,
     replies: rsvps.length,
   };
   const onUnmatched = filter === "unmatched";
-  const filtered = bySearch.filter((g) => filter === "all" || filter === "unmatched" ? true : filter === "replied" ? hasReply(g) : !hasReply(g));
+  const filtered = bySearch.filter((g) => {
+    if (filter === "all" || filter === "unmatched" || filter === "replies") return true;
+    if (filter === "outstanding") return statusOf(g) === "none";
+    return statusOf(g) === filter; // attending | maybe | not_attending
+  });
   const pg = usePaged(onUnmatched ? unmatched : filtered, 10);
 
   async function saveGuest(form) {
@@ -292,7 +299,7 @@ export function GuestsAdmin() {
       </div>
 
       <div className="folders">
-        {[["all", "All"], ["replied", "Replied"], ["outstanding", "Outstanding"], ["unmatched", "Unmatched"], ["replies", "Replies"]].map(([v, l]) => (
+        {[["all", "All"], ["attending", "Attending"], ["maybe", "Maybe"], ["not_attending", "Declined"], ["outstanding", "No reply"], ["unmatched", "Unmatched"], ["replies", "Replies"]].map(([v, l]) => (
           <button key={v} className={"folder" + (filter === v ? " folder--active" : "")} onMouseDown={(e) => e.preventDefault()} onClick={() => setFilter(v)}>{l} ({counts[v]})</button>
         ))}
       </div>
