@@ -337,8 +337,8 @@ export function RSVPPage() {
                     // Labelled "Plus 1s" (extra guests besides the responder), but
                     // form.count stays the TOTAL head count everywhere else — so the
                     // picker shows 0..alloc-1 and maps to count = picked + 1.
-                    <Field label="Plus 1s" required error={errors.count} id="r-count"
-                      hint={`Your invitation reserves ${alloc} ${alloc === 1 ? "seat" : "seats"} — you plus up to ${alloc - 1} ${alloc - 1 === 1 ? "guest" : "guests"}`}>
+                    <Field label="Guests coming with you" required error={errors.count} id="r-count"
+                      hint={`You have ${alloc} ${alloc === 1 ? "seat" : "seats"} — room for you plus ${alloc - 1} more`}>
                       <Select id="r-count" value={(parseInt(form.count, 10) || 1) - 1} onChange={(e) => set("count")(String((parseInt(e.target.value, 10) || 0) + 1))}>
                         {Array.from({ length: maxCount }, (_, i) => i).map((n) => <option key={n} value={n}>{n}</option>)}
                       </Select>
@@ -346,7 +346,7 @@ export function RSVPPage() {
                   ) : (
                     // Strict mode, name not verified yet: keep the picker locked so a
                     // guest can't choose a party size before their seats are known.
-                    <Field label="Plus 1s" id="r-count">
+                    <Field label="Guests coming with you" id="r-count">
                       <Input id="r-count" value="" placeholder="—" disabled readOnly />
                     </Field>
                   )) : (
