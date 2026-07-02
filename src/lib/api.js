@@ -281,12 +281,12 @@ export async function deleteFromR2(key) {
 
 // Send an HTML email via the auth-gated /api/send-email Function (Resend).
 // Used by the RSVP "Email results" action. Requires a valid admin session.
-export async function sendEmail({ to, subject, html }) {
+export async function sendEmail({ to, subject, html, attachments }) {
   const token = await freshToken();
   const res = await fetch("/api/send-email", {
     method: "POST",
     headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-    body: JSON.stringify({ to, subject, html }),
+    body: JSON.stringify({ to, subject, html, ...(attachments ? { attachments } : {}) }),
   });
   if (!res.ok) {
     let msg = `send failed (${res.status})`;

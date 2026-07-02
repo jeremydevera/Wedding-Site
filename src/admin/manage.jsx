@@ -455,10 +455,11 @@ export function GuestsAdmin() {
   const tabLabel = (st) => (st === "none" ? "No reply" : (STAT_LABEL[st] || st || ""));
   const headsOfRow = (x) => (x.status === "attending" ? (x.rsvp ? headsOf(x.rsvp) : (Number(x.guest.allocation) || 0)) : "");
 
-  // One CSV covering EVERY tab — a Tab column marks each row's folder
-  // (Attending / Maybe / Declined / No reply / For Approval).
-  function exportGuestsCsv() {
-    const who = [settings.partnerA, settings.partnerB].filter(Boolean).join(" & ") || "Guests";
+  const byStatus = (st) => recon.rows.filter((x) => x.status === st).length;
+
+  // Rows for EVERY tab — a Tab column marks each row's folder (Attending /
+  // Maybe / Declined / No reply / For Approval). Shared by CSV + email export.
+  function guestListRows() {
     const header = ["Tab", "Name", "Phone", "Email", "Allotted seats", "Head count", "Companions", "Notes"];
     const guestRows = recon.rows.map((x) => {
       const g = x.guest;
@@ -468,44 +469,41 @@ export function GuestsAdmin() {
     });
     const approvalRows = recon.unmatchedRsvps.map((r) => ["For Approval", r.fullName, r.phone || "", r.email || "",
       "", r.status === "attending" ? headsOf(r) : "", compsOf(r), ""]);
-    downloadCSV(`${who} - Guest list.csv`, [header, ...guestRows, ...approvalRows]);
+    return [header, ...guestRows, ...approvalRows];
+  }
+  function exportGuestsCsv() {
+    const who = [settings.partnerA, settings.partnerB].filter(Boolean).join(" & ") || "Guests";
+    downloadCSV(`${who} - Guest list.csv`, guestListRows());
   }
 
-  // Email the full guest list — same rows + counts as the tabs on screen.
+  // Email: summary counts in the body + the full all-tabs list as a spreadsheet
+  // attachment (CSV, opens in Excel). Counts match the tabs on screen.
   async function emailGuestList(to) {
     const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-    const byStatus = (st) => recon.rows.filter((x) => x.status === st).length;
-    const td = (v, center) => `<td style="padding:6px 10px;border-bottom:1px solid #eee${center ? ";text-align:center" : ""}">${esc(v)}</td>`;
-    const guestTrs = recon.rows.map((x) => {
-      const g = x.guest;
-      return `<tr>${td(`${g.firstName} ${g.lastName}`.trim())}${td(tabLabel(x.status))}${td(g.allocation, true)}${td(headsOfRow(x), true)}${td(compsOf(x.rsvp))}</tr>`;
-    });
-    const approvalTrs = recon.unmatchedRsvps.map((r) =>
-      `<tr>${td(r.fullName)}${td("For Approval")}${td("", true)}${td(r.status === "attending" ? headsOf(r) : "", true)}${td(compsOf(r))}</tr>`);
-    const rows = [...guestTrs, ...approvalTrs].join("");
-    const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#222;max-width:680px;margin:0 auto">
-      <h2 style="margin:0 0 4px">Guest list</h2>
-      <p style="color:#666;margin:0 0 16px">${esc(settings.partnerA)} &amp; ${esc(settings.partnerB)}</p>
-      <p style="margin:0 0 16px">
-        <strong>${S.invited}</strong> invited &nbsp;·&nbsp;
-        <strong>${byStatus("attending")}</strong> attending (${S.confirmedHeads} heads) &nbsp;·&nbsp;
-        ${byStatus("maybe")} maybe &nbsp;·&nbsp; ${byStatus("not_attending")} declined &nbsp;·&nbsp;
-        ${byStatus("none")} no reply &nbsp;·&nbsp; ${recon.unmatchedRsvps.length} for approval
-      </p>
-      <table style="border-collapse:collapse;width:100%;font-size:14px">
-        <thead><tr style="text-align:left;background:#f6f6f6">
-          <th style="padding:8px 10px">Name</th><th style="padding:8px 10px">Tab</th>
-          <th style="padding:8px 10px;text-align:center">Allotted</th><th style="padding:8px 10px;text-align:center">Heads</th>
-          <th style="padding:8px 10px">Companions</th>
-        </tr></thead>
-        <tbody>${rows || '<tr><td colspan="5" style="padding:14px;color:#888">No guests yet.</td></tr>'}</tbody>
-      </table>
-    </div>`;
     const who = [settings.partnerA, settings.partnerB].filter(Boolean).join(" & ");
     const today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const line = (label, value, sub) => `<tr><td style="padding:7px 12px;border-bottom:1px solid #eee">${esc(label)}</td><td style="padding:7px 12px;border-bottom:1px solid #eee;text-align:right;font-weight:700">${esc(value)}${sub ? ` <span style="font-weight:400;color:#888">${esc(sub)}</span>` : ""}</td></tr>`;
+    const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#222;max-width:520px;margin:0 auto">
+      <h2 style="margin:0 0 4px">Guest list summary</h2>
+      <p style="color:#666;margin:0 0 18px">${esc(who)} · ${esc(today)}</p>
+      <table style="border-collapse:collapse;width:100%;font-size:15px">
+        ${line("Invited", S.invited)}
+        ${line("Attending", byStatus("attending"), `· ${S.confirmedHeads} heads`)}
+        ${line("Maybe", byStatus("maybe"))}
+        ${line("Declined", byStatus("not_attending"))}
+        ${line("No reply", byStatus("none"))}
+        ${line("For approval", recon.unmatchedRsvps.length)}
+      </table>
+      <p style="color:#666;margin:18px 0 0;font-size:14px">The full guest list (every tab) is attached as a spreadsheet — open it in Excel or Google Sheets.</p>
+    </div>`;
+    // CSV attachment (BOM so Excel reads UTF-8), base64-encoded for Resend.
+    const escCsv = (v) => { const s = v == null ? "" : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const csv = "﻿" + guestListRows().map((r) => r.map(escCsv).join(",")).join("\r\n");
+    const content = btoa(unescape(encodeURIComponent(csv)));
+    const filename = `${who || "Guests"} - Guest list.csv`;
     setEmailSending(true);
     try {
-      await sendEmail({ to: (to || "").trim(), subject: `${who ? who + " — " : ""}Guest list · ${today}`, html });
+      await sendEmail({ to: (to || "").trim(), subject: `${who ? who + " — " : ""}Guest list · ${today}`, html, attachments: [{ filename, content }] });
       toast("Email sent", "success");
       setEmailOpen(false);
     } catch (e) {

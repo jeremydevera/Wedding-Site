@@ -33,6 +33,11 @@ export async function onRequestPost(context) {
   const html = String(b.html || "");
   if (!html) return json({ error: "empty body" }, 400);
   const from = env.RESEND_FROM || "Celebrately <noreply@send.celebrately.us>";
+  // Optional file attachments: [{ filename, content(base64) }]. Cap count/name.
+  const attachments = Array.isArray(b.attachments)
+    ? b.attachments.filter((a) => a && a.filename && a.content).slice(0, 5)
+        .map((a) => ({ filename: String(a.filename).slice(0, 200), content: String(a.content) }))
+    : [];
 
   // 3. Send via Resend.
   let res;
@@ -40,7 +45,7 @@ export async function onRequestPost(context) {
     res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { authorization: `Bearer ${env.RESEND_API_KEY}`, "content-type": "application/json" },
-      body: JSON.stringify({ from, to: [to], subject, html }),
+      body: JSON.stringify({ from, to: [to], subject, html, ...(attachments.length ? { attachments } : {}) }),
     });
   } catch (e) { return json({ error: "send failed: " + String(e && e.message || e) }, 502); }
   if (!res.ok) {
