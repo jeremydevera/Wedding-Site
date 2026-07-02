@@ -11,7 +11,7 @@ Claude test run. Done items stay here as the permanent history.
 - **`[APPROVAL]`** in a title = Claude found this (testing / scheduled run); needs your review before work.
 
 ## Next IDs
-- Next Bug ID: **0006**
+- Next Bug ID: **0007**
 - Next Enhancement ID: **0008**
 
 ---
@@ -27,6 +27,12 @@ Claude test run. Done items stay here as the permanent history.
 ---
 
 ## Done / History
+
+### Bug ID: 0006 — Strict RSVP: duplicate first+last blocked a middle-less guest
+- **Severity:** P2 · **Status:** Done — migration `0014` + commit `4ecc39d`, 2026-07-02
+- **Where:** Guest site → RSVP form (Strict RSVP on)
+- **Action:** Two registry entries "Joseph Celis" (middles L / R) + a guest RSVPing without a middle name got "we can't find your name" instead of being asked which one they are.
+- **Resolution:** `rsvp_guest_allocation` now returns ok/ambiguous/not_found: several same-name candidates → "Which one are you?" dialog + inline "add your middle name" error; a single candidate matches even without a middle (wildcard; exact/initial beats wildcard). JS reconcile matcher mirrors the wildcard. Gate dialogs and the closed-RSVP card also dropped the check-icon seal. Verified against live demo data.
 
 ### Enhancement ID: 0007 — One RSVPs tab (Guests tab merged in)
 - **Severity:** P3 · **Status:** Done — 2026-07-02
