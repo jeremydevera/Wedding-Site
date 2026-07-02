@@ -293,7 +293,7 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .field-row { display: grid; grid-template-columns: 1fr; gap: 0 18px; }
 /* minmax(0,…) so a child's intrinsic min-width (native datetime-local is wide)
    can't blow its track past its twin and make the columns lopsided. */
- (min-width: 640px) { .field-row--2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@media (min-width: 640px) { .field-row--2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 @media (min-width: 640px) { .field-row--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 /* Native date/time inputs carry a large intrinsic min-width + control chrome;
    let them shrink to the column and behave like a normal text field. */
