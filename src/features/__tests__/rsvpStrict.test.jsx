@@ -24,8 +24,17 @@ describe("RSVPPage under Strict RSVP", () => {
     expect(container.textContent).toContain("Send RSVP");
   });
 
-  it("offers all 8 count options while no allocation is known", () => {
+  it("locks the count picker until the name is verified (strict on)", () => {
     Store.updateSettings({ strictRsvp: true, rsvpDeadlineDate: "" });
+    const { container } = render(<RSVPPage />);
+    const el = container.querySelector("#r-count");
+    expect(el).toBeTruthy();
+    expect(el.disabled).toBe(true);
+    expect(container.querySelectorAll("#r-count option").length).toBe(0);
+  });
+
+  it("offers all 8 count options when strict is off", () => {
+    Store.updateSettings({ strictRsvp: false, rsvpDeadlineDate: "" });
     const { container } = render(<RSVPPage />);
     expect(container.querySelectorAll("#r-count option").length).toBe(8);
   });
