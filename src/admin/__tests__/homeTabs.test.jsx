@@ -13,6 +13,7 @@ const clickByText = (c, sel, text) => {
   return el;
 };
 const hasButton = (c, text) => [...c.querySelectorAll("button")].some((b) => b.textContent.trim() === text);
+const hasSwitch = (c, label) => !!c.querySelector(`button[aria-label="${label}"]`);
 
 describe("Home tab — folder sub-tabs", () => {
   beforeEach(() => cleanup());
@@ -44,31 +45,32 @@ describe("Home tab — folder sub-tabs", () => {
 
     // Music playlist → show toggle + upload (save) action present
     clickByText(container, ".folders .folder", "Music playlist");
-    expect(container.textContent).toMatch(/Show music player on the home page/);
+    expect(hasSwitch(container, "Show music player on the home page")).toBe(true);
     expect(container.textContent).toMatch(/Autoplay music on load/);
     expect(container.textContent).toMatch(/Music Playlist/);
     expect(hasButton(container, "+ Add music")).toBe(true);
 
     // Entourage → show toggle + add-group (save) action present
     clickByText(container, ".folders .folder", "Entourage");
-    expect(container.textContent).toMatch(/Show entourage on the home page/);
+    expect(hasSwitch(container, "Show entourage on the home page")).toBe(true);
     expect(hasButton(container, "+ Add group")).toBe(true);
 
     // Attire → show toggle + add-group (save) action present
     clickByText(container, ".folders .folder", "Attire");
-    expect(container.textContent).toMatch(/Show attire guide on the home page/);
+    expect(hasSwitch(container, "Show attire guide on the home page")).toBe(true);
     expect(container.textContent).toMatch(/Attire guide/);
     expect(hasButton(container, "+ Add group")).toBe(true);
 
     // Google Maps → show toggle + venue/map fields + Save
     clickByText(container, ".folders .folder", "Google Maps");
-    expect(container.textContent).toMatch(/Show map on the home page/);
+    expect(hasSwitch(container, "Show map on the home page")).toBe(true);
     expect(container.textContent).toMatch(/Venue address/);
     expect(hasButton(container, "Save changes")).toBe(true);
 
     // Timeline → vertical/horizontal layout picker
     clickByText(container, ".folders .folder", "Timeline");
-    expect(container.textContent).toMatch(/Home timeline layout/);
+    expect(hasSwitch(container, "Show timeline on the home page")).toBe(true);
+    expect(container.textContent).toMatch(/Home timeline/);
     expect(container.textContent).toMatch(/Vertical/);
     expect(container.textContent).toMatch(/Horizontal/);
   });
