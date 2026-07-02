@@ -1927,6 +1927,9 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .dp-play svg { width: 34%; height: 34%; }
 .device-aside { margin-top: 26px; align-self: stretch; border-left: none; border-top: 1px solid var(--line); padding: 16px 0 0; }
 .device-player .vinyl-list { max-height: 200px; overflow-y: auto; }
+/* Mobile: cap the retro playlist at ~2 tracks (row ≈ 60px + gap), rest scroll —
+   matches the vinyl skin. After the 200px rule above so it wins at ≤640px. */
+@media (max-width: 640px) { .device-player .vinyl-list { max-height: 124px; } }
 @media (max-width: 560px) { .dp-title { font-size: 4.6cqw; } .dp-artist { font-size: 3.2cqw; } }
 
 /* Cover thumbnail in the admin Music Playlist table */
