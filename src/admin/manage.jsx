@@ -1861,6 +1861,24 @@ export function SettingsAdmin() {
 
 // Home — the home page's core info: couple/event details (moved here from
 // Settings → General) plus the welcome/invitation section guests see.
+// "RSVP closes at" datetime input. A native datetime-local shows a messy
+// "mm/dd/yyyy, --:-- --" placeholder when empty; render it as a plain text field
+// with a friendly placeholder until focused, then swap to the real picker.
+function ClosesAtInput({ value, onChange }) {
+  const [type, setType] = useState(value ? "datetime-local" : "text");
+  return (
+    <Input
+      id="s-rsvpd"
+      type={type}
+      placeholder="Leave blank to keep the form open"
+      value={value || ""}
+      onChange={onChange}
+      onFocus={() => setType("datetime-local")}
+      onBlur={(e) => { if (!e.target.value) setType("text"); }}
+    />
+  );
+}
+
 export function HomeAdmin() {
   const { settings, auth } = useStore();
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
@@ -1913,8 +1931,10 @@ export function HomeAdmin() {
                 <AdminToggle noRule label="Show countdown timer" desc="The live days/hours/minutes counter on the home page. Turn off to hide it." checked={f.showCountdown !== false} onChange={(v) => toggleShow("showCountdown", v)} />
               </div>
               <Field label="Welcome message" id="s-welcome"><Textarea id="s-welcome" rows={3} value={f.welcome} onChange={set("welcome")} /></Field>
-              <Field label="RSVP deadline (display text)" id="s-rsvp" hint="Shown on the RSVP page — e.g. “August 15, 2027”"><Input id="s-rsvp" value={f.rsvpDeadline} onChange={set("rsvpDeadline")} /></Field>
-              <Field label="RSVP closes at" id="s-rsvpd" hint="Optional. Pick a date/time to auto-close the form; leave blank to keep it open."><Input id="s-rsvpd" type="datetime-local" value={f.rsvpDeadlineDate || ""} onChange={set("rsvpDeadlineDate")} style={{ maxWidth: 320 }} /></Field>
+              <div className="field-row field-row--2">
+                <Field label="RSVP deadline (display text)" id="s-rsvp" hint="Shown on the RSVP page — e.g. “August 15, 2027”"><Input id="s-rsvp" value={f.rsvpDeadline} onChange={set("rsvpDeadline")} /></Field>
+                <Field label="RSVP closes at" id="s-rsvpd" hint="Optional. Set a date/time to auto-close the form."><ClosesAtInput value={f.rsvpDeadlineDate} onChange={set("rsvpDeadlineDate")} /></Field>
+              </div>
               <Field label="Hashtag" id="s-hash"><Input id="s-hash" value={f.hashtag} onChange={set("hashtag")} /></Field>
             </div>
           </div>
