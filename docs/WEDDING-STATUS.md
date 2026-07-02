@@ -12,7 +12,7 @@ Claude test run. Done items stay here as the permanent history.
 
 ## Next IDs
 - Next Bug ID: **0006**
-- Next Enhancement ID: **0006**
+- Next Enhancement ID: **0007**
 
 ---
 
@@ -39,6 +39,12 @@ Claude test run. Done items stay here as the permanent history.
 ---
 
 ## Done / History
+
+### Enhancement ID: 0006 — Strict RSVP reconcile tools (adopt unmatched + over-allocation mark)
+- **Severity:** P3 · **Status:** Done — 2026-07-02
+- **Where:** Admin → Guests (with Strict RSVP on)
+- **Action:** Enabling Strict RSVP with pre-existing RSVPs left cleanup manual: unmatched RSVPs had to be retyped into the guest list, and grandfathered over-allocation replies weren't visible.
+- **Resolution:** Each unmatched RSVP in the Guests-tab notice now has an "Add to list" button (creates the guest from the RSVP's name/count/email via `guestFromRsvp`); the Coming column marks counts above the allocation with a red "N over" flag.
 
 ### Enhancement ID: 0005 — Strict RSVP gate + party-size cap per invite
 - **Severity:** P2 · **Status:** Done — 2026-07-02
