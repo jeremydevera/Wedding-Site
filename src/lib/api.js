@@ -203,15 +203,19 @@ export async function saveClientData() {
 // the auth-gated Functions then reject with 401 ("unauthorized"). Refresh here so
 // uploads/emails always send a live token.
 async function freshToken() {
+  // valid(s, buffer) = has a token that won't expire within `buffer` ms.
+  const valid = (s, buffer) => !!(s && s.access_token && (!s.expires_at || s.expires_at * 1000 - Date.now() > buffer));
   let { data: { session } } = await supabase.auth.getSession();
-  const expMs = session && session.expires_at ? session.expires_at * 1000 : 0;
-  if (!session || (expMs && expMs - Date.now() < 60000)) {
-    const { data: r } = await supabase.auth.refreshSession();
-    if (r && r.session) session = r.session;
+  // Refresh when missing or expiring within 60s. Keep the old session if the
+  // refresh call fails (transient) but the old token still has time.
+  if (!valid(session, 60000)) {
+    try { const { data: r } = await supabase.auth.refreshSession(); if (r && r.session) session = r.session; } catch (_) {}
   }
-  const token = session && session.access_token;
-  if (!token) throw new Error("Your session expired — please sign in again.");
-  return token;
+  // Final guard: never send an expired/absent token — the auth-gated Functions
+  // would just reject it as "unauthorized", which reads as a cryptic failure.
+  // Throw a clear, actionable message so the caller can prompt a re-login.
+  if (!valid(session, 0)) throw new Error("Your session expired — please sign in again.");
+  return session.access_token;
 }
 
 export async function uploadToR2(file, opts, clientId) {
