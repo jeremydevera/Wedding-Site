@@ -234,8 +234,10 @@ function DevicePlayer({ tracks }) {
   const frac = st.duration ? st.time / st.duration : 0;
   const many = list.length > 1;
   const clearWheel = () => { setTilt(""); setPressed(false); };
-  // Per-track cover: show the uploaded image if set, else the themed gradient (CSS default).
+  // Per-track cover: uploaded image/gif (as bg) or mp4 (as <video>); else the
+  // themed gradient (CSS default). Scanlines are hidden over a real cover.
   const artUrl = cur.art ? mediaUrl(cur.art) : null;
+  const artIsVideo = !!cur.art && /\.(mp4|webm|mov|m4v)$/i.test(cur.art);
   return (
     <section className="block" id="home-playlist">
       <div className="container">
@@ -245,8 +247,9 @@ function DevicePlayer({ tracks }) {
         </div>
         <div className="device-player">
           <div className="dp-body">
-            <div className={"dp-screen" + (artUrl ? " dp-screen--art" : "")} style={artUrl ? { backgroundImage: `url(${artUrl})` } : undefined}>
-              <div className="dp-scan" aria-hidden="true" />
+            <div className={"dp-screen" + (artUrl ? " dp-screen--art" : "")} style={artUrl && !artIsVideo ? { backgroundImage: `url(${artUrl})` } : undefined}>
+              {artIsVideo && <video className="dp-media" src={artUrl} muted loop autoPlay playsInline aria-hidden="true" />}
+              {!artUrl && <div className="dp-scan" aria-hidden="true" />}
               <div className="dp-reflection" aria-hidden="true" />
               <div className="dp-screen__text">
                 <div className="dp-kicker">Now Playing</div>

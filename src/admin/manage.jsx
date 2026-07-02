@@ -118,6 +118,60 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
   );
 }
 
+// Track cover uploader: accepts image (cropped to square), GIF, or MP4 (uploaded
+// as-is so animation/video is preserved). Stores an R2 key. Separate from
+// ImageUploadField so the image-only crop flow used elsewhere stays untouched.
+const VIDEO_RE = /\.(mp4|webm|mov|m4v)$/i;
+export function TrackCoverField({ value, onChange }) {
+  const { clientId } = useStore();
+  const ref = useRef(null);
+  const [cropSrc, setCropSrc] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const isVid = VIDEO_RE.test(value || "");
+  async function upload(file) {
+    setBusy(true);
+    try {
+      const { key } = await uploadToR2(file, { scope: "owner", purpose: "trackart" }, clientId);
+      onChange(key);
+    } catch (e) { toast("Upload failed: " + (e && e.message || "error"), "err"); }
+    finally { setBusy(false); }
+  }
+  function pick(file) {
+    if (!file) return;
+    const t = file.type || "";
+    const gif = t === "image/gif" || /\.gif$/i.test(file.name || "");
+    if (t.startsWith("video/") || VIDEO_RE.test(file.name || "") || gif) return upload(file); // keep animation/video
+    if (t.startsWith("image/")) { setCropSrc(URL.createObjectURL(file)); return; } // crop static images to square
+    toast("Please choose an image, GIF, or MP4.", "err");
+  }
+  async function applyCrop(dataUrl) {
+    setCropSrc(null); setBusy(true);
+    try {
+      const blob = await (await fetch(dataUrl)).blob();
+      await upload(new File([blob], `cover-${Date.now()}.jpg`, { type: blob.type || "image/jpeg" }));
+    } catch (e) { toast("Upload failed: " + (e && e.message || "error"), "err"); setBusy(false); }
+  }
+  return (
+    <div className="imgup">
+      <div className="imgup__thumb" style={{ aspectRatio: "1 / 1" }}>
+        {value
+          ? (isVid
+            ? <video src={mediaUrl(value)} muted loop autoPlay playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            : <img src={mediaUrl(value)} alt="" />)
+          : <Placeholder label="no cover" ratio="1 / 1" />}
+      </div>
+      <div className="imgup__actions">
+        <Button variant="ghost" size="sm" disabled={busy} onClick={() => ref.current && ref.current.click()}>{Icon.upload({})} {busy ? "Uploading…" : (value ? "Replace" : "Add cover")}</Button>
+        {value && !busy && !isVid && <Button variant="ghost" size="sm" onClick={() => setCropSrc(mediaUrl(value))}>{Icon.crop({})} Crop</Button>}
+        {value && !busy && <Button variant="ghost" size="sm" onClick={() => onChange("")}>Remove</Button>}
+      </div>
+      <input ref={ref} type="file" accept="image/*,image/gif,video/mp4,video/webm,.gif,.mp4,.webm,.mov" style={{ display: "none" }}
+        onChange={(e) => { const file = e.target.files[0]; e.target.value = ""; pick(file); }} />
+      <CropModal open={!!cropSrc} src={cropSrc} aspect={1} onCancel={() => setCropSrc(null)} onApply={applyCrop} />
+    </div>
+  );
+}
+
 // Add / edit a quiz question
 export function QuestionEditor({ open, question, onClose }) {
   const blank = { type: "multiple_choice", q: "", options: ["", "", "", ""], answer: 0 };
@@ -2027,8 +2081,8 @@ export function TrackEditor({ open, track, onClose }) {
         onUploadNew={() => fileRef.current && fileRef.current.click()}
         onPick={(key) => setF((p) => ({ ...p, url: key }))}
       />
-      <Field label="Cover image" id="trk-art" hint="Shown on the Retro Device player screen. Square works best. Optional — falls back to a themed gradient.">
-        <ImageUploadField purpose="trackart" ratio="1 / 1" value={f.art} onChange={(v) => setF((p) => ({ ...p, art: v || "" }))} />
+      <Field label="Cover image" id="trk-art" hint="Shown on the Retro Device player screen. Image, GIF, or MP4 — square works best. Optional; falls back to a themed gradient.">
+        <TrackCoverField value={f.art} onChange={(v) => setF((p) => ({ ...p, art: v || "" }))} />
       </Field>
       <div style={{ display: "flex", gap: 12, marginTop: 8, justifyContent: "flex-end" }}>
         <Button variant="ghost" onClick={onClose}>Cancel</Button>

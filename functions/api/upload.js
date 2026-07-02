@@ -8,7 +8,7 @@
 const MAX_BYTES = 25 * 1024 * 1024; // 25 MB per file
 const TYPE_OK = /^(audio\/|image\/|video\/)/;
 const SCOPES = new Set(["owner", "guest"]);
-const PURPOSES = new Set(["hero", "attire", "story", "frame", "envbg", "playlist", "gallery", "message", "misc"]);
+const PURPOSES = new Set(["hero", "attire", "story", "frame", "envbg", "playlist", "trackart", "gallery", "message", "misc"]);
 
 const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json" } });
