@@ -290,7 +290,7 @@ function GuestForm({ initial, companions, onSave, onCancel }) {
       </div>
       <div className="field-row field-row--2">
         <Field label="Middle name" hint="Optional — tells apart same-named guests" id="g-mid"><Input id="g-mid" value={f.middleName} onChange={set("middleName")} /></Field>
-        <Field label="Allotted seats" hint="Max people they can RSVP, including themselves — 9 means up to 9" id="g-alloc"><Input id="g-alloc" type="number" min={1} value={f.allocation} onChange={set("allocation")} /></Field>
+        <Field label="Allotted seats" id="g-alloc"><Input id="g-alloc" type="number" min={1} value={f.allocation} onChange={set("allocation")} /></Field>
       </div>
       {f.id ? (
         <div className="field-row field-row--2">
