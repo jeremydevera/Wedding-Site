@@ -1935,7 +1935,7 @@ export function HomeAdmin() {
         <>
           <div className="panel">
             <div className="panel__head"><div className="panel__title">Couple & Event</div></div>
-            <div className="panel__body" style={{ maxWidth: 900 }}>
+            <div className="panel__body" style={{ maxWidth: 900, margin: "0 auto" }}>
               <div className="field-row field-row--2">
                 <Field label="Partner A" id="s-a"><Input id="s-a" value={f.partnerA} onChange={set("partnerA")} /></Field>
                 <Field label="Partner B" id="s-b"><Input id="s-b" value={f.partnerB} onChange={set("partnerB")} /></Field>
