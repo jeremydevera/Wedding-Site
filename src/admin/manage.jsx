@@ -127,6 +127,7 @@ export function TrackCoverField({ value, onChange }) {
   const ref = useRef(null);
   const [cropSrc, setCropSrc] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false); // Upload new / Choose from library
   const isVid = VIDEO_RE.test(value || "");
   async function upload(file) {
     setBusy(true);
@@ -161,12 +162,23 @@ export function TrackCoverField({ value, onChange }) {
           : <Placeholder label="no cover" ratio="1 / 1" />}
       </div>
       <div className="imgup__actions">
-        <Button variant="ghost" size="sm" disabled={busy} onClick={() => ref.current && ref.current.click()}>{Icon.upload({})} {busy ? "Uploading…" : (value ? "Replace" : "Add cover")}</Button>
+        <Button variant="ghost" size="sm" disabled={busy} onClick={() => setPickerOpen(true)}>{Icon.upload({})} {busy ? "Uploading…" : (value ? "Replace" : "Add cover")}</Button>
         {value && !busy && !isVid && <Button variant="ghost" size="sm" onClick={() => setCropSrc(mediaUrl(value))}>{Icon.crop({})} Crop</Button>}
         {value && !busy && <Button variant="ghost" size="sm" onClick={() => onChange("")}>Remove</Button>}
       </div>
       <input ref={ref} type="file" accept="image/*,image/gif,video/mp4,video/webm,.gif,.mp4,.webm,.mov" style={{ display: "none" }}
-        onChange={(e) => { const file = e.target.files[0]; e.target.value = ""; pick(file); }} />
+        onChange={(e) => { const file = e.target.files[0]; e.target.value = ""; setPickerOpen(false); pick(file); }} />
+      {/* Same Upload-new | Choose-from-library picker the audio field uses, so a
+          cover can reuse an existing R2 image (GIF/MP4 covers still go via Upload). */}
+      <MediaPickerModal
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        type="image"
+        clientId={clientId}
+        uploadLabel={value ? "Replace cover" : "Choose a file"}
+        onUploadNew={() => ref.current && ref.current.click()}
+        onPick={(key) => onChange(key)}
+      />
       <CropModal open={!!cropSrc} src={cropSrc} aspect={1} onCancel={() => setCropSrc(null)} onApply={applyCrop} />
     </div>
   );
