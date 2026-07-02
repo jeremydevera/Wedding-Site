@@ -312,7 +312,7 @@ export function RSVPPage() {
                     : null}
               </div>
             )}
-            <Field label="Email" hint="Optional — so the couple can reach you about the day" error={errors.email} id="r-email">
+            <Field label="Email" hint="Optional" error={errors.email} id="r-email">
               <Input id="r-email" type="email" inputMode="email" value={form.email} onChange={set("email")} />
             </Field>
             <Field label="Phone" hint="Optional" id="r-phone">
@@ -387,9 +387,6 @@ export function RSVPPage() {
                     <Input id="r-dietnote" value={form.dietNotes} onChange={set("dietNotes")} />
                   </Field>
                 )}
-                <Field label="Song request" hint="What will get you on the dance floor?" id="r-song">
-                  <Input id="r-song" value={form.song} onChange={set("song")} />
-                </Field>
               </div>
             )}
 
