@@ -1930,6 +1930,10 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .device-player .vinyl-list { max-height: 200px; overflow-y: auto; }
 @media (max-width: 560px) { .dp-title { font-size: 4.6cqw; } .dp-artist { font-size: 3.2cqw; } }
 
+/* Cover thumbnail in the admin Music Playlist table */
+.music-cover { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; display: block; background: var(--surface-2); border: 1px solid var(--line); }
+.music-cover--empty { background: linear-gradient(135deg, var(--surface-2), color-mix(in oklch, var(--accent) 14%, var(--surface-2))); }
+
 /* --- Entourage (admin editor) --------------------------------------------- */
 /* --- RSVP Charts ----------------------------------------------------------- */
 .rsvp-charts { margin-bottom: 24px; }

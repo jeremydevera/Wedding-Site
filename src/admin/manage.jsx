@@ -2201,11 +2201,18 @@ export function MusicAdmin() {
       </div>
       <div className="panel__body--flush table-wrap">
         <table className="tbl">
-          <thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Preview</th><th></th></tr></thead>
+          <thead><tr><th>#</th><th>Cover</th><th>Title</th><th>Artist</th><th>Preview</th><th></th></tr></thead>
           <tbody>
             {tracks.map((t, i) => (
               <tr key={t.id}>
                 <td style={{ color: "var(--muted)" }}>{i + 1}</td>
+                <td>
+                  {t.art
+                    ? (VIDEO_RE.test(t.art)
+                        ? <video src={mediaUrl(t.art)} muted loop autoPlay playsInline className="music-cover" />
+                        : <img src={mediaUrl(t.art)} alt="" className="music-cover" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />)
+                    : <span className="music-cover music-cover--empty" aria-hidden="true" />}
+                </td>
                 <td><strong>{t.title}</strong></td>
                 <td style={{ color: "var(--ink-soft)" }}>{t.artist || "—"}</td>
                 <td><audio src={mediaUrl(t.url)} controls preload="none" style={{ height: 34, maxWidth: 200 }} /></td>
@@ -2219,7 +2226,7 @@ export function MusicAdmin() {
                 </td>
               </tr>
             ))}
-            {tracks.length === 0 && <tr><td colSpan={5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No tracks yet — upload audio files to build the playlist.</td></tr>}
+            {tracks.length === 0 && <tr><td colSpan={6} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No tracks yet — upload audio files to build the playlist.</td></tr>}
           </tbody>
         </table>
       </div>
