@@ -8,7 +8,7 @@ import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { signOut } from "@/lib/auth.js";
 import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb } from "@/lib/api.js";
-import { reconcileGuests } from "@/lib/guests.js";
+import { reconcileGuests, guestFromRsvp } from "@/lib/guests.js";
 import { mediaUrl } from "@/lib/media.js";
 import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
@@ -257,6 +257,19 @@ export function GuestsAdmin() {
     confirmDialog({ title: "Remove guest?", message: `Remove ${g.firstName} ${g.lastName} from the invite list?`, confirmLabel: "Remove", danger: true })
       .then((ok) => { if (ok) run(async () => { await deleteGuestDb(g.id); Store.deleteGuest(g.id); }).then(() => toast("Guest removed", "success"), () => toast("Couldn't remove")); });
   }
+  // "Add to list": create a guest entry straight from an unmatched RSVP. Once
+  // inserted, reconcileGuests recomputes and the row leaves the notice.
+  async function adoptRsvp(r) {
+    try {
+      await run(async () => {
+        const row = await addGuestDb(guestFromRsvp(r));
+        Store.addGuest(row);
+      });
+      toast("Added to the guest list", "success");
+    } catch (e) {
+      toast("Couldn't add: " + (e && e.message || "error"), "err");
+    }
+  }
 
   return (
     <div>
@@ -269,7 +282,17 @@ export function GuestsAdmin() {
 
       {recon.unmatchedRsvps.length > 0 && (
         <div className="card" style={{ padding: "12px 16px", marginBottom: 16, border: "1px solid var(--line)", borderRadius: 10, fontSize: 14 }}>
-          <strong>{recon.unmatchedRsvps.length}</strong> RSVP{recon.unmatchedRsvps.length > 1 ? "s" : ""} don&rsquo;t match an invited guest: {recon.unmatchedRsvps.map((r) => r.fullName).join(", ")}. Add them, or fix a name spelling.
+          <div style={{ marginBottom: 8 }}>
+            <strong>{recon.unmatchedRsvps.length}</strong> RSVP{recon.unmatchedRsvps.length > 1 ? "s" : ""} don&rsquo;t match an invited guest — add them, or fix a name spelling:
+          </div>
+          <div style={{ display: "grid", gap: 6 }}>
+            {recon.unmatchedRsvps.map((r) => (
+              <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <span><strong>{r.fullName}</strong>{r.status === "attending" && r.count > 0 ? <span style={{ color: "var(--muted)" }}> · {r.count} {r.count > 1 ? "guests" : "guest"}</span> : null}</span>
+                <Button variant="ghost" size="sm" onClick={() => adoptRsvp(r)}>Add to list</Button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -300,7 +323,11 @@ export function GuestsAdmin() {
                     <td>{x.status === "none"
                       ? <span style={{ color: "var(--muted)" }}>No reply</span>
                       : <span className={"tag tag--" + x.status}>{STAT_LABEL[x.status]}</span>}</td>
-                    <td>{x.status === "attending" ? x.rsvp.count : "—"}</td>
+                    <td>{x.status === "attending"
+                      ? (Number(x.rsvp.count) > Number(g.allocation)
+                        ? <span style={{ color: "var(--danger, #a33)", fontWeight: 700 }} title="More than the allocated seats">{x.rsvp.count} <span style={{ fontSize: 11, letterSpacing: ".06em", textTransform: "uppercase" }}>over</span></span>
+                        : x.rsvp.count)
+                      : "—"}</td>
                     <td><div className="row-actions">
                       <button className="icon-btn" onClick={() => setEditing({ ...blank, ...g })} aria-label="Edit">{Icon.eye({})}</button>
                       <button className="icon-btn icon-btn--danger" onClick={() => removeGuest(g)} aria-label="Remove">{Icon.trash({})}</button>
