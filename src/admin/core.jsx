@@ -4,6 +4,7 @@ import { go } from "@/lib/nav.js";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { DISABLED_MODULES } from "@/lib/roles.js";
 import { useStore } from "@/lib/store.jsx";
+import { matchedRsvps } from "@/lib/guests.js";
 import { signIn } from "@/lib/auth.js";
 import { Button, Field, Icon, Input, Monogram, Placeholder, toast } from "@/ui/components.jsx";
 // Lazy: amCharts is heavy — split into its own chunk, loaded only when the
@@ -160,8 +161,16 @@ export function AdminLogin({ onAuthed }) {
 // --- Dashboard --------------------------------------------------------------
 
 export function AdminDashboard({ goTab }) {
-  const { rsvps, media, guestbook, quizSubs } = useStore();
-  const attending = rsvps.filter((r) => r.status === "attending");
+  const { rsvps, media, guestbook, quizSubs, guests, settings } = useStore();
+  // Strict RSVP: only replies matched to an invited guest count toward the
+  // tiles/charts — unmatched ones sit in the RSVPs tab's "For Approval".
+  const strict = settings.strictRsvp === true;
+  const counted = React.useMemo(
+    () => (strict ? matchedRsvps(guests, rsvps) : rsvps),
+    [strict, guests, rsvps],
+  );
+  const forApproval = rsvps.length - counted.length;
+  const attending = counted.filter((r) => r.status === "attending");
   const guestCount = attending.reduce((s, r) => s + (r.count || 0), 0);
   const photos = media.filter((m) => m.type === "photo" && m.category === "gallery");
   const videos = media.filter((m) => m.type === "video");
@@ -169,7 +178,7 @@ export function AdminDashboard({ goTab }) {
   // Photos/Videos belong to the shelved gallery feature — hide their cards too.
   const mediaShelved = DISABLED_MODULES.has("gallery");
   const stats = [
-    { label: "RSVPs", value: rsvps.length, sub: `${attending.length} attending`, tab: "rsvps" },
+    { label: "RSVPs", value: counted.length, sub: `${attending.length} attending` + (strict && forApproval > 0 ? ` · ${forApproval} for approval` : ""), tab: "rsvps" },
     { label: "Guest Count", value: guestCount, sub: "people coming", tab: "rsvps" },
     ...(mediaShelved ? [] : [
       { label: "Photos", value: photos.length, sub: pendingMedia.length ? `${pendingMedia.length} to review` : "all clear", tab: "media" },
@@ -194,7 +203,7 @@ export function AdminDashboard({ goTab }) {
         ))}
       </div>
 
-      <React.Suspense fallback={null}><RsvpCharts rsvps={rsvps} /></React.Suspense>
+      <React.Suspense fallback={null}><RsvpCharts rsvps={counted} /></React.Suspense>
 
       <div style={{ display: "grid", gap: 24, gridTemplateColumns: "1fr" }}>
         <div className="panel">

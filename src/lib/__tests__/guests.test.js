@@ -1,5 +1,20 @@
 import { describe, it, expect } from "vitest";
-import { normName, namePartsMatch, reconcileGuests, guestFromRsvp } from "@/lib/guests.js";
+import { normName, namePartsMatch, reconcileGuests, guestFromRsvp, matchedRsvps } from "@/lib/guests.js";
+
+describe("matchedRsvps", () => {
+  const guests = [{ id: "g1", firstName: "Jeremy", lastName: "Reyes", middleName: "", allocation: 2 }];
+  const rsvps = [
+    { id: "r1", fullName: "Jeremy Reyes", firstName: "Jeremy", lastName: "Reyes", middleName: "", status: "attending", count: 2 },
+    { id: "r2", fullName: "Gate Crasher", firstName: "Gate", lastName: "Crasher", middleName: "", status: "attending", count: 5 },
+  ];
+  it("returns only RSVPs that match an invited guest", () => {
+    expect(matchedRsvps(guests, rsvps).map((r) => r.id)).toEqual(["r1"]);
+  });
+  it("handles empty inputs", () => {
+    expect(matchedRsvps([], rsvps)).toEqual([]);
+    expect(matchedRsvps(undefined, undefined)).toEqual([]);
+  });
+});
 
 describe("guestFromRsvp", () => {
   it("uses name parts and count when present", () => {

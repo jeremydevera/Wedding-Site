@@ -76,3 +76,9 @@ export function guestFromRsvp(rsvp) {
     email: r.email || "", notes: "",
   };
 }
+
+// RSVPs that match an invited guest — with Strict RSVP on, only these count
+// toward dashboard tiles/charts; unmatched replies sit in "For Approval".
+export function matchedRsvps(guests, rsvps) {
+  return reconcileGuests(guests, rsvps).rows.filter((x) => x.rsvp).map((x) => x.rsvp);
+}
