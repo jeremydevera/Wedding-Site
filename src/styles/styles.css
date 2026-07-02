@@ -1158,12 +1158,19 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
    here previously disabled ALL reveals globally — keep it removed. */
 
 /* --- Floating home decorations (whole-page fixed layer) --------------------*/
-.decor { position: fixed; inset: 0; z-index: 40; overflow: hidden; pointer-events: none; }
+/* Pin to the TOP and use a stable LARGE-viewport height instead of inset:0.
+   inset:0 anchors the bottom to the *visual* viewport, so on mobile Safari/
+   Chrome the whole layer resized + lurched every time the address bar animated
+   during scroll. top:0 + 100lvh keeps the layer a fixed size the URL bar can't
+   change, so the leaves no longer jump on scroll. (100vh is the large-viewport
+   fallback on older iOS; 100lvh is explicit where supported.) */
+.decor { position: fixed; top: 0; left: 0; right: 0; height: 100vh; height: 100lvh; z-index: 40; overflow: hidden; pointer-events: none; }
 /* Hide the floating decorations while the first envelope is still sealed */
 body.env-sealed .decor { display: none; }
 /* Falling petals scoped to the envelope-theme "celebrate love" section */
 .eg-celebrate { position: relative; overflow: hidden; }
-.eg-celebrate .decor { position: absolute; z-index: 0; }
+/* Contained variant fills its section, not the viewport — restore inset sizing. */
+.eg-celebrate .decor { position: absolute; inset: 0; height: auto; z-index: 0; }
 .eg-celebrate > .container { position: relative; z-index: 1; }
 .hero__inner { z-index: 2; }
 .decor__item { position: absolute; top: -10%; will-change: transform; color: var(--accent); }
