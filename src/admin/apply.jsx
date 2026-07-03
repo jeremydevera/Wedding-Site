@@ -65,14 +65,11 @@ const TIME_OPTIONS = (() => {
   return out;
 })();
 
-export function ApplyWizard() {
-  const [step, setStep] = useState(0);
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState("");
-  const [done, setDone] = useState(false);
-  const [touchedSub, setTouchedSub] = useState(false);
-  const [subState, setSubState] = useState("idle");
-  const [f, setF] = useState({
+// Blank wizard state — the single definition of every field the wizard
+// collects. Add a new wizard field HERE (+ its step UI + requestPayload) and
+// both the public /apply flow and the superadmin request editor pick it up.
+export function blankApplyState() {
+  return {
     partnerA: "", partnerB: "", email: "", subdomain: "", weddingDate: "",
     theme: "classic",
     venueName: "", venueAddress: "", mapQuery: "", mapLat: "", mapLng: "",
@@ -82,7 +79,63 @@ export function ApplyWizard() {
     ],
     entourage: [],
     strictRsvp: false,
-  });
+  };
+}
+
+// Serialize wizard state → the site_requests payload. The ONE serializer used
+// by both the public submit and the superadmin edit-save, so they can't drift.
+export function requestPayload(f) {
+  return {
+    email: f.email.trim(), partnerA: f.partnerA.trim(), partnerB: f.partnerB.trim(),
+    subdomain: f.subdomain.trim().toLowerCase(), templateKey: f.theme,
+    content: {
+      ...(f.weddingDate ? { weddingDate: f.weddingDate, weddingDateLabel: dateLabelOf(f.weddingDate) } : {}),
+      venueName: f.venueName.trim(), venueAddress: f.venueAddress.trim(),
+      mapQuery: f.mapQuery, mapLat: f.mapLat, mapLng: f.mapLng,
+      schedule: f.schedule.filter((r) => r.title.trim()),
+      entourage: f.entourage
+        .map((g) => ({ ...g, title: g.title.trim(), people: g.people.filter((x) => x.name.trim()) }))
+        .filter((g) => g.title && g.people.length),
+      strictRsvp: f.strictRsvp === true,
+    },
+  };
+}
+
+// Inverse: wizard state from an existing site_requests row (superadmin edit).
+// Merges over the blank defaults, so requests submitted before a newer wizard
+// field existed still load cleanly (missing keys fall back to defaults).
+export function stateFromRequest(row) {
+  const c = (row && row.content) || {};
+  const base = blankApplyState();
+  return {
+    ...base,
+    partnerA: row.partner_a || "", partnerB: row.partner_b || "",
+    email: row.email || "", subdomain: row.subdomain || "",
+    theme: row.template_key || base.theme,
+    weddingDate: c.weddingDate || "",
+    venueName: c.venueName || "", venueAddress: c.venueAddress || "",
+    mapQuery: c.mapQuery || "", mapLat: c.mapLat ?? "", mapLng: c.mapLng ?? "",
+    schedule: Array.isArray(c.schedule) && c.schedule.length ? c.schedule : base.schedule,
+    entourage: (Array.isArray(c.entourage) ? c.entourage : []).map((g) => ({
+      id: g.id || "ent-" + uidv(), title: g.title || "",
+      people: (g.people || []).map((x) => ({ id: x.id || "p-" + uidv(), name: x.name || "", role: x.role || "" })),
+    })),
+    strictRsvp: c.strictRsvp === true,
+  };
+}
+
+// Public /apply intake, and — with `initial` — the superadmin request editor:
+// the same steps render prefilled inside the console modal, and the last step
+// saves via onSave(requestPayload) instead of submitting a new request.
+export function ApplyWizard({ initial = null, onSave, onCancel }) {
+  const editing = !!initial;
+  const [step, setStep] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [done, setDone] = useState(false);
+  const [touchedSub, setTouchedSub] = useState(editing); // editing: never auto-slug over a real subdomain
+  const [subState, setSubState] = useState("idle");
+  const [f, setF] = useState(() => (editing ? stateFromRequest(initial) : blankApplyState()));
   const set = (k) => (e) => { setErr(""); setF((p) => ({ ...p, [k]: e && e.target ? e.target.value : e })); };
 
   // suggest the address from the names until edited
@@ -91,11 +144,13 @@ export function ApplyWizard() {
     if (f.partnerA.trim() && f.partnerB.trim()) setF((p) => ({ ...p, subdomain: slug(p.partnerA, p.partnerB) }));
   }, [f.partnerA, f.partnerB, touchedSub]);
 
-  // debounced availability
+  // debounced availability — when editing, the request's own subdomain is
+  // "taken" by itself, so an unchanged value always counts as fine.
   const t = useRef(null);
   useEffect(() => {
     const sub = f.subdomain.trim().toLowerCase();
     if (!sub) { setSubState("idle"); return; }
+    if (editing && sub === (initial.subdomain || "").toLowerCase()) { setSubState("free"); return; }
     if (!/^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/.test(sub)) { setSubState("invalid"); return; }
     setSubState("checking");
     clearTimeout(t.current);
@@ -103,7 +158,7 @@ export function ApplyWizard() {
       checkRequestSubdomainFree(sub).then((free) => setSubState(free ? "free" : "taken")).catch(() => setSubState("idle"));
     }, 450);
     return () => clearTimeout(t.current);
-  }, [f.subdomain]);
+  }, [f.subdomain]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const themes = themesForEvent(DEFAULT_EVENT_TYPE).filter((k) => THEMES[k] && !isPremiumTheme(k));
 
@@ -133,32 +188,25 @@ export function ApplyWizard() {
 
   async function submit() {
     if (busy) return;
+    const e0 = validateStep(0);
+    if (e0) { setErr(e0); setStep(0); return; }
     setBusy(true); setErr("");
     try {
-      await submitSiteRequest({
-        email: f.email.trim(), partnerA: f.partnerA.trim(), partnerB: f.partnerB.trim(),
-        subdomain: f.subdomain.trim().toLowerCase(), templateKey: f.theme,
-        content: {
-          ...(f.weddingDate ? { weddingDate: f.weddingDate, weddingDateLabel: dateLabelOf(f.weddingDate) } : {}),
-          venueName: f.venueName.trim(), venueAddress: f.venueAddress.trim(),
-          mapQuery: f.mapQuery, mapLat: f.mapLat, mapLng: f.mapLng,
-          schedule: f.schedule.filter((r) => r.title.trim()),
-          entourage: f.entourage
-            .map((g) => ({ ...g, title: g.title.trim(), people: g.people.filter((x) => x.name.trim()) }))
-            .filter((g) => g.title && g.people.length),
-          strictRsvp: f.strictRsvp === true,
-        },
-      });
-      setDone(true);
+      if (editing) {
+        await onSave(requestPayload(f)); // caller persists + closes
+      } else {
+        await submitSiteRequest(requestPayload(f));
+        setDone(true);
+      }
     } catch (e2) {
-      setErr(e2.message || "Could not submit your request.");
+      setErr(e2.message || (editing ? "Could not save the request." : "Could not submit your request."));
     } finally {
       setBusy(false);
     }
   }
 
   const steps = [
-    { title: "Tell us about you", short: "About you", body: (
+    { title: "Tell us about you", short: "About you", sub: "The basics we need to reserve your site address.", body: (
       <>
         <div className="field-row field-row--2">
           <Field label="Partner A — first name" id="a-pa"><Input id="a-pa" value={f.partnerA} onChange={set("partnerA")} placeholder="Romeo" /></Field>
@@ -180,9 +228,8 @@ export function ApplyWizard() {
         </Field>
       </>
     ) },
-    { title: "Pick your look", short: "Theme", body: (
+    { title: "Pick your look", short: "Theme", sub: "Choose a starting theme — you can change it anytime.", body: (
       <>
-        <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 14px" }}>Choose a theme — it can be changed later.</p>
         <div className="wizard__themes">
           {themes.map((key) => {
             const v = THEMES[key].vars;
@@ -201,7 +248,7 @@ export function ApplyWizard() {
         </div>
       </>
     ) },
-    { title: "Where's the celebration?", short: "Venue", body: (
+    { title: "Where's the celebration?", short: "Venue", sub: "Pin the venue — guests get one-tap directions from your site.", body: (
       <>
         <Field label="Pin your venue on the map" hint="Search the venue, then click the map or drag the pin to the exact spot.">
           <LocationPicker value={f.mapQuery} lat={f.mapLat} lng={f.mapLng}
@@ -209,9 +256,8 @@ export function ApplyWizard() {
         </Field>
       </>
     ) },
-    { title: "The day's schedule", short: "Schedule", body: (
+    { title: "The day's schedule", short: "Schedule", sub: "Rough times are fine — you can refine everything later.", body: (
       <>
-        <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 14px" }}>Rough times are fine — you can refine everything later.</p>
         <div className="apply-sched apply-sched--head" aria-hidden="true">
           <span>Time</span><span>What's happening</span><span>Location</span><span />
         </div>
@@ -229,10 +275,9 @@ export function ApplyWizard() {
         <Button variant="ghost" size="sm" onClick={schedAdd}>+ Add another</Button>
       </>
     ) },
-    { title: "Your entourage", short: "Entourage", skippable: true, body: (
+    { title: "Your entourage", short: "Entourage", skippable: true, sub: "Groups like Principal Sponsors, Groomsmen, Bridesmaids.", body: (
       <>
         <div className="apply-optional">This step is optional — use <strong>Skip this step</strong> below if you'd rather add these later.</div>
-        <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 14px" }}>Groups like Principal Sponsors, Groomsmen, Bridesmaids.</p>
         {f.entourage.map((g, gi) => (
           <div key={g.id} className="apply-ent">
             <div className="apply-ent__head">
@@ -252,22 +297,25 @@ export function ApplyWizard() {
         <Button variant="ghost" size="sm" onClick={entAddGroup}>+ Add group</Button>
       </>
     ) },
-    { title: "How should RSVPs work?", short: "RSVP", body: (
+    { title: "How should RSVPs work?", short: "RSVP", sub: "You can switch modes later in your admin.", body: (
       <>
-        <div className="apply-rsvp">
+        <div className="apply-rsvp" role="radiogroup" aria-label="RSVP mode">
           {[
             { v: false, label: "Open RSVP", desc: "Anyone with the link can respond. Simple and friction-free." },
             { v: true, label: "Strict RSVP (invited guests only)", desc: "Only guests on your list can respond, capped at their allotted seats. You manage the guest list in the admin." },
           ].map((o) => (
-            <button key={String(o.v)} type="button" className={"apply-rsvp__opt" + (f.strictRsvp === o.v ? " is-on" : "")} onClick={() => setF((p) => ({ ...p, strictRsvp: o.v }))}>
-              <span className="apply-rsvp__label">{o.label}{f.strictRsvp === o.v ? " ✓" : ""}</span>
-              <span className="apply-rsvp__desc">{o.desc}</span>
+            <button key={String(o.v)} type="button" role="radio" aria-checked={f.strictRsvp === o.v} className={"apply-rsvp__opt" + (f.strictRsvp === o.v ? " is-on" : "")} onClick={() => setF((p) => ({ ...p, strictRsvp: o.v }))}>
+              <span className="apply-rsvp__radio" aria-hidden="true" />
+              <span className="apply-rsvp__text">
+                <span className="apply-rsvp__label">{o.label}</span>
+                <span className="apply-rsvp__desc">{o.desc}</span>
+              </span>
             </button>
           ))}
         </div>
       </>
     ) },
-    { title: "Review & submit", short: "Review", body: (
+    { title: "Review & submit", short: "Review", sub: "Double-check everything before sending it our way.", body: (
       <div className="apply-review">
         {[
           ["Couple", `${f.partnerA} & ${f.partnerB}`],
@@ -282,21 +330,23 @@ export function ApplyWizard() {
         ].map(([k, v]) => (
           <div key={k} className="apply-review__row"><span>{k}</span><strong>{v}</strong></div>
         ))}
-        <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 14 }}>
-          We'll review your request and email you at <strong>{f.email}</strong> when your site is approved.
-        </p>
+        {!editing && (
+          <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 14 }}>
+            We'll review your request and email you at <strong>{f.email}</strong> when your site is approved.
+          </p>
+        )}
       </div>
     ) },
   ];
 
   if (done) {
     return (
-      <div className="signin admin--sa">
+      <div className="signin admin--sa apply-page">
         <div className="signin__pane">
           <header className="signin__top"><div className="signin__brand"><Logo size={30} /><span className="signin__word">Celebrately</span></div></header>
           <div className="signin__center">
-            <div className="signin__form" style={{ textAlign: "center" }}>
-              <div style={{ color: "#16a34a", marginBottom: 14 }}>{Icon.check({ style: { width: 42, height: 42 } })}</div>
+            <div className="signin__form apply-done" style={{ textAlign: "center" }}>
+              <div className="apply-done__badge">{Icon.check({ style: { width: 30, height: 30 } })}</div>
               <h1 className="signin__title">Request sent!</h1>
               <p className="signin__sub">Thanks, {f.partnerA}! We'll review your setup and email you at <strong>{f.email}</strong> once <strong>{f.subdomain}.celebrately.us</strong> is approved.</p>
             </div>
@@ -308,47 +358,59 @@ export function ApplyWizard() {
 
   const last = step === steps.length - 1;
   const s = steps[step];
-  return (
-    <div className="signin admin--sa">
-      <div className="signin__pane">
-        <header className="signin__top"><div className="signin__brand"><Logo size={30} /><span className="signin__word">Celebrately</span></div></header>
-        <div className="signin__center">
-          <div className="signin__form apply-form">
-            <div className="apply-steps" aria-label={`Step ${step + 1} of ${steps.length}`}>
-              {steps.map((st, i) => (
-                <button
-                  key={st.short}
-                  type="button"
-                  className={"apply-steps__it" + (i === step ? " is-current" : i < step ? " is-done" : "")}
-                  disabled={i >= step}
-                  aria-current={i === step ? "step" : undefined}
-                  onClick={() => { if (i < step) { setErr(""); setStep(i); } }}
-                >
-                  <span className="apply-steps__num">{i < step ? "✓" : i + 1}</span>
-                  <span className="apply-steps__lbl">{st.short}</span>
-                </button>
-              ))}
-            </div>
-            <section className="panel apply-panel">
-              <header className="panel__head">
-                <h1 className="panel__title apply-panel__title">{s.title}</h1>
-              </header>
-              <div className="panel__body">
-                <div className="apply-body">{s.body}</div>
-                {err && <div className="signin__err" style={{ margin: "12px 0 0" }}>{err}</div>}
-              </div>
-              <div className="panel__foot apply-panel__foot">
-                <span>{s.skippable && !last && <button type="button" className="wizard__skip" onClick={() => { setF((p) => ({ ...p, entourage: [] })); setStep(step + 1); }}>Skip this step</button>}</span>
-                <div style={{ display: "flex", gap: 10 }}>
-                  {step > 0 && <Button variant="ghost" onClick={() => { setErr(""); setStep(step - 1); }} disabled={busy}>Back</Button>}
-                  {last
-                    ? <Button variant="primary" onClick={submit} disabled={busy}>{busy ? "Sending…" : "Submit for approval"}</Button>
-                    : <Button variant="primary" onClick={next}>Next</Button>}
-                </div>
-              </div>
-            </section>
+  // Editing (console modal): the data is already complete, so every step is
+  // freely clickable. Creating: only completed steps can be revisited.
+  const body = (
+    <div className={"signin__form apply-form" + (editing ? " apply-form--edit" : "")}>
+      <div className="apply-steps" aria-label={`Step ${step + 1} of ${steps.length}`}>
+        {steps.map((st, i) => (
+          <button
+            key={st.short}
+            type="button"
+            className={"apply-steps__it" + (i === step ? " is-current" : (editing || i < step) ? " is-done" : "")}
+            disabled={!editing && i >= step}
+            aria-current={i === step ? "step" : undefined}
+            onClick={() => { if (editing || i < step) { setErr(""); setStep(i); } }}
+          >
+            <span className="apply-steps__num">{editing || i < step ? "✓" : i + 1}</span>
+            <span className="apply-steps__lbl">{st.short}</span>
+          </button>
+        ))}
+      </div>
+      <div className="apply-progress" aria-hidden="true"><i style={{ width: `${(step / (steps.length - 1)) * 100}%` }} /></div>
+      <section className="panel apply-panel">
+        <header className="panel__head apply-panel__head">
+          <div>
+            <div className="apply-eyebrow">Step {step + 1} of {steps.length}</div>
+            <h1 className="panel__title apply-panel__title">{s.title}</h1>
+            {s.sub && <p className="apply-panel__sub">{s.sub}</p>}
+          </div>
+        </header>
+        <div className="panel__body">
+          <div className="apply-body" key={step}>{s.body}</div>
+          {err && <div className="signin__err" style={{ margin: "12px 0 0" }}>{err}</div>}
+        </div>
+        <div className="panel__foot apply-panel__foot">
+          <span>{s.skippable && !last && <button type="button" className="wizard__skip" onClick={() => { setF((p) => ({ ...p, entourage: [] })); setStep(step + 1); }}>Skip this step</button>}</span>
+          <div style={{ display: "flex", gap: 10 }}>
+            {editing && <Button variant="ghost" onClick={onCancel} disabled={busy}>Cancel</Button>}
+            {step > 0 && <Button variant="ghost" onClick={() => { setErr(""); setStep(step - 1); }} disabled={busy}>Back</Button>}
+            {editing && <Button variant="primary" onClick={submit} disabled={busy}>{busy ? "Saving…" : "Save changes"}</Button>}
+            {!last && <Button variant={editing ? "ghost" : "primary"} onClick={next}>Next</Button>}
+            {!editing && last && <Button variant="primary" onClick={submit} disabled={busy}>{busy ? "Sending…" : "Submit for approval"}</Button>}
           </div>
         </div>
+      </section>
+    </div>
+  );
+
+  if (editing) return body; // rendered inside the console's Modal — no page chrome
+
+  return (
+    <div className="signin admin--sa apply-page">
+      <div className="signin__pane">
+        <header className="signin__top"><div className="signin__brand"><Logo size={30} /><span className="signin__word">Celebrately</span></div></header>
+        <div className="signin__center">{body}</div>
       </div>
     </div>
   );
