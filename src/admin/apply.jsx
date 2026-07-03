@@ -158,7 +158,7 @@ export function ApplyWizard() {
   }
 
   const steps = [
-    { title: "Tell us about you", body: (
+    { title: "Tell us about you", short: "About you", body: (
       <>
         <div className="field-row field-row--2">
           <Field label="Partner A — first name" id="a-pa"><Input id="a-pa" value={f.partnerA} onChange={set("partnerA")} placeholder="Romeo" /></Field>
@@ -180,7 +180,7 @@ export function ApplyWizard() {
         </Field>
       </>
     ) },
-    { title: "Pick your look", body: (
+    { title: "Pick your look", short: "Theme", body: (
       <>
         <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 14px" }}>Choose a theme — it can be changed later.</p>
         <div className="wizard__themes">
@@ -201,7 +201,7 @@ export function ApplyWizard() {
         </div>
       </>
     ) },
-    { title: "Where's the celebration?", body: (
+    { title: "Where's the celebration?", short: "Venue", body: (
       <>
         <Field label="Pin your venue on the map" hint="Search the venue, then click the map or drag the pin to the exact spot.">
           <LocationPicker value={f.mapQuery} lat={f.mapLat} lng={f.mapLng}
@@ -209,7 +209,7 @@ export function ApplyWizard() {
         </Field>
       </>
     ) },
-    { title: "The day's schedule", body: (
+    { title: "The day's schedule", short: "Schedule", body: (
       <>
         <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 14px" }}>Rough times are fine — you can refine everything later.</p>
         <div className="apply-sched apply-sched--head" aria-hidden="true">
@@ -229,7 +229,7 @@ export function ApplyWizard() {
         <Button variant="ghost" size="sm" onClick={schedAdd}>+ Add another</Button>
       </>
     ) },
-    { title: "Your entourage", skippable: true, body: (
+    { title: "Your entourage", short: "Entourage", skippable: true, body: (
       <>
         <div className="apply-optional">This step is optional — use <strong>Skip this step</strong> below if you'd rather add these later.</div>
         <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 14px" }}>Groups like Principal Sponsors, Groomsmen, Bridesmaids.</p>
@@ -252,7 +252,7 @@ export function ApplyWizard() {
         <Button variant="ghost" size="sm" onClick={entAddGroup}>+ Add group</Button>
       </>
     ) },
-    { title: "How should RSVPs work?", body: (
+    { title: "How should RSVPs work?", short: "RSVP", body: (
       <>
         <div className="apply-rsvp">
           {[
@@ -267,7 +267,7 @@ export function ApplyWizard() {
         </div>
       </>
     ) },
-    { title: "Review & submit", body: (
+    { title: "Review & submit", short: "Review", body: (
       <div className="apply-review">
         {[
           ["Couple", `${f.partnerA} & ${f.partnerB}`],
@@ -314,7 +314,21 @@ export function ApplyWizard() {
         <header className="signin__top"><div className="signin__brand"><Logo size={30} /><span className="signin__word">Celebrately</span></div></header>
         <div className="signin__center">
           <div className="signin__form apply-form">
-            <div className="wizard__progress">Step {step + 1} of {steps.length}</div>
+            <div className="apply-steps" aria-label={`Step ${step + 1} of ${steps.length}`}>
+              {steps.map((st, i) => (
+                <button
+                  key={st.short}
+                  type="button"
+                  className={"apply-steps__it" + (i === step ? " is-current" : i < step ? " is-done" : "")}
+                  disabled={i >= step}
+                  aria-current={i === step ? "step" : undefined}
+                  onClick={() => { if (i < step) { setErr(""); setStep(i); } }}
+                >
+                  <span className="apply-steps__num">{i < step ? "✓" : i + 1}</span>
+                  <span className="apply-steps__lbl">{st.short}</span>
+                </button>
+              ))}
+            </div>
             <h1 className="signin__title" style={{ fontSize: 26 }}>{s.title}</h1>
             <div className="apply-body">{s.body}</div>
             {err && <div className="signin__err" style={{ margin: "12px 0" }}>{err}</div>}
