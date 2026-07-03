@@ -12,7 +12,7 @@ Claude test run. Done items stay here as the permanent history.
 
 ## Next IDs
 - Next Bug ID: **0007**
-- Next Enhancement ID: **0011**
+- Next Enhancement ID: **0012**
 
 ---
 
@@ -33,6 +33,12 @@ Claude test run. Done items stay here as the permanent history.
 ---
 
 ## Done / History
+
+### Enhancement ID: 0011 — Olive Envelope: more background tint colors + custom tint
+- **Severity:** P2 · **Status:** Done — commit `637c225`, 2026-07-03 (requested by Jeremy)
+- **Where:** Admin → Design → Envelope Background → Tint color
+- **Action:** Tint color choices doubled (12 presets: adds Forest, Teal, Dusty Blue, Midnight, Rose, Amber) plus a "Custom" chip with a full color picker for any hex.
+- **Resolution:** Custom builds the same top-to-bottom wash from the picked color (60% → darker 80%). `envTintCustom` persists in content JSON; invalid hex falls back to olive. All washes verified over the default background photo; 146 tests pass.
 
 ### Enhancement ID: 0010 — Olive Envelope: custom envelope color + terracotta + site colors follow
 - **Severity:** P2 · **Status:** Done — commit `545008d`, 2026-07-03 (requested by Jeremy same day)
