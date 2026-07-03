@@ -249,7 +249,7 @@ export function ApplyWizard() {
 
   if (done) {
     return (
-      <div className="signin">
+      <div className="signin admin--sa">
         <div className="signin__pane">
           <header className="signin__top"><div className="signin__brand"><Logo size={30} /><span className="signin__word">Celebrately</span></div></header>
           <div className="signin__center">
@@ -267,7 +267,7 @@ export function ApplyWizard() {
   const last = step === steps.length - 1;
   const s = steps[step];
   return (
-    <div className="signin">
+    <div className="signin admin--sa">
       <div className="signin__pane">
         <header className="signin__top"><div className="signin__brand"><Logo size={30} /><span className="signin__word">Celebrately</span></div></header>
         <div className="signin__center">
