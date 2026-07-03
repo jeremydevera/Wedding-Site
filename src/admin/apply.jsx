@@ -3,7 +3,7 @@ import { submitSiteRequest, checkRequestSubdomainFree } from "@/lib/api.js";
 import { THEMES } from "@/themes";
 import { isPremiumTheme } from "@/themes";
 import { themesForEvent, DEFAULT_EVENT_TYPE } from "@/config/eventTypes.js";
-import { Button, Field, Icon, Input } from "@/ui/components.jsx";
+import { Button, Field, Icon, Input, Select } from "@/ui/components.jsx";
 import { LocationPicker } from "@/ui/location-picker.jsx";
 import { Logo } from "@/admin/core.jsx";
 const { useState, useEffect, useRef } = React;
@@ -25,6 +25,45 @@ const dateLabelOf = (iso) => {
 };
 
 const uidv = () => Math.random().toString(36).slice(2, 9);
+
+// Date picker that never shows the native "mm/dd/yyyy, --:--" segments: a
+// read-only text box with a friendly value/placeholder; the real hidden
+// datetime-local opens via showPicker() on click.
+function NiceDateInput({ id, value, onChange, placeholder }) {
+  const ref = useRef(null);
+  const fmt = (v) => {
+    if (!v) return "";
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? v : d.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+  };
+  const openPicker = () => { const el = ref.current; if (!el) return; try { el.showPicker ? el.showPicker() : el.focus(); } catch (_) { el.focus(); } };
+  return (
+    <div style={{ position: "relative" }}>
+      <Input id={id} readOnly value={fmt(value)} placeholder={placeholder} onClick={openPicker} style={{ cursor: "pointer", paddingRight: value ? 64 : 40 }} />
+      <button type="button" onClick={openPicker} aria-label="Pick a date"
+        style={{ position: "absolute", top: "50%", right: 8, transform: "translateY(-50%)", display: "grid", placeItems: "center", width: 30, height: 30, background: "none", border: "none", color: "var(--muted)", cursor: "pointer" }}>
+        {Icon.calendar({ style: { width: 18, height: 18 } })}
+      </button>
+      {value && (
+        <button type="button" onClick={() => onChange({ target: { value: "" } })} aria-label="Clear date"
+          style={{ position: "absolute", top: "50%", right: 36, transform: "translateY(-50%)", display: "grid", placeItems: "center", width: 26, height: 26, background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 20, lineHeight: 1 }}>&times;</button>
+      )}
+      <input ref={ref} type="datetime-local" value={value || ""} onChange={onChange} tabIndex={-1} aria-hidden="true"
+        style={{ position: "absolute", left: 12, bottom: 0, width: 1, height: 1, opacity: 0, pointerEvents: "none" }} />
+    </div>
+  );
+}
+
+// Half-hour time options for the schedule dropdown (6:00 AM – 11:30 PM).
+const TIME_OPTIONS = (() => {
+  const out = [];
+  for (let m = 6 * 60; m <= 23 * 60 + 30; m += 30) {
+    const h24 = Math.floor(m / 60), min = m % 60;
+    const h12 = ((h24 + 11) % 12) + 1;
+    out.push(`${h12}:${String(min).padStart(2, "0")} ${h24 < 12 ? "AM" : "PM"}`);
+  }
+  return out;
+})();
 
 export function ApplyWizard() {
   const [step, setStep] = useState(0);
@@ -126,7 +165,7 @@ export function ApplyWizard() {
           <Field label="Partner B — first name" id="a-pb"><Input id="a-pb" value={f.partnerB} onChange={set("partnerB")} placeholder="Juliet" /></Field>
         </div>
         <Field label="Your email" id="a-email" hint="We'll reach you here once your site is approved."><Input id="a-email" type="email" value={f.email} onChange={set("email")} placeholder="you@example.com" /></Field>
-        <Field label="Wedding date & time" id="a-date" hint="Optional — leave blank if you haven't picked one."><Input id="a-date" type="datetime-local" value={f.weddingDate} onChange={set("weddingDate")} /></Field>
+        <Field label="Wedding date & time" id="a-date" hint="Optional — leave blank if you haven't picked one."><NiceDateInput id="a-date" value={f.weddingDate} onChange={set("weddingDate")} placeholder="Tap to pick a date" /></Field>
         <Field label="Site address" id="a-sub">
           <div className="reg-sub">
             <Input id="a-sub" value={f.subdomain} onChange={(e) => { setTouchedSub(true); set("subdomain")(e); }} spellCheck={false} placeholder="romeo-juliet" />
@@ -164,11 +203,7 @@ export function ApplyWizard() {
     ) },
     { title: "Where's the celebration?", body: (
       <>
-        <div className="field-row field-row--2">
-          <Field label="Venue name" id="a-vn"><Input id="a-vn" value={f.venueName} onChange={set("venueName")} placeholder="The Old Orchard" /></Field>
-          <Field label="Venue address" id="a-va"><Input id="a-va" value={f.venueAddress} onChange={set("venueAddress")} placeholder="City, Country" /></Field>
-        </div>
-        <Field label="Pin the exact spot" hint="Search a place, then click the map or drag the pin.">
+        <Field label="Pin your venue on the map" hint="Search the venue, then click the map or drag the pin to the exact spot.">
           <LocationPicker value={f.mapQuery} lat={f.mapLat} lng={f.mapLng}
             onChange={({ query, lat, lng }) => setF((p) => ({ ...p, mapQuery: query, mapLat: lat, mapLng: lng }))} />
         </Field>
@@ -177,11 +212,17 @@ export function ApplyWizard() {
     { title: "The day's schedule", body: (
       <>
         <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 14px" }}>Rough times are fine — you can refine everything later.</p>
+        <div className="apply-sched apply-sched--head" aria-hidden="true">
+          <span>Time</span><span>What's happening</span><span>Location</span><span />
+        </div>
         {f.schedule.map((r, i) => (
           <div key={i} className="apply-sched">
-            <Input aria-label="Time" value={r.time} onChange={schedSet(i, "time")} placeholder="3:00 PM" />
+            <Select aria-label="Time" value={r.time} onChange={schedSet(i, "time")}>
+              <option value="">Time…</option>
+              {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+            </Select>
             <Input aria-label="What's happening" value={r.title} onChange={schedSet(i, "title")} placeholder="Ceremony" />
-            <Input aria-label="Location" value={r.loc} onChange={schedSet(i, "loc")} placeholder="Location (optional)" />
+            <Input aria-label="Location" value={r.loc} onChange={schedSet(i, "loc")} placeholder="Optional" />
             <button type="button" className="icon-btn icon-btn--danger" aria-label="Remove" onClick={() => schedDel(i)}>{Icon.trash({})}</button>
           </div>
         ))}
@@ -190,7 +231,8 @@ export function ApplyWizard() {
     ) },
     { title: "Your entourage", skippable: true, body: (
       <>
-        <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 14px" }}>Groups like Principal Sponsors, Groomsmen, Bridesmaids — or skip this and add them later.</p>
+        <div className="apply-optional">This step is optional — use <strong>Skip this step</strong> below if you'd rather add these later.</div>
+        <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 14px" }}>Groups like Principal Sponsors, Groomsmen, Bridesmaids.</p>
         {f.entourage.map((g, gi) => (
           <div key={g.id} className="apply-ent">
             <div className="apply-ent__head">
