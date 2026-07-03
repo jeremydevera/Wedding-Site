@@ -513,16 +513,20 @@ export function useCountdown(targetIso) {
     return () => clearInterval(t);
   }, []);
   const target = new Date(targetIso).getTime();
-  let diff = Math.max(0, target - now);
+  // Blank or unparseable date → not a valid target. Report it so the countdown
+  // hides itself instead of rendering "NaN" in every tile.
+  const valid = Number.isFinite(target);
+  let diff = valid ? Math.max(0, target - now) : 0;
   const days = Math.floor(diff / 86400000); diff -= days * 86400000;
   const hours = Math.floor(diff / 3600000); diff -= hours * 3600000;
   const minutes = Math.floor(diff / 60000); diff -= minutes * 60000;
   const seconds = Math.floor(diff / 1000);
-  return { days, hours, minutes, seconds, done: target <= now };
+  return { days, hours, minutes, seconds, done: valid && target <= now, valid };
 }
 
 export function Countdown({ targetIso, light }) {
-  const { days, hours, minutes, seconds, done } = useCountdown(targetIso);
+  const { days, hours, minutes, seconds, done, valid } = useCountdown(targetIso);
+  if (!valid) return null;
   if (done) return <div className={"countdown countdown--done" + (light ? " countdown--light" : "")}>The day is here — cheers! ✨</div>;
   const units = [
     { n: days, l: "Days" },
