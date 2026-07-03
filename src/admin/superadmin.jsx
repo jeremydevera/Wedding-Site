@@ -7,6 +7,7 @@ import { moduleLabel } from "@/lib/roles.js";
 import { PLATFORM_DOMAIN, clientUrl, isValidSubdomain } from "@/config/site.js"; // platform config → src/config/site.js
 import { Button, confirmDialog, Field, Icon, Input, Modal, Pager, SectionHead, Select, Textarea, toast, usePaged } from "@/ui/components.jsx";
 import { listMedia, deleteFromR2, listSiteRequests, approveSiteRequest, setSiteRequestStatus, updateSiteRequest } from "@/lib/api.js";
+import { ApplyWizard } from "@/admin/apply.jsx";
 import { fileNameFromKey } from "@/lib/mediaLibrary.js";
 import { mediaUrl } from "@/lib/media.js";
 const { useState, useEffect, useRef } = React;
@@ -299,7 +300,7 @@ export function ClientsAdmin() {
                           <button className="icon-btn" title="Details" onClick={() => setReqOpen(reqOpen === r.id ? null : r.id)}>{Icon.eye({})}</button>
                           {r.status === "pending" && (
                             <>
-                              <button className="icon-btn" title="Edit request" onClick={() => setReqEdit({ id: r.id, partner_a: r.partner_a || "", partner_b: r.partner_b || "", subdomain: r.subdomain || "", email: r.email || "", template_key: r.template_key || "classic" })}>{Icon.edit({})}</button>
+                              <button className="icon-btn" title="Edit request" onClick={() => setReqEdit(r)}>{Icon.edit({})}</button>
                               <Button variant="primary" size="sm" disabled={busy} onClick={async () => {
                                 const ok = await confirmDialog({ title: "Approve this site?", message: `Create ${r.subdomain}.celebrately.us for ${r.partner_a} & ${r.partner_b}? You can set the owner's login afterwards via the pencil (Edit) on the client.`, confirmLabel: "Approve & create" });
                                 if (!ok) return;
@@ -604,37 +605,27 @@ export function ClientsAdmin() {
         })()}
       </Modal>
 
-      {/* Pencil on a pending request → fix up names/subdomain/email/theme before approving. */}
-      <Modal open={!!reqEdit} onClose={() => setReqEdit(null)} label="Edit request">
+      {/* Pencil on a pending request → the FULL /apply wizard, prefilled, as the
+          editor. One component, one payload serializer (requestPayload), so any
+          field added to the wizard is automatically editable here too. */}
+      <Modal open={!!reqEdit} onClose={() => setReqEdit(null)} label="Edit request" wide>
         {reqEdit && (
           <div>
             <SectionHead eyebrow="Site request" title={`Edit ${reqEdit.subdomain || "request"}`} />
-            <div className="field-row field-row--2">
-              <Field label="Partner A" id="rq-a"><Input id="rq-a" value={reqEdit.partner_a} onChange={(e) => setReqEdit((f) => ({ ...f, partner_a: e.target.value }))} /></Field>
-              <Field label="Partner B" id="rq-b"><Input id="rq-b" value={reqEdit.partner_b} onChange={(e) => setReqEdit((f) => ({ ...f, partner_b: e.target.value }))} /></Field>
-            </div>
-            <div className="field-row field-row--2">
-              <Field label="Subdomain" id="rq-sub" hint={`${(reqEdit.subdomain || "…")}.${PLATFORM_DOMAIN}`}><Input id="rq-sub" value={reqEdit.subdomain} onChange={(e) => setReqEdit((f) => ({ ...f, subdomain: e.target.value }))} /></Field>
-              <Field label="Email" id="rq-email"><Input id="rq-email" type="email" value={reqEdit.email} onChange={(e) => setReqEdit((f) => ({ ...f, email: e.target.value }))} /></Field>
-            </div>
-            <Field label="Theme" id="rq-theme">
-              <Select id="rq-theme" value={reqEdit.template_key} onChange={(e) => setReqEdit((f) => ({ ...f, template_key: e.target.value }))}>
-                {themesForEvent("wedding").filter((k) => THEMES[k]).map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
-              </Select>
-            </Field>
-            <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
-              <Button variant="primary" block disabled={busy} onClick={async () => {
-                const sub = reqEdit.subdomain.trim().toLowerCase();
-                if (!isValidSubdomain(sub)) return toast("Invalid subdomain. Lowercase letters, numbers, hyphens — not a reserved name.");
-                setBusy(true);
-                try {
-                  await updateSiteRequest(reqEdit.id, { partner_a: reqEdit.partner_a.trim(), partner_b: reqEdit.partner_b.trim(), subdomain: sub, email: reqEdit.email.trim(), template_key: reqEdit.template_key });
-                  toast("Request updated", "success"); setReqEdit(null); await load();
-                } catch (e) { toast("Save failed: " + (e.message || "error"), "err"); }
-                finally { setBusy(false); }
-              }}>Save request</Button>
-              <Button variant="ghost" onClick={() => setReqEdit(null)}>Cancel</Button>
-            </div>
+            <ApplyWizard
+              initial={reqEdit}
+              onCancel={() => setReqEdit(null)}
+              onSave={async (p) => {
+                if (!isValidSubdomain(p.subdomain)) throw new Error("Invalid subdomain — lowercase letters, numbers, hyphens; not a reserved name.");
+                await updateSiteRequest(reqEdit.id, {
+                  partner_a: p.partnerA, partner_b: p.partnerB, subdomain: p.subdomain,
+                  email: p.email, template_key: p.templateKey, content: p.content,
+                });
+                toast("Request updated", "success");
+                setReqEdit(null);
+                await load();
+              }}
+            />
           </div>
         )}
       </Modal>
