@@ -494,7 +494,10 @@ export function envColorFilterFor(envColor, envColorCustom) {
 // Seal cut-out for the SEALED envelope art — the recolor overlay is masked with
 // this so the wax seal keeps its original cream (mirrors the geometry hardcoded
 // in styles.css for .inv-art-recolor--sealed; used by the admin live preview).
-export const ENV_SEAL_MASK = "radial-gradient(5% 10.6% at 49.6% 56.8%, transparent 86%, #000 100%)";
+export const ENV_SEAL_MASK = "radial-gradient(5.3% 11.4% at 49.58% 56.75%, transparent 80%, #000 100%)";
+// Placement of the standalone seal image (public/assets/invite/seal-closed.png)
+// over the sealed art — mirrors .inv-seal-img--sealed in styles.css.
+export const ENV_SEAL_POS = { left: "49.58%", top: "56.75%", width: "9.65%" };
 
 // oklch hue (degrees) of an sRGB color — for deriving the matching site palette.
 export function rgbToOklchHue([r, g, b]) {

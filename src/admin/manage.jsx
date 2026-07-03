@@ -1,7 +1,7 @@
 import React from "react";
 import { go } from "@/lib/nav.js";
 import { Store, useStore, uid } from "@/lib/store.jsx";
-import { EG_TINTS, ENV_COLORS, ENV_SEAL_MASK, THEMES, THEME_FONTS, egTintGradientFor, envColorFilterFor, isPremiumTheme } from "@/themes";
+import { EG_TINTS, ENV_COLORS, ENV_SEAL_MASK, ENV_SEAL_POS, THEMES, THEME_FONTS, egTintGradientFor, envColorFilterFor, isPremiumTheme } from "@/themes";
 import { Button, CropModal, DecorPreview, FallingFx, Field, Icon, Input, Modal, Monogram, Pager, Placeholder, SectionHead, Select, Textarea, confirmDialog, mapEmbedUrl, mapSearchUrl, toast, usePaged } from "@/ui/components.jsx";
 import { FX_LIST } from "@/lib/falling-fx.js";
 import { Home } from "@/pages/PublicPages.jsx";
@@ -1917,8 +1917,12 @@ export function SettingsAdmin() {
                 return (
                   <div style={{ position: "relative", width: "100%", maxWidth: 380 }}>
                     <img src="/assets/invite/env-closed.webp" alt="Envelope color preview" style={{ display: "block", width: "100%", height: "auto", borderRadius: 8 }} />
-                    {flt ? <img src="/assets/invite/env-closed.webp" alt="" aria-hidden="true"
-                      style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "auto", borderRadius: 8, pointerEvents: "none", filter: flt, WebkitMaskImage: ENV_SEAL_MASK, maskImage: ENV_SEAL_MASK }} /> : null}
+                    {flt ? <>
+                      <img src="/assets/invite/env-closed.webp" alt="" aria-hidden="true"
+                        style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "auto", borderRadius: 8, pointerEvents: "none", filter: flt, WebkitMaskImage: ENV_SEAL_MASK, maskImage: ENV_SEAL_MASK }} />
+                      <img src="/assets/invite/seal-closed.png" alt="" aria-hidden="true"
+                        style={{ position: "absolute", left: ENV_SEAL_POS.left, top: ENV_SEAL_POS.top, width: ENV_SEAL_POS.width, transform: "translate(-50%, -50%)", pointerEvents: "none" }} />
+                    </> : null}
                   </div>
                 );
               })()}

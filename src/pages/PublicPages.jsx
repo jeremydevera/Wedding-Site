@@ -56,13 +56,19 @@ export function egTintVars(s) {
   return vars;
 }
 
-// Duplicate of the envelope art carrying the recolor filter, masked in CSS so
-// the wax seal shows the UNfiltered base image underneath (seal stays cream).
+// Recolor stack for the envelope art: a duplicate image carrying the color
+// filter (masked with a hole over the seal as a fallback), then the wax seal
+// as its OWN unfiltered image on top — so the seal is pixel-identical to the
+// original artwork no matter the paper color.
 function envRecolorOverlay(s, kind) {
   if (!envColorFilterFor(s.envColor, s.envColorCustom)) return null;
-  return kind === "sealed"
-    ? <img className="inv-art-recolor inv-art-recolor--sealed" src="/assets/invite/env-closed.webp" alt="" aria-hidden="true" />
-    : <img className="inv-l-front inv-art-recolor inv-art-recolor--front" src="/assets/invite/p2-envelope-front.png" alt="" aria-hidden="true" />;
+  return kind === "sealed" ? (<>
+    <img className="inv-art-recolor inv-art-recolor--sealed" src="/assets/invite/env-closed.webp" alt="" aria-hidden="true" />
+    <img className="inv-seal-img inv-seal-img--sealed" src="/assets/invite/seal-closed.png" alt="" aria-hidden="true" />
+  </>) : (<>
+    <img className="inv-l-front inv-art-recolor inv-art-recolor--front" src="/assets/invite/p2-envelope-front.png" alt="" aria-hidden="true" />
+    <img className="inv-seal-img inv-seal-img--front" src="/assets/invite/seal-front.png" alt="" aria-hidden="true" />
+  </>);
 }
 
 export function EnvelopeHero() {

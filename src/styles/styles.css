@@ -1513,13 +1513,19 @@ body.env-sealed .decor { display: none; }
 img.inv-art-recolor { position: absolute; pointer-events: none; filter: var(--eg-env-recolor, none); }
 img.inv-art-recolor--sealed {
   left: 0; top: 0; width: 100%; height: auto;
-  -webkit-mask-image: radial-gradient(5% 10.6% at 49.6% 56.8%, transparent 86%, #000 100%);
-  mask-image: radial-gradient(5% 10.6% at 49.6% 56.8%, transparent 86%, #000 100%);
+  -webkit-mask-image: radial-gradient(5.3% 11.4% at 49.58% 56.75%, transparent 80%, #000 100%);
+  mask-image: radial-gradient(5.3% 11.4% at 49.58% 56.75%, transparent 80%, #000 100%);
 }
 img.inv-art-recolor--front {
   -webkit-mask-image: radial-gradient(6% 12.6% at 50.5% 70.4%, transparent 86%, #000 100%);
   mask-image: radial-gradient(6% 12.6% at 50.5% 70.4%, transparent 86%, #000 100%);
 }
+/* The wax seal as its OWN image (cut from the art with a feathered edge) laid
+   unfiltered on top of the recolor overlay — the seal stays pixel-identical to
+   the original for any paper color; the mask hole above is just the fallback. */
+img.inv-seal-img { position: absolute; pointer-events: none; }
+img.inv-seal-img--sealed { left: 49.58%; top: 56.75%; width: 9.65%; transform: translate(-50%, -50%); }
+img.inv-seal-img--front { left: 50.51%; top: 70.44%; width: 12.59%; transform: translate(-50%, -50%); z-index: 6; }
 .inv-seal-hotspot {
   position: absolute; left: 49.3%; top: 56.8%; width: 13%; height: 26%;
   transform: translate(-50%, -50%); border: 0; background: transparent; padding: 0; margin: 0;
@@ -1718,6 +1724,8 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    visible envelope off-center). */
 @media (max-width: 860px) {
   .eg-sealed .inv-sealed-art, .eg-sealed .inv-art-recolor--sealed { transform: translateX(0.7%); }
+  /* keep the standalone seal registered with the shifted art (0.7% of the wrap = 0.7cqw) */
+  .eg-sealed .inv-seal-img--sealed { transform: translate(calc(-50% + 0.7cqw), -50%); }
 }
 .eg-open { width: min(1140px, 100vw, 105vh); flex: none; transition: width .6s ease; }
 .eg-cue {
