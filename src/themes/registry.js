@@ -378,16 +378,35 @@ export function isPremiumTheme(key) { return PREMIUM_THEMES.indexOf(key) !== -1;
 
 // Envelope background tint presets — each is a vertical 2-stop gradient (with alpha).
 export const EG_TINTS = {
-  olive:    { label: "Olive",    top: "oklch(0.30 0.06 126 / 0.62)", bottom: "oklch(0.22 0.05 126 / 0.78)", dot: "#41502a" },
-  charcoal: { label: "Charcoal", top: "oklch(0.28 0.01 250 / 0.60)", bottom: "oklch(0.18 0.01 250 / 0.80)", dot: "#2c2f33" },
-  wine:     { label: "Wine",     top: "oklch(0.28 0.09 22 / 0.60)",  bottom: "oklch(0.20 0.08 22 / 0.80)",  dot: "#5a2230" },
-  navy:     { label: "Navy",     top: "oklch(0.30 0.07 264 / 0.60)", bottom: "oklch(0.20 0.06 264 / 0.80)", dot: "#283a5e" },
-  sepia:    { label: "Sepia",    top: "oklch(0.34 0.05 70 / 0.58)",  bottom: "oklch(0.24 0.05 64 / 0.78)",  dot: "#5c4527" },
-  plum:     { label: "Plum",     top: "oklch(0.30 0.08 330 / 0.60)", bottom: "oklch(0.21 0.07 330 / 0.80)", dot: "#4d2845" },
+  olive:     { label: "Olive",      top: "oklch(0.30 0.06 126 / 0.62)", bottom: "oklch(0.22 0.05 126 / 0.78)", dot: "#41502a" },
+  forest:    { label: "Forest",     top: "oklch(0.28 0.07 150 / 0.60)", bottom: "oklch(0.19 0.06 150 / 0.80)", dot: "#1f4a32" },
+  teal:      { label: "Teal",       top: "oklch(0.30 0.06 200 / 0.60)", bottom: "oklch(0.21 0.05 200 / 0.80)", dot: "#17505a" },
+  dustyblue: { label: "Dusty Blue", top: "oklch(0.36 0.05 250 / 0.58)", bottom: "oklch(0.26 0.05 250 / 0.78)", dot: "#46628c" },
+  navy:      { label: "Navy",       top: "oklch(0.30 0.07 264 / 0.60)", bottom: "oklch(0.20 0.06 264 / 0.80)", dot: "#283a5e" },
+  midnight:  { label: "Midnight",   top: "oklch(0.22 0.03 264 / 0.65)", bottom: "oklch(0.14 0.02 264 / 0.85)", dot: "#131a2e" },
+  charcoal:  { label: "Charcoal",   top: "oklch(0.28 0.01 250 / 0.60)", bottom: "oklch(0.18 0.01 250 / 0.80)", dot: "#2c2f33" },
+  wine:      { label: "Wine",       top: "oklch(0.28 0.09 22 / 0.60)",  bottom: "oklch(0.20 0.08 22 / 0.80)",  dot: "#5a2230" },
+  rose:      { label: "Rose",       top: "oklch(0.34 0.07 10 / 0.58)",  bottom: "oklch(0.24 0.06 10 / 0.78)",  dot: "#7a3a48" },
+  plum:      { label: "Plum",       top: "oklch(0.30 0.08 330 / 0.60)", bottom: "oklch(0.21 0.07 330 / 0.80)", dot: "#4d2845" },
+  sepia:     { label: "Sepia",      top: "oklch(0.34 0.05 70 / 0.58)",  bottom: "oklch(0.24 0.05 64 / 0.78)",  dot: "#5c4527" },
+  amber:     { label: "Amber",      top: "oklch(0.36 0.07 70 / 0.56)",  bottom: "oklch(0.25 0.06 66 / 0.78)",  dot: "#6e4f1e" },
 };
 export function egTintGradient(key) {
   const t = EG_TINTS[key] || EG_TINTS.olive;
   return `linear-gradient(180deg, ${t.top}, ${t.bottom})`;
+}
+// Custom tint — same 2-stop wash shape as the presets, built from any hex:
+// the top stop is the color at 60% alpha, the bottom a darkened version at 80%.
+export function egCustomTintGradient(hex) {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return egTintGradient("olive");
+  const [r, g, b] = rgb;
+  const [dr, dg, db] = rgb.map((x) => Math.round(x * 0.68));
+  return `linear-gradient(180deg, rgba(${r}, ${g}, ${b}, 0.6), rgba(${dr}, ${dg}, ${db}, 0.8))`;
+}
+// Resolve the active tint gradient from settings-shaped input ("custom" → hex).
+export function egTintGradientFor(key, customHex) {
+  return key === "custom" ? egCustomTintGradient(customHex) : egTintGradient(key);
 }
 
 // Envelope paper colors — CSS filter chains that recolor the olive envelope art

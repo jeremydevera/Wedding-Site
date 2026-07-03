@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ENV_COLORS, envColorFilter, envColorFilterFor, envCustomFilter, envSitePalette, rgbToOklchHue, hexToRgb } from "@/themes";
+import { EG_TINTS, ENV_COLORS, egCustomTintGradient, egTintGradient, egTintGradientFor, envColorFilter, envColorFilterFor, envCustomFilter, envSitePalette, rgbToOklchHue, hexToRgb } from "@/themes";
 import { DEFAULT_SETTINGS } from "@/lib/store.jsx";
 import { clientToState, stateToClientRow } from "@/lib/mappers.js";
 
@@ -72,6 +72,33 @@ describe("custom envelope color", () => {
     expect(parseFloat(m[2])).toBeLessThan(1.25);
     expect(parseFloat(m[3])).toBeGreaterThan(0.85);
     expect(parseFloat(m[3])).toBeLessThan(1.15);
+  });
+});
+
+describe("background tint presets + custom", () => {
+  it("includes the new tint presets, each a 2-stop oklch wash with a dot", () => {
+    for (const key of ["forest", "teal", "dustyblue", "midnight", "rose", "amber"]) {
+      const t = EG_TINTS[key];
+      expect(t, key).toBeTruthy();
+      expect(t.top).toMatch(/^oklch\(.+\/ 0\.\d+\)$/);
+      expect(t.bottom).toMatch(/^oklch\(.+\/ 0\.\d+\)$/);
+      expect(t.dot).toMatch(/^#[0-9a-f]{6}$/);
+      expect(egTintGradient(key)).toBe(`linear-gradient(180deg, ${t.top}, ${t.bottom})`);
+    }
+  });
+
+  it("builds a custom wash from a hex (darker toward the bottom)", () => {
+    expect(egCustomTintGradient("#41502a")).toBe("linear-gradient(180deg, rgba(65, 80, 42, 0.6), rgba(44, 54, 29, 0.8))");
+    // invalid hex falls back to the olive preset
+    expect(egCustomTintGradient("")).toBe(egTintGradient("olive"));
+    expect(egCustomTintGradient("teal")).toBe(egTintGradient("olive"));
+  });
+
+  it("egTintGradientFor dispatches preset vs custom", () => {
+    expect(egTintGradientFor("navy", "")).toBe(egTintGradient("navy"));
+    expect(egTintGradientFor("custom", "#112233")).toContain("rgba(17, 34, 51, 0.6)");
+    expect(egTintGradientFor("custom", "")).toBe(egTintGradient("olive"));
+    expect(egTintGradientFor(undefined, undefined)).toBe(egTintGradient("olive"));
   });
 });
 

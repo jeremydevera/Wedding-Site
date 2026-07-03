@@ -48,7 +48,8 @@ export const DEFAULT_SETTINGS = {
   envBgImage: "",
   envTintOn: true,
   envTint: 55,
-  envTintColor: "olive",
+  envTintColor: "olive", // EG_TINTS key, or "custom"
+  envTintCustom: "", // hex for envTintColor === "custom"
   envColor: "olive", // envelope paper color preset (ENV_COLORS key in themes/registry, or "custom")
   envColorCustom: "", // hex for envColor === "custom" (e.g. "#9e6243")
   envMatchSite: true, // site palette follows the envelope color (read as !== false)

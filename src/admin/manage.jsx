@@ -1,7 +1,7 @@
 import React from "react";
 import { go } from "@/lib/nav.js";
 import { Store, useStore } from "@/lib/store.jsx";
-import { EG_TINTS, ENV_COLORS, THEMES, THEME_FONTS, egTintGradient, envColorFilterFor, isPremiumTheme } from "@/themes";
+import { EG_TINTS, ENV_COLORS, THEMES, THEME_FONTS, egTintGradientFor, envColorFilterFor, isPremiumTheme } from "@/themes";
 import { Button, CropModal, DecorPreview, FallingFx, Field, Icon, Input, Modal, Monogram, Pager, Placeholder, SectionHead, Select, Textarea, confirmDialog, mapEmbedUrl, mapSearchUrl, toast, usePaged } from "@/ui/components.jsx";
 import { FX_LIST } from "@/lib/falling-fx.js";
 import { Home } from "@/pages/PublicPages.jsx";
@@ -1873,7 +1873,7 @@ export function SettingsAdmin() {
         <div className="panel__body">
           <div style={{ display: "flex", gap: 28, alignItems: "flex-start", flexWrap: "wrap" }}>
             <div style={{ flex: "1 1 300px", minWidth: 260, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-              <ImageUploadField purpose="envbg" label="Background image" ratio="16 / 9" defaultPreview="/assets/invite/bg-wedding.jpg" tintStrength={f.envTintOn !== false ? (f.envTint == null ? 55 : f.envTint) : 0} tintGradient={egTintGradient(f.envTintColor || "olive")}
+              <ImageUploadField purpose="envbg" label="Background image" ratio="16 / 9" defaultPreview="/assets/invite/bg-wedding.jpg" tintStrength={f.envTintOn !== false ? (f.envTint == null ? 55 : f.envTint) : 0} tintGradient={egTintGradientFor(f.envTintColor || "olive", f.envTintCustom)}
                 value={f.envBgImage} onChange={(v) => setKey("envBgImage", v)} />
               <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 10, maxWidth: 360 }}>A wide landscape photo works best — it sits behind the envelope and gently zooms when the invitation opens. Leave empty to keep the default.</p>
             </div>
@@ -1893,8 +1893,31 @@ export function SettingsAdmin() {
                       </button>
                     );
                   })}
+                  {(() => {
+                    const on = f.envTintColor === "custom";
+                    const hex = f.envTintCustom || "#41502a";
+                    return (
+                      <button type="button" disabled={f.envTintOn === false}
+                        onClick={() => { setKey("envTintColor", "custom"); if (!f.envTintCustom) setKey("envTintCustom", hex); }}
+                        style={{ display: "flex", alignItems: "center", gap: 7, padding: "6px 11px 6px 7px", borderRadius: 999, cursor: f.envTintOn === false ? "not-allowed" : "pointer",
+                          border: on ? "2px solid var(--accent)" : "1px solid var(--line)", background: on ? "color-mix(in oklch, var(--accent) 10%, var(--surface))" : "var(--surface)",
+                          opacity: f.envTintOn === false ? 0.5 : 1, font: "inherit", fontSize: 13, fontWeight: on ? 700 : 500, color: "var(--ink)" }}>
+                        <span style={{ width: 16, height: 16, borderRadius: "50%", background: on ? hex : "conic-gradient(red, yellow, lime, cyan, blue, magenta, red)", boxShadow: "inset 0 0 0 1px rgba(0,0,0,.15)" }} />
+                        Custom
+                      </button>
+                    );
+                  })()}
                 </div>
               </Field>
+              {f.envTintColor === "custom" && (
+                <Field label="Custom tint color" id="s-envtintcustom" hint="The wash is this color fading darker toward the bottom">
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <input id="s-envtintcustom" type="color" value={f.envTintCustom || "#41502a"} disabled={f.envTintOn === false} onChange={(e) => setKey("envTintCustom", e.target.value)}
+                      style={{ width: 52, height: 36, padding: 2, border: "1px solid var(--line)", borderRadius: 8, background: "var(--surface)", cursor: "pointer" }} />
+                    <code style={{ fontSize: 13, color: "var(--ink-soft)" }}>{f.envTintCustom || "#41502a"}</code>
+                  </div>
+                </Field>
+              )}
               <Field label={`Tint strength — ${f.envTint == null ? 55 : f.envTint}%`} id="s-envtint" hint="0% shows the bare photo, 100% is a deep wash">
                 <input id="s-envtint" type="range" min="0" max="100" step="5" value={f.envTint == null ? 55 : f.envTint} disabled={f.envTintOn === false} onChange={(e) => setKey("envTint", parseInt(e.target.value, 10))} style={{ width: "100%", accentColor: "var(--accent)" }} />
               </Field>
