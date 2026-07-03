@@ -51,7 +51,7 @@ function donutConfig(labels, values, colors) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      cutout: "72%",
+      cutout: "62%",
       layout: { padding: 6 }, // room for hoverOffset so slices don't clip
       plugins: {
         legend: {
