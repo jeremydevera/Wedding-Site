@@ -437,3 +437,66 @@ export async function selfSignup({ email, password, partnerA, partnerB, weddingD
   if (data && data.error) throw new Error(data.error);
   return data; // { ok, subdomain, clientId }
 }
+
+// --- Prospect intake (/apply wizard + superadmin Requests inbox) -------------
+export async function checkRequestSubdomainFree(subdomain) {
+  const { data, error } = await supabase.functions.invoke("site-request", {
+    body: { action: "check_subdomain", subdomain },
+  });
+  if (error) throw error;
+  return !!(data && data.available);
+}
+
+export async function submitSiteRequest({ email, partnerA, partnerB, subdomain, templateKey, content }) {
+  const { data, error } = await supabase.functions.invoke("site-request", {
+    body: { email, partnerA, partnerB, subdomain, templateKey, content },
+  });
+  if (error) {
+    let msg = "Could not submit your request.";
+    try { const j = await error.context.json(); if (j && j.error) msg = j.error; } catch (_) {}
+    throw new Error(msg);
+  }
+  if (data && data.error) throw new Error(data.error);
+  return data; // { ok, id }
+}
+
+// Superadmin: list + resolve intake requests (RLS-gated to superadmin).
+export async function listSiteRequests() {
+  const { data, error } = await supabase.from("site_requests").select("*").order("created_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function setSiteRequestStatus(id, status) {
+  const { error } = await supabase.from("site_requests").update({ status }).eq("id", id);
+  if (error) throw error;
+}
+
+// Superadmin approve: create the client site from a request's payload, then
+// mark the request approved. Owner credentials are set afterwards with the
+// existing Credentials tool in the Clients tab.
+export async function approveSiteRequest(reqRow) {
+  const c = reqRow.content || {};
+  const content = {
+    partnerA: reqRow.partner_a,
+    partnerB: reqRow.partner_b,
+    hashtag: `#${(reqRow.partner_a + "And" + reqRow.partner_b).replace(/[^A-Za-z0-9]/g, "")}`,
+    ...(c.weddingDate ? { weddingDate: c.weddingDate } : {}),
+    ...(c.weddingDateLabel ? { weddingDateLabel: c.weddingDateLabel } : {}),
+    ...(c.venueName ? { venueName: c.venueName } : {}),
+    ...(c.venueAddress ? { venueAddress: c.venueAddress } : {}),
+    ...(c.mapQuery ? { mapQuery: c.mapQuery } : {}),
+    ...(c.mapLat != null ? { mapLat: c.mapLat } : {}),
+    ...(c.mapLng != null ? { mapLng: c.mapLng } : {}),
+    ...(Array.isArray(c.schedule) && c.schedule.length ? { schedule: c.schedule } : {}),
+    ...(Array.isArray(c.entourage) && c.entourage.length ? { entourage: c.entourage } : {}),
+    strictRsvp: c.strictRsvp === true,
+    onboarded: true, // they already provided setup via the wizard
+  };
+  const { data: created, error } = await supabase.from("clients")
+    .insert({ subdomain: reqRow.subdomain, event_type: "wedding", template_key: reqRow.template_key || "classic", owner_email: reqRow.email, content })
+    .select("id").single();
+  if (error) throw error;
+  await setSiteRequestStatus(reqRow.id, "approved");
+  return created;
+}

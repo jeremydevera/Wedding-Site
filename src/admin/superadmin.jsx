@@ -6,7 +6,7 @@ import { themesForEvent } from "@/config/eventTypes.js";
 import { moduleLabel } from "@/lib/roles.js";
 import { PLATFORM_DOMAIN, clientUrl, isValidSubdomain } from "@/config/site.js"; // platform config → src/config/site.js
 import { Button, confirmDialog, Field, Icon, Input, Pager, Select, Textarea, toast, usePaged } from "@/ui/components.jsx";
-import { listMedia, deleteFromR2 } from "@/lib/api.js";
+import { listMedia, deleteFromR2, listSiteRequests, approveSiteRequest, setSiteRequestStatus } from "@/lib/api.js";
 import { fileNameFromKey } from "@/lib/mediaLibrary.js";
 import { mediaUrl } from "@/lib/media.js";
 const { useState, useEffect, useRef } = React;
@@ -98,10 +98,13 @@ export function ClientsAdmin() {
   const [editForm, setEditForm] = useState({ subdomain: "", ownerEmail: "", ownerPassword: "", modules: {}, note: "" });
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState("");
+  const [requests, setRequests] = useState([]);     // prospect intake (/apply) awaiting approval
+  const [reqOpen, setReqOpen] = useState(null);      // expanded request id
 
   async function load() {
     const { data } = await supabase.from("clients").select("*").order("created_at", { ascending: false });
     setClients(data || []);
+    try { setRequests(await listSiteRequests()); } catch (_) { /* non-superadmin or table missing */ }
     // Notes live in a superadmin-only table (never exposed to anon/owners).
     const { data: nd } = await supabase.from("client_notes").select("client_id,note");
     setNotes(Object.fromEntries((nd || []).map((r) => [r.client_id, r.note || ""])));
@@ -259,10 +262,73 @@ export function ClientsAdmin() {
   return (
     <div className="sa">
       <div className="sa-tabs">
-        <button className={view === "list" || view === "edit" ? "on" : ""} onClick={() => { setEditing(null); setView("list"); }}>Clients</button>
-        <button className={view === "add" ? "on" : ""} onClick={() => setView("add")}>Add client</button>
+        {/* "Add client" is the toolbar button on the list — no duplicate tab */}
+        <button className={view === "list" || view === "edit" || view === "add" ? "on" : ""} onClick={() => { setEditing(null); setView("list"); }}>Clients</button>
         <button className={view === "owner" ? "on" : ""} onClick={() => setView("owner")}>Owner login</button>
+        <button className={view === "requests" ? "on" : ""} onClick={() => setView("requests")}>
+          Requests{requests.filter((r) => r.status === "pending").length > 0 ? ` (${requests.filter((r) => r.status === "pending").length})` : ""}
+        </button>
       </div>
+
+      {view === "requests" && (
+        <div className="panel">
+          <div className="panel__head"><div className="panel__title">Site requests</div><span style={{ color: "var(--muted)", fontSize: 13 }}>Submitted from the /apply wizard — approve to create the site</span></div>
+          <div className="panel__body--flush table-wrap">
+            <table className="tbl">
+              <thead><tr><th>Couple</th><th>Site address</th><th>Email</th><th>Theme</th><th>RSVP</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                {requests.map((r) => (
+                  <React.Fragment key={r.id}>
+                    <tr>
+                      <td><strong>{r.partner_a} & {r.partner_b}</strong></td>
+                      <td className="client-domain">{r.subdomain}.celebrately.us</td>
+                      <td>{r.email}</td>
+                      <td>{r.template_key}</td>
+                      <td>{r.content && r.content.strictRsvp ? "Strict" : "Open"}</td>
+                      <td><span className={"tag " + (r.status === "pending" ? "tag--maybe" : r.status === "approved" ? "tag--attending" : "tag--not_attending")}>{r.status}</span></td>
+                      <td>
+                        <div className="row-actions">
+                          <button className="icon-btn" title="Details" onClick={() => setReqOpen(reqOpen === r.id ? null : r.id)}>{Icon.eye({})}</button>
+                          {r.status === "pending" && (
+                            <>
+                              <Button variant="primary" size="sm" disabled={busy} onClick={async () => {
+                                const ok = await confirmDialog({ title: "Approve this site?", message: `Create ${r.subdomain}.celebrately.us for ${r.partner_a} & ${r.partner_b}? You'll still need to set the owner's login in Owner login.`, confirmLabel: "Approve & create" });
+                                if (!ok) return;
+                                setBusy(true);
+                                try { await approveSiteRequest(r); toast("Site created — set the owner's login next", "success"); await load(); }
+                                catch (e) { toast("Approve failed: " + (e.message || "error"), "err"); }
+                                finally { setBusy(false); }
+                              }}>Approve</Button>
+                              <Button variant="ghost" size="sm" disabled={busy} onClick={async () => {
+                                const ok = await confirmDialog({ title: "Reject this request?", message: `Reject the request for ${r.subdomain}.celebrately.us?`, confirmLabel: "Reject", danger: true });
+                                if (!ok) return;
+                                try { await setSiteRequestStatus(r.id, "rejected"); await load(); } catch (e) { toast("Failed: " + (e.message || "error"), "err"); }
+                              }}>Reject</Button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    {reqOpen === r.id && (
+                      <tr><td colSpan={7} style={{ background: "var(--surface-2)" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "8px 18px", padding: "12px 6px", fontSize: 13 }}>
+                          <span style={{ color: "var(--muted)" }}>Date</span><span>{(r.content && r.content.weddingDateLabel) || "Not set"}</span>
+                          <span style={{ color: "var(--muted)" }}>Venue</span><span>{[r.content && r.content.venueName, r.content && r.content.venueAddress].filter(Boolean).join(" — ") || "Not set"}</span>
+                          <span style={{ color: "var(--muted)" }}>Map pin</span><span>{r.content && r.content.mapQuery ? `${r.content.mapQuery} (${r.content.mapLat}, ${r.content.mapLng})` : "Not pinned"}</span>
+                          <span style={{ color: "var(--muted)" }}>Schedule</span><span>{Array.isArray(r.content && r.content.schedule) && r.content.schedule.length ? r.content.schedule.map((x) => `${x.time} ${x.title}`).join(" · ") : "None"}</span>
+                          <span style={{ color: "var(--muted)" }}>Entourage</span><span>{Array.isArray(r.content && r.content.entourage) && r.content.entourage.length ? r.content.entourage.map((g) => `${g.title} (${g.people.length})`).join(" · ") : "Skipped"}</span>
+                          <span style={{ color: "var(--muted)" }}>Submitted</span><span>{new Date(r.created_at).toLocaleString()}</span>
+                        </div>
+                      </td></tr>
+                    )}
+                  </React.Fragment>
+                ))}
+                {requests.length === 0 && <tr><td colSpan={7} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>No requests yet — share celebrately.us/apply with a prospect.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {view === "list" && (
         <div>
@@ -273,7 +339,7 @@ export function ClientsAdmin() {
           <div className="panel" style={{ marginBottom: 10 }}>
             <div className="panel__body--flush table-wrap">
               <table className="tbl tbl--clients">
-                <thead><tr><th>Client</th><th>Theme</th><th>Owner login</th><th>Actions</th></tr></thead>
+                <thead><tr><th>Client</th><th>Theme</th><th>Owner login</th><th>Notes</th><th>Actions</th></tr></thead>
                 <tbody>
                   {pg.pageItems.map((c) => (
                     <tr key={c.id}>
@@ -283,12 +349,14 @@ export function ClientsAdmin() {
                           <div>
                             <strong>{c.subdomain}</strong>{!c.is_active && <span className="tag tag--hidden" style={{ marginLeft: 8 }}>Disabled</span>}
                             <div className="client-domain">{c.custom_domain || `${c.subdomain}.${PLATFORM_DOMAIN}`}</div>
-                            {notes[c.id] ? <div className="client-note" title={notes[c.id]}>{Icon.edit({ style: { width: 12, height: 12, opacity: 0.6 } })} {notes[c.id]}</div> : null}
                           </div>
                         </div>
                       </td>
                       <td className="theme-cell"><Select value={c.template_key} onChange={(e) => assignTheme(c.id, e.target.value)}>{themesForEvent(c.event_type).filter((k) => THEMES[k]).map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}</Select></td>
                       <td>{c.owner_email ? <span className="client-domain">{c.owner_email}</span> : <span style={{ color: "var(--muted)" }}>—</span>}</td>
+                      <td style={{ maxWidth: 180 }}>{notes[c.id]
+                        ? <span title={notes[c.id]} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{notes[c.id]}</span>
+                        : <span style={{ color: "var(--muted)" }}>—</span>}</td>
                       <td>
                         <div className="row-actions">
                           <button className={"icon-btn" + (c.is_active ? "" : " icon-btn--danger")} onClick={() => toggleActive(c)} title={c.is_active ? "Disable access (take site offline)" : "Enable access (put site live)"} aria-pressed={c.is_active}>

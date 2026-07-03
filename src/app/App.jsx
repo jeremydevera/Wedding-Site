@@ -16,6 +16,7 @@ import { GuestbookPage, QuizPage } from "@/features/social.jsx";
 import { MusicMount } from "@/features/music.jsx";
 import { AdminApp, ImageUploadField } from "@/admin/manage.jsx";
 import { RegisterPage } from "@/admin/register.jsx";
+import { ApplyWizard } from "@/admin/apply.jsx";
 import { hasSection } from "@/config/eventTypes.js";
 import { moduleEnabled, moduleLabel } from "@/lib/roles.js";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
@@ -395,6 +396,10 @@ export function App() {
   // Public self-serve signup lives on the apex hub only (/register).
   if (isAdmin && resolveSubdomain() === null && /^\/register\/?$/.test(window.location.pathname)) {
     return (<><RegisterPage /><ToastHost /><ConfirmHost /></>);
+  }
+  // Prospect intake wizard (link sent to possible clients) — apex /apply.
+  if (isAdmin && resolveSubdomain() === null && /^\/apply\/?$/.test(window.location.pathname)) {
+    return (<><ApplyWizard /><ToastHost /><ConfirmHost /></>);
   }
   // BUG-0005: a switched-off section used to silently render Home. Show a short
   // "not available" note instead so the guest knows the link isn't broken.
