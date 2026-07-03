@@ -348,7 +348,7 @@ export function ApplyWizard({ initial = null, onSave, onCancel }) {
             <div className="signin__form apply-done" style={{ textAlign: "center" }}>
               <div className="apply-done__badge">{Icon.check({ style: { width: 30, height: 30 } })}</div>
               <h1 className="signin__title">Request sent!</h1>
-              <p className="signin__sub">Thanks, {f.partnerA}! We'll review your setup and email you at <strong>{f.email}</strong> once <strong>{f.subdomain}.celebrately.us</strong> is approved.</p>
+              <p className="signin__sub">Thanks! We'll review your setup and email you at <strong>{f.email}</strong> once <strong>{f.subdomain}.celebrately.us</strong> is approved.</p>
             </div>
           </div>
         </div>
