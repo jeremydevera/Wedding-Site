@@ -297,17 +297,28 @@ export function EnvelopeInvite() {
 export function Home() {
   const { settings, story, schedule, entourage, attire, playlist, venues } = useStore();
   const s = settings;
-  // Home map shows ONE chosen venue (homeVenueId, else the first) and the tiles
-  // the owner picked for home (homeCardIds; empty = none, matching the old home).
-  const homeVenue = (venues || []).find((v) => v.id === s.homeVenueId) || (venues || [])[0] || null;
-  const mapQuery = homeVenue ? ((homeVenue.mapQuery && homeVenue.mapQuery.trim()) || homeVenue.address) : ((s.mapQuery && s.mapQuery.trim()) || s.venueAddress);
-  const homeMapLat = homeVenue ? homeVenue.mapLat : s.mapLat;
-  const homeMapLng = homeVenue ? homeVenue.mapLng : s.mapLng;
-  const homeMapUrl = mapEmbedUrl(mapQuery, homeMapLat, homeMapLng);
-  const homeMapAddr = (homeVenue && (homeVenue.address || homeVenue.name)) || s.venueAddress || s.venueName;
-  // Tiles under the home map: all of the chosen venue's tiles when the owner
-  // turned them on, otherwise none (map only).
-  const homeCards = (homeVenue && s.homeShowTiles) ? (homeVenue.cards || []).filter((c) => (c.t || "").trim() || (c.d || "").trim()) : [];
+  // Home maps: every venue the owner ticked (homeVenueIds, in venue-list order).
+  // Legacy fallback: homeVenueId, else the first venue; no venues at all falls
+  // back to the flat settings map. Each entry renders its own map block, plus
+  // its tiles when homeShowTiles is on.
+  const homeVenues = (() => {
+    const list = venues || [];
+    const picked = Array.isArray(s.homeVenueIds)
+      ? list.filter((v) => s.homeVenueIds.includes(v.id))
+      : (() => { const one = list.find((v) => v.id === s.homeVenueId) || list[0]; return one ? [one] : []; })();
+    if (picked.length) return picked;
+    const q = (s.mapQuery && s.mapQuery.trim()) || s.venueAddress;
+    return q ? [{ id: "legacy", mapQuery: q, mapLat: s.mapLat, mapLng: s.mapLng, address: s.venueAddress || s.venueName, cards: [] }] : [];
+  })();
+  const homeMaps = homeVenues.map((v) => {
+    const q = (v.mapQuery && v.mapQuery.trim()) || v.address;
+    return {
+      id: v.id, query: q, lat: v.mapLat, lng: v.mapLng,
+      url: mapEmbedUrl(q, v.mapLat, v.mapLng),
+      addr: v.address || v.name || "",
+      cards: s.homeShowTiles ? (v.cards || []).filter((c) => (c.t || "").trim() || (c.d || "").trim()) : [],
+    };
+  }).filter((m) => m.url);
 
   // replay the "Will you be there?" rise-in every time it scrolls into view
   React.useEffect(() => {
@@ -392,30 +403,34 @@ export function Home() {
 
       {/* MAP — venue location right after the invitation (map only, framed).
           Hidden when the Venue module is off (matches nav + /venue route). */}
-      {moduleEnabled(s.modules, "venue") && s.showMap !== false && homeMapUrl && (
+      {moduleEnabled(s.modules, "venue") && s.showMap !== false && homeMaps.length > 0 && (
         <section className="block" id="home-map">
           <div className="container">
             <SectionHead center eyebrow="The Venue" title="Where we'll celebrate" />
-            <div className="home-map">
-              <iframe className="home-map__frame" title="Venue map" src={homeMapUrl} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
-              <div className="home-map__bar">
-                <div className="home-map__where">
-                  <span className="home-map__pin">{Icon.pin({})}</span>
-                  <div className="home-map__addr">{homeMapAddr}</div>
+            {homeMaps.map((m, mi) => (
+              <React.Fragment key={m.id || mi}>
+                <div className="home-map" style={mi > 0 ? { marginTop: 28 } : undefined}>
+                  <iframe className="home-map__frame" title={m.addr ? `Map — ${m.addr}` : "Venue map"} src={m.url} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
+                  <div className="home-map__bar">
+                    <div className="home-map__where">
+                      <span className="home-map__pin">{Icon.pin({})}</span>
+                      <div className="home-map__addr">{m.addr}</div>
+                    </div>
+                    <div className="home-map__actions">
+                      <Button variant="ghost" size="sm" onClick={() => go("venue")}>See full details</Button>
+                      <Button variant="primary" size="sm" onClick={() => window.open(mapDirUrl(m.query, m.lat, m.lng), "_blank")}>{Icon.pin({})} Get directions</Button>
+                    </div>
+                  </div>
                 </div>
-                <div className="home-map__actions">
-                  <Button variant="ghost" size="sm" onClick={() => go("venue")}>See full details</Button>
-                  <Button variant="primary" size="sm" onClick={() => window.open(mapDirUrl(mapQuery, homeMapLat, homeMapLng), "_blank")}>{Icon.pin({})} Get directions</Button>
-                </div>
-              </div>
-            </div>
-            {homeCards.length > 0 && (
-              <div className="info-grid info-grid--3" style={{ marginTop: 22 }}>
-                {homeCards.map((n, i) => (
-                  <div className="card info-card" key={n.id || i}><h3>{n.t}</h3><p>{n.d}</p></div>
-                ))}
-              </div>
-            )}
+                {m.cards.length > 0 && (
+                  <div className="info-grid info-grid--3" style={{ marginTop: 22 }}>
+                    {m.cards.map((n, i) => (
+                      <div className="card info-card" key={n.id || i}><h3>{n.t}</h3><p>{n.d}</p></div>
+                    ))}
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
           </div>
         </section>
       )}

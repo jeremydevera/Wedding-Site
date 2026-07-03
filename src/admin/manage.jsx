@@ -1493,20 +1493,39 @@ export function VenueAdmin({ section = "editor", headRight = null }) {
 
   // ---- Home-map selection only (rendered in the Home → Google Maps tab) ----
   if (section === "home") {
-    const homeVenue = list.find((v) => v.id === settings.homeVenueId) || list[0] || null;
+    // Selected venue ids for the home page. homeVenueIds (array) is the source
+    // of truth; legacy fallback = homeVenueId, else the first venue.
+    const selIds = Array.isArray(settings.homeVenueIds)
+      ? settings.homeVenueIds
+      : (settings.homeVenueId ? [settings.homeVenueId] : (list[0] ? [list[0].id] : []));
+    const toggleVenue = (id, on) => {
+      const next = on ? [...new Set([...selIds, id])] : selIds.filter((x) => x !== id);
+      Store.updateSettings({ homeVenueIds: next });
+    };
+    const selCount = list.filter((v) => selIds.includes(v.id)).length;
     return (
       <div className="panel">
         <div className="panel__head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}><div className="panel__title">Home page map</div>{headRight}</div>
         <div className="panel__body">
-          <Field label="Map to show on home" id="home-venue">
-            <Select id="home-venue" value={homeVenue ? homeVenue.id : ""} onChange={(e) => Store.updateSettings({ homeVenueId: e.target.value })}>
-              {list.map((v, i) => <option key={v.id || i} value={v.id}>{v.name || v.address || `Location ${i + 1}`}</option>)}
-            </Select>
+          <Field label={`Maps to show on home (${selCount} of ${list.length})`} id="home-venues">
+            <div id="home-venues" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {list.map((v, i) => {
+                const on = selIds.includes(v.id);
+                return (
+                  <label key={v.id || i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", border: "1px solid var(--line)", borderRadius: 10, cursor: "pointer", background: on ? "color-mix(in srgb, var(--accent) 6%, var(--surface))" : "var(--surface)" }}>
+                    <input type="checkbox" checked={on} onChange={(e) => toggleVenue(v.id, e.target.checked)} style={{ accentColor: "var(--accent)" }} />
+                    <span style={{ fontWeight: 600 }}>{v.name || v.address || `Location ${i + 1}`}</span>
+                    {v.address && v.name && <span style={{ color: "var(--muted)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.address}</span>}
+                  </label>
+                );
+              })}
+              {list.length === 0 && <div style={{ color: "var(--muted)", fontSize: 14 }}>No locations yet — add them in the Venue &amp; Map tab.</div>}
+            </div>
           </Field>
           <div style={{ marginTop: 4 }}>
             <AdminToggle
-              label="Show this location's tiles under the home map"
-              desc={homeVenue ? `Turns the ${(homeVenue.cards || []).length} tile${(homeVenue.cards || []).length === 1 ? "" : "s"} for “${homeVenue.name || homeVenue.address || "this location"}” on or off on the home page. Off = map only.` : "Off = map only."}
+              label="Show each location's tiles under its map"
+              desc="Off = maps only."
               checked={settings.homeShowTiles === true}
               onChange={(v) => Store.updateSettings({ homeShowTiles: v })}
             />

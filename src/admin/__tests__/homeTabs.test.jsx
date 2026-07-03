@@ -65,7 +65,7 @@ describe("Home tab — folder sub-tabs", () => {
     clickByText(container, ".folders .folder", "Google Maps");
     expect(hasSwitch(container, "Show map on the home page")).toBe(true);
     expect(container.textContent).toMatch(/Home page map/);
-    expect(container.textContent).toMatch(/Map to show on home/);
+    expect(container.textContent).toMatch(/Maps to show on home/);
     expect(hasButton(container, "Save changes")).toBe(true);
 
     // Timeline → vertical/horizontal layout picker

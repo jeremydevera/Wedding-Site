@@ -56,9 +56,11 @@ export const DEFAULT_SETTINGS = {
   envTitleSize: 5, // envelope cover title size, 1–10 scale; maps to a cqw fraction that scales with the envelope
   arrangeEnabled: false,
   mapQuery: "Lipa, Batangas, Philippines",
-  // Home map: which venue's map shows on the home page (homeVenueId "" = the
-  // first venue), and whether that venue's tiles appear under it. Default off =
-  // map only, matching the pre-venues home page.
+  // Home maps: which venues' maps show on the home page. homeVenueIds is the
+  // source of truth (array of venue ids, in venue-list order); null = legacy
+  // fallback to homeVenueId ("" = the first venue). homeShowTiles: whether each
+  // shown venue's tiles appear under its map. Default off = maps only.
+  homeVenueIds: null,
   homeVenueId: "",
   homeShowTiles: false,
   // Home-page section visibility (toggled in the admin Home tab). Default on;
