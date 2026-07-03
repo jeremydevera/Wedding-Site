@@ -264,8 +264,8 @@ function DevicePlayer({ tracks }) {
             </div>
 
             <div className="dp-wheel">
-              <div className={"dp-overlay" + (tilt ? " " + tilt : "")} onMouseLeave={clearWheel} onMouseUp={clearWheel}>
-                <button className="dp-w dp-up" aria-label="Volume up" disabled={!many && false}
+              <div className={"dp-overlay" + (tilt ? " " + tilt : "")} onPointerUp={clearWheel} onPointerLeave={clearWheel} onPointerCancel={clearWheel}>
+                <button className="dp-w dp-up" aria-label="Volume up"
                   onPointerDown={() => setTilt("up")} onClick={() => bumpVolume(0.1)}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M13 4a1 1 0 0 0-2 0v7H4a1 1 0 1 0 0 2h7v7a1 1 0 1 0 2 0v-7h7a1 1 0 1 0 0-2h-7z" /></svg>
                 </button>
