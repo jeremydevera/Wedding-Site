@@ -188,23 +188,38 @@ export function AdminDashboard({ goTab }) {
   // Hide a section's dashboard card when its module is switched off in Settings.
   const gbOn = moduleEnabled(settings.modules, "guestbook");
   const quizOn = moduleEnabled(settings.modules, "quiz");
-  // Small real "trend"-style pill per tile (no fake week-over-week data).
-  const gbPending = guestbook.filter((g) => g.status === "pending").length;
-  const quizAvg = quizSubs.length ? Math.round(quizSubs.reduce((s, q) => s + (q.total ? q.score / q.total : 0), 0) / quizSubs.length * 100) : 0;
-  const totalResponses = rsvps.length;
+  // Real week-over-week trend per tile: activity in the last 7 days vs the 7
+  // days before, shown as an up/down percentage pill ("↗ +10%" / "↘ -7%" /
+  // "− steady") like the Adminator reference.
+  const trendOf = (list, weigh = () => 1) => {
+    const WK = 7 * 86400000, now = Date.now();
+    const tally = (from, to) => (list || []).reduce((s, x) => (x.createdAt > from && x.createdAt <= to ? s + weigh(x) : s), 0);
+    const cur = tally(now - WK, now), prev = tally(now - 2 * WK, now - WK);
+    if (!prev && !cur) return { pill: "− steady", tone: "flat" };
+    if (!prev) return { pill: `↗ +${cur} new`, tone: "up" };
+    const pct = Math.round(((cur - prev) / prev) * 100);
+    if (pct > 0) return { pill: `↗ +${pct}%`, tone: "up" };
+    if (pct < 0) return { pill: `↘ ${pct}%`, tone: "down" };
+    return { pill: "− steady", tone: "flat" };
+  };
+  const attendingRaw = rsvps.filter((r) => r.status === "attending");
+  const tRsvps  = trendOf(attendingRaw);
+  const tGuests = trendOf(attendingRaw, (r) => headsOf(r));
+  const tGb     = trendOf(guestbook);
+  const tQuiz   = trendOf(quizSubs);
   const stats = [
     // "RSVPs" headline = ATTENDING total only (owner request) — in strict mode
     // read from the one reconcileGuests summary (same field the Guests tab's
     // Attending folder counts, so they can never disagree). Sub is just
     // "confirmed"; maybe/declined/for-approval live in the Guests tab folders.
-    { label: "RSVPs", value: strict ? recon.summary.attending : attending.length, sub: "confirmed", tab: "rsvps", icon: "check", accent: "success", pill: `${totalResponses} total` },
-    { label: "Total Guests", value: guestCount, sub: "people coming", tab: "rsvps", icon: "user", accent: "info", pill: `${attending.length} ${attending.length === 1 ? "party" : "parties"}` },
+    { label: "RSVPs", value: strict ? recon.summary.attending : attending.length, sub: "confirmed", tab: "rsvps", icon: "check", accent: "success", pill: tRsvps.pill, tone: tRsvps.tone },
+    { label: "Total Guests", value: guestCount, sub: "people coming", tab: "rsvps", icon: "user", accent: "info", pill: tGuests.pill, tone: tGuests.tone },
     ...(mediaShelved ? [] : [
       { label: "Photos", value: photos.length, sub: pendingMedia.length ? `${pendingMedia.length} to review` : "all clear", tab: "media", icon: "camera", accent: "purple", pill: pendingMedia.length ? `${pendingMedia.length} new` : null },
       { label: "Videos", value: videos.length, sub: "uploaded", tab: "media", icon: "play", accent: "amber", pill: null },
     ]),
-    ...(gbOn ? [{ label: "Guestbook", value: guestbook.length, sub: "messages", tab: "guestbook", icon: "book", accent: "purple", pill: gbPending > 0 ? `${gbPending} pending` : "up to date" }] : []),
-    ...(quizOn ? [{ label: "Quiz Plays", value: quizSubs.length, sub: "submissions", tab: "quiz", icon: "quiz", accent: "amber", pill: quizSubs.length ? `${quizAvg}% avg` : null }] : []),
+    ...(gbOn ? [{ label: "Guestbook", value: guestbook.length, sub: "messages", tab: "guestbook", icon: "book", accent: "purple", pill: tGb.pill, tone: tGb.tone }] : []),
+    ...(quizOn ? [{ label: "Quiz Plays", value: quizSubs.length, sub: "submissions", tab: "quiz", icon: "quiz", accent: "amber", pill: tQuiz.pill, tone: tQuiz.tone }] : []),
   ];
   const recentRsvps = rsvps.slice(0, 5);
   const recentMedia = media.slice(0, 6);
@@ -218,7 +233,7 @@ export function AdminDashboard({ goTab }) {
             <div className="kpi__top">
               <span className="kpi__chip" aria-hidden="true">{Icon[s.icon] ? Icon[s.icon]({}) : null}</span>
               <span className="kpi__label">{s.label}</span>
-              {s.pill && <span className="kpi__pill">{s.pill}</span>}
+              {s.pill && <span className={"kpi__pill" + (s.tone ? " kpi__pill--" + s.tone : "")}>{s.pill}</span>}
             </div>
             <div className="kpi__value">{s.value}</div>
             <div className="kpi__foot"><span className="kpi__tick" aria-hidden="true" />{s.sub}</div>
