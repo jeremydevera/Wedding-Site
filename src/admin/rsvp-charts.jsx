@@ -54,11 +54,7 @@ function donutConfig(labels, values, colors) {
       cutout: "62%",
       layout: { padding: 6 }, // room for hoverOffset so slices don't clip
       plugins: {
-        legend: {
-          display: true,
-          position: "right",
-          labels: { usePointStyle: true, pointStyle: "circle", boxWidth: 8, boxHeight: 8, padding: 18, color: "#64748B", font: { size: 14 } },
-        },
+        legend: { display: false }, // HTML legend beside the chart (aligned counts)
         tooltip: { ...TIP, callbacks: { label: (c) => ` ${c.label}: ${c.parsed}` } },
       },
       animation: { duration: 900, easing: "easeInOutQuart" },
@@ -66,7 +62,7 @@ function donutConfig(labels, values, colors) {
   };
 }
 
-function DonutCard({ eyebrow, title, badge, canvasRef, hasData, empty }) {
+function DonutCard({ eyebrow, title, badge, canvasRef, hasData, empty, legend }) {
   return (
     <div className="rsvp-chart-card">
       <div className="rsvp-chart-card__head">
@@ -76,9 +72,22 @@ function DonutCard({ eyebrow, title, badge, canvasRef, hasData, empty }) {
         </div>
         {badge && <span className="rsvp-chart-card__badge">{badge}</span>}
       </div>
-      {hasData
-        ? <div className="rsvp-donut-wrap"><canvas ref={canvasRef} /></div>
-        : <div className="rsvp-chart-empty">{empty}</div>}
+      {hasData ? (
+        <div className="rsvp-chart-body">
+          <div className="rsvp-donut-wrap"><canvas ref={canvasRef} /></div>
+          <div className="rsvp-chart-legend">
+            {(legend || []).map(([l, c, v]) => (
+              <div key={l} className="rsvp-legend-row">
+                <span className="rsvp-legend-dot" style={{ background: c }} />
+                <span className="rsvp-legend-label">{l}:</span>
+                <span className="rsvp-legend-val">{v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="rsvp-chart-empty">{empty}</div>
+      )}
     </div>
   );
 }
@@ -94,13 +103,13 @@ export function RsvpCharts({ rsvps }) {
   const dietRef   = useRef(null);
 
   useChart(statusRef, () => donutConfig(
-    [`Attending  ${stats.attendingParties}`, `Maybe  ${stats.maybe}`, `Declined  ${stats.declined}`],
+    ["Attending", "Maybe", "Declined"],
     [stats.attendingParties, stats.maybe, stats.declined],
     STATUS_COLORS,
   ), [stats.attendingParties, stats.maybe, stats.declined]);
 
   useChart(dietRef, () => donutConfig(
-    dietEntries.map(([k, v]) => `${k}  ${v}`),
+    dietEntries.map(([k]) => k),
     dietEntries.map(([, v]) => v),
     dietEntries.map((_, i) => DIET_COLORS[i % DIET_COLORS.length]),
   ), [dietEntries]);
@@ -115,12 +124,18 @@ export function RsvpCharts({ rsvps }) {
           canvasRef={statusRef}
           hasData
           empty="No RSVPs yet"
+          legend={[
+            ["Attending", STATUS_COLORS[0], stats.attendingParties],
+            ["Maybe", STATUS_COLORS[1], stats.maybe],
+            ["Declined", STATUS_COLORS[2], stats.declined],
+          ]}
         />
         <DonutCard
           eyebrow="Guests" title="Dietary needs"
           canvasRef={dietRef}
           hasData={dietEntries.length > 0}
           empty="No special requirements noted"
+          legend={dietEntries.map(([k, v], i) => [k, DIET_COLORS[i % DIET_COLORS.length], v])}
         />
       </div>
     </div>
