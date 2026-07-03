@@ -5,7 +5,7 @@ import { THEMES } from "@/themes";
 import { themesForEvent } from "@/config/eventTypes.js";
 import { moduleLabel } from "@/lib/roles.js";
 import { PLATFORM_DOMAIN, clientUrl, isValidSubdomain } from "@/config/site.js"; // platform config → src/config/site.js
-import { Button, confirmDialog, Field, Icon, Input, Pager, Select, Textarea, toast, usePaged } from "@/ui/components.jsx";
+import { Button, confirmDialog, Field, Icon, Input, Modal, Pager, SectionHead, Select, Textarea, toast, usePaged } from "@/ui/components.jsx";
 import { listMedia, deleteFromR2, listSiteRequests, approveSiteRequest, setSiteRequestStatus } from "@/lib/api.js";
 import { fileNameFromKey } from "@/lib/mediaLibrary.js";
 import { mediaUrl } from "@/lib/media.js";
@@ -106,6 +106,7 @@ export function ClientsAdmin() {
   const [q, setQ] = useState("");
   const [requests, setRequests] = useState([]);     // prospect intake (/apply) awaiting approval
   const [reqOpen, setReqOpen] = useState(null);      // expanded request id
+  const [info, setInfo] = useState(null);            // client shown in the info modal (eye icon)
 
   async function load() {
     const { data } = await supabase.from("clients").select("*").order("created_at", { ascending: false });
@@ -134,6 +135,13 @@ export function ClientsAdmin() {
         message: `Take "${c.subdomain}" offline? Guests visiting the site won't be able to load it until you re-enable access. Nothing is deleted.`,
         confirmLabel: "Disable access",
         danger: true,
+      });
+      if (!ok) return;
+    } else {
+      const ok = await confirmDialog({
+        title: "Enable this client?",
+        message: `Put "${c.subdomain}" live? Guests will be able to load the site again right away.`,
+        confirmLabel: "Enable access",
       });
       if (!ok) return;
     }
@@ -204,7 +212,7 @@ export function ClientsAdmin() {
   function openEdit(c) {
     setEditing(c);
     setEditForm({ subdomain: c.subdomain, ownerEmail: c.owner_email || "", ownerPassword: "", modules: Object.fromEntries(MODULES.map((m) => [m, c.content?.modules?.[m] !== false])), note: notes[c.id] || "" });
-    setView("edit");
+    // renders as a Modal over the list — no page swap
   }
   async function saveEdit(e) {
     e.preventDefault();
@@ -235,7 +243,7 @@ export function ClientsAdmin() {
       }
       toast("Client updated");
     } catch (e2) { toast("Saved client info."); edgeOrToast(e2); }
-    setBusy(false); setEditing(null); await load(); setView("list");
+    setBusy(false); setEditing(null); await load();
   }
 
   async function deleteClient(c) {
@@ -267,12 +275,13 @@ export function ClientsAdmin() {
 
   return (
     <div className="sa">
-      <div className="sa-tabs">
-        {/* "Add client" is the toolbar button on the list — no duplicate tab */}
-        <button className={view === "list" || view === "edit" || view === "add" ? "on" : ""} onClick={() => { setEditing(null); setView("list"); }}>Clients</button>
-        <button className={view === "owner" ? "on" : ""} onClick={() => setView("owner")}>Owner login</button>
-        <button className={view === "requests" ? "on" : ""} onClick={() => setView("requests")}>
-          Requests{requests.filter((r) => r.status === "pending").length > 0 ? ` (${requests.filter((r) => r.status === "pending").length})` : ""}
+      {/* Folder-style sub-tabs — same design as the client admin's sub-folders.
+          "Add client" is the toolbar button on the list, not a tab. */}
+      <div className="folders">
+        <button className={"folder" + (view === "list" || view === "add" ? " folder--active" : "")} onClick={() => { setEditing(null); setView("list"); }}>{Icon.user({})} Clients</button>
+        <button className={"folder" + (view === "owner" ? " folder--active" : "")} onClick={() => setView("owner")}>{Icon.mail({})} Owner login</button>
+        <button className={"folder" + (view === "requests" ? " folder--active" : "")} onClick={() => setView("requests")}>
+          {Icon.book({})} Requests{requests.filter((r) => r.status === "pending").length > 0 ? ` (${requests.filter((r) => r.status === "pending").length})` : ""}
         </button>
       </div>
 
@@ -368,7 +377,7 @@ export function ClientsAdmin() {
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 3.5v8" /><path d="M6.6 6.8a8 8 0 1 0 10.8 0" /></svg>
                           </button>
                           <a className="icon-btn" href={`/admin?client=${c.subdomain}`} title="Open admin">{Icon.grid({})}</a>
-                          <a className="icon-btn" href={clientUrl(c.subdomain)} target="_blank" rel="noreferrer" title="Open live site">{Icon.eye({})}</a>
+                          <button className="icon-btn" onClick={() => setInfo(c)} title="Client info">{Icon.eye({})}</button>
                           <button className="icon-btn" onClick={() => openEdit(c)} title="Edit">{Icon.edit({})}</button>
                           <button className="icon-btn icon-btn--danger" onClick={() => deleteClient(c)} title="Delete">{Icon.trash({})}</button>
                         </div>
@@ -436,10 +445,11 @@ export function ClientsAdmin() {
         </div>
       )}
 
-      {view === "edit" && editing && (
-        <div className="panel sa-form">
-          <div className="panel__head"><div><div className="panel__title">Edit {editing.subdomain}</div><div className="panel__sub">Update the subdomain, modules, and owner login for this client.</div></div></div>
-          <form onSubmit={saveEdit} className="panel__body form-rows" style={{ paddingTop: 6, paddingBottom: 22 }}>
+      <Modal open={!!editing} onClose={() => setEditing(null)} label="Edit client">
+        {editing && (
+        <div>
+          <SectionHead eyebrow="Client" title={`Edit ${editing.subdomain}`} />
+          <form onSubmit={saveEdit} className="form-rows">
             <div className="form-row">
               <div className="form-row__head">
                 <div className="form-row__label">Project</div>
@@ -489,12 +499,43 @@ export function ClientsAdmin() {
               </div>
             </div>
             <div className="form-foot">
-              <Button type="button" variant="ghost" onClick={() => { setEditing(null); setView("list"); }}>Cancel</Button>
+              <Button type="button" variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
               <Button type="submit" variant="primary" disabled={busy}>Save changes</Button>
             </div>
           </form>
         </div>
-      )}
+        )}
+      </Modal>
+
+      {/* Eye icon → read-only snapshot of the client (links + quick Edit). */}
+      <Modal open={!!info} onClose={() => setInfo(null)} label="Client info">
+        {info && (() => {
+          const c = info;
+          const modsOn = MODULES.filter((m) => c.content?.modules?.[m] !== false).map(moduleLabel);
+          const row = { display: "flex", gap: 12, padding: "9px 0", borderBottom: "1px solid var(--line)", fontSize: 14 };
+          const lab = { flex: "none", width: 110, color: "var(--muted)", fontSize: 12, letterSpacing: ".06em", textTransform: "uppercase", paddingTop: 2 };
+          return (
+            <div>
+              <SectionHead eyebrow="Client" title={c.subdomain} />
+              <div style={{ marginTop: -6 }}>
+                <div style={row}><span style={lab}>Live site</span><a href={clientUrl(c.subdomain)} target="_blank" rel="noreferrer">{c.custom_domain || `${c.subdomain}.${PLATFORM_DOMAIN}`}</a></div>
+                <div style={row}><span style={lab}>Status</span><span className={"tag " + (c.is_active ? "tag--attending" : "tag--hidden")}>{c.is_active ? "Active" : "Disabled"}</span></div>
+                <div style={row}><span style={lab}>Event type</span><span style={{ textTransform: "capitalize" }}>{c.event_type}</span></div>
+                <div style={row}><span style={lab}>Theme</span><span>{THEMES[c.template_key]?.label || c.template_key}</span></div>
+                <div style={row}><span style={lab}>Owner login</span><span>{c.owner_email || <span style={{ color: "var(--muted)" }}>none yet</span>}</span></div>
+                <div style={row}><span style={lab}>Created</span><span>{c.created_at ? new Date(c.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "—"}</span></div>
+                <div style={row}><span style={lab}>Modules</span><span>{modsOn.length ? modsOn.join(", ") : "none"}</span></div>
+                {notes[c.id] && <div style={row}><span style={lab}>Note</span><span>{notes[c.id]}</span></div>}
+              </div>
+              <div style={{ display: "flex", gap: 10, marginTop: 18, flexWrap: "wrap" }}>
+                <Button variant="primary" onClick={() => { setInfo(null); openEdit(c); }}>{Icon.edit({})} Edit client</Button>
+                <a className="btn btn--ghost" href={clientUrl(c.subdomain)} target="_blank" rel="noreferrer">{Icon.eye({})} Open live site</a>
+                <a className="btn btn--ghost" href={`/admin?client=${c.subdomain}`}>{Icon.grid({})} Open admin</a>
+              </div>
+            </div>
+          );
+        })()}
+      </Modal>
 
       {view === "owner" && (
         <div className="panel sa-form">
