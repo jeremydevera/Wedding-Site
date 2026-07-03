@@ -152,24 +152,11 @@ export function AdminLogin({ onAuthed }) {
           </div>
 
           <button type="submit" className="signin__btn" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
-          {/* Self-serve signup lives on the apex hub only */}
+          {/* New-site requests go through the /apply approval flow */}
           {!isClient && (
-            <>
-              <p style={{ textAlign: "center", fontSize: 13, color: "var(--sg-sub)", marginTop: 18 }}>
-                New here? <a href="/apply" style={{ color: "#1E5BD6", fontWeight: 600, textDecoration: "none" }}>Request your wedding site →</a>
-              </p>
-              {/* Prospect intake link — one tap to copy and forward to a client */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 14, padding: "10px 12px", border: "1px solid var(--sg-inbd, #dcdce0)", borderRadius: 8, background: "#f8fafc" }}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--sg-label, #374151)" }}>Onboarding a client?</div>
-                  <a href="/apply" style={{ fontSize: 12.5, fontFamily: "ui-monospace, Menlo, monospace", color: "#1E5BD6", textDecoration: "none" }}>celebrately.us/apply</a>
-                </div>
-                <button type="button" className="signin__back" style={{ flex: "none" }}
-                  onClick={() => { navigator.clipboard.writeText("https://celebrately.us/apply").then(() => toast("Link copied — forward it to your client", "success")).catch(() => toast("Copy failed", "err")); }}>
-                  Copy link
-                </button>
-              </div>
-            </>
+            <p style={{ textAlign: "center", fontSize: 13, color: "var(--sg-sub)", marginTop: 18 }}>
+              New here? <a href="/apply" style={{ color: "#1E5BD6", fontWeight: 600, textDecoration: "none" }}>Request your wedding site →</a>
+            </p>
           )}
         </form>
       </div>
