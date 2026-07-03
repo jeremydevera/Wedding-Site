@@ -7,8 +7,8 @@ const { useRef, useEffect, useMemo } = React;
 ChartJS.register(DoughnutController, ArcElement, Tooltip, Legend);
 
 // Adminator-style vibrant palette (matches the template's charts page).
-const STATUS_COLORS = ["#2E5BFF", "#8C54FF", "#00C1D4"]; // attending / maybe / declined
-const DIET_COLORS = ["#2E5BFF", "#8C54FF", "#00C1D4", "#10B981", "#F59E0B", "#EC4899", "#64748B", "#FD7E14"];
+const STATUS_COLORS = ["#2E5BFF", "#8C54FF", "#4D9FEC"]; // attending / maybe / declined (royal / purple / sky, like the reference)
+const DIET_COLORS = ["#2E5BFF", "#8C54FF", "#4D9FEC", "#10B981", "#F59E0B", "#EC4899", "#64748B", "#FD7E14"];
 
 const TIP = {
   backgroundColor: "rgba(15, 23, 42, 0.92)",
