@@ -1498,9 +1498,6 @@ export function VenueAdmin({ section = "editor", headRight = null }) {
       <div className="panel">
         <div className="panel__head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}><div className="panel__title">Home page map</div>{headRight}</div>
         <div className="panel__body">
-          <p style={{ color: "var(--muted)", margin: "0 0 14px", fontSize: 14 }}>
-            Pick which location's map shows on the home page, and whether its tiles show under it. Add or edit locations in the Venue &amp; Map tab. The full Venue page always shows every location.
-          </p>
           <Field label="Map to show on home" id="home-venue">
             <Select id="home-venue" value={homeVenue ? homeVenue.id : ""} onChange={(e) => Store.updateSettings({ homeVenueId: e.target.value })}>
               {list.map((v, i) => <option key={v.id || i} value={v.id}>{v.name || v.address || `Location ${i + 1}`}</option>)}
