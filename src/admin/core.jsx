@@ -198,7 +198,7 @@ export function AdminDashboard({ goTab }) {
     // Attending folder counts, so they can never disagree). Sub is just
     // "confirmed"; maybe/declined/for-approval live in the Guests tab folders.
     { label: "RSVPs", value: strict ? recon.summary.attending : attending.length, sub: "confirmed", tab: "rsvps", icon: "check", accent: "success", pill: `${totalResponses} total` },
-    { label: "Guest Count", value: guestCount, sub: "people coming", tab: "rsvps", icon: "user", accent: "info", pill: `${attending.length} ${attending.length === 1 ? "party" : "parties"}` },
+    { label: "Total Guests", value: guestCount, sub: "people coming", tab: "rsvps", icon: "user", accent: "info", pill: `${attending.length} ${attending.length === 1 ? "party" : "parties"}` },
     ...(mediaShelved ? [] : [
       { label: "Photos", value: photos.length, sub: pendingMedia.length ? `${pendingMedia.length} to review` : "all clear", tab: "media", icon: "camera", accent: "purple", pill: pendingMedia.length ? `${pendingMedia.length} new` : null },
       { label: "Videos", value: videos.length, sub: "uploaded", tab: "media", icon: "play", accent: "amber", pill: null },
