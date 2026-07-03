@@ -897,6 +897,8 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
   .clients-form--owner { grid-template-columns: 1fr 1fr 1fr auto; }
 }
 .client-domain { font-size: 13px; color: var(--muted); }
+.client-note { display: flex; align-items: center; gap: 5px; margin-top: 3px; font-size: 12px; color: var(--muted); max-width: 320px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.client-note svg { flex: none; }
 .mod-toggles { display: flex; flex-wrap: wrap; gap: 6px; max-width: 380px; }
 .mod-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 4px 9px; border: 1px solid var(--line); border-radius: 100px; cursor: pointer; color: var(--muted); text-transform: capitalize; user-select: none; }
 .mod-pill input { margin: 0; accent-color: var(--accent); width: 13px; height: 13px; }

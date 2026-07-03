@@ -5,7 +5,7 @@ import { THEMES } from "@/themes";
 import { themesForEvent } from "@/config/eventTypes.js";
 import { moduleLabel } from "@/lib/roles.js";
 import { PLATFORM_DOMAIN, clientUrl, isValidSubdomain } from "@/config/site.js"; // platform config → src/config/site.js
-import { Button, confirmDialog, Field, Icon, Input, Pager, Select, toast, usePaged } from "@/ui/components.jsx";
+import { Button, confirmDialog, Field, Icon, Input, Pager, Select, Textarea, toast, usePaged } from "@/ui/components.jsx";
 import { listMedia, deleteFromR2 } from "@/lib/api.js";
 import { fileNameFromKey } from "@/lib/mediaLibrary.js";
 import { mediaUrl } from "@/lib/media.js";
@@ -91,18 +91,48 @@ export function SuperOverview() {
 export function ClientsAdmin() {
   const [view, setView] = useState("list"); // list | add | owner | edit
   const [clients, setClients] = useState([]);
-  const [form, setForm] = useState({ subdomain: "", event_type: "wedding", template_key: "classic", ownerEmail: "", ownerPassword: "" });
+  const [notes, setNotes] = useState({}); // client_id -> note text (superadmin-only, from client_notes)
+  const [form, setForm] = useState({ subdomain: "", event_type: "wedding", template_key: "classic", ownerEmail: "", ownerPassword: "", note: "" });
   const [cred, setCred] = useState({ client_id: "", email: "", password: "" });
   const [editing, setEditing] = useState(null);
-  const [editForm, setEditForm] = useState({ subdomain: "", ownerEmail: "", ownerPassword: "", modules: {} });
+  const [editForm, setEditForm] = useState({ subdomain: "", ownerEmail: "", ownerPassword: "", modules: {}, note: "" });
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState("");
 
   async function load() {
     const { data } = await supabase.from("clients").select("*").order("created_at", { ascending: false });
     setClients(data || []);
+    // Notes live in a superadmin-only table (never exposed to anon/owners).
+    const { data: nd } = await supabase.from("client_notes").select("client_id,note");
+    setNotes(Object.fromEntries((nd || []).map((r) => [r.client_id, r.note || ""])));
   }
   useEffect(() => { load(); }, []);
+
+  // Save (or clear) the private note for a client. Empty note removes the row.
+  async function saveNote(clientId, note) {
+    const text = (note || "").trim();
+    if (text) await supabase.from("client_notes").upsert({ client_id: clientId, note: text, updated_at: new Date().toISOString() });
+    else await supabase.from("client_notes").delete().eq("client_id", clientId);
+  }
+
+  // Enable/disable a client's site. is_active=false makes the public "read active
+  // clients" policy hide it, so guests see the site as unavailable until re-enabled.
+  async function toggleActive(c) {
+    const next = !c.is_active;
+    if (!next) {
+      const ok = await confirmDialog({
+        title: "Disable this client?",
+        message: `Take "${c.subdomain}" offline? Guests visiting the site won't be able to load it until you re-enable access. Nothing is deleted.`,
+        confirmLabel: "Disable access",
+        danger: true,
+      });
+      if (!ok) return;
+    }
+    const { error } = await supabase.from("clients").update({ is_active: next }).eq("id", c.id);
+    if (error) return toast("Update failed: " + error.message);
+    toast(next ? "Access enabled — site is live" : "Access disabled — site is offline");
+    load();
+  }
 
   function edgeOrToast(e2) {
     const msg = e2?.message || "error";
@@ -120,6 +150,7 @@ export function ClientsAdmin() {
     const { data: created, error } = await supabase.from("clients")
       .insert({ subdomain: sub, event_type: form.event_type, template_key: form.template_key }).select().single();
     if (error) { setBusy(false); return toast("Create failed: " + error.message); }
+    if (form.note.trim()) { try { await saveNote(created.id, form.note); } catch (_) { /* note is best-effort */ } }
     if (form.ownerEmail.trim() && form.ownerPassword) {
       try {
         await createOwner({ email: form.ownerEmail.trim(), password: form.ownerPassword, client_id: created.id });
@@ -128,7 +159,7 @@ export function ClientsAdmin() {
       } catch (e2) { toast("Client created — owner login pending:"); edgeOrToast(e2); }
     } else { toast("Client created"); }
     setBusy(false);
-    setForm({ subdomain: "", event_type: "wedding", template_key: "classic", ownerEmail: "", ownerPassword: "" });
+    setForm({ subdomain: "", event_type: "wedding", template_key: "classic", ownerEmail: "", ownerPassword: "", note: "" });
     await load(); setView("list");
   }
 
@@ -163,7 +194,7 @@ export function ClientsAdmin() {
 
   function openEdit(c) {
     setEditing(c);
-    setEditForm({ subdomain: c.subdomain, ownerEmail: c.owner_email || "", ownerPassword: "", modules: Object.fromEntries(MODULES.map((m) => [m, c.content?.modules?.[m] !== false])) });
+    setEditForm({ subdomain: c.subdomain, ownerEmail: c.owner_email || "", ownerPassword: "", modules: Object.fromEntries(MODULES.map((m) => [m, c.content?.modules?.[m] !== false])), note: notes[c.id] || "" });
     setView("edit");
   }
   async function saveEdit(e) {
@@ -180,6 +211,7 @@ export function ClientsAdmin() {
       const { error } = await supabase.from("clients").update({ content: { ...(editing.content || {}), modules: editForm.modules } }).eq("id", id);
       if (error) { setBusy(false); return toast("Save failed: " + error.message); }
     }
+    try { await saveNote(id, editForm.note); } catch (_) { /* note is best-effort */ }
     const email = editForm.ownerEmail.trim();
     const pw = editForm.ownerPassword;
     try {
@@ -247,14 +279,21 @@ export function ClientsAdmin() {
                     <tr key={c.id}>
                       <td>
                         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                          <span className={"sa-dot" + (c.is_active ? "" : " sa-dot--off")} />
-                          <div><strong>{c.subdomain}</strong><div className="client-domain">{c.custom_domain || `${c.subdomain}.${PLATFORM_DOMAIN}`}</div></div>
+                          <span className={"sa-dot" + (c.is_active ? "" : " sa-dot--off")} title={c.is_active ? "Active" : "Disabled"} />
+                          <div>
+                            <strong>{c.subdomain}</strong>{!c.is_active && <span className="tag tag--hidden" style={{ marginLeft: 8 }}>Disabled</span>}
+                            <div className="client-domain">{c.custom_domain || `${c.subdomain}.${PLATFORM_DOMAIN}`}</div>
+                            {notes[c.id] ? <div className="client-note" title={notes[c.id]}>{Icon.edit({ style: { width: 12, height: 12, opacity: 0.6 } })} {notes[c.id]}</div> : null}
+                          </div>
                         </div>
                       </td>
                       <td className="theme-cell"><Select value={c.template_key} onChange={(e) => assignTheme(c.id, e.target.value)}>{themesForEvent(c.event_type).filter((k) => THEMES[k]).map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}</Select></td>
                       <td>{c.owner_email ? <span className="client-domain">{c.owner_email}</span> : <span style={{ color: "var(--muted)" }}>—</span>}</td>
                       <td>
                         <div className="row-actions">
+                          <button className={"icon-btn" + (c.is_active ? "" : " icon-btn--danger")} onClick={() => toggleActive(c)} title={c.is_active ? "Disable access (take site offline)" : "Enable access (put site live)"} aria-pressed={c.is_active}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 3.5v8" /><path d="M6.6 6.8a8 8 0 1 0 10.8 0" /></svg>
+                          </button>
                           <a className="icon-btn" href={`/admin?client=${c.subdomain}`} title="Open admin">{Icon.grid({})}</a>
                           <a className="icon-btn" href={clientUrl(c.subdomain)} target="_blank" rel="noreferrer" title="Open live site">{Icon.eye({})}</a>
                           <button className="icon-btn" onClick={() => openEdit(c)} title="Edit">{Icon.edit({})}</button>
@@ -307,6 +346,15 @@ export function ClientsAdmin() {
                 </div>
               </div>
             </div>
+            <div className="form-row">
+              <div className="form-row__head">
+                <div className="form-row__label">Note</div>
+                <div className="form-row__desc">Private to superadmin — never shown on the client's site or to the owner.</div>
+              </div>
+              <div className="form-row__fields">
+                <Field label="Note (optional)" id="c-note"><Textarea id="c-note" value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} placeholder="e.g. Paid via GCash · event Sept 19 · contact on Messenger" /></Field>
+              </div>
+            </div>
             <div className="form-foot">
               <Button type="button" variant="ghost" onClick={() => setView("list")}>Cancel</Button>
               <Button type="submit" variant="primary" disabled={busy}>Create client</Button>
@@ -356,6 +404,15 @@ export function ClientsAdmin() {
                   <Field label="Owner email" id="e-oemail"><Input id="e-oemail" type="email" value={editForm.ownerEmail} onChange={(e) => setEditForm((f) => ({ ...f, ownerEmail: e.target.value }))} placeholder="owner@theirdomain" /></Field>
                   <Field label="New password" id="e-opw" hint="Leave blank to keep current"><Input id="e-opw" value={editForm.ownerPassword} onChange={(e) => setEditForm((f) => ({ ...f, ownerPassword: e.target.value }))} placeholder="••••••••" /></Field>
                 </div>
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-row__head">
+                <div className="form-row__label">Note</div>
+                <div className="form-row__desc">Private to superadmin — never shown on the client's site or to the owner.</div>
+              </div>
+              <div className="form-row__fields">
+                <Field label="Note (optional)" id="e-note"><Textarea id="e-note" value={editForm.note} onChange={(e) => setEditForm((f) => ({ ...f, note: e.target.value }))} placeholder="Add a private note about this client…" /></Field>
               </div>
             </div>
             <div className="form-foot">
