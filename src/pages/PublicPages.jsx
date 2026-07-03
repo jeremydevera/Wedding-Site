@@ -4,7 +4,7 @@ import { onSiteScroll, scrollOffset, siteScrollEl } from "@/lib/scroll.js";
 import { mediaUrl } from "@/lib/media.js";
 import { useStore } from "@/lib/store.jsx";
 import { moduleEnabled } from "@/lib/roles.js";
-import { egTintGradient } from "@/themes";
+import { egTintGradient, envColorFilter } from "@/themes";
 import { Button, Countdown, FloatingDecor, Icon, Placeholder, SectionHead, mapDirUrl, mapEmbedUrl } from "@/ui/components.jsx";
 import { VinylPlayer } from "@/features/music.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
@@ -48,7 +48,12 @@ export function egTintVars(s) {
   const t = s.envTitleSize;
   const scale = (t != null && t >= 1 && t <= 10) ? t : 5;
   const titleCqw = (0.9 + (scale - 1) / 9 * 2.7).toFixed(3); // scale 1→0.9cqw (small), 5→2.1, 10→3.6
-  return { "--eg-tint": open, "--eg-tint-sealed": sealed, "--eg-tint-grad": egTintGradient(s.envTintColor || "olive"), "--eg-title-cqw": titleCqw };
+  const vars = { "--eg-tint": open, "--eg-tint-sealed": sealed, "--eg-tint-grad": egTintGradient(s.envTintColor || "olive"), "--eg-title-cqw": titleCqw };
+  // Envelope paper recolor — only set when non-olive so the CSS fallback
+  // (a no-op hue-rotate) keeps the drop-shadow filter list valid.
+  const recolor = envColorFilter(s.envColor);
+  if (recolor) vars["--eg-env-recolor"] = recolor;
+  return vars;
 }
 
 export function EnvelopeHero() {
@@ -226,7 +231,7 @@ export function EnvelopeInvite() {
   }, [s.weddingDate, s.weddingDateLabel]);
 
   return (
-    <div className={"inv-stage" + (open ? " is-open" : "")}>
+    <div className={"inv-stage" + (open ? " is-open" : "")} style={egTintVars(s)}>
       {/* Sealed envelope */}
       <div className={"inv-page" + (open ? "" : " is-active")}>
         <div className="inv-sealed-wrap">

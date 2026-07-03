@@ -383,3 +383,22 @@ export function egTintGradient(key) {
   return `linear-gradient(180deg, ${t.top}, ${t.bottom})`;
 }
 
+// Envelope paper colors — CSS filter chains that recolor the olive envelope art
+// (sealed cover + open front pocket only; card/flowers/heart untouched). The cream
+// wax seal is near-neutral so it survives the hue rotation and stays cream.
+// `dot` is the resulting paper color, for the admin swatch chips.
+// Olive is the artwork's native color, so its filter is empty (no-op).
+export const ENV_COLORS = {
+  olive:     { label: "Olive",      filter: "", dot: "#6f743e" },
+  sage:      { label: "Sage",       filter: "hue-rotate(12deg) saturate(0.55) brightness(1.1)",   dot: "#747f5d" },
+  kraft:     { label: "Kraft",      filter: "hue-rotate(-22deg) saturate(0.75) brightness(1.06)", dot: "#847552" },
+  dustyblue: { label: "Dusty Blue", filter: "hue-rotate(155deg) saturate(0.65) brightness(1.05)", dot: "#667693" },
+  navy:      { label: "Navy",       filter: "hue-rotate(160deg) saturate(0.95) brightness(0.7)",  dot: "#434e6c" },
+  wine:      { label: "Wine",       filter: "hue-rotate(265deg) saturate(1.3) brightness(0.75)",  dot: "#834557" },
+  blush:     { label: "Blush",      filter: "hue-rotate(278deg) saturate(0.6) brightness(1.08)",  dot: "#976f73" },
+  charcoal:  { label: "Charcoal",   filter: "saturate(0.14) brightness(0.82)",                    dot: "#5b5c55" },
+};
+export function envColorFilter(key) {
+  return (ENV_COLORS[key] || ENV_COLORS.olive).filter;
+}
+

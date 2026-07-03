@@ -1504,7 +1504,9 @@ body.env-sealed .decor { display: none; }
   position: relative; width: min(560px, 88vw);
   container-type: inline-size; line-height: 0;
 }
-.inv-sealed-art { width: 100%; height: auto; display: block; filter: drop-shadow(0 16px 34px rgba(40, 40, 20, .24)); }
+/* --eg-env-recolor = owner-picked envelope paper color (ENV_COLORS); the
+   fallback no-op hue-rotate keeps the filter list valid when unset (olive). */
+.inv-sealed-art { width: 100%; height: auto; display: block; filter: var(--eg-env-recolor, hue-rotate(0deg)) drop-shadow(0 16px 34px rgba(40, 40, 20, .24)); }
 .inv-seal-hotspot {
   position: absolute; left: 49.3%; top: 56.8%; width: 13%; height: 26%;
   transform: translate(-50%, -50%); border: 0; background: transparent; padding: 0; margin: 0;
@@ -1540,6 +1542,8 @@ body.env-sealed .decor { display: none; }
 .inv-env-stack > img { display: block; height: auto; }
 .inv-env-stack .inv-l-card > img, .inv-env-stack .inv-l-heart > img { display: block; width: 100%; height: auto; }
 .inv-env-stack img, .inv-l-video { filter: drop-shadow(0 5px 9px rgba(26, 30, 12, .34)); }
+/* envelope front pocket also takes the paper recolor (card/flowers/heart don't) */
+.inv-env-stack img.inv-l-front { filter: var(--eg-env-recolor, hue-rotate(0deg)) drop-shadow(0 5px 9px rgba(26, 30, 12, .34)); }
 .inv-env-stack > img.inv-l-back { display: none; }
 .inv-l-card  { left: 40.01%; top: -17.5%; width: 47%;   z-index: 2; }
 .inv-l-framegroup { left: 7.18%; top: -17.02%; width: 47%; }

@@ -1,7 +1,7 @@
 import React from "react";
 import { go } from "@/lib/nav.js";
 import { Store, useStore } from "@/lib/store.jsx";
-import { EG_TINTS, THEMES, THEME_FONTS, egTintGradient, isPremiumTheme } from "@/themes";
+import { EG_TINTS, ENV_COLORS, THEMES, THEME_FONTS, egTintGradient, envColorFilter, isPremiumTheme } from "@/themes";
 import { Button, CropModal, DecorPreview, FallingFx, Field, Icon, Input, Modal, Monogram, Pager, Placeholder, SectionHead, Select, Textarea, confirmDialog, mapEmbedUrl, mapSearchUrl, toast, usePaged } from "@/ui/components.jsx";
 import { FX_LIST } from "@/lib/falling-fx.js";
 import { Home } from "@/pages/PublicPages.jsx";
@@ -1782,6 +1782,40 @@ export function SettingsAdmin() {
           <ImageUploadField purpose="frame" label="Photo inside the oval frame" ratio="1 / 1" framePreview="/assets/invite/p2-frame.png" defaultPreview="/assets/invite/frame-video.gif"
             value={f.frameImage} onChange={(v) => setKey("frameImage", v)} />
           <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 10, maxWidth: 360 }}>A square photo of the two of you works best. Leave empty to keep the default animated frame.</p>
+        </div>
+        <SaveFooter />
+      </div>
+      )}
+
+      {f.theme === "envelope" && (
+      <div className="panel">
+        <div className="panel__head"><div className="panel__title">Envelope Color</div><span style={{ color: "var(--muted)", fontSize: 14 }}>The paper color of the envelope itself</span></div>
+        <div className="panel__body">
+          <div style={{ display: "flex", gap: 28, alignItems: "flex-start", flexWrap: "wrap" }}>
+            <div style={{ flex: "1 1 280px", minWidth: 260 }}>
+              <Field label="Paper color" id="s-envcolor" hint="Recolors the envelope paper and lace — the wax seal stays cream. The falling leaves and everything inside the envelope are unchanged.">
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {Object.keys(ENV_COLORS).map((key) => {
+                    const on = (f.envColor || "olive") === key;
+                    return (
+                      <button key={key} type="button" onClick={() => setKey("envColor", key)}
+                        style={{ display: "flex", alignItems: "center", gap: 7, padding: "6px 11px 6px 7px", borderRadius: 999, cursor: "pointer",
+                          border: on ? "2px solid var(--accent)" : "1px solid var(--line)", background: on ? "color-mix(in oklch, var(--accent) 10%, var(--surface))" : "var(--surface)",
+                          font: "inherit", fontSize: 13, fontWeight: on ? 700 : 500, color: "var(--ink)" }}>
+                        <span style={{ width: 16, height: 16, borderRadius: "50%", background: ENV_COLORS[key].dot, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.15)" }} />
+                        {ENV_COLORS[key].label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+            </div>
+            <div style={{ flex: "1 1 300px", minWidth: 260, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+              <img src="/assets/invite/env-closed.webp" alt="Envelope color preview"
+                style={{ width: "100%", maxWidth: 380, height: "auto", borderRadius: 8, filter: envColorFilter(f.envColor) || "none" }} />
+              <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 10, maxWidth: 360 }}>Live preview — save changes, then view the site.</p>
+            </div>
+          </div>
         </div>
         <SaveFooter />
       </div>
