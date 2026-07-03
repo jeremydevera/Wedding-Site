@@ -107,21 +107,17 @@ export function RsvpCharts({ rsvps }) {
 
   if (!rsvps.length) return null;
 
-  const dietTotal = dietEntries.reduce((s, [, v]) => s + v, 0);
-
   return (
     <div className="rsvp-charts">
       <div className="rsvp-charts__row">
         <DonutCard
           eyebrow="RSVPs" title="Attendance split"
-          badge={`${stats.total} ${stats.total === 1 ? "PARTY" : "PARTIES"}`}
           canvasRef={statusRef}
           hasData
           empty="No RSVPs yet"
         />
         <DonutCard
           eyebrow="Guests" title="Dietary needs"
-          badge={dietTotal ? `${dietTotal} ${dietTotal === 1 ? "GUEST" : "GUESTS"}` : null}
           canvasRef={dietRef}
           hasData={dietEntries.length > 0}
           empty="No special requirements noted"
