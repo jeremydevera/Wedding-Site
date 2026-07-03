@@ -18,12 +18,6 @@ Claude test run. Done items stay here as the permanent history.
 
 ## Pending
 
-### Enhancement ID: 0010 — [APPROVAL] Olive Envelope: custom envelope color wheel
-- **Severity:** P3 · **Status:** Pending · **Added:** 2026-07-03 (Claude follow-up idea)
-- **Where:** Admin → Design → Envelope Color (Olive Envelope theme)
-- **Action:** Today the envelope color offers 8 fixed swatches; a free color wheel would let owners match any wedding palette exactly.
-- **Plan:** Convert the picked color to a hue-rotate/saturate/brightness filter chain relative to the olive base at save time; keep the 8 presets as quick picks.
-
 ### Enhancement ID: 0008 — Server-side notification read/cleared state (multi-device sync)
 - **Severity:** P3 · **Status:** Pending · **Added:** 2026-07-03 (requested by Jeremy)
 - **Where:** Admin → topbar bell (Notifications dropdown)
@@ -39,6 +33,12 @@ Claude test run. Done items stay here as the permanent history.
 ---
 
 ## Done / History
+
+### Enhancement ID: 0010 — Olive Envelope: custom envelope color + terracotta + site colors follow
+- **Severity:** P2 · **Status:** Done — commit `545008d`, 2026-07-03 (requested by Jeremy same day)
+- **Where:** Admin → Design → Envelope Color (Olive Envelope theme)
+- **Action:** Added a Terracotta (rust orange) preset, a "Custom" chip with a full color picker (any hex), and a "Match website colors" toggle so the page backgrounds/headings/buttons stop defaulting to green and take on the chosen envelope color.
+- **Resolution:** Custom colors are solved at runtime into the filter chain that maps the olive artwork to the picked hex (cached). Site palette re-hues the envelope theme's oklch tokens (`envSitePalette`); olive or toggle-off keeps the classic green. Very light custom picks flatten the wax-seal embossing (brightness clamp) — known cosmetic limit. 143 tests pass; presets + solver verified on artwork via screenshot grid.
 
 ### Enhancement ID: 0009 — Olive Envelope: envelope paper color setting
 - **Severity:** P2 · **Status:** Done — commit `d7b510e`, 2026-07-03
