@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { blankApplyState, requestPayload, stateFromRequest } from "@/admin/apply.jsx";
+import { blankApplyState, requestPayload, stateFromRequest, parseWeddingDate, composeWeddingDate } from "@/admin/apply.jsx";
 
 // The superadmin "edit request" reuses the wizard: a site_requests row loads
 // via stateFromRequest and saves via requestPayload — the same serializer the
@@ -53,5 +53,28 @@ describe("stateFromRequest -> requestPayload round-trip", () => {
     const f = stateFromRequest({ partner_a: "A", partner_b: "B", subdomain: "ab", content: { entourage: [{ title: "Sponsors", people: [{ name: "X" }] }] } });
     expect(f.entourage[0].id).toBeTruthy();
     expect(f.entourage[0].people[0].id).toBeTruthy();
+  });
+});
+
+describe("easy wedding-date dropdowns (compose/parse)", () => {
+  it("composes month/day/year + 12h time into the pipeline's ISO shape", () => {
+    expect(composeWeddingDate(2027, 5, 1, "3:00 PM")).toBe("2027-05-01T15:00");
+    expect(composeWeddingDate(2027, 12, 31, "12:00 AM")).toBe("2027-12-31T00:00");
+    expect(composeWeddingDate(2027, 6, 15, "12:30 PM")).toBe("2027-06-15T12:30");
+    expect(composeWeddingDate(2027, 6, 15, "")).toBe("2027-06-15T00:00"); // no time -> midnight
+  });
+  it("clamps impossible days instead of producing an invalid date", () => {
+    expect(composeWeddingDate(2027, 2, 31, "")).toBe("2027-02-28T00:00");
+    expect(composeWeddingDate(2028, 2, 31, "")).toBe("2028-02-29T00:00"); // leap year
+  });
+  it("returns empty until the date is complete", () => {
+    expect(composeWeddingDate("", 5, 1, "")).toBe("");
+    expect(composeWeddingDate(2027, "", 1, "")).toBe("");
+    expect(composeWeddingDate(2027, 5, "", "")).toBe("");
+  });
+  it("parses back to the same dropdown selections (round-trip)", () => {
+    expect(parseWeddingDate("2027-05-01T15:00")).toEqual({ y: 2027, mo: 5, d: 1, time: "3:00 PM" });
+    expect(parseWeddingDate("2027-05-01T00:00")).toEqual({ y: 2027, mo: 5, d: 1, time: "" }); // midnight = "no time picked"
+    expect(parseWeddingDate("")).toEqual({ y: "", mo: "", d: "", time: "" });
   });
 });

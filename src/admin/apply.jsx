@@ -26,30 +26,60 @@ const dateLabelOf = (iso) => {
 
 const uidv = () => Math.random().toString(36).slice(2, 9);
 
-// Date picker that never shows the native "mm/dd/yyyy, --:--" segments: a
-// read-only text box with a friendly value/placeholder; the real hidden
-// datetime-local opens via showPicker() on click.
-function NiceDateInput({ id, value, onChange, placeholder }) {
-  const ref = useRef(null);
-  const fmt = (v) => {
-    if (!v) return "";
-    const d = new Date(v);
-    return isNaN(d.getTime()) ? v : d.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
-  };
-  const openPicker = () => { const el = ref.current; if (!el) return; try { el.showPicker ? el.showPicker() : el.focus(); } catch (_) { el.focus(); } };
+// --- Easy wedding-date input --------------------------------------------------
+// The single datetime-local calendar was the wizard's biggest drop-off point
+// (couples skipped it) — a far-future date is a chore to reach in a calendar
+// widget, especially on phones. Three dropdowns (month / day / year) + an
+// optional time dropdown are native wheels on mobile: nothing to type, nothing
+// to navigate. Composes to the same ISO string the rest of the pipeline uses.
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+export function parseWeddingDate(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(iso || "");
+  if (!m) return { y: "", mo: "", d: "", time: "" };
+  const hh = +m[4], mm = m[5];
+  const time = hh === 0 && mm === "00" ? "" : `${((hh + 11) % 12) + 1}:${mm} ${hh < 12 ? "AM" : "PM"}`;
+  return { y: +m[1], mo: +m[2], d: +m[3], time };
+}
+export function composeWeddingDate(y, mo, d, time) {
+  if (!y || !mo || !d) return "";
+  const maxD = new Date(+y, +mo, 0).getDate();
+  const dd = Math.min(+d, maxD); // e.g. Feb 31 → Feb 28/29
+  let hhmm = "00:00";
+  const t = /^(\d{1,2}):(\d{2}) (AM|PM)$/.exec(time || "");
+  if (t) {
+    const h = (+t[1] % 12) + (t[3] === "PM" ? 12 : 0);
+    hhmm = `${String(h).padStart(2, "0")}:${t[2]}`;
+  }
+  return `${y}-${String(mo).padStart(2, "0")}-${String(dd).padStart(2, "0")}T${hhmm}`;
+}
+function EasyDateInput({ value, onChange }) {
+  const { y, mo, d, time } = parseWeddingDate(value);
+  const thisYear = new Date().getFullYear();
+  const years = Array.from({ length: 6 }, (_, i) => thisYear + i);
+  const daysInMonth = y && mo ? new Date(+y, +mo, 0).getDate() : 31;
+  const emit = (ny, nmo, nd, nt) => onChange({ target: { value: composeWeddingDate(ny, nmo, nd, nt) } });
   return (
-    <div style={{ position: "relative" }}>
-      <Input id={id} readOnly value={fmt(value)} placeholder={placeholder} onClick={openPicker} style={{ cursor: "pointer", paddingRight: value ? 64 : 40 }} />
-      <button type="button" onClick={openPicker} aria-label="Pick a date"
-        style={{ position: "absolute", top: "50%", right: 8, transform: "translateY(-50%)", display: "grid", placeItems: "center", width: 30, height: 30, background: "none", border: "none", color: "var(--muted)", cursor: "pointer" }}>
-        {Icon.calendar({ style: { width: 18, height: 18 } })}
-      </button>
-      {value && (
-        <button type="button" onClick={() => onChange({ target: { value: "" } })} aria-label="Clear date"
-          style={{ position: "absolute", top: "50%", right: 36, transform: "translateY(-50%)", display: "grid", placeItems: "center", width: 26, height: 26, background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 20, lineHeight: 1 }}>&times;</button>
-      )}
-      <input ref={ref} type="datetime-local" value={value || ""} onChange={onChange} tabIndex={-1} aria-hidden="true"
-        style={{ position: "absolute", left: 12, bottom: 0, width: 1, height: 1, opacity: 0, pointerEvents: "none" }} />
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1.1fr", gap: 8 }}>
+        <Select aria-label="Month" value={mo || ""} onChange={(e) => emit(y || thisYear, e.target.value, d || 1, time)}>
+          <option value="">Month…</option>
+          {MONTH_NAMES.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+        </Select>
+        <Select aria-label="Day" value={d || ""} onChange={(e) => emit(y || thisYear, mo || 1, e.target.value, time)}>
+          <option value="">Day…</option>
+          {Array.from({ length: daysInMonth }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}
+        </Select>
+        <Select aria-label="Year" value={y || ""} onChange={(e) => emit(e.target.value, mo || 1, d || 1, time)}>
+          <option value="">Year…</option>
+          {years.map((yy) => <option key={yy} value={yy}>{yy}</option>)}
+        </Select>
+      </div>
+      <div style={{ marginTop: 8 }}>
+        <Select aria-label="Time" value={time} onChange={(e) => emit(y, mo, d, e.target.value)} disabled={!y || !mo || !d}>
+          <option value="">Time — optional</option>
+          {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+        </Select>
+      </div>
     </div>
   );
 }
@@ -213,7 +243,9 @@ export function ApplyWizard({ initial = null, onSave, onCancel }) {
           <Field label="Partner B — first name" id="a-pb"><Input id="a-pb" value={f.partnerB} onChange={set("partnerB")} placeholder="Juliet" /></Field>
         </div>
         <Field label="Your email" id="a-email" hint="We'll reach you here once your site is approved."><Input id="a-email" type="email" value={f.email} onChange={set("email")} placeholder="you@example.com" /></Field>
-        <Field label="Wedding date & time" id="a-date" hint="Optional — leave blank if you haven't picked one."><NiceDateInput id="a-date" value={f.weddingDate} onChange={set("weddingDate")} placeholder="Tap to pick a date" /></Field>
+        <Field label="Wedding date" id="a-date" hint="Optional — skip it if you haven't picked a date yet.">
+          <EasyDateInput value={f.weddingDate} onChange={set("weddingDate")} />
+        </Field>
         <Field label="Site address" id="a-sub">
           <div className="reg-sub">
             <Input id="a-sub" value={f.subdomain} onChange={(e) => { setTouchedSub(true); set("subdomain")(e); }} spellCheck={false} placeholder="romeo-juliet" />
