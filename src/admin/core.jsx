@@ -208,7 +208,7 @@ export function AdminDashboard({ goTab }) {
 
   return (
     <div>
-      <div className="stat-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
+      <div className="stat-grid">
         {stats.map((s) => (
           <button key={s.label} className="stat" onClick={() => goTab(s.tab)} style={{ cursor: "pointer", textAlign: "left", font: "inherit", color: "inherit" }}>
             {s.icon && <span className="stat__icon" aria-hidden="true">{Icon[s.icon]({})}</span>}
