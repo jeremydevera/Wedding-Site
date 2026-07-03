@@ -2092,7 +2092,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   padding: 18px 20px;
   display: flex;
   flex-direction: column;
-  min-height: 216px;
+  min-height: 0;
   animation: rsvp-kpi-in .45s ease both;
 }
 .rsvp-chart-card__head {
@@ -2125,11 +2125,13 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 
 /* Donut host — Chart.js renders the chart + its right-side legend inside */
 .rsvp-donut-wrap {
+  /* exact reference size: chart-canvas-wrap is a fixed 240px tall */
   position: relative;
   flex: 1;
   min-width: 0;
-  min-height: 150px;
-  max-height: 190px;
+  height: 240px;
+  min-height: 240px;
+  max-height: 240px;
 }
 
 .rsvp-chart-empty {
