@@ -2563,6 +2563,31 @@ function NotificationBell({ goTab }) {
   );
 }
 
+// Account menu in the admin topbar — click the avatar for the signed-in email
+// and a Sign out action.
+function ProfileMenu({ email, onSignOut }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="notif">
+      <button type="button" className="notif__btn" aria-label="Account" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        {Icon.user({ style: { width: 20, height: 20 } })}
+      </button>
+      {open && (
+        <>
+          <div className="notif__backdrop" onClick={() => setOpen(false)} />
+          <div className="notif__panel notif__panel--menu" role="menu">
+            {email && <div className="notif__acct">{email}</div>}
+            <button type="button" className="notif__item" role="menuitem" onClick={() => { setOpen(false); onSignOut(); }}>
+              <span className="notif__icon">{Icon.arrow({ style: { width: 16, height: 16, transform: "rotate(180deg)" } })}</span>
+              <span className="notif__text">Sign out</span>
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function AdminApp() {
   const { settings, auth, clientId } = useStore();
   const [tab, setTab] = useState("dashboard");
@@ -2692,8 +2717,11 @@ export function AdminApp() {
         <div className="admin__topbar">
           <div className="admin__topbar-left">
             <button type="button" className="admin__burger" onClick={() => setMenuOpen((o) => !o)} aria-label="Menu" aria-expanded={menuOpen}>{Icon.menu({})}</button>
-            {clientId && <NotificationBell goTab={setTab} />}
             <div className="admin__title">{title}</div>
+          </div>
+          <div className="admin__topbar-right">
+            {clientId && <NotificationBell goTab={setTab} />}
+            <ProfileMenu email={auth.email} onSignOut={() => signOut().then(() => { if (clientOverride) exitToConsole(); else go("home"); })} />
           </div>
         </div>
         </div>

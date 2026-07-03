@@ -644,6 +644,7 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 /* Client (owner) header title is smaller than the superadmin's. */
 .admin:not(.admin--sa) .admin__title { font-size: 20px; }
 .admin__topbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.admin__topbar-right { display: flex; align-items: center; gap: 10px; flex: none; }
 .admin__burger, .admin__overlay, .admin__drawer-close { display: none; }
 
 /* --- Admin notification bell ----------------------------------------------*/
@@ -652,7 +653,10 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 .notif__btn:hover { background: var(--surface-2); }
 .notif__badge { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 999px; background: oklch(0.6 0.2 25); color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; line-height: 1; }
 .notif__backdrop { position: fixed; inset: 0; z-index: 90; }
-.notif__panel { position: absolute; top: calc(100% + 8px); left: 0; z-index: 91; width: min(360px, 92vw); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 12px 40px -12px rgba(0,0,0,.4); overflow: hidden; }
+/* right-aligned: the bell + account menu live at the top-right of the topbar */
+.notif__panel { position: absolute; top: calc(100% + 8px); right: 0; z-index: 91; width: min(360px, 92vw); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 12px 40px -12px rgba(0,0,0,.4); overflow: hidden; }
+.notif__panel--menu { width: min(240px, 80vw); }
+.notif__acct { padding: 12px 16px; font-size: 13px; color: var(--ink-soft); border-bottom: 1px solid var(--line); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .notif__head { padding: 12px 16px; font-weight: 700; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); }
 .notif__list { max-height: 60vh; overflow-y: auto; }
 .notif__empty { padding: 24px 16px; color: var(--muted); font-size: 14px; text-align: center; }
