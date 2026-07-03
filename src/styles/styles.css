@@ -1078,6 +1078,9 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 /* Supabase dark nav rail — exact dark-mode tokens: #171717 panel, #313131 gray active (NOT green), #898989 inactive */
 .admin--sa .admin__side { background: #171717; border-right-color: #2e2e2e; }
 .admin--sa .admin__side .admin__brand-name { color: #fafafa; }
+/* Couple's monogram (owner sidebar): light initials on the dark nav */
+.admin--sa .admin__side .monogram { color: #fafafa; border-color: #4b4b4f; background: rgba(255,255,255,.06); }
+.admin--sa .admin__side .monogram__amp { color: #9db7f5; }
 .admin--sa .admin__brand-name + div { color: #898989 !important; }
 .admin--sa .admin__side .admin__navlink { color: #898989; padding: 8px 8px 8px 6px; border-radius: 6px; gap: 8px; font-size: 14px; }
 .admin--sa .admin__side .admin__navlink:hover { color: #fafafa; background: rgba(255,255,255,.06); }
