@@ -491,6 +491,11 @@ export function envColorFilterFor(envColor, envColorCustom) {
   return envColorFilter(envColor);
 }
 
+// Seal cut-out for the SEALED envelope art — the recolor overlay is masked with
+// this so the wax seal keeps its original cream (mirrors the geometry hardcoded
+// in styles.css for .inv-art-recolor--sealed; used by the admin live preview).
+export const ENV_SEAL_MASK = "radial-gradient(5% 10.6% at 49.6% 56.8%, transparent 86%, #000 100%)";
+
 // oklch hue (degrees) of an sRGB color — for deriving the matching site palette.
 export function rgbToOklchHue([r, g, b]) {
   const lin = (x) => { x /= 255; return x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; };

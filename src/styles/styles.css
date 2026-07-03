@@ -1504,9 +1504,22 @@ body.env-sealed .decor { display: none; }
   position: relative; width: min(560px, 88vw);
   container-type: inline-size; line-height: 0;
 }
-/* --eg-env-recolor = owner-picked envelope paper color (ENV_COLORS); the
-   fallback no-op hue-rotate keeps the filter list valid when unset (olive). */
-.inv-sealed-art { width: 100%; height: auto; display: block; filter: var(--eg-env-recolor, hue-rotate(0deg)) drop-shadow(0 16px 34px rgba(40, 40, 20, .24)); }
+.inv-sealed-art { width: 100%; height: auto; display: block; filter: drop-shadow(0 16px 34px rgba(40, 40, 20, .24)); }
+/* Envelope recolor overlays — a duplicate of the art carrying the owner's color
+   filter (--eg-env-recolor), with an ellipse mask cut out over the wax seal so
+   the UNfiltered base image shows through and the seal always stays cream.
+   Ellipse geometry measured from the art; mirrored in ENV_SEAL_MASK (registry.js)
+   for the admin preview. Overlays render only when a recolor is active. */
+img.inv-art-recolor { position: absolute; pointer-events: none; filter: var(--eg-env-recolor, none); }
+img.inv-art-recolor--sealed {
+  left: 0; top: 0; width: 100%; height: auto;
+  -webkit-mask-image: radial-gradient(5% 10.6% at 49.6% 56.8%, transparent 86%, #000 100%);
+  mask-image: radial-gradient(5% 10.6% at 49.6% 56.8%, transparent 86%, #000 100%);
+}
+img.inv-art-recolor--front {
+  -webkit-mask-image: radial-gradient(6% 12.6% at 50.5% 70.4%, transparent 86%, #000 100%);
+  mask-image: radial-gradient(6% 12.6% at 50.5% 70.4%, transparent 86%, #000 100%);
+}
 .inv-seal-hotspot {
   position: absolute; left: 49.3%; top: 56.8%; width: 13%; height: 26%;
   transform: translate(-50%, -50%); border: 0; background: transparent; padding: 0; margin: 0;
@@ -1542,8 +1555,9 @@ body.env-sealed .decor { display: none; }
 .inv-env-stack > img { display: block; height: auto; }
 .inv-env-stack .inv-l-card > img, .inv-env-stack .inv-l-heart > img { display: block; width: 100%; height: auto; }
 .inv-env-stack img, .inv-l-video { filter: drop-shadow(0 5px 9px rgba(26, 30, 12, .34)); }
-/* envelope front pocket also takes the paper recolor (card/flowers/heart don't) */
-.inv-env-stack img.inv-l-front { filter: var(--eg-env-recolor, hue-rotate(0deg)) drop-shadow(0 5px 9px rgba(26, 30, 12, .34)); }
+/* recolor overlay of the front pocket: color filter only, no drop-shadow (the
+   base copy underneath casts it) — out-ranks the `.inv-env-stack img` rule above */
+.inv-env-stack img.inv-art-recolor { filter: var(--eg-env-recolor, none); }
 .inv-env-stack > img.inv-l-back { display: none; }
 .inv-l-card  { left: 40.01%; top: -17.5%; width: 47%;   z-index: 2; }
 .inv-l-framegroup { left: 7.18%; top: -17.02%; width: 47%; }
@@ -1703,7 +1717,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    whole envelope, so it is intentionally left untouched (shifting the art there would push the
    visible envelope off-center). */
 @media (max-width: 860px) {
-  .eg-sealed .inv-sealed-art { transform: translateX(0.7%); }
+  .eg-sealed .inv-sealed-art, .eg-sealed .inv-art-recolor--sealed { transform: translateX(0.7%); }
 }
 .eg-open { width: min(1140px, 100vw, 105vh); flex: none; transition: width .6s ease; }
 .eg-cue {
@@ -2202,10 +2216,15 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .apply-ent__head .input { font-weight: 600; }
 .apply-ent__person { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin-bottom: 8px; align-items: center; }
 .apply-rsvp { display: grid; gap: 12px; }
-.apply-rsvp__opt { text-align: left; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); cursor: pointer; font: inherit; color: inherit; }
-.apply-rsvp__opt.is-on { border-color: #1E5BD6; background: #eff6ff; }
+.apply-rsvp__opt { display: flex; align-items: flex-start; gap: 12px; text-align: left; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); cursor: pointer; font: inherit; color: inherit; transition: border-color .15s ease, background .15s ease, box-shadow .15s ease; }
+.apply-rsvp__opt:hover { border-color: #93b4f0; }
+.apply-rsvp__opt.is-on { border-color: #1E5BD6; background: #f5f9ff; box-shadow: 0 0 0 1px #1E5BD6 inset; }
+.apply-rsvp__opt:focus-visible { outline: 2px solid #1E5BD6; outline-offset: 2px; }
+.apply-rsvp__radio { flex: 0 0 auto; width: 18px; height: 18px; margin-top: 1px; border-radius: 50%; border: 2px solid #cbd5e1; background: #fff; transition: border-color .15s ease, box-shadow .15s ease; }
+.apply-rsvp__opt.is-on .apply-rsvp__radio { border-color: #1E5BD6; box-shadow: inset 0 0 0 4px #1E5BD6; }
+.apply-rsvp__text { min-width: 0; }
 .apply-rsvp__label { display: block; font-weight: 700; margin-bottom: 4px; }
-.apply-rsvp__desc { display: block; font-size: 13px; color: var(--muted); }
+.apply-rsvp__desc { display: block; font-size: 13px; color: var(--muted); line-height: 1.5; }
 .apply-review { border: 1px solid var(--line); border-radius: 12px; padding: 4px 16px; }
 .apply-review__row { display: flex; justify-content: space-between; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
 .apply-review__row:last-of-type { border-bottom: none; }
@@ -2213,22 +2232,28 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 @media (max-width: 560px) { .apply-sched { grid-template-columns: 1fr 1fr; } .apply-ent__person { grid-template-columns: 1fr 1fr; } }
 
 /* apply wizard: each step's fields live inside an admin-style panel section */
-.apply-panel { margin-bottom: 0; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
-.apply-panel__title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif; font-size: 19px; font-weight: 800; letter-spacing: -0.01em; white-space: normal; }
-.apply-panel .panel__body { padding: 20px 22px; }
-.apply-panel .apply-body { min-height: 200px; }
+.apply-page { background: linear-gradient(180deg, #f6f8fb 0%, #fdfdfe 420px); }
+.apply-panel { margin-bottom: 0; box-shadow: 0 1px 2px rgba(15,23,42,.05), 0 12px 32px -18px rgba(15,23,42,.18); }
+.apply-panel__head { padding: 18px 24px 16px; background: linear-gradient(180deg, #fdfdfe, #fafbfc); }
+.apply-eyebrow { font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; font-weight: 700; color: #1E5BD6; margin-bottom: 5px; font-variant-numeric: tabular-nums; }
+.apply-panel__title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif; font-size: 20px; font-weight: 800; letter-spacing: -0.015em; white-space: normal; color: #0f172a; text-wrap: balance; }
+.apply-panel__sub { margin: 5px 0 0; font-size: 13.5px; color: var(--muted); line-height: 1.45; }
+.apply-panel .panel__body { padding: 20px 24px; }
+.apply-panel .apply-body { min-height: 200px; animation: apply-step-in .26s ease-out both; }
 .apply-panel__foot { justify-content: space-between; background: #f8fafc; }
-@media (max-width: 560px) { .apply-panel .panel__body, .apply-panel__foot { padding-left: 14px; padding-right: 14px; } .apply-panel .panel__head { padding: 14px; } }
+@keyframes apply-step-in { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+@media (max-width: 560px) { .apply-panel .panel__body, .apply-panel__foot { padding-left: 15px; padding-right: 15px; } .apply-panel .apply-panel__head { padding: 15px 15px 13px; } }
 
 /* apply wizard: section stepper (one tile per step; done tiles jump back) */
-.apply-steps { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
-.apply-steps__it { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px 4px 4px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font: inherit; font-size: 12px; font-weight: 600; color: var(--muted); cursor: default; }
-.apply-steps__num { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: #e2e8f0; color: #64748b; font-size: 11px; font-weight: 700; line-height: 1; }
-.apply-steps__it.is-current { border-color: #1E5BD6; background: #eff6ff; color: #1E5BD6; }
-.apply-steps__it.is-current .apply-steps__num { background: #1E5BD6; color: #fff; }
+.apply-steps { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.apply-steps__it { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px 4px 4px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font: inherit; font-size: 12px; font-weight: 600; color: var(--muted); cursor: default; transition: border-color .15s ease, color .15s ease, background .15s ease, box-shadow .15s ease; }
+.apply-steps__num { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: #eef2f7; color: #64748b; font-size: 11px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.apply-steps__it.is-current { border-color: #1E5BD6; background: #1E5BD6; color: #fff; box-shadow: 0 2px 8px -2px rgba(30,91,214,.45); }
+.apply-steps__it.is-current .apply-steps__num { background: rgba(255,255,255,.24); color: #fff; }
 .apply-steps__it.is-done { cursor: pointer; color: #334155; }
 .apply-steps__it.is-done .apply-steps__num { background: #dbeafe; color: #1E5BD6; }
-.apply-steps__it.is-done:hover { border-color: #1E5BD6; color: #1E5BD6; }
+.apply-steps__it.is-done:hover { border-color: #1E5BD6; color: #1E5BD6; box-shadow: 0 1px 4px rgba(30,91,214,.18); }
+.apply-steps__it:focus-visible { outline: 2px solid #1E5BD6; outline-offset: 2px; }
 @media (max-width: 560px) {
   .apply-steps { gap: 5px; }
   .apply-steps__it { padding: 3px; }
@@ -2237,7 +2262,26 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   .apply-steps__it.is-current .apply-steps__lbl { display: inline; }
 }
 
+/* apply wizard: thin progress track between stepper and panel */
+.apply-progress { height: 3px; border-radius: 999px; background: #e8edf4; margin: 0 2px 16px; overflow: hidden; }
+.apply-progress i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #1E5BD6, #4D8DF7); transition: width .4s cubic-bezier(.4,0,.2,1); }
+
+/* apply wizard: success screen */
+.apply-done__badge { width: 58px; height: 58px; margin: 0 auto 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #16a34a; background: #ecfdf5; box-shadow: inset 0 0 0 1px #bbf7d0; animation: apply-pop .45s cubic-bezier(.34,1.56,.64,1) both; }
+@keyframes apply-pop { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .apply-panel .apply-body { animation: none; }
+  .apply-progress i { transition: none; }
+  .apply-done__badge { animation: none; }
+}
+
 /* apply wizard: schedule column headers + optional-step callout */
 .apply-sched--head { margin-bottom: 4px; }
 .apply-sched--head span { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; color: var(--muted); }
-.apply-optional { margin: 0 0 12px; padding: 10px 14px; border: 1px solid #bfdbfe; background: #eff6ff; border-radius: 8px; font-size: 13px; color: #1e40af; }
+.apply-optional { margin: 0 0 14px; padding: 10px 14px; border: 1px solid #bfdbfe; background: #eff6ff; border-radius: 8px; font-size: 13px; color: #1e40af; }
+
+/* apply wizard: in-panel refinements */
+.apply-panel .apply-review { background: #f8fafc; }
+.apply-form .theme-sw { transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease; }
+.apply-form .theme-sw:hover { transform: translateY(-1px); box-shadow: 0 3px 10px -4px rgba(15,23,42,.25); }

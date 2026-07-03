@@ -56,6 +56,15 @@ export function egTintVars(s) {
   return vars;
 }
 
+// Duplicate of the envelope art carrying the recolor filter, masked in CSS so
+// the wax seal shows the UNfiltered base image underneath (seal stays cream).
+function envRecolorOverlay(s, kind) {
+  if (!envColorFilterFor(s.envColor, s.envColorCustom)) return null;
+  return kind === "sealed"
+    ? <img className="inv-art-recolor inv-art-recolor--sealed" src="/assets/invite/env-closed.webp" alt="" aria-hidden="true" />
+    : <img className="inv-l-front inv-art-recolor inv-art-recolor--front" src="/assets/invite/p2-envelope-front.png" alt="" aria-hidden="true" />;
+}
+
 export function EnvelopeHero() {
   const { settings } = useStore();
   const s = settings;
@@ -176,6 +185,7 @@ export function EnvelopeHero() {
         <div className={"eg-page" + (open ? "" : " is-active")}>
           <div className={"inv-sealed-wrap eg-sealed" + (ready ? " is-ready" : "")}>
             <img ref={artRef} className="inv-sealed-art" src="/assets/invite/env-closed.webp" alt="Sealed olive envelope with lace trim and wax seal" onLoad={triggerReady} />
+            {envRecolorOverlay(s, "sealed")}
             <div className="inv-letter-from">
               <span className="inv-lf-label">A Love Letter From</span>
               <span className="inv-lf-names"><span className="inv-lf-type">{s.partnerA} &amp; {s.partnerB}</span></span>
@@ -208,6 +218,7 @@ export function EnvelopeHero() {
               <span className="inv-heart-text">{heartDate}</span>
             </div>
             <img className="inv-l-front" src="/assets/invite/p2-envelope-front.png" alt="Olive envelope front pocket" />
+            {envRecolorOverlay(s, "front")}
             <img className="inv-l-flower" src="/assets/invite/p2-flowers.png" alt="Floral spray of calla lilies, anthurium, orchids and amaranthus" />
           </div>
         </div>
@@ -236,6 +247,7 @@ export function EnvelopeInvite() {
       <div className={"inv-page" + (open ? "" : " is-active")}>
         <div className="inv-sealed-wrap">
           <img className="inv-sealed-art" src="/assets/invite/env-closed.webp" alt="Sealed olive envelope with lace trim and wax seal" />
+          {envRecolorOverlay(s, "sealed")}
           <div className="inv-letter-from">
             <span className="inv-lf-label">A Love Letter From</span>
             <span className="inv-lf-names"><span className="inv-lf-type">{s.partnerA} &amp; {s.partnerB}</span></span>
@@ -268,6 +280,7 @@ export function EnvelopeInvite() {
             <span className="inv-heart-text">{heartDate}</span>
           </div>
           <img className="inv-l-front" src="/assets/invite/p2-envelope-front.png" alt="Olive envelope front pocket" />
+          {envRecolorOverlay(s, "front")}
           <img className="inv-l-flower" src="/assets/invite/p2-flowers.png" alt="Floral spray of calla lilies, anthurium, orchids and amaranthus" />
         </div>
       </div>
