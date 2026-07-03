@@ -7,7 +7,8 @@ import { FX_LIST } from "@/lib/falling-fx.js";
 import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { signOut } from "@/lib/auth.js";
-import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb } from "@/lib/api.js";
+import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb, updateRsvpDietDb } from "@/lib/api.js";
+import { DIET_OPTIONS } from "@/features/rsvp.jsx";
 import { reconcileGuests, guestFromRsvp, normName } from "@/lib/guests.js";
 import { headsOf } from "@/lib/rsvp.js";
 import { mediaUrl } from "@/lib/media.js";
@@ -268,18 +269,21 @@ export function QuestionEditor({ open, question, onClose }) {
 // Modal body: add or edit one invited guest. `companions` are the names from
 // the guest's matched RSVP reply — edits/removals are STAGED locally and only
 // persist when "Save guest" is pressed (Cancel discards everything).
-function GuestForm({ initial, companions, onSave, onCancel }) {
+function GuestForm({ initial, companions, rsvpDiet, onSave, onCancel }) {
   // `allocation` = the max attendees this guest may RSVP, including themselves.
   // The number the owner types IS the guest's cap — no conversion.
   const [f, setF] = useState(initial);
   const [comps, setComps] = useState(companions || []);
+  // Dietary lives on the guest's REPLY (rsvps row) — editable only when one
+  // exists; staged like companions, persisted on Save.
+  const [diet, setDiet] = useState(rsvpDiet || null);
   const [saving, setSaving] = useState(false);
   const set = (k) => (e) => { const v = e && e.target ? e.target.value : e; setF((s) => ({ ...s, [k]: v })); };
   const valid = f.firstName.trim() && f.lastName.trim();
   async function submit() {
     if (!valid || saving) return;
     setSaving(true);
-    try { await onSave(f, comps); } finally { setSaving(false); }
+    try { await onSave(f, comps, diet); } finally { setSaving(false); }
   }
   return (
     <div>
@@ -312,6 +316,18 @@ function GuestForm({ initial, companions, onSave, onCancel }) {
         </>
       )}
       <Field label="Notes" hint="Optional" id="g-notes"><Input id="g-notes" value={f.notes || ""} onChange={set("notes")} /></Field>
+      {diet && (
+        <div className="field-row field-row--2">
+          <Field label="Dietary preference" hint="From their RSVP reply" id="g-diet">
+            <Select id="g-diet" value={diet.diet} onChange={(e) => { const v = e.target.value; setDiet((d) => ({ ...d, diet: v })); }}>
+              {DIET_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+            </Select>
+          </Field>
+          <Field label="Dietary notes" hint="Optional" id="g-dietnotes">
+            <Input id="g-dietnotes" value={diet.dietNotes} onChange={(e) => { const v = e.target.value; setDiet((d) => ({ ...d, dietNotes: v })); }} />
+          </Field>
+        </div>
+      )}
       {comps.length > 0 && (
         <Field label="Companions" hint="From their RSVP reply — changes apply when you save">
           <div style={{ display: "grid", gap: 8 }}>
@@ -375,7 +391,7 @@ export function GuestsAdmin() {
   });
   const pg = usePaged(onUnmatched ? unmatched : filtered, 10);
 
-  async function saveGuest(form, stagedComps) {
+  async function saveGuest(form, stagedComps, stagedDiet) {
     const payload = { ...form, allocation: Math.max(1, parseInt(form.allocation, 10) || 1) };
     // Duplicate guard: exact same normalized first+middle+last already invited
     // (a different middle name is a legitimately different person, e.g. L vs R).
@@ -421,6 +437,9 @@ export function GuestsAdmin() {
     // Effective status is the reply's when one exists — so an admin status
     // change on a replied guest writes through to the reply itself.
     const statusChanged = rsvpRow && payload.status && payload.status !== "none" && payload.status !== rsvpRow.status;
+    // Dietary also lives on the reply — staged in the modal, persisted here.
+    const dietChanged = rsvpRow && stagedDiet
+      && (stagedDiet.diet !== (rsvpRow.diet || "None") || (stagedDiet.dietNotes || "") !== (rsvpRow.dietNotes || ""));
     try {
       await run(async () => {
         if (form.id) { await updateGuestDb(form.id, payload); Store.updateGuest(form.id, payload); }
@@ -432,6 +451,10 @@ export function GuestsAdmin() {
         if (statusChanged) {
           await updateRsvpStatusDb(rsvpRow.id, payload.status);
           Store.updateRSVP(rsvpRow.id, { status: payload.status });
+        }
+        if (dietChanged) {
+          await updateRsvpDietDb(rsvpRow.id, stagedDiet.diet, stagedDiet.dietNotes);
+          Store.updateRSVP(rsvpRow.id, { diet: stagedDiet.diet || "None", dietNotes: stagedDiet.dietNotes || "" });
         }
       });
     } catch (e) {
@@ -583,7 +606,7 @@ export function GuestsAdmin() {
             </table>
           ) : (
             <table className="tbl">
-              <thead><tr><th>Name</th><th>Contact</th><th>Allotted seats</th><th>Status</th>{showComps && <th className="col-comp">Companions</th>}<th></th></tr></thead>
+              <thead><tr><th>Name</th><th>Contact</th><th>Allotted seats</th><th>Status</th>{showComps && <th className="col-comp">Companions</th>}<th>Notes</th><th></th></tr></thead>
               <tbody>
                 {pg.pageItems.map((g) => {
                   const x = byId.get(g.id) || { status: "none", rsvp: null };
@@ -612,6 +635,9 @@ export function GuestsAdmin() {
                           )}
                         </td>
                       )}
+                      <td style={{ maxWidth: 200 }}>{(x.rsvp && x.rsvp.notes)
+                        ? <span title={x.rsvp.notes} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.rsvp.notes}</span>
+                        : <span style={{ color: "var(--muted)" }}>—</span>}</td>
                       <td><div className="row-actions">
                         <button className="icon-btn" onClick={() => setEditing({ ...blank, ...g })} aria-label="Edit" title="Edit guest">{Icon.edit({})}</button>
                         <button className="icon-btn icon-btn--danger" onClick={() => removeGuest(g)} aria-label="Remove">{Icon.trash({})}</button>
@@ -619,7 +645,7 @@ export function GuestsAdmin() {
                     </tr>
                   );
                 })}
-                {filtered.length === 0 && <tr><td colSpan={showComps ? 6 : 5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No guests yet. Add your invited guests to track replies.</td></tr>}
+                {filtered.length === 0 && <tr><td colSpan={showComps ? 7 : 6} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No guests yet. Add your invited guests to track replies.</td></tr>}
               </tbody>
             </table>
           )}
@@ -634,6 +660,7 @@ export function GuestsAdmin() {
           const comps = arr.length ? arr : (r && r.plusOne ? String(r.plusOne).split(", ") : []);
           return (
             <GuestForm initial={editing} companions={comps}
+              rsvpDiet={r ? { diet: r.diet || "None", dietNotes: r.dietNotes || "" } : null}
               onSave={saveGuest} onCancel={() => setEditing(null)} />
           );
         })()}

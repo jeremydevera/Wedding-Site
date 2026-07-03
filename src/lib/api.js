@@ -93,6 +93,11 @@ export async function updateRsvpStatusDb(id, status) {
   const { error } = await supabase.from("rsvps").update({ status }).eq("id", id);
   if (error) { console.warn("[api] rsvp status update failed:", error.message); throw error; }
 }
+// Admin edit of a reply's dietary preference (owner-update RLS, 0016).
+export async function updateRsvpDietDb(id, diet, dietNotes) {
+  const { error } = await supabase.from("rsvps").update({ diet: diet || "None", diet_notes: dietNotes || "" }).eq("id", id);
+  if (error) { console.warn("[api] rsvp diet update failed:", error.message); throw error; }
+}
 
 export async function postGuestbook(entry) {
   const clientId = Store.get().clientId;
