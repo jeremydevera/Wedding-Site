@@ -188,19 +188,23 @@ export function AdminDashboard({ goTab }) {
   // Hide a section's dashboard card when its module is switched off in Settings.
   const gbOn = moduleEnabled(settings.modules, "guestbook");
   const quizOn = moduleEnabled(settings.modules, "quiz");
+  // Small real "trend"-style pill per tile (no fake week-over-week data).
+  const gbPending = guestbook.filter((g) => g.status === "pending").length;
+  const quizAvg = quizSubs.length ? Math.round(quizSubs.reduce((s, q) => s + (q.total ? q.score / q.total : 0), 0) / quizSubs.length * 100) : 0;
+  const totalResponses = rsvps.length;
   const stats = [
     // "RSVPs" headline = ATTENDING total only (owner request) — in strict mode
     // read from the one reconcileGuests summary (same field the Guests tab's
     // Attending folder counts, so they can never disagree). Sub is just
     // "confirmed"; maybe/declined/for-approval live in the Guests tab folders.
-    { label: "RSVPs", value: strict ? recon.summary.attending : attending.length, sub: "confirmed", tab: "rsvps", icon: "check", accent: "success" },
-    { label: "Guest Count", value: guestCount, sub: "people coming", tab: "rsvps", icon: "user", accent: "info" },
+    { label: "RSVPs", value: strict ? recon.summary.attending : attending.length, sub: "confirmed", tab: "rsvps", icon: "check", accent: "success", pill: `${totalResponses} total` },
+    { label: "Guest Count", value: guestCount, sub: "people coming", tab: "rsvps", icon: "user", accent: "info", pill: `${attending.length} ${attending.length === 1 ? "party" : "parties"}` },
     ...(mediaShelved ? [] : [
-      { label: "Photos", value: photos.length, sub: pendingMedia.length ? `${pendingMedia.length} to review` : "all clear", tab: "media", icon: "camera", accent: "purple" },
-      { label: "Videos", value: videos.length, sub: "uploaded", tab: "media", icon: "play", accent: "amber" },
+      { label: "Photos", value: photos.length, sub: pendingMedia.length ? `${pendingMedia.length} to review` : "all clear", tab: "media", icon: "camera", accent: "purple", pill: pendingMedia.length ? `${pendingMedia.length} new` : null },
+      { label: "Videos", value: videos.length, sub: "uploaded", tab: "media", icon: "play", accent: "amber", pill: null },
     ]),
-    ...(gbOn ? [{ label: "Guestbook", value: guestbook.length, sub: "messages", tab: "guestbook", icon: "book", accent: "purple" }] : []),
-    ...(quizOn ? [{ label: "Quiz Plays", value: quizSubs.length, sub: "submissions", tab: "quiz", icon: "quiz", accent: "amber" }] : []),
+    ...(gbOn ? [{ label: "Guestbook", value: guestbook.length, sub: "messages", tab: "guestbook", icon: "book", accent: "purple", pill: gbPending > 0 ? `${gbPending} pending` : "up to date" }] : []),
+    ...(quizOn ? [{ label: "Quiz Plays", value: quizSubs.length, sub: "submissions", tab: "quiz", icon: "quiz", accent: "amber", pill: quizSubs.length ? `${quizAvg}% avg` : null }] : []),
   ];
   const recentRsvps = rsvps.slice(0, 5);
   const recentMedia = media.slice(0, 6);
@@ -214,9 +218,10 @@ export function AdminDashboard({ goTab }) {
             <div className="kpi__top">
               <span className="kpi__chip" aria-hidden="true">{Icon[s.icon] ? Icon[s.icon]({}) : null}</span>
               <span className="kpi__label">{s.label}</span>
+              {s.pill && <span className="kpi__pill">{s.pill}</span>}
             </div>
             <div className="kpi__value">{s.value}</div>
-            <div className="kpi__foot">{s.sub}</div>
+            <div className="kpi__foot"><span className="kpi__tick" aria-hidden="true" />{s.sub}</div>
           </button>
         ))}
       </div>

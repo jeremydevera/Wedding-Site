@@ -779,8 +779,12 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 .kpi__chip { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; flex: none; background: color-mix(in srgb, var(--kpi, var(--accent)) 16%, transparent); color: var(--kpi, var(--accent)); }
 .kpi__chip svg { width: 18px; height: 18px; }
 .kpi__label { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
-.kpi__value { font-family: var(--font-display); font-size: 44px; line-height: 1; margin: 14px 0 0; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
-.kpi__foot { margin-top: auto; padding: 12px 0 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
+/* trend-style pill, pushed to the right of the row */
+.kpi__pill { margin-left: auto; flex: none; font-size: 11px; font-weight: 700; letter-spacing: .01em; padding: 3px 9px; border-radius: 999px; color: var(--kpi, var(--accent)); background: color-mix(in srgb, var(--kpi, var(--accent)) 14%, transparent); white-space: nowrap; }
+/* big value in a heavy sans (matches the Adminator look, not the serif display) */
+.kpi__value { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif; font-weight: 800; font-size: 42px; line-height: 1; margin: 16px 0 0; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+.kpi__foot { margin-top: auto; padding: 12px 0 16px; border-top: 1px dashed var(--line); font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.kpi__tick { flex: none; width: 12px; height: 1.5px; border-radius: 2px; background: color-mix(in srgb, var(--kpi, var(--accent)) 60%, transparent); }
 .kpi--success { --kpi: #3aa76d; }
 .kpi--info { --kpi: var(--accent); }
 .kpi--purple { --kpi: #7c5cd6; }
