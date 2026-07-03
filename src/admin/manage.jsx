@@ -1557,6 +1557,7 @@ export function VenueAdmin({ section = "editor", headRight = null }) {
         venue={editVi != null ? list[editVi] : null}
         onPatch={(patch) => patchVenue(editVi, patch)}
         onClose={() => setEditVi(null)}
+        onDiscard={() => { commit(list.filter((_, idx) => idx !== editVi)); setEditVi(null); }}
       />
     </div>
   );
@@ -1564,7 +1565,7 @@ export function VenueAdmin({ section = "editor", headRight = null }) {
 
 // Add/edit one venue in a modal: name, address, map, and its tiles (edited
 // inline). Edits apply live to the store; the list's Save changes persists.
-function VenueEditorModal({ open, venue, onPatch, onClose }) {
+function VenueEditorModal({ open, venue, onPatch, onClose, onDiscard }) {
   if (!open || !venue) return null;
   const cards = venue.cards || [];
   const setCards = (cs) => onPatch({ cards: cs });
@@ -1572,8 +1573,18 @@ function VenueEditorModal({ open, venue, onPatch, onClose }) {
   const setTile = (i, patch) => setCards(cards.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
   const removeTile = (i) => setCards(cards.filter((_, idx) => idx !== i));
   const moveTile = (i, dir) => { const a = [...cards]; const j = i + dir; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; setCards(a); };
+  // On close: drop empty info rows; discard the location entirely if nothing was
+  // entered; require a name/address/map before keeping one (no blank locations).
+  const finish = () => {
+    const clean = cards.filter((c) => (c.t || "").trim() || (c.d || "").trim());
+    const hasIdentity = !!((venue.name || "").trim() || (venue.address || "").trim() || (venue.mapQuery || "").trim() || venue.mapLat != null);
+    if (!hasIdentity && clean.length === 0) { onDiscard(); return; }
+    if (!hasIdentity) { toast("Add a name, address, or map pin for this location.", "err"); return; }
+    if (clean.length !== cards.length) onPatch({ cards: clean });
+    onClose();
+  };
   return (
-    <Modal open={open} onClose={onClose} label="Location">
+    <Modal open={open} onClose={finish} label="Location">
       <SectionHead eyebrow="Venue & Map" title={venue.name || "Location"} />
       <Field label="Location name" id="v-name" hint="e.g. Ceremony — St. Mary's Church"><Input id="v-name" value={venue.name} onChange={(e) => onPatch({ name: e.target.value })} /></Field>
       <Field label="Address" id="v-addr"><Input id="v-addr" value={venue.address} onChange={(e) => onPatch({ address: e.target.value })} /></Field>
@@ -1587,25 +1598,25 @@ function VenueEditorModal({ open, venue, onPatch, onClose }) {
       </div>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "6px 0 10px" }}>
-        <div style={{ fontWeight: 600 }}>Tiles <span style={{ color: "var(--muted)", fontWeight: 400, fontSize: 14 }}>({cards.length})</span></div>
-        <Button variant="ghost" size="sm" onClick={addTile}>+ Add tile</Button>
+        <div style={{ fontWeight: 600 }}>Info <span style={{ color: "var(--muted)", fontWeight: 400, fontSize: 14 }}>({cards.length})</span></div>
+        <Button variant="ghost" size="sm" onClick={addTile}>+ Add info</Button>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {cards.map((c, i) => (
           <div key={c.id || i} style={{ border: "1px solid var(--line)", borderRadius: "var(--radius)", padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <Input value={c.t} onChange={(e) => setTile(i, { t: e.target.value })} placeholder="Tile title (e.g. Parking)" />
+              <Input value={c.t} onChange={(e) => setTile(i, { t: e.target.value })} placeholder="Info title (e.g. Parking)" />
               <MoveArrows i={i} count={cards.length} onMove={(dir) => moveTile(i, dir)} />
-              <button className="icon-btn icon-btn--danger" title="Delete tile" onClick={() => removeTile(i)}>{Icon.trash({})}</button>
+              <button className="icon-btn icon-btn--danger" title="Delete info" onClick={() => removeTile(i)}>{Icon.trash({})}</button>
             </div>
             <Textarea value={c.d} onChange={(e) => setTile(i, { d: e.target.value })} placeholder="What guests read under this map" style={{ minHeight: 70 }} />
           </div>
         ))}
-        {cards.length === 0 && <div style={{ color: "var(--muted)", fontSize: 14, textAlign: "center", padding: "16px 0" }}>No tiles yet. Add one to show info under this map.</div>}
+        {cards.length === 0 && <div style={{ color: "var(--muted)", fontSize: 14, textAlign: "center", padding: "16px 0" }}>No info yet. Add one to show details under this map.</div>}
       </div>
 
       <div style={{ display: "flex", gap: 12, marginTop: 16, justifyContent: "flex-end" }}>
-        <Button variant="primary" onClick={onClose}>Done</Button>
+        <Button variant="primary" onClick={finish}>Done</Button>
       </div>
     </Modal>
   );
