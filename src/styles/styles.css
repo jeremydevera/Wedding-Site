@@ -2069,20 +2069,29 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 }
 .rsvp-chart-card__head {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   gap: 8px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
   margin-bottom: 14px;
   flex: none;
 }
-.rsvp-chart-card__title {
+.rsvp-chart-card__eyebrow {
+  display: block;
   font-size: 11px;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   font-weight: 700;
+  color: var(--muted);
+}
+.rsvp-chart-card__title {
+  display: block;
+  margin-top: 4px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--ink);
 }
-.rsvp-chart-card__hint { font-size: 11px; color: var(--muted); }
-/* Adminator-style pill badge in the card head (e.g. "9 PARTIES") */
 .rsvp-chart-card__badge { margin-left: auto; flex: none; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; padding: 4px 10px; border-radius: 999px; color: #2E5BFF; background: rgba(46, 91, 255, 0.12); white-space: nowrap; }
 
 /* Donut host — Chart.js renders the chart + its right-side legend inside */
@@ -2090,7 +2099,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   position: relative;
   flex: 1;
   min-width: 0;
-  min-height: 200px;
+  min-height: 230px;
 }
 
 .rsvp-chart-empty {
