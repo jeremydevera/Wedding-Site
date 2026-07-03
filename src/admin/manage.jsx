@@ -2709,7 +2709,9 @@ export function AdminApp() {
   const clientOverride = new URLSearchParams(window.location.search).get("client");
   const exitToConsole = () => window.location.assign("/");
   return (
-    <div className={"admin" + (isSuper ? " admin--sa" : "")}>
+    // Always the neutral console skin — the admin never inherits the client's
+    // wedding theme, whether a superadmin or the couple (owner) is signed in.
+    <div className="admin admin--sa">
       {saving && (
         <div className="admin-saving" role="status" aria-live="polite" aria-label="Saving">
           <div className="admin-saving__box"><span className="admin-saving__spin" aria-hidden="true" />Saving…</div>
