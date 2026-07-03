@@ -152,6 +152,12 @@ export function AdminLogin({ onAuthed }) {
           </div>
 
           <button type="submit" className="signin__btn" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
+          {/* Self-serve signup lives on the apex hub only */}
+          {!isClient && (
+            <p style={{ textAlign: "center", fontSize: 13, color: "var(--sg-sub)", marginTop: 18 }}>
+              New here? <a href="/register" style={{ color: "#1E5BD6", fontWeight: 600, textDecoration: "none" }}>Create your wedding site →</a>
+            </p>
+          )}
         </form>
       </div>
       </div>

@@ -15,6 +15,7 @@ import { GalleryPage, UploadPage, VideoMessagePage } from "@/features/media.jsx"
 import { GuestbookPage, QuizPage } from "@/features/social.jsx";
 import { MusicMount } from "@/features/music.jsx";
 import { AdminApp, ImageUploadField } from "@/admin/manage.jsx";
+import { RegisterPage } from "@/admin/register.jsx";
 import { hasSection } from "@/config/eventTypes.js";
 import { moduleEnabled, moduleLabel } from "@/lib/roles.js";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
@@ -391,6 +392,10 @@ export function App() {
   const Page = ROUTES[route] || Home;
   // apex hub or the admin route → admin shell (no public site).
   const isAdmin = view === "admin";
+  // Public self-serve signup lives on the apex hub only (/register).
+  if (isAdmin && resolveSubdomain() === null && /^\/register\/?$/.test(window.location.pathname)) {
+    return (<><RegisterPage /><ToastHost /><ConfirmHost /></>);
+  }
   // BUG-0005: a switched-off section used to silently render Home. Show a short
   // "not available" note instead so the guest knows the link isn't broken.
   const routeBlocked = route !== "home" && route !== "admin" && !moduleEnabled(settings.modules, route);

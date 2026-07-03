@@ -2164,3 +2164,25 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .ent-edit-group__head { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
 .ent-edit-group__title { font-family: var(--font-display); font-size: 19px; color: var(--ink); flex: 1; min-width: 0; }
 .ent-edit-group__head .row-actions { margin-left: auto; }
+
+/* --- Self-serve registration (/register) -----------------------------------*/
+.reg-sub { display: flex; align-items: center; gap: 0; }
+.reg-sub input { flex: 1; min-width: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.reg-sub__suffix { flex: none; height: 40px; display: flex; align-items: center; padding: 0 12px; background: var(--sg-inbg, #fff); border: 1px solid var(--sg-inbd, #dcdce0); border-left: none; border-radius: 0 6px 6px 0; color: var(--sg-sub, #6b7280); font-size: 13px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.reg-sub__state { margin-top: 6px; font-size: 12.5px; min-height: 17px; color: var(--sg-sub, #6b7280); }
+.reg-sub__state[data-state="free"] { color: #16a34a; }
+.reg-sub__state[data-state="taken"], .reg-sub__state[data-state="invalid"] { color: #e5484d; }
+.reg-terms { display: flex; align-items: flex-start; gap: 9px; font-size: 13px; color: var(--sg-label, #374151); margin: 4px 0 16px; cursor: pointer; }
+.reg-terms input { margin-top: 2px; accent-color: #1E5BD6; }
+.signin .field-row.field-row--2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+@media (max-width: 560px) { .signin .field-row.field-row--2 { grid-template-columns: 1fr; } }
+
+/* --- First-login setup wizard ----------------------------------------------*/
+.wizard { min-width: 0; }
+.wizard__progress { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+.wizard__title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; color: #1e293b; margin: 0 0 18px; }
+.wizard__body { min-height: 220px; }
+.wizard__themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; max-height: 300px; overflow-y: auto; padding-right: 4px; }
+.wizard__nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); }
+.wizard__skip { background: none; border: none; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; padding: 8px 0; }
+.wizard__skip:hover { color: var(--ink); text-decoration: underline; }

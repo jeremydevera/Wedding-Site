@@ -19,6 +19,7 @@ import { ClientsAdmin, R2LibraryAdmin, SuperOverview } from "@/admin/superadmin.
 import { LocationPicker } from "@/ui/location-picker.jsx";
 import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
 import { MediaPickerModal } from "@/admin/MediaPicker.jsx";
+import { SetupWizard } from "@/admin/wizard.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // Save state shared from the AdminApp shell down to each section's footer, so the
@@ -2808,6 +2809,9 @@ export function AdminApp() {
         </div>
         </div>
         <div className="admin__body">
+          {/* First-login setup wizard for self-registered owners (self-signup
+              seeds onboarded:false; finishing or skipping flips it true). */}
+          {auth.role === "owner" && clientId && settings.onboarded === false && <SetupWizard />}
           <AdminSaveCtx.Provider value={{ saving, dirty, save: saveChanges, run: runSaving }}>
           {activeTab === "dashboard" && <AdminDashboard goTab={setTab} />}
           {activeTab === "home" && <HomeAdmin />}

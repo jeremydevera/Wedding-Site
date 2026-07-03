@@ -413,3 +413,27 @@ export async function migrateClientMediaToR2(onProgress) {
   await saveClientData();
   return { migrated, failed };
 }
+
+// --- Self-serve registration (apex /register page) ---------------------------
+// Both call the public self-signup Edge Function (no session required).
+export async function checkSubdomainFree(subdomain) {
+  const { data, error } = await supabase.functions.invoke("self-signup", {
+    body: { action: "check_subdomain", subdomain },
+  });
+  if (error) throw error;
+  return !!(data && data.available);
+}
+
+export async function selfSignup({ email, password, partnerA, partnerB, weddingDate, subdomain }) {
+  const { data, error } = await supabase.functions.invoke("self-signup", {
+    body: { email, password, partnerA, partnerB, weddingDate, subdomain },
+  });
+  // functions.invoke surfaces non-2xx as FunctionsHttpError with the payload in context
+  if (error) {
+    let msg = "Could not create your site.";
+    try { const j = await error.context.json(); if (j && j.error) msg = j.error; } catch (_) {}
+    throw new Error(msg);
+  }
+  if (data && data.error) throw new Error(data.error);
+  return data; // { ok, subdomain, clientId }
+}
