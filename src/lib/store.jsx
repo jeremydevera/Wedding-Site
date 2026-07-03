@@ -56,11 +56,11 @@ export const DEFAULT_SETTINGS = {
   envTitleSize: 5, // envelope cover title size, 1–10 scale; maps to a cqw fraction that scales with the envelope
   arrangeEnabled: false,
   mapQuery: "Lipa, Batangas, Philippines",
-  // Home map: which venue's map shows on the home page, and which of that venue's
-  // tiles appear under it. homeVenueId "" = the first venue; homeCardIds is a list
-  // of card ids (absent/empty = no tiles on home, matching the pre-venues home).
+  // Home map: which venue's map shows on the home page (homeVenueId "" = the
+  // first venue), and whether that venue's tiles appear under it. Default off =
+  // map only, matching the pre-venues home page.
   homeVenueId: "",
-  homeCardIds: [],
+  homeShowTiles: false,
   // Home-page section visibility (toggled in the admin Home tab). Default on;
   // read as `!== false` everywhere so existing clients without the flag show.
   showMusic: true,

@@ -305,8 +305,9 @@ export function Home() {
   const homeMapLng = homeVenue ? homeVenue.mapLng : s.mapLng;
   const homeMapUrl = mapEmbedUrl(mapQuery, homeMapLat, homeMapLng);
   const homeMapAddr = (homeVenue && (homeVenue.address || homeVenue.name)) || s.venueAddress || s.venueName;
-  const homeIds = Array.isArray(s.homeCardIds) ? s.homeCardIds : [];
-  const homeCards = homeVenue ? (homeVenue.cards || []).filter((c) => homeIds.includes(c.id) && ((c.t || "").trim() || (c.d || "").trim())) : [];
+  // Tiles under the home map: all of the chosen venue's tiles when the owner
+  // turned them on, otherwise none (map only).
+  const homeCards = (homeVenue && s.homeShowTiles) ? (homeVenue.cards || []).filter((c) => (c.t || "").trim() || (c.d || "").trim()) : [];
 
   // replay the "Will you be there?" rise-in every time it scrolls into view
   React.useEffect(() => {

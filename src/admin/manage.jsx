@@ -1591,8 +1591,6 @@ export function VenueAdmin() {
 
   // ---- List view: all venues + home-map selection ----
   const homeVenue = list.find((v) => v.id === settings.homeVenueId) || list[0] || null;
-  const homeIds = Array.isArray(settings.homeCardIds) ? settings.homeCardIds : [];
-  const toggleHomeCard = (id, on) => Store.updateSettings({ homeCardIds: on ? [...homeIds, id] : homeIds.filter((x) => x !== id) });
   return (
     <div>
       <div className="panel">
@@ -1630,28 +1628,21 @@ export function VenueAdmin() {
         <div className="panel__head"><div className="panel__title">Home page map</div></div>
         <div className="panel__body">
           <p style={{ color: "var(--muted)", margin: "0 0 14px", fontSize: 14 }}>
-            Choose which location's map shows on the home page, and which of its tiles appear under it. The full Venue page always shows every location.
+            Pick which location's map shows on the home page. Editing a location's map or tiles is done above (in the list). The full Venue page always shows every location.
           </p>
           <Field label="Map to show on home" id="home-venue">
-            <Select id="home-venue" value={homeVenue ? homeVenue.id : ""} onChange={(e) => Store.updateSettings({ homeVenueId: e.target.value, homeCardIds: [] })}>
+            <Select id="home-venue" value={homeVenue ? homeVenue.id : ""} onChange={(e) => Store.updateSettings({ homeVenueId: e.target.value })}>
               {list.map((v, i) => <option key={v.id || i} value={v.id}>{v.name || v.address || `Location ${i + 1}`}</option>)}
             </Select>
           </Field>
-          {homeVenue && (homeVenue.cards || []).length > 0 && (
-            <div style={{ marginTop: 8 }}>
-              <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 14 }}>Tiles to show on home</div>
-              <div className="mod-toggles">
-                {(homeVenue.cards || []).map((c) => {
-                  const on = homeIds.includes(c.id);
-                  return (
-                    <label key={c.id} className={"mod-pill" + (on ? " mod-pill--on" : "")}>
-                      <input type="checkbox" checked={on} onChange={(e) => toggleHomeCard(c.id, e.target.checked)} /> {c.t || "Untitled"}
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          <div style={{ marginTop: 4 }}>
+            <AdminToggle
+              label="Show this location's tiles under the home map"
+              desc={homeVenue ? `Turns the ${(homeVenue.cards || []).length} tile${(homeVenue.cards || []).length === 1 ? "" : "s"} for “${homeVenue.name || homeVenue.address || "this location"}” on or off on the home page. Off = map only.` : "Off = map only."}
+              checked={settings.homeShowTiles === true}
+              onChange={(v) => Store.updateSettings({ homeShowTiles: v })}
+            />
+          </div>
         </div>
         <SaveFooter />
       </div>
