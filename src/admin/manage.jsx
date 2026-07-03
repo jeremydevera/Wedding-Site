@@ -1573,22 +1573,24 @@ function VenueEditorModal({ open, venue, onPatch, onClose, onDiscard }) {
   const setTile = (i, patch) => setCards(cards.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
   const removeTile = (i) => setCards(cards.filter((_, idx) => idx !== i));
   const moveTile = (i, dir) => { const a = [...cards]; const j = i + dir; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; setCards(a); };
-  // On close: drop empty info rows; discard the location entirely if nothing was
-  // entered; require a name/address/map before keeping one (no blank locations).
+  // On close: drop empty info rows; discard the location if nothing was entered;
+  // otherwise require a name AND address (map is optional) — no blank locations.
   const finish = () => {
     const clean = cards.filter((c) => (c.t || "").trim() || (c.d || "").trim());
-    const hasIdentity = !!((venue.name || "").trim() || (venue.address || "").trim() || (venue.mapQuery || "").trim() || venue.mapLat != null);
-    if (!hasIdentity && clean.length === 0) { onDiscard(); return; }
-    if (!hasIdentity) { toast("Add a name, address, or map pin for this location.", "err"); return; }
+    const name = (venue.name || "").trim();
+    const address = (venue.address || "").trim();
+    const anything = name || address || clean.length > 0 || (venue.mapQuery || "").trim() || venue.mapLat != null;
+    if (!anything) { onDiscard(); return; }
+    if (!name || !address) { toast("Location name and address are required.", "err"); return; }
     if (clean.length !== cards.length) onPatch({ cards: clean });
     onClose();
   };
   return (
     <Modal open={open} onClose={finish} label="Location">
       <SectionHead eyebrow="Venue & Map" title={venue.name || "Location"} />
-      <Field label="Location name" id="v-name" hint="e.g. Ceremony — St. Mary's Church"><Input id="v-name" value={venue.name} onChange={(e) => onPatch({ name: e.target.value })} /></Field>
-      <Field label="Address" id="v-addr"><Input id="v-addr" value={venue.address} onChange={(e) => onPatch({ address: e.target.value })} /></Field>
-      <Field label="Map location" hint="Search a place, then click the map or drag the pin." id="v-map">
+      <Field label="Location name" required id="v-name" hint="e.g. Ceremony — St. Mary's Church"><Input id="v-name" value={venue.name} onChange={(e) => onPatch({ name: e.target.value })} /></Field>
+      <Field label="Address" required id="v-addr"><Input id="v-addr" value={venue.address} onChange={(e) => onPatch({ address: e.target.value })} /></Field>
+      <Field label="Map location (optional)" hint="Search a place, then click the map or drag the pin." id="v-map">
         <LocationPicker value={venue.mapQuery} lat={venue.mapLat} lng={venue.mapLng}
           onChange={({ query, lat, lng }) => onPatch({ mapQuery: query, mapLat: lat, mapLng: lng })} />
       </Field>
