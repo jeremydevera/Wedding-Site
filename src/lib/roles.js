@@ -9,7 +9,7 @@
 // don't get it. Superadmin-on-a-client uses a different path and still sees it.
 const SUPERADMIN_ONLY = new Set(["settings", "media", "schedule", "details", "venue", "home"]);
 
-export function visibleAdminTabs(role, allTabs) {
+export function visibleAdminTabs(role, allTabs, ownerEdit) {
   if (role === "superadmin") {
     // Superadmin: a platform overview + client management + R2 media library.
     return [
@@ -19,7 +19,17 @@ export function visibleAdminTabs(role, allTabs) {
     ];
   }
   if (role === "owner") {
-    return allTabs.filter((t) => !SUPERADMIN_ONLY.has(t.key) && t.key !== "clients");
+    // Per-client grants (settings.ownerEdit, flipped by the superadmin in
+    // Settings → Access) open individual content tabs to the owner. An
+    // entourage grant exposes the Home tab too — the Entourage folder lives
+    // inside it (HomeAdmin gates each folder individually).
+    const g = ownerEdit || {};
+    const granted = new Set([
+      ...(g.home === true || g.entourage === true ? ["home"] : []),
+      ...(g.schedule === true ? ["schedule"] : []),
+      ...(g.venue === true ? ["venue"] : []),
+    ]);
+    return allTabs.filter((t) => (!SUPERADMIN_ONLY.has(t.key) || granted.has(t.key)) && t.key !== "clients");
   }
   return [];
 }

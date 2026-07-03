@@ -24,6 +24,20 @@ describe("visibleAdminTabs", () => {
     expect(keys).not.toContain("clients");
     expect(keys).toContain("guestbook");
   });
+  it("ownerEdit grants open individual content tabs to the owner", () => {
+    const ALL = [...TABS, { key: "home" }, { key: "schedule" }, { key: "venue" }];
+    const keys = (g) => visibleAdminTabs("owner", ALL, g).map((t) => t.key);
+    expect(keys(undefined)).not.toContain("home");
+    expect(keys({ home: true })).toContain("home");
+    expect(keys({ home: true })).not.toContain("schedule");
+    expect(keys({ schedule: true })).toContain("schedule");
+    expect(keys({ venue: true })).toContain("venue");
+    // entourage lives inside the Home tab, so that grant exposes Home too
+    expect(keys({ entourage: true })).toContain("home");
+    // grants never open the superadmin-only Settings/Media tabs
+    expect(keys({ home: true, schedule: true, venue: true, entourage: true })).not.toContain("settings");
+    expect(keys({ home: true, schedule: true, venue: true, entourage: true })).not.toContain("media");
+  });
 });
 
 describe("canEnterAdmin", () => {

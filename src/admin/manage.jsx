@@ -1875,6 +1875,18 @@ export function SettingsAdmin() {
       </div>
 
       <div className="panel">
+        <div className="panel__head"><div className="panel__title">Owner editing</div></div>
+        <div className="panel__body">
+          {/* Per-section grants: each one opens that content area to the couple's
+              owner account (normally superadmin-only). Stored in settings.ownerEdit. */}
+          <AdminToggle label="Edit Home" desc="Let the owner edit the Home tab — couple & event info and the invitation section." checked={(f.ownerEdit || {}).home === true} onChange={(v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), home: v })} />
+          <AdminToggle label="Edit Schedule" desc="Let the owner edit the Schedule tab (wedding-day timeline guests see)." checked={(f.ownerEdit || {}).schedule === true} onChange={(v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), schedule: v })} />
+          <AdminToggle label="Edit Venue &amp; Map" desc="Let the owner edit the Venue & Map tab (venue cards, map, directions)." checked={(f.ownerEdit || {}).venue === true} onChange={(v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), venue: v })} />
+          <AdminToggle label="Edit Entourage" desc="Let the owner edit the Entourage folder inside the Home tab (wedding party groups & names)." checked={(f.ownerEdit || {}).entourage === true} onChange={(v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), entourage: v })} />
+        </div>
+      </div>
+
+      <div className="panel">
         <div className="panel__head"><div className="panel__title">Access &amp; Toggles</div></div>
         <div className="panel__body">
           <Field label="Admin password" id="s-pw"><Input id="s-pw" value={f.adminPassword} onChange={set("adminPassword")} /></Field>
@@ -1934,21 +1946,29 @@ export function HomeAdmin() {
   // flip a home-section visibility flag and save immediately (auto-save tabs)
   const toggleShow = async (k, v) => { Store.updateSettings({ [k]: v }); await persistChanges(); };
   const isSuper = auth.role === "superadmin";
-  // Folder sub-tabs. Music, Entourage + Google Maps are superadmin-managed
-  // content, so owners only get Couple & Event + the home-page invitation;
-  // superadmin-on-a-client gets all five.
+  // Folder sub-tabs. Maps/Timeline/Attire/Music are superadmin-managed content.
+  // Couple & Event + Invitation show for superadmin or an owner with the "home"
+  // grant; Entourage for superadmin or the "entourage" grant (settings.ownerEdit,
+  // flipped in Settings → Access). An owner reaches this tab at all only when
+  // one of those grants is on (see visibleAdminTabs).
+  const grants = settings.ownerEdit || {};
+  const canHome = isSuper || grants.home === true;
+  const canEntourage = isSuper || grants.entourage === true;
   const TABS = [
-    { k: "couple", label: "Couple & Event", icon: "rings" },
-    { k: "invite", label: "Invitation", icon: "home" },
+    ...(canHome ? [
+      { k: "couple", label: "Couple & Event", icon: "rings" },
+      { k: "invite", label: "Invitation", icon: "home" },
+    ] : []),
     ...(isSuper ? [
       { k: "maps", label: "Google Maps", icon: "pin" },
       { k: "timeline", label: "Timeline", icon: "calendar" },
       { k: "attire", label: "Attire", icon: "book" },
       { k: "music", label: "Music playlist", icon: "play" },
-      { k: "entourage", label: "Entourage", icon: "user" },
     ] : []),
+    ...(canEntourage ? [{ k: "entourage", label: "Entourage", icon: "user" }] : []),
   ];
   const [tab, setTab] = useState("couple");
+  if (TABS.length === 0) return null; // owner without any grant — tab shouldn't even be visible
   const active = TABS.some((t) => t.k === tab) ? tab : TABS[0].k;
   return (
     <div>
@@ -2070,7 +2090,7 @@ export function HomeAdmin() {
           <MusicAdmin />
         </>
       )}
-      {isSuper && active === "entourage" && (
+      {canEntourage && active === "entourage" && (
         <>
           <EntourageAdmin headRight={<HeadSwitch label="Show entourage on the home page" checked={f.showEntourage !== false} onChange={(v) => toggleShow("showEntourage", v)} />} />
         </>
@@ -2737,7 +2757,7 @@ export function AdminApp() {
     // website. On the apex hub (no client) → the platform console (Overview / Clients).
     tabs = clientId ? tabsForClient(ADMIN_TABS, "owner", settings.modules) : visibleAdminTabs("superadmin", ADMIN_TABS);
   } else {
-    tabs = tabsForClient(visibleAdminTabs(auth.role, ADMIN_TABS), auth.role, settings.modules);
+    tabs = tabsForClient(visibleAdminTabs(auth.role, ADMIN_TABS, settings.ownerEdit), auth.role, settings.modules);
   }
   const activeTab = tabs.some((t) => t.key === tab) ? tab : (tabs[0]?.key || "dashboard");
   const title = (tabs.find((t) => t.key === activeTab) || { label: "Admin" }).label;
