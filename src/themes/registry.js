@@ -345,13 +345,20 @@ export const THEME_BTN = {
   burgundy: "0px", lavender: "999px", emerald: "2px", terracotta: "12px", champagne: "0px", envelope: "2px", glass: "999px",
 };
 
-// Apply a theme + optional tweak overrides ({accent, gold, displayFont, bodyFont})
+// Apply a theme + optional tweak overrides ({accent, gold, displayFont, bodyFont,
+// envColor, envColorCustom, envMatchSite}). For the envelope theme, a non-olive
+// envelope color re-hues the whole site palette (unless envMatchSite is false);
+// the base vars are always written first, so switching back to olive fully resets.
 export function applyTheme(themeKey, overrides = {}) {
   const theme = THEMES[themeKey] || THEMES.classic;
   const root = document.documentElement;
   root.setAttribute("data-theme", themeKey);
   Object.entries(theme.vars).forEach(([k, v]) => root.style.setProperty(k, v));
   root.style.setProperty("--btn-radius", THEME_BTN[themeKey] || "4px");
+  if (themeKey === "envelope") {
+    const pal = envSitePalette(overrides.envColor, overrides.envColorCustom, overrides.envMatchSite);
+    if (pal) Object.entries(pal).forEach(([k, v]) => root.style.setProperty(k, v));
+  }
   if (overrides.accent) {
     root.style.setProperty("--accent", overrides.accent);
     root.style.setProperty("--accent-soft", `color-mix(in oklch, ${overrides.accent} 16%, var(--surface))`);
@@ -387,18 +394,129 @@ export function egTintGradient(key) {
 // (sealed cover + open front pocket only; card/flowers/heart untouched). The cream
 // wax seal is near-neutral so it survives the hue rotation and stays cream.
 // `dot` is the resulting paper color, for the admin swatch chips.
+// `h`/`cs` are the oklch hue + chroma scale for the matching site palette.
 // Olive is the artwork's native color, so its filter is empty (no-op).
 export const ENV_COLORS = {
-  olive:     { label: "Olive",      filter: "", dot: "#6f743e" },
-  sage:      { label: "Sage",       filter: "hue-rotate(12deg) saturate(0.55) brightness(1.1)",   dot: "#747f5d" },
-  kraft:     { label: "Kraft",      filter: "hue-rotate(-22deg) saturate(0.75) brightness(1.06)", dot: "#847552" },
-  dustyblue: { label: "Dusty Blue", filter: "hue-rotate(155deg) saturate(0.65) brightness(1.05)", dot: "#667693" },
-  navy:      { label: "Navy",       filter: "hue-rotate(160deg) saturate(0.95) brightness(0.7)",  dot: "#434e6c" },
-  wine:      { label: "Wine",       filter: "hue-rotate(265deg) saturate(1.3) brightness(0.75)",  dot: "#834557" },
-  blush:     { label: "Blush",      filter: "hue-rotate(278deg) saturate(0.6) brightness(1.08)",  dot: "#976f73" },
-  charcoal:  { label: "Charcoal",   filter: "saturate(0.14) brightness(0.82)",                    dot: "#5b5c55" },
+  olive:      { label: "Olive",      filter: "", dot: "#6f743e", h: 126, cs: 1 },
+  sage:       { label: "Sage",       filter: "hue-rotate(12deg) saturate(0.55) brightness(1.1)",   dot: "#747f5d", h: 130, cs: 0.7 },
+  kraft:      { label: "Kraft",      filter: "hue-rotate(-22deg) saturate(0.75) brightness(1.06)", dot: "#847552", h: 75,  cs: 0.9 },
+  terracotta: { label: "Terracotta", filter: "hue-rotate(-50deg) saturate(1.35) brightness(0.98)", dot: "#9e6243", h: 45,  cs: 1.15 },
+  dustyblue:  { label: "Dusty Blue", filter: "hue-rotate(155deg) saturate(0.65) brightness(1.05)", dot: "#667693", h: 250, cs: 0.8 },
+  navy:       { label: "Navy",       filter: "hue-rotate(160deg) saturate(0.95) brightness(0.7)",  dot: "#434e6c", h: 262, cs: 1 },
+  wine:       { label: "Wine",       filter: "hue-rotate(265deg) saturate(1.3) brightness(0.75)",  dot: "#834557", h: 15,  cs: 1.1 },
+  blush:      { label: "Blush",      filter: "hue-rotate(278deg) saturate(0.6) brightness(1.08)",  dot: "#976f73", h: 15,  cs: 0.7 },
+  charcoal:   { label: "Charcoal",   filter: "saturate(0.14) brightness(0.82)",                    dot: "#5b5c55", h: 100, cs: 0.12 },
 };
 export function envColorFilter(key) {
   return (ENV_COLORS[key] || ENV_COLORS.olive).filter;
+}
+
+// ---- Custom envelope color -------------------------------------------------
+// The envelope art is one olive image; a custom color is achieved by SOLVING for
+// the hue-rotate/saturate/brightness chain that maps the olive paper mid-tone to
+// the picked color. CSS filter matrices per the W3C Filter Effects spec (sRGB).
+const ENV_BASE_PAPER = [111, 116, 62]; // olive paper mid-tone sampled from the art
+
+function applyMat([r, g, b], m) {
+  return [m[0] * r + m[1] * g + m[2] * b, m[3] * r + m[4] * g + m[5] * b, m[6] * r + m[7] * g + m[8] * b];
+}
+function satMat(s) {
+  return [0.213 + 0.787 * s, 0.715 - 0.715 * s, 0.072 - 0.072 * s,
+          0.213 - 0.213 * s, 0.715 + 0.285 * s, 0.072 - 0.072 * s,
+          0.213 - 0.213 * s, 0.715 - 0.715 * s, 0.072 + 0.928 * s];
+}
+function hueMat(deg) {
+  const a = (deg * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a);
+  return [0.213 + c * 0.787 - s * 0.213, 0.715 - c * 0.715 - s * 0.715, 0.072 - c * 0.072 + s * 0.928,
+          0.213 - c * 0.213 + s * 0.143, 0.715 + c * 0.285 + s * 0.140, 0.072 - c * 0.072 - s * 0.283,
+          0.213 - c * 0.213 - s * 0.787, 0.715 - c * 0.715 + s * 0.715, 0.072 + c * 0.928 + s * 0.072];
+}
+export function hexToRgb(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || "").trim());
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+// Best (deg, sat, bright) chain mapping the olive base paper to `target` rgb.
+// Coarse grid + local refine; ~3k tiny matrix ops, run once per picked color.
+function solveEnvFilter(target) {
+  let best = { err: Infinity, d: 0, s: 1, b: 1 };
+  const consider = (d, s) => {
+    const v = applyMat(applyMat(ENV_BASE_PAPER, hueMat(d)), satMat(s));
+    // optimal brightness for this (d,s) by least squares, kept in a sane range
+    const b = Math.max(0.3, Math.min(1.8, (v[0] * target[0] + v[1] * target[1] + v[2] * target[2]) / (v[0] * v[0] + v[1] * v[1] + v[2] * v[2] || 1)));
+    const err = v.reduce((e, x, i) => e + (x * b - target[i]) ** 2, 0);
+    if (err < best.err) best = { err, d, s, b };
+  };
+  for (let d = 0; d < 360; d += 6) for (let s = 0.1; s <= 2.001; s += 0.1) consider(d, s);
+  const { d: d0, s: s0 } = best;
+  for (let d = d0 - 6; d <= d0 + 6; d += 1) for (let s = Math.max(0.05, s0 - 0.1); s <= s0 + 0.1001; s += 0.025) consider(d, s);
+  return best;
+}
+const _customFilterCache = new Map();
+// CSS filter chain for an arbitrary paper color (hex). "" when hex is invalid.
+export function envCustomFilter(hex) {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return "";
+  const key = hex.toLowerCase();
+  if (!_customFilterCache.has(key)) {
+    const { d, s, b } = solveEnvFilter(rgb);
+    const deg = ((Math.round(d) % 360) + 360) % 360;
+    _customFilterCache.set(key, `hue-rotate(${deg}deg) saturate(${s.toFixed(3)}) brightness(${b.toFixed(3)})`);
+  }
+  return _customFilterCache.get(key);
+}
+// Resolve the active envelope filter from settings-shaped input.
+export function envColorFilterFor(envColor, envColorCustom) {
+  if (envColor === "custom") return envCustomFilter(envColorCustom);
+  return envColorFilter(envColor);
+}
+
+// oklch hue (degrees) of an sRGB color — for deriving the matching site palette.
+export function rgbToOklchHue([r, g, b]) {
+  const lin = (x) => { x /= 255; return x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; };
+  const [lr, lg, lb] = [lin(r), lin(g), lin(b)];
+  const l = Math.cbrt(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb);
+  const m = Math.cbrt(0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb);
+  const s = Math.cbrt(0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb);
+  const A = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s;
+  const B = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+  let h = (Math.atan2(B, A) * 180) / Math.PI;
+  if (h < 0) h += 360;
+  return h;
+}
+
+// Site palette for the Olive Envelope theme in a different hue — the envelope
+// theme's own oklch values with the hue swapped (and chroma scaled for muted /
+// near-neutral papers). Returns null when the site should stay the native olive.
+export function envSitePalette(envColor, envColorCustom, envMatchSite) {
+  if (envMatchSite === false) return null;
+  let h, cs;
+  if (envColor === "custom") {
+    const rgb = hexToRgb(envColorCustom);
+    if (!rgb) return null;
+    h = Math.round(rgbToOklchHue(rgb));
+    const mx = Math.max(...rgb), mn = Math.min(...rgb);
+    // near-grey picks get a mostly-neutral site palette
+    cs = mx - mn < 24 ? 0.15 : 1;
+  } else {
+    const c = ENV_COLORS[envColor];
+    if (!c || envColor === "olive") return null;
+    h = c.h; cs = c.cs;
+  }
+  const k = (x) => (x * cs).toFixed(3);
+  return {
+    "--bg": `oklch(0.963 ${k(0.014)} ${h})`,
+    "--surface": `oklch(0.99 ${k(0.008)} ${h})`,
+    "--surface-2": `oklch(0.94 ${k(0.02)} ${h})`,
+    "--ink": `oklch(0.3 ${k(0.035)} ${h})`,
+    "--ink-soft": `oklch(0.44 ${k(0.035)} ${h})`,
+    "--muted": `oklch(0.57 ${k(0.025)} ${h})`,
+    "--line": `oklch(0.87 ${k(0.022)} ${h})`,
+    "--accent": `oklch(0.48 ${k(0.075)} ${h})`,
+    "--accent-soft": `oklch(0.93 ${k(0.035)} ${h})`,
+    "--accent-ink": `oklch(0.98 ${k(0.012)} ${h})`,
+    "--hero-tint": `oklch(0.3 ${k(0.06)} ${h} / 0.46)`,
+  };
 }
 

@@ -317,14 +317,17 @@ export function App() {
 
   React.useEffect(() => { loadClientData().catch((e) => console.error("load failed", e)); }, []);
 
-  // apply theme whenever theme/accent/fonts change
+  // apply theme whenever theme/accent/fonts/envelope-color change
   useEffect(() => {
     applyTheme(settings.theme, {
       accent: settings.themeAccent || undefined,
       displayFont: settings.displayFont,
       bodyFont: settings.bodyFont,
+      envColor: settings.envColor,
+      envColorCustom: settings.envColorCustom,
+      envMatchSite: settings.envMatchSite,
     });
-  }, [settings.theme, settings.themeAccent, settings.displayFont, settings.bodyFont]);
+  }, [settings.theme, settings.themeAccent, settings.displayFont, settings.bodyFont, settings.envColor, settings.envColorCustom, settings.envMatchSite]);
 
   // Live preview bridge: when embedded in the admin Theme picker (/?preview),
   // accept postMessage theme/decor updates and apply them IN-MEMORY only
@@ -441,5 +444,8 @@ applyTheme(Store.get().settings.theme, {
   accent: Store.get().settings.themeAccent || undefined,
   displayFont: Store.get().settings.displayFont,
   bodyFont: Store.get().settings.bodyFont,
+  envColor: Store.get().settings.envColor,
+  envColorCustom: Store.get().settings.envColorCustom,
+  envMatchSite: Store.get().settings.envMatchSite,
 });
 

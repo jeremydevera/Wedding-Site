@@ -4,7 +4,7 @@ import { onSiteScroll, scrollOffset, siteScrollEl } from "@/lib/scroll.js";
 import { mediaUrl } from "@/lib/media.js";
 import { useStore } from "@/lib/store.jsx";
 import { moduleEnabled } from "@/lib/roles.js";
-import { egTintGradient, envColorFilter } from "@/themes";
+import { egTintGradient, envColorFilterFor } from "@/themes";
 import { Button, Countdown, FloatingDecor, Icon, Placeholder, SectionHead, mapDirUrl, mapEmbedUrl } from "@/ui/components.jsx";
 import { VinylPlayer } from "@/features/music.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
@@ -51,7 +51,7 @@ export function egTintVars(s) {
   const vars = { "--eg-tint": open, "--eg-tint-sealed": sealed, "--eg-tint-grad": egTintGradient(s.envTintColor || "olive"), "--eg-title-cqw": titleCqw };
   // Envelope paper recolor — only set when non-olive so the CSS fallback
   // (a no-op hue-rotate) keeps the drop-shadow filter list valid.
-  const recolor = envColorFilter(s.envColor);
+  const recolor = envColorFilterFor(s.envColor, s.envColorCustom);
   if (recolor) vars["--eg-env-recolor"] = recolor;
   return vars;
 }

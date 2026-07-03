@@ -1,7 +1,7 @@
 import React from "react";
 import { go } from "@/lib/nav.js";
 import { Store, useStore } from "@/lib/store.jsx";
-import { EG_TINTS, ENV_COLORS, THEMES, THEME_FONTS, egTintGradient, envColorFilter, isPremiumTheme } from "@/themes";
+import { EG_TINTS, ENV_COLORS, THEMES, THEME_FONTS, egTintGradient, envColorFilterFor, isPremiumTheme } from "@/themes";
 import { Button, CropModal, DecorPreview, FallingFx, Field, Icon, Input, Modal, Monogram, Pager, Placeholder, SectionHead, Select, Textarea, confirmDialog, mapEmbedUrl, mapSearchUrl, toast, usePaged } from "@/ui/components.jsx";
 import { FX_LIST } from "@/lib/falling-fx.js";
 import { Home } from "@/pages/PublicPages.jsx";
@@ -1807,12 +1807,35 @@ export function SettingsAdmin() {
                       </button>
                     );
                   })}
+                  {(() => {
+                    const on = f.envColor === "custom";
+                    const hex = f.envColorCustom || "#9e6243";
+                    return (
+                      <button type="button" onClick={() => { setKey("envColor", "custom"); if (!f.envColorCustom) setKey("envColorCustom", hex); }}
+                        style={{ display: "flex", alignItems: "center", gap: 7, padding: "6px 11px 6px 7px", borderRadius: 999, cursor: "pointer",
+                          border: on ? "2px solid var(--accent)" : "1px solid var(--line)", background: on ? "color-mix(in oklch, var(--accent) 10%, var(--surface))" : "var(--surface)",
+                          font: "inherit", fontSize: 13, fontWeight: on ? 700 : 500, color: "var(--ink)" }}>
+                        <span style={{ width: 16, height: 16, borderRadius: "50%", background: on ? hex : "conic-gradient(red, yellow, lime, cyan, blue, magenta, red)", boxShadow: "inset 0 0 0 1px rgba(0,0,0,.15)" }} />
+                        Custom
+                      </button>
+                    );
+                  })()}
                 </div>
               </Field>
+              {f.envColor === "custom" && (
+                <Field label="Pick any color" id="s-envcustom" hint="The envelope paper is matched to this color as closely as the artwork allows">
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <input id="s-envcustom" type="color" value={f.envColorCustom || "#9e6243"} onChange={(e) => setKey("envColorCustom", e.target.value)}
+                      style={{ width: 52, height: 36, padding: 2, border: "1px solid var(--line)", borderRadius: 8, background: "var(--surface)", cursor: "pointer" }} />
+                    <code style={{ fontSize: 13, color: "var(--ink-soft)" }}>{f.envColorCustom || "#9e6243"}</code>
+                  </div>
+                </Field>
+              )}
+              <AdminToggle label="Match website colors" desc="Page backgrounds, headings and buttons take on the envelope color. Turn off to keep the classic olive-green site." checked={f.envMatchSite !== false} onChange={(v) => setKey("envMatchSite", v)} />
             </div>
             <div style={{ flex: "1 1 300px", minWidth: 260, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
               <img src="/assets/invite/env-closed.webp" alt="Envelope color preview"
-                style={{ width: "100%", maxWidth: 380, height: "auto", borderRadius: 8, filter: envColorFilter(f.envColor) || "none" }} />
+                style={{ width: "100%", maxWidth: 380, height: "auto", borderRadius: 8, filter: envColorFilterFor(f.envColor, f.envColorCustom) || "none" }} />
               <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 10, maxWidth: 360 }}>Live preview — save changes, then view the site.</p>
             </div>
           </div>

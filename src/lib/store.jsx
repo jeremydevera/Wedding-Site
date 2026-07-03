@@ -49,7 +49,9 @@ export const DEFAULT_SETTINGS = {
   envTintOn: true,
   envTint: 55,
   envTintColor: "olive",
-  envColor: "olive", // envelope paper color preset (ENV_COLORS key in themes/registry)
+  envColor: "olive", // envelope paper color preset (ENV_COLORS key in themes/registry, or "custom")
+  envColorCustom: "", // hex for envColor === "custom" (e.g. "#9e6243")
+  envMatchSite: true, // site palette follows the envelope color (read as !== false)
   envTitleSize: 5, // envelope cover title size, 1–10 scale; maps to a cqw fraction that scales with the envelope
   arrangeEnabled: false,
   mapQuery: "Lipa, Batangas, Philippines",
