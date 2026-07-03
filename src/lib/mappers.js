@@ -13,25 +13,51 @@ function venueCardsFrom(content) {
   return legacy.length ? legacy : SEED_VENUE_CARDS;
 }
 
+// Build the venues array (each = a map + its own tiles). Prefer the new `venues`
+// array; otherwise synthesize ONE venue from the legacy single map (venueName/
+// venueAddress/mapQuery in settings) + the flat venueCards, so existing clients
+// keep working unchanged. Normalizes ids on every venue and card.
+function venuesFrom(content, settings) {
+  const withIds = (cards, vi) => (Array.isArray(cards) ? cards : []).map((c, j) => ({
+    id: c.id || `vc-${vi}-${j}`, t: c.t || "", d: c.d || "",
+  }));
+  if (Array.isArray(content.venues) && content.venues.length) {
+    return content.venues.map((v, i) => ({
+      id: v.id || "venue-" + i,
+      name: v.name || "", address: v.address || "",
+      mapQuery: v.mapQuery || "", mapLat: v.mapLat, mapLng: v.mapLng,
+      cards: withIds(v.cards, i),
+    }));
+  }
+  return [{
+    id: "venue-main",
+    name: settings.venueName || "", address: settings.venueAddress || "",
+    mapQuery: settings.mapQuery || "", mapLat: settings.mapLat, mapLng: settings.mapLng,
+    cards: withIds(venueCardsFrom(content), 0),
+  }];
+}
+
 // clients row -> the in-memory store state shape
 export function clientToState(client) {
   const content = client.content || {};
   const theme = client.theme || {};
-  const { schedule, story, faq, quiz, venueCards, detailCards, entourage, attire, playlist, venueParking, venueArrival, venueWeather, ...contentRest } = content;
+  const { schedule, story, faq, quiz, venueCards, venues, detailCards, entourage, attire, playlist, venueParking, venueArrival, venueWeather, ...contentRest } = content;
+  const settings = {
+    ...DEFAULT_SETTINGS,
+    ...contentRest,
+    ...theme,
+    theme: client.template_key,
+    eventType: client.event_type,
+  };
   return {
     clientId: client.id,
-    settings: {
-      ...DEFAULT_SETTINGS,
-      ...contentRest,
-      ...theme,
-      theme: client.template_key,
-      eventType: client.event_type,
-    },
+    settings,
     schedule: schedule || SEED_SCHEDULE,
     story: story || SEED_STORY,
     faq: faq || SEED_FAQ,
     quiz: quiz || SEED_QUIZ,
     venueCards: venueCardsFrom(content),
+    venues: venuesFrom(content, settings),
     detailCards: Array.isArray(detailCards) ? detailCards : SEED_DETAIL_CARDS,
     entourage: Array.isArray(entourage) ? entourage : SEED_ENTOURAGE,
     attire: Array.isArray(attire) ? attire : SEED_ATTIRE,
@@ -48,7 +74,7 @@ export function stateToClientRow(state) {
     template_key: theme,
     event_type: eventType,
     theme: {},
-    content: { ...rest, schedule: state.schedule, story: state.story, faq: state.faq, quiz: state.quiz, venueCards: state.venueCards, detailCards: state.detailCards, entourage: state.entourage, attire: state.attire, playlist: state.playlist },
+    content: { ...rest, schedule: state.schedule, story: state.story, faq: state.faq, quiz: state.quiz, venueCards: state.venueCards, venues: state.venues, detailCards: state.detailCards, entourage: state.entourage, attire: state.attire, playlist: state.playlist },
   };
 }
 

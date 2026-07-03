@@ -1,6 +1,6 @@
 import React from "react";
 import { go } from "@/lib/nav.js";
-import { Store, useStore } from "@/lib/store.jsx";
+import { Store, useStore, uid } from "@/lib/store.jsx";
 import { EG_TINTS, ENV_COLORS, ENV_SEAL_MASK, THEMES, THEME_FONTS, egTintGradientFor, envColorFilterFor, isPremiumTheme } from "@/themes";
 import { Button, CropModal, DecorPreview, FallingFx, Field, Icon, Input, Modal, Monogram, Pager, Placeholder, SectionHead, Select, Textarea, confirmDialog, mapEmbedUrl, mapSearchUrl, toast, usePaged } from "@/ui/components.jsx";
 import { FX_LIST } from "@/lib/falling-fx.js";
@@ -1473,110 +1473,188 @@ export function DetailsAdmin() {
 
 // Venue & Map — its own top-level admin tab (promoted out of Settings). Form
 // section, so it keeps the Save changes footer (not a per-item list).
-export function VenueCardEditor({ open, index, item, onClose }) {
-  const { venueCards } = useStore();
-  const { save: persistChanges } = React.useContext(AdminSaveCtx);
+// Add/edit one info tile for a specific venue. onSave receives the { t, d }
+// payload; the parent writes it into that venue's cards.
+function VenueTileEditor({ open, item, onSave, onClose }) {
   const blank = { t: "", d: "" };
   const [f, setF] = useState(blank);
   useEffect(() => {
     if (item) setF({ t: item.t || "", d: item.d || "" });
     else setF(blank);
   }, [item, open]);
-  const isEdit = index != null && index >= 0;
-  async function save() {
+  const isEdit = !!item;
+  function save() {
     if (!f.t.trim()) { toast("Please enter a title.", "err"); return; }
-    const payload = { t: f.t.trim(), d: f.d.trim() };
-    if (isEdit) Store.updateVenueCard(index, payload);
-    else Store.updateVenueCards([...(venueCards || []), payload]);
-    await persistChanges();
+    onSave({ t: f.t.trim(), d: f.d.trim() });
     onClose();
   }
   return (
-    <Modal open={open} onClose={onClose} label="Venue card">
-      <SectionHead eyebrow="Venue & Map" title={isEdit ? "Edit card" : "New card"} />
+    <Modal open={open} onClose={onClose} label="Venue tile">
+      <SectionHead eyebrow="Venue & Map" title={isEdit ? "Edit tile" : "New tile"} />
       <Field label="Title" required id="vc-t"><Input id="vc-t" value={f.t} onChange={(e) => setF((p) => ({ ...p, t: e.target.value }))} placeholder="e.g. Parking" /></Field>
-      <Field label="Description" id="vc-d" hint="What guests will read under the map"><Textarea id="vc-d" value={f.d} onChange={(e) => setF((p) => ({ ...p, d: e.target.value }))} placeholder="Complimentary valet at the rear entrance." style={{ minHeight: 100 }} /></Field>
+      <Field label="Description" id="vc-d" hint="What guests will read under this map"><Textarea id="vc-d" value={f.d} onChange={(e) => setF((p) => ({ ...p, d: e.target.value }))} placeholder="Complimentary valet at the rear entrance." style={{ minHeight: 100 }} /></Field>
       <div style={{ display: "flex", gap: 12, marginTop: 8, justifyContent: "flex-end" }}>
         <Button variant="ghost" onClick={onClose}>Cancel</Button>
-        <Button variant="primary" onClick={save}>{isEdit ? "Save card" : "Add card"}</Button>
+        <Button variant="primary" onClick={save}>{isEdit ? "Save tile" : "Add tile"}</Button>
       </div>
     </Modal>
   );
 }
 
+// Venue & Map admin: manage a LIST of venues (each its own map + tiles), plus
+// choose which venue's map + tiles show on the home page. Back-compat: existing
+// single-map clients arrive as one venue (see mappers.venuesFrom).
 export function VenueAdmin() {
-  const { settings, venueCards } = useStore();
-  const f = settings;
-  const set = (k) => (e) => Store.updateSettings({ [k]: e.target && e.target.type === "checkbox" ? e.target.checked : e.target.value });
-  const [tab, setTab] = useState("map");
-  const [cardOpen, setCardOpen] = useState(false);
-  const [cardIndex, setCardIndex] = useState(null);
-  const openCard = (i) => { setCardIndex(i); setCardOpen(true); };
-  const cards = venueCards || [];
+  const { settings, venues } = useStore();
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
-  return (
-    <div>
-      <div className="folders">
-        <button className={"folder" + (tab === "map" ? " folder--active" : "")} onClick={() => setTab("map")}>{Icon.pin({})} Map</button>
-        <button className={"folder" + (tab === "venue" ? " folder--active" : "")} onClick={() => setTab("venue")}>{Icon.book({})} Venue</button>
-      </div>
+  const list = venues || [];
+  const [editVi, setEditVi] = useState(null);   // index of venue being edited (null = list view)
+  const [tileOpen, setTileOpen] = useState(false);
+  const [tileIdx, setTileIdx] = useState(null); // index of tile being edited within editVi
 
-      {tab === "map" && (
-      <div className="panel">
-        <div className="panel__head"><div className="panel__title">Map &amp; location</div></div>
-        <div className="panel__body">
-          <Field label="Venue name" id="s-vn"><Input id="s-vn" value={f.venueName} onChange={set("venueName")} /></Field>
-          <Field label="Venue address" id="s-va"><Input id="s-va" value={f.venueAddress} onChange={set("venueAddress")} /></Field>
-          <Field label="Map location" hint="Type to search a place or address, then click the map or drag the pin to the exact spot. Click Save changes to publish." id="s-map">
-            <LocationPicker
-              value={f.mapQuery}
-              lat={f.mapLat}
-              lng={f.mapLng}
-              onChange={({ query, lat, lng }) => Store.updateSettings({ mapQuery: query, mapLat: lat, mapLng: lng })}
-            />
-          </Field>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 8, marginBottom: 12 }}>
-            <Button variant="ghost" size="sm" onClick={() => window.open(mapSearchUrl(f.mapQuery || f.venueAddress), "_blank")}>{Icon.pin({})} Open in Google Maps</Button>
-            {(f.mapQuery || f.mapLat != null) && <Button variant="ghost" size="sm" onClick={() => Store.updateSettings({ mapQuery: "", mapLat: undefined, mapLng: undefined })}>Clear pin</Button>}
+  const commit = (next) => Store.updateVenues(next);
+  const patchVenue = (i, patch) => commit(list.map((v, idx) => (idx === i ? { ...v, ...patch } : v)));
+  const addVenue = () => { commit([...list, { id: uid(), name: "", address: "", mapQuery: "", mapLat: undefined, mapLng: undefined, cards: [] }]); setEditVi(list.length); };
+  const moveVenue = (i, dir) => { const a = [...list]; const j = i + dir; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; commit(a); };
+  async function removeVenue(i) {
+    const ok = await confirmDialog({ title: "Delete this location?", message: `Remove "${list[i].name || list[i].address || "location " + (i + 1)}" and its tiles from the Venue page. This can't be undone.`, confirmLabel: "Delete", danger: true });
+    if (!ok) return;
+    commit(list.filter((_, idx) => idx !== i));
+    await persistChanges();
+  }
+
+  // ---- Venue editor sub-view ----
+  if (editVi != null && list[editVi]) {
+    const v = list[editVi];
+    const cards = v.cards || [];
+    const setCards = (cs) => patchVenue(editVi, { cards: cs });
+    return (
+      <div>
+        <div style={{ marginBottom: 12 }}>
+          <Button variant="ghost" size="sm" onClick={() => setEditVi(null)}>‹ All locations</Button>
+        </div>
+        <div className="panel">
+          <div className="panel__head"><div className="panel__title">Location — map</div></div>
+          <div className="panel__body">
+            <Field label="Location name" id="v-name" hint="e.g. Ceremony — St. Mary's Church"><Input id="v-name" value={v.name} onChange={(e) => patchVenue(editVi, { name: e.target.value })} /></Field>
+            <Field label="Address" id="v-addr"><Input id="v-addr" value={v.address} onChange={(e) => patchVenue(editVi, { address: e.target.value })} /></Field>
+            <Field label="Map location" hint="Search a place, then click the map or drag the pin. Click Save changes to publish." id="v-map">
+              <LocationPicker value={v.mapQuery} lat={v.mapLat} lng={v.mapLng}
+                onChange={({ query, lat, lng }) => patchVenue(editVi, { mapQuery: query, mapLat: lat, mapLng: lng })} />
+            </Field>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 8, marginBottom: 12 }}>
+              <Button variant="ghost" size="sm" onClick={() => window.open(mapSearchUrl(v.mapQuery || v.address), "_blank")}>{Icon.pin({})} Open in Google Maps</Button>
+              {(v.mapQuery || v.mapLat != null) && <Button variant="ghost" size="sm" onClick={() => patchVenue(editVi, { mapQuery: "", mapLat: undefined, mapLng: undefined })}>Clear pin</Button>}
+            </div>
           </div>
         </div>
-        <SaveFooter />
-      </div>
-      )}
 
-      {tab === "venue" && (
+        <div className="panel">
+          <div className="panel__head">
+            <div className="panel__title">Tiles for this location <span style={{ color: "var(--muted)", fontSize: 15 }}>({cards.length})</span></div>
+            <Button variant="primary" size="sm" onClick={() => { setTileIdx(null); setTileOpen(true); }}>+ Add tile</Button>
+          </div>
+          <div className="panel__body--flush table-wrap">
+            <table className="tbl">
+              <thead><tr><th>#</th><th>Title</th><th>Description</th><th></th></tr></thead>
+              <tbody>
+                {cards.map((c, i) => (
+                  <tr key={c.id || i}>
+                    <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--muted)" }}>{i + 1}</td>
+                    <td><strong>{c.t || "—"}</strong></td>
+                    <td style={{ maxWidth: 420, color: "var(--ink-soft)" }}>{c.d}</td>
+                    <td>
+                      <div className="row-actions">
+                        <MoveArrows i={i} count={cards.length} onMove={(dir) => { const a = [...cards]; const j = i + dir; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; setCards(a); }} />
+                        <button className="icon-btn" title="Edit tile" onClick={() => { setTileIdx(i); setTileOpen(true); }}>{Icon.edit({})}</button>
+                        <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete tile?", message: "This removes the tile from this location.", confirmLabel: "Delete", danger: true }).then((ok) => { if (ok) setCards(cards.filter((_, j) => j !== i)); })}>{Icon.trash({})}</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {cards.length === 0 && <tr><td colSpan={4} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No tiles yet. Add one to get started.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+          <SaveFooter />
+        </div>
+
+        <VenueTileEditor
+          open={tileOpen}
+          item={tileIdx != null ? cards[tileIdx] : null}
+          onSave={(payload) => { if (tileIdx != null) setCards(cards.map((c, j) => (j === tileIdx ? { ...c, ...payload } : c))); else setCards([...cards, { id: uid(), ...payload }]); }}
+          onClose={() => setTileOpen(false)}
+        />
+      </div>
+    );
+  }
+
+  // ---- List view: all venues + home-map selection ----
+  const homeVenue = list.find((v) => v.id === settings.homeVenueId) || list[0] || null;
+  const homeIds = Array.isArray(settings.homeCardIds) ? settings.homeCardIds : [];
+  const toggleHomeCard = (id, on) => Store.updateSettings({ homeCardIds: on ? [...homeIds, id] : homeIds.filter((x) => x !== id) });
+  return (
+    <div>
       <div className="panel">
         <div className="panel__head">
-          <div className="panel__title">Venue info cards <span style={{ color: "var(--muted)", fontSize: 15 }}>({cards.length})</span></div>
-          <Button variant="primary" size="sm" onClick={() => openCard(null)}>+ Add card</Button>
+          <div className="panel__title">Locations &amp; maps <span style={{ color: "var(--muted)", fontSize: 15 }}>({list.length})</span></div>
+          <Button variant="primary" size="sm" onClick={addVenue}>+ Add location</Button>
         </div>
         <div className="panel__body--flush table-wrap">
           <table className="tbl">
-            <thead><tr><th>#</th><th>Title</th><th>Description</th><th></th></tr></thead>
+            <thead><tr><th>#</th><th>Name</th><th>Address</th><th>Tiles</th><th></th></tr></thead>
             <tbody>
-              {cards.map((c, i) => (
-                <tr key={i}>
+              {list.map((v, i) => (
+                <tr key={v.id || i}>
                   <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--muted)" }}>{i + 1}</td>
-                  <td><strong>{c.t || "—"}</strong></td>
-                  <td style={{ maxWidth: 420, color: "var(--ink-soft)" }}>{c.d}</td>
+                  <td><strong>{v.name || "—"}</strong></td>
+                  <td style={{ maxWidth: 320, color: "var(--ink-soft)" }}>{v.address || v.mapQuery || "—"}</td>
+                  <td style={{ color: "var(--muted)" }}>{(v.cards || []).length}</td>
                   <td>
                     <div className="row-actions">
-                      <MoveArrows i={i} count={cards.length} onMove={async (dir) => { Store.moveVenueCard(i, dir); await persistChanges(); }} />
-                      <button className="icon-btn" title="Edit card" onClick={() => openCard(i)}>{Icon.edit({})}</button>
-                      <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete card?", message: "This removes the card from the Venue page.", confirmLabel: "Delete", danger: true }).then(async (ok) => { if (ok) { Store.updateVenueCards(cards.filter((_, j) => j !== i)); await persistChanges(); } })}>{Icon.trash({})}</button>
+                      <MoveArrows i={i} count={list.length} onMove={(dir) => moveVenue(i, dir)} />
+                      <button className="icon-btn" title="Edit location" onClick={() => setEditVi(i)}>{Icon.edit({})}</button>
+                      <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => removeVenue(i)}>{Icon.trash({})}</button>
                     </div>
                   </td>
                 </tr>
               ))}
-              {cards.length === 0 && <tr><td colSpan={4} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No cards yet. Add one to get started.</td></tr>}
+              {list.length === 0 && <tr><td colSpan={5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No locations yet. Add one to get started.</td></tr>}
             </tbody>
           </table>
         </div>
         <SaveFooter />
       </div>
-      )}
 
-      <VenueCardEditor open={cardOpen} index={cardIndex} item={cardIndex != null ? cards[cardIndex] : null} onClose={() => setCardOpen(false)} />
+      <div className="panel">
+        <div className="panel__head"><div className="panel__title">Home page map</div></div>
+        <div className="panel__body">
+          <p style={{ color: "var(--muted)", margin: "0 0 14px", fontSize: 14 }}>
+            Choose which location's map shows on the home page, and which of its tiles appear under it. The full Venue page always shows every location.
+          </p>
+          <Field label="Map to show on home" id="home-venue">
+            <Select id="home-venue" value={homeVenue ? homeVenue.id : ""} onChange={(e) => Store.updateSettings({ homeVenueId: e.target.value, homeCardIds: [] })}>
+              {list.map((v, i) => <option key={v.id || i} value={v.id}>{v.name || v.address || `Location ${i + 1}`}</option>)}
+            </Select>
+          </Field>
+          {homeVenue && (homeVenue.cards || []).length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 14 }}>Tiles to show on home</div>
+              <div className="mod-toggles">
+                {(homeVenue.cards || []).map((c) => {
+                  const on = homeIds.includes(c.id);
+                  return (
+                    <label key={c.id} className={"mod-pill" + (on ? " mod-pill--on" : "")}>
+                      <input type="checkbox" checked={on} onChange={(e) => toggleHomeCard(c.id, e.target.checked)} /> {c.t || "Untitled"}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+        <SaveFooter />
+      </div>
     </div>
   );
 }
@@ -2191,17 +2269,12 @@ export function HomeAdmin() {
       {isSuper && active === "maps" && (
         <>
           <div className="panel">
-            <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Google Maps</div><HeadSwitch label="Show map on the home page" checked={f.showMap !== false} onChange={(v) => toggleShow("showMap", v)} /></div>
-            <div className="panel__body" style={{ maxWidth: 900, margin: "0 auto" }}>
-              <Field label="Venue name" id="m-vn"><Input id="m-vn" value={f.venueName} onChange={set("venueName")} /></Field>
-              <Field label="Venue address" id="m-va"><Input id="m-va" value={f.venueAddress} onChange={set("venueAddress")} /></Field>
-              <Field label="Map location" hint="Search a place, then click the map or drag the pin to the exact spot. This map is shared with the Venue page. Click Save changes to publish." id="m-map">
-                <LocationPicker value={f.mapQuery} lat={f.mapLat} lng={f.mapLng}
-                  onChange={({ query, lat, lng }) => Store.updateSettings({ mapQuery: query, mapLat: lat, mapLng: lng })} />
-              </Field>
+            <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Venue &amp; maps</div><HeadSwitch label="Show map on the home page" checked={f.showMap !== false} onChange={(v) => toggleShow("showMap", v)} /></div>
+            <div className="panel__body">
+              <p style={{ color: "var(--muted)", margin: 0, fontSize: 14 }}>Add one or more locations, each with its own map and tiles. Below, pick which location's map (and which tiles) show on the home page. The full Venue page always shows every location.</p>
             </div>
           </div>
-          <SaveFooter />
+          <VenueAdmin />
         </>
       )}
     </div>

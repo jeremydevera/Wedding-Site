@@ -289,10 +289,18 @@ export function EnvelopeInvite() {
 }
 
 export function Home() {
-  const { settings, story, schedule, entourage, attire, playlist } = useStore();
+  const { settings, story, schedule, entourage, attire, playlist, venues } = useStore();
   const s = settings;
-  const mapQuery = (s.mapQuery && s.mapQuery.trim()) || s.venueAddress;
-  const homeMapUrl = mapEmbedUrl(mapQuery, s.mapLat, s.mapLng);
+  // Home map shows ONE chosen venue (homeVenueId, else the first) and the tiles
+  // the owner picked for home (homeCardIds; empty = none, matching the old home).
+  const homeVenue = (venues || []).find((v) => v.id === s.homeVenueId) || (venues || [])[0] || null;
+  const mapQuery = homeVenue ? ((homeVenue.mapQuery && homeVenue.mapQuery.trim()) || homeVenue.address) : ((s.mapQuery && s.mapQuery.trim()) || s.venueAddress);
+  const homeMapLat = homeVenue ? homeVenue.mapLat : s.mapLat;
+  const homeMapLng = homeVenue ? homeVenue.mapLng : s.mapLng;
+  const homeMapUrl = mapEmbedUrl(mapQuery, homeMapLat, homeMapLng);
+  const homeMapAddr = (homeVenue && (homeVenue.address || homeVenue.name)) || s.venueAddress || s.venueName;
+  const homeIds = Array.isArray(s.homeCardIds) ? s.homeCardIds : [];
+  const homeCards = homeVenue ? (homeVenue.cards || []).filter((c) => homeIds.includes(c.id) && ((c.t || "").trim() || (c.d || "").trim())) : [];
 
   // replay the "Will you be there?" rise-in every time it scrolls into view
   React.useEffect(() => {
@@ -386,14 +394,21 @@ export function Home() {
               <div className="home-map__bar">
                 <div className="home-map__where">
                   <span className="home-map__pin">{Icon.pin({})}</span>
-                  <div className="home-map__addr">{s.venueAddress || s.venueName}</div>
+                  <div className="home-map__addr">{homeMapAddr}</div>
                 </div>
                 <div className="home-map__actions">
                   <Button variant="ghost" size="sm" onClick={() => go("venue")}>See full details</Button>
-                  <Button variant="primary" size="sm" onClick={() => window.open(mapDirUrl(mapQuery, s.mapLat, s.mapLng), "_blank")}>{Icon.pin({})} Get directions</Button>
+                  <Button variant="primary" size="sm" onClick={() => window.open(mapDirUrl(mapQuery, homeMapLat, homeMapLng), "_blank")}>{Icon.pin({})} Get directions</Button>
                 </div>
               </div>
             </div>
+            {homeCards.length > 0 && (
+              <div className="info-grid info-grid--3" style={{ marginTop: 22 }}>
+                {homeCards.map((n, i) => (
+                  <div className="card info-card" key={n.id || i}><h3>{n.t}</h3><p>{n.d}</p></div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -718,35 +733,45 @@ export function SchedulePage() {
 }
 
 export function VenuePage() {
-  const { settings, venueCards } = useStore();
+  const { settings, venues } = useStore();
   const s = settings;
-  const cards = (venueCards || []).filter((c) => (c.d || "").trim() || (c.t || "").trim());
-  const query = (s.mapQuery && s.mapQuery.trim()) || s.venueAddress;
-  const mapUrl = mapEmbedUrl(query, s.mapLat, s.mapLng);
-  const dirUrl = mapDirUrl(query, s.mapLat, s.mapLng);
+  // Show every venue that has something to display (a map target or any tile).
+  const list = (venues || []).filter((v) =>
+    ((v.mapQuery || v.address || v.name || "").trim()) ||
+    (v.cards || []).some((c) => (c.t || "").trim() || (c.d || "").trim()));
+  const multi = list.length > 1;
   return (
     <div className="fade-up">
       <PageHero eyebrow="Venue & Map" title={s.venueName} lead={s.venueAddress} />
-      <section className="block" style={{ paddingTop: 24 }}>
-        <div className="container">
-          <div className="card" style={{ padding: 0, overflow: "hidden", marginBottom: 30 }}>
-            <iframe title="Venue map" src={mapUrl} style={{ width: "100%", height: 420, border: 0, display: "block" }} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
-          </div>
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 44 }}>
-            <Button variant="primary" size="lg" onClick={() => window.open(dirUrl, "_blank")}>{Icon.pin({})} Get Directions</Button>
-          </div>
-          {cards.length > 0 && (
-          <div className="info-grid info-grid--3">
-            {cards.map((n, i) => (
-              <div className="card info-card" key={i}>
-                <h3>{n.t}</h3>
-                <p>{n.d}</p>
+      {list.map((v, vi) => {
+        const query = (v.mapQuery && v.mapQuery.trim()) || v.address;
+        const mapUrl = mapEmbedUrl(query, v.mapLat, v.mapLng);
+        const dirUrl = mapDirUrl(query, v.mapLat, v.mapLng);
+        const cards = (v.cards || []).filter((c) => (c.d || "").trim() || (c.t || "").trim());
+        return (
+          <section className="block" key={v.id || vi} style={{ paddingTop: vi === 0 ? 24 : 8 }}>
+            <div className="container">
+              {multi && <SectionHead center eyebrow={`Location ${vi + 1}`} title={v.name || v.address} />}
+              <div className="card" style={{ padding: 0, overflow: "hidden", marginBottom: 30 }}>
+                <iframe title={"Venue map" + (multi ? " " + (vi + 1) : "")} src={mapUrl} style={{ width: "100%", height: 420, border: 0, display: "block" }} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
               </div>
-            ))}
-          </div>
-          )}
-        </div>
-      </section>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 44 }}>
+                <Button variant="primary" size="lg" onClick={() => window.open(dirUrl, "_blank")}>{Icon.pin({})} Get Directions</Button>
+              </div>
+              {cards.length > 0 && (
+                <div className="info-grid info-grid--3">
+                  {cards.map((n, i) => (
+                    <div className="card info-card" key={n.id || i}>
+                      <h3>{n.t}</h3>
+                      <p>{n.d}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }

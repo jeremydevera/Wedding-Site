@@ -56,6 +56,11 @@ export const DEFAULT_SETTINGS = {
   envTitleSize: 5, // envelope cover title size, 1–10 scale; maps to a cqw fraction that scales with the envelope
   arrangeEnabled: false,
   mapQuery: "Lipa, Batangas, Philippines",
+  // Home map: which venue's map shows on the home page, and which of that venue's
+  // tiles appear under it. homeVenueId "" = the first venue; homeCardIds is a list
+  // of card ids (absent/empty = no tiles on home, matching the pre-venues home).
+  homeVenueId: "",
+  homeCardIds: [],
   // Home-page section visibility (toggled in the admin Home tab). Default on;
   // read as `!== false` everywhere so existing clients without the flag show.
   showMusic: true,
@@ -147,6 +152,21 @@ export const SEED_VENUE_CARDS = [
   { t: "Weather", d: "The ceremony is outdoors — bring a light layer for the evening breeze." },
 ];
 
+// Venues — a list of locations, each its OWN map + its OWN info tiles. Supersedes
+// the single settings map (venueName/venueAddress/mapQuery) + flat venueCards,
+// which are still read for back-compat (see mappers.venuesFrom). Shape:
+//   { id, name, address, mapQuery, mapLat, mapLng, cards:[{ id, t, d }] }
+export const SEED_VENUES = [
+  {
+    id: "venue-main",
+    name: "Somewhere in Lipa, Batangas",
+    address: "Lipa, Batangas, Philippines",
+    mapQuery: "Lipa, Batangas, Philippines",
+    mapLat: undefined, mapLng: undefined,
+    cards: SEED_VENUE_CARDS.map((c, i) => ({ id: "vc-seed-" + i, ...c })),
+  },
+];
+
 export const SEED_QUIZ = [
   { id: "q1", type: "multiple_choice", q: "Where did the couple first meet?", options: ["A coffee shop", "A bookshop", "A wedding", "Online"], answer: 1 },
   { id: "q2", type: "multiple_choice", q: "Which city was their first trip together?", options: ["Paris", "Rome", "Lisbon", "Tokyo"], answer: 2 },
@@ -187,6 +207,7 @@ export function defaultState() {
     faq: SEED_FAQ,
     quiz: SEED_QUIZ,
     venueCards: SEED_VENUE_CARDS,
+    venues: SEED_VENUES,
     detailCards: SEED_DETAIL_CARDS,
     entourage: SEED_ENTOURAGE,
     attire: SEED_ATTIRE, // attire-guide groups: { id, name, image, palette:[hex] }
@@ -445,6 +466,13 @@ export const Store = {
     if (index < 0 || j < 0 || j >= arr.length) return;
     [arr[index], arr[j]] = [arr[j], arr[index]];
     _state = { ..._state, venueCards: arr };
+    persist();
+    emit();
+  },
+  // Venues (each a map + its own tiles). The admin builds the next array
+  // immutably (add/remove/reorder venue or card) and passes it here.
+  updateVenues(venues) {
+    _state = { ..._state, venues };
     persist();
     emit();
   },
