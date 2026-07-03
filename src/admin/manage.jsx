@@ -2507,6 +2507,11 @@ function timeAgo(ts) {
   const d = Math.floor(h / 24); if (d < 7) return d + "d ago";
   return fmtDate(ts);
 }
+function initialsOf(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  return ((parts[0][0] || "") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+}
 function NotificationBell({ goTab }) {
   const { rsvps, guestbook, quizSubs, clientId, settings } = useStore();
   const [open, setOpen] = useState(false);
@@ -2543,19 +2548,24 @@ function NotificationBell({ goTab }) {
         <>
           <div className="notif__backdrop" onClick={() => setOpen(false)} />
           <div className="notif__panel" role="dialog" aria-label="Notifications">
-            <div className="notif__head">Activity</div>
+            <div className="notif__head">{Icon.bell({ style: { width: 15, height: 15 } })} Notifications{unseen > 0 ? ` · ${unseen} new` : ""}</div>
             <div className="notif__list">
               {items.length === 0 ? (
                 <div className="notif__empty">No activity yet.</div>
               ) : items.slice(0, 20).map((it, i) => (
                 <button key={it.id} type="button" className={"notif__item" + (i < unseen ? " is-new" : "")}
                   onClick={() => { goTab(it.tab); setOpen(false); }}>
-                  <span className="notif__icon">{(Icon[it.icon] || Icon.bell)({ style: { width: 16, height: 16 } })}</span>
-                  <span className="notif__text"><strong>{it.who}</strong> {it.text}</span>
-                  <span className="notif__time">{timeAgo(it.at)}</span>
+                  <span className={"notif__ava notif__ava--" + (["a", "b", "c", "d"][(it.who.charCodeAt(0) || 0) % 4])}>{initialsOf(it.who)}</span>
+                  <span className="notif__body">
+                    <span className="notif__line"><strong>{it.who}</strong> {it.text}</span>
+                    <span className="notif__time">{timeAgo(it.at)}</span>
+                  </span>
                 </button>
               ))}
             </div>
+            {items.length > 0 && (
+              <button type="button" className="notif__footer" onClick={() => { goTab("rsvps"); setOpen(false); }}>View all RSVPs →</button>
+            )}
           </div>
         </>
       )}

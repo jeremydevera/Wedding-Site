@@ -193,14 +193,14 @@ export function AdminDashboard({ goTab }) {
     // read from the one reconcileGuests summary (same field the Guests tab's
     // Attending folder counts, so they can never disagree). Sub is just
     // "confirmed"; maybe/declined/for-approval live in the Guests tab folders.
-    { label: "RSVPs", value: strict ? recon.summary.attending : attending.length, sub: "confirmed", tab: "rsvps", icon: "check" },
-    { label: "Guest Count", value: guestCount, sub: "people coming", tab: "rsvps", icon: "user" },
+    { label: "RSVPs", value: strict ? recon.summary.attending : attending.length, sub: "confirmed", tab: "rsvps", icon: "check", accent: "success" },
+    { label: "Guest Count", value: guestCount, sub: "people coming", tab: "rsvps", icon: "user", accent: "info" },
     ...(mediaShelved ? [] : [
-      { label: "Photos", value: photos.length, sub: pendingMedia.length ? `${pendingMedia.length} to review` : "all clear", tab: "media", icon: "camera" },
-      { label: "Videos", value: videos.length, sub: "uploaded", tab: "media", icon: "play" },
+      { label: "Photos", value: photos.length, sub: pendingMedia.length ? `${pendingMedia.length} to review` : "all clear", tab: "media", icon: "camera", accent: "purple" },
+      { label: "Videos", value: videos.length, sub: "uploaded", tab: "media", icon: "play", accent: "amber" },
     ]),
-    ...(gbOn ? [{ label: "Guestbook", value: guestbook.length, sub: "messages", tab: "guestbook", icon: "book" }] : []),
-    ...(quizOn ? [{ label: "Quiz Plays", value: quizSubs.length, sub: "submissions", tab: "quiz", icon: "quiz" }] : []),
+    ...(gbOn ? [{ label: "Guestbook", value: guestbook.length, sub: "messages", tab: "guestbook", icon: "book", accent: "purple" }] : []),
+    ...(quizOn ? [{ label: "Quiz Plays", value: quizSubs.length, sub: "submissions", tab: "quiz", icon: "quiz", accent: "amber" }] : []),
   ];
   const recentRsvps = rsvps.slice(0, 5);
   const recentMedia = media.slice(0, 6);
@@ -210,11 +210,13 @@ export function AdminDashboard({ goTab }) {
     <div>
       <div className="stat-grid">
         {stats.map((s) => (
-          <button key={s.label} className="stat" onClick={() => goTab(s.tab)} style={{ cursor: "pointer", textAlign: "left", font: "inherit", color: "inherit" }}>
-            {s.icon && <span className="stat__icon" aria-hidden="true">{Icon[s.icon]({})}</span>}
-            <div className="stat__label">{s.label}</div>
-            <div className="stat__value">{s.value}</div>
-            <div className="stat__sub">{s.sub}</div>
+          <button key={s.label} className={"kpi kpi--" + (s.accent || "info")} onClick={() => goTab(s.tab)}>
+            <div className="kpi__top">
+              <span className="kpi__chip" aria-hidden="true">{Icon[s.icon] ? Icon[s.icon]({}) : null}</span>
+              <span className="kpi__label">{s.label}</span>
+            </div>
+            <div className="kpi__value">{s.value}</div>
+            <div className="kpi__foot">{s.sub}</div>
           </button>
         ))}
       </div>
