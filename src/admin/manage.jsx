@@ -2565,7 +2565,7 @@ function NotificationBell({ goTab }) {
 
 // Account menu in the admin topbar — click the avatar for the signed-in email
 // and a Sign out action.
-function ProfileMenu({ email, onSignOut }) {
+function ProfileMenu({ email, onViewSite, onSignOut }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="notif">
@@ -2577,6 +2577,10 @@ function ProfileMenu({ email, onSignOut }) {
           <div className="notif__backdrop" onClick={() => setOpen(false)} />
           <div className="notif__panel notif__panel--menu" role="menu">
             {email && <div className="notif__acct">{email}</div>}
+            <button type="button" className="notif__item" role="menuitem" onClick={() => { setOpen(false); onViewSite(); }}>
+              <span className="notif__icon">{Icon.home({ style: { width: 16, height: 16 } })}</span>
+              <span className="notif__text">View website</span>
+            </button>
             <button type="button" className="notif__item" role="menuitem" onClick={() => { setOpen(false); onSignOut(); }}>
               <span className="notif__icon">{Icon.arrow({ style: { width: 16, height: 16, transform: "rotate(180deg)" } })}</span>
               <span className="notif__text">Sign out</span>
@@ -2703,13 +2707,11 @@ export function AdminApp() {
         {isSuper && clientOverride && (
           <button className="admin__navlink" onClick={exitToConsole}>{Icon.arrow({ style: { transform: "rotate(180deg)" } })} Back to clients</button>
         )}
-        <button className="admin__navlink" onClick={() => go("home")}>{Icon.arrow({ style: { transform: "rotate(180deg)" } })} View website</button>
         {canArrange && (
           <button className="admin__navlink" onClick={startArrange} style={{ color: "#7a5b12", fontWeight: 700 }}>
             {Icon.grid({ style: { width: 16, height: 16 } })} Arrange Now
           </button>
         )}
-        <button className="admin__navlink" onClick={() => signOut().then(() => { if (clientOverride) exitToConsole(); else go("home"); })}>{Icon.arrow({ style: { transform: "rotate(180deg)" } })} Sign out</button>
       </aside>
 
       <main className="admin__main">
@@ -2721,7 +2723,7 @@ export function AdminApp() {
           </div>
           <div className="admin__topbar-right">
             {clientId && <NotificationBell goTab={setTab} />}
-            <ProfileMenu email={auth.email} onSignOut={() => signOut().then(() => { if (clientOverride) exitToConsole(); else go("home"); })} />
+            <ProfileMenu email={auth.email} onViewSite={() => go("home")} onSignOut={() => signOut().then(() => { if (clientOverride) exitToConsole(); else go("home"); })} />
           </div>
         </div>
         </div>
