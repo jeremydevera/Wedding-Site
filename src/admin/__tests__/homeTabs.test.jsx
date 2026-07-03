@@ -61,11 +61,11 @@ describe("Home tab — folder sub-tabs", () => {
     expect(container.textContent).toMatch(/Attire guide/);
     expect(hasButton(container, "+ Add group")).toBe(true);
 
-    // Google Maps → show toggle + venues manager (locations list + home map) + Save
+    // Google Maps → show toggle + home-map picker (no editor list here) + Save
     clickByText(container, ".folders .folder", "Google Maps");
     expect(hasSwitch(container, "Show map on the home page")).toBe(true);
-    expect(container.textContent).toMatch(/Locations & maps/);
     expect(container.textContent).toMatch(/Home page map/);
+    expect(container.textContent).toMatch(/Map to show on home/);
     expect(hasButton(container, "Save changes")).toBe(true);
 
     // Timeline → vertical/horizontal layout picker

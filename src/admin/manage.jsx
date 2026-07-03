@@ -1504,7 +1504,7 @@ function VenueTileEditor({ open, item, onSave, onClose }) {
 // Venue & Map admin: manage a LIST of venues (each its own map + tiles), plus
 // choose which venue's map + tiles show on the home page. Back-compat: existing
 // single-map clients arrive as one venue (see mappers.venuesFrom).
-export function VenueAdmin() {
+export function VenueAdmin({ section = "editor" }) {
   const { settings, venues } = useStore();
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const list = venues || [];
@@ -1524,7 +1524,7 @@ export function VenueAdmin() {
   }
 
   // ---- Venue editor sub-view ----
-  if (editVi != null && list[editVi]) {
+  if (section !== "home" && editVi != null && list[editVi]) {
     const v = list[editVi];
     const cards = v.cards || [];
     const setCards = (cs) => patchVenue(editVi, { cards: cs });
@@ -1589,8 +1589,36 @@ export function VenueAdmin() {
     );
   }
 
-  // ---- List view: all venues + home-map selection ----
-  const homeVenue = list.find((v) => v.id === settings.homeVenueId) || list[0] || null;
+  // ---- Home-map selection only (rendered in the Home → Google Maps tab) ----
+  if (section === "home") {
+    const homeVenue = list.find((v) => v.id === settings.homeVenueId) || list[0] || null;
+    return (
+      <div className="panel">
+        <div className="panel__head"><div className="panel__title">Home page map</div></div>
+        <div className="panel__body">
+          <p style={{ color: "var(--muted)", margin: "0 0 14px", fontSize: 14 }}>
+            Pick which location's map shows on the home page, and whether its tiles show under it. Add or edit locations in the Venue &amp; Map tab. The full Venue page always shows every location.
+          </p>
+          <Field label="Map to show on home" id="home-venue">
+            <Select id="home-venue" value={homeVenue ? homeVenue.id : ""} onChange={(e) => Store.updateSettings({ homeVenueId: e.target.value })}>
+              {list.map((v, i) => <option key={v.id || i} value={v.id}>{v.name || v.address || `Location ${i + 1}`}</option>)}
+            </Select>
+          </Field>
+          <div style={{ marginTop: 4 }}>
+            <AdminToggle
+              label="Show this location's tiles under the home map"
+              desc={homeVenue ? `Turns the ${(homeVenue.cards || []).length} tile${(homeVenue.cards || []).length === 1 ? "" : "s"} for “${homeVenue.name || homeVenue.address || "this location"}” on or off on the home page. Off = map only.` : "Off = map only."}
+              checked={settings.homeShowTiles === true}
+              onChange={(v) => Store.updateSettings({ homeShowTiles: v })}
+            />
+          </div>
+        </div>
+        <SaveFooter />
+      </div>
+    );
+  }
+
+  // ---- Editor only: the venues list (rendered in the Venue & Map tab) ----
   return (
     <div>
       <div className="panel">
@@ -1620,29 +1648,6 @@ export function VenueAdmin() {
               {list.length === 0 && <tr><td colSpan={5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No locations yet. Add one to get started.</td></tr>}
             </tbody>
           </table>
-        </div>
-        <SaveFooter />
-      </div>
-
-      <div className="panel">
-        <div className="panel__head"><div className="panel__title">Home page map</div></div>
-        <div className="panel__body">
-          <p style={{ color: "var(--muted)", margin: "0 0 14px", fontSize: 14 }}>
-            Pick which location's map shows on the home page. Editing a location's map or tiles is done above (in the list). The full Venue page always shows every location.
-          </p>
-          <Field label="Map to show on home" id="home-venue">
-            <Select id="home-venue" value={homeVenue ? homeVenue.id : ""} onChange={(e) => Store.updateSettings({ homeVenueId: e.target.value })}>
-              {list.map((v, i) => <option key={v.id || i} value={v.id}>{v.name || v.address || `Location ${i + 1}`}</option>)}
-            </Select>
-          </Field>
-          <div style={{ marginTop: 4 }}>
-            <AdminToggle
-              label="Show this location's tiles under the home map"
-              desc={homeVenue ? `Turns the ${(homeVenue.cards || []).length} tile${(homeVenue.cards || []).length === 1 ? "" : "s"} for “${homeVenue.name || homeVenue.address || "this location"}” on or off on the home page. Off = map only.` : "Off = map only."}
-              checked={settings.homeShowTiles === true}
-              onChange={(v) => Store.updateSettings({ homeShowTiles: v })}
-            />
-          </div>
         </div>
         <SaveFooter />
       </div>
@@ -2264,12 +2269,12 @@ export function HomeAdmin() {
       {isSuper && active === "maps" && (
         <>
           <div className="panel">
-            <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Venue &amp; maps</div><HeadSwitch label="Show map on the home page" checked={f.showMap !== false} onChange={(v) => toggleShow("showMap", v)} /></div>
+            <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Home page map</div><HeadSwitch label="Show map on the home page" checked={f.showMap !== false} onChange={(v) => toggleShow("showMap", v)} /></div>
             <div className="panel__body">
-              <p style={{ color: "var(--muted)", margin: 0, fontSize: 14 }}>Add one or more locations, each with its own map and tiles. Below, pick which location's map (and which tiles) show on the home page. The full Venue page always shows every location.</p>
+              <p style={{ color: "var(--muted)", margin: 0, fontSize: 14 }}>Pick which location's map shows on the home page. Add or edit the locations themselves (their maps + tiles) in the Venue &amp; Map tab.</p>
             </div>
           </div>
-          <VenueAdmin />
+          <VenueAdmin section="home" />
         </>
       )}
     </div>
