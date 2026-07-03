@@ -90,13 +90,13 @@ export function RsvpCharts({ rsvps }) {
   const dietRef   = useRef(null);
 
   useChart(statusRef, () => donutConfig(
-    [`Attending (${stats.attendingParties})`, `Maybe (${stats.maybe})`, `Declined (${stats.declined})`],
+    ["Attending", "Maybe", "Declined"],
     [stats.attendingParties, stats.maybe, stats.declined],
     STATUS_COLORS,
   ), [stats.attendingParties, stats.maybe, stats.declined]);
 
   useChart(dietRef, () => donutConfig(
-    dietEntries.map(([k, v]) => `${k} (${v})`),
+    dietEntries.map(([k]) => k),
     dietEntries.map(([, v]) => v),
     dietEntries.map((_, i) => DIET_COLORS[i % DIET_COLORS.length]),
   ), [dietEntries]);

@@ -662,8 +662,20 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 .notif__backdrop { position: fixed; inset: 0; z-index: 90; }
 /* right-aligned: the bell + account menu live at the top-right of the topbar */
 .notif__panel { position: absolute; top: calc(100% + 8px); right: 0; z-index: 91; width: min(360px, 92vw); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 12px 40px -12px rgba(0,0,0,.4); overflow: hidden; }
-.notif__panel--menu { width: min(240px, 80vw); }
-.notif__acct { padding: 12px 16px; font-size: 13px; color: var(--ink-soft); border-bottom: 1px solid var(--line); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notif__panel--menu { width: min(300px, 86vw); }
+/* Adminator dd-profile popup: bold name + mono email head, icon rows,
+   divider, red Logout */
+.dd-profile { border-radius: 14px; }
+.dd-profile__head { padding: 16px 20px 14px; border-bottom: 1px solid var(--line); }
+.dd-profile__name { font-size: 16px; font-weight: 700; color: var(--ink); }
+.dd-profile__email { margin-top: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dd-profile__item { display: flex; align-items: center; gap: 14px; width: 100%; padding: 13px 20px; background: none; border: none; cursor: pointer; text-align: left; color: var(--ink); font: inherit; font-size: 15px; }
+.dd-profile__item svg { color: var(--muted); flex: none; }
+.dd-profile__item:hover { background: var(--surface-2); }
+.dd-profile__divider { height: 1px; background: var(--line); }
+.dd-profile__item--danger { color: #e5484d; }
+.dd-profile__item--danger svg { color: #e5484d; }
+.dd-profile__item--danger:hover { background: rgba(229, 72, 77, 0.07); }
 .notif__head { display: flex; align-items: center; gap: 8px; padding: 12px 16px; font-weight: 700; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); }
 .notif__list { max-height: 62vh; overflow-y: auto; }
 .notif__empty { padding: 24px 16px; color: var(--muted); font-size: 14px; text-align: center; }

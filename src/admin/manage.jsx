@@ -2575,7 +2575,7 @@ function NotificationBell({ goTab }) {
 
 // Account menu in the admin topbar — click the avatar for the signed-in email
 // and a Sign out action.
-function ProfileMenu({ email, onViewSite, onSignOut }) {
+function ProfileMenu({ name, email, onViewSite, onSignOut }) {
   const [open, setOpen] = useState(false);
   // Adminator-style filled avatar: initials from the account email's local part
   // ("jane.doe@x" -> JD; "jeremydevera03@x" -> JE).
@@ -2585,6 +2585,12 @@ function ProfileMenu({ email, onViewSite, onSignOut }) {
     const s = parts.length > 1 ? parts[0][0] + parts[1][0] : local.slice(0, 2);
     return (s || "?").toUpperCase();
   })();
+  // Adminator logout glyph (door + arrow), red row.
+  const logoutIcon = (
+    <svg viewBox="0 0 24 24" fill="none" style={{ width: 18, height: 18 }}>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
   return (
     <div className="notif">
       <button type="button" className="notif__avatar" aria-label="Account" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
@@ -2593,15 +2599,19 @@ function ProfileMenu({ email, onViewSite, onSignOut }) {
       {open && (
         <>
           <div className="notif__backdrop" onClick={() => setOpen(false)} />
-          <div className="notif__panel notif__panel--menu" role="menu">
-            {email && <div className="notif__acct">{email}</div>}
-            <button type="button" className="notif__item" role="menuitem" onClick={() => { setOpen(false); onViewSite(); }}>
-              <span className="notif__icon">{Icon.home({ style: { width: 16, height: 16 } })}</span>
-              <span className="notif__text">View website</span>
+          <div className="notif__panel notif__panel--menu dd-profile" role="menu">
+            <div className="dd-profile__head">
+              {name && <div className="dd-profile__name">{name}</div>}
+              {email && <div className="dd-profile__email">{email}</div>}
+            </div>
+            <button type="button" className="dd-profile__item" role="menuitem" onClick={() => { setOpen(false); onViewSite(); }}>
+              {Icon.home({ style: { width: 18, height: 18 } })}
+              View website
             </button>
-            <button type="button" className="notif__item" role="menuitem" onClick={() => { setOpen(false); onSignOut(); }}>
-              <span className="notif__icon">{Icon.arrow({ style: { width: 16, height: 16, transform: "rotate(180deg)" } })}</span>
-              <span className="notif__text">Sign out</span>
+            <div className="dd-profile__divider" />
+            <button type="button" className="dd-profile__item dd-profile__item--danger" role="menuitem" onClick={() => { setOpen(false); onSignOut(); }}>
+              {logoutIcon}
+              Logout
             </button>
           </div>
         </>
@@ -2747,7 +2757,7 @@ export function AdminApp() {
           </div>
           <div className="admin__topbar-right">
             {clientId && <NotificationBell goTab={setTab} />}
-            <ProfileMenu email={auth.email} onViewSite={() => go("home")} onSignOut={() => signOut().then(() => { if (clientOverride) exitToConsole(); else go("home"); })} />
+            <ProfileMenu name={auth.role === "superadmin" ? "Superadmin" : [settings.partnerA, settings.partnerB].filter(Boolean).join(" & ") || "Owner"} email={auth.email} onViewSite={() => go("home")} onSignOut={() => signOut().then(() => { if (clientOverride) exitToConsole(); else go("home"); })} />
           </div>
         </div>
         </div>
