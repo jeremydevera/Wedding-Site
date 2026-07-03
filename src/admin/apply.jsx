@@ -329,18 +329,24 @@ export function ApplyWizard() {
                 </button>
               ))}
             </div>
-            <h1 className="signin__title" style={{ fontSize: 26 }}>{s.title}</h1>
-            <div className="apply-body">{s.body}</div>
-            {err && <div className="signin__err" style={{ margin: "12px 0" }}>{err}</div>}
-            <div className="wizard__nav">
-              <span>{s.skippable && !last && <button type="button" className="wizard__skip" onClick={() => { setF((p) => ({ ...p, entourage: [] })); setStep(step + 1); }}>Skip this step</button>}</span>
-              <div style={{ display: "flex", gap: 10 }}>
-                {step > 0 && <Button variant="ghost" onClick={() => { setErr(""); setStep(step - 1); }} disabled={busy}>Back</Button>}
-                {last
-                  ? <Button variant="primary" onClick={submit} disabled={busy}>{busy ? "Sending…" : "Submit for approval"}</Button>
-                  : <Button variant="primary" onClick={next}>Next</Button>}
+            <section className="panel apply-panel">
+              <header className="panel__head">
+                <h1 className="panel__title apply-panel__title">{s.title}</h1>
+              </header>
+              <div className="panel__body">
+                <div className="apply-body">{s.body}</div>
+                {err && <div className="signin__err" style={{ margin: "12px 0 0" }}>{err}</div>}
               </div>
-            </div>
+              <div className="panel__foot apply-panel__foot">
+                <span>{s.skippable && !last && <button type="button" className="wizard__skip" onClick={() => { setF((p) => ({ ...p, entourage: [] })); setStep(step + 1); }}>Skip this step</button>}</span>
+                <div style={{ display: "flex", gap: 10 }}>
+                  {step > 0 && <Button variant="ghost" onClick={() => { setErr(""); setStep(step - 1); }} disabled={busy}>Back</Button>}
+                  {last
+                    ? <Button variant="primary" onClick={submit} disabled={busy}>{busy ? "Sending…" : "Submit for approval"}</Button>
+                    : <Button variant="primary" onClick={next}>Next</Button>}
+                </div>
+              </div>
+            </section>
           </div>
         </div>
       </div>
