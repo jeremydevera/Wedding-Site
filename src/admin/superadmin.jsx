@@ -105,7 +105,7 @@ export function ClientsAdmin() {
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState("");
   const [requests, setRequests] = useState([]);     // prospect intake (/apply) awaiting approval
-  const [reqOpen, setReqOpen] = useState(null);      // expanded request id
+  const [reqInfo, setReqInfo] = useState(null);      // request shown in the details modal (eye)
   const [info, setInfo] = useState(null);            // client shown in the info modal (eye icon)
   const [reqEdit, setReqEdit] = useState(null);      // request being edited in a modal (pencil)
 
@@ -271,6 +271,9 @@ export function ClientsAdmin() {
         <button className={"folder" + (view === "requests" ? " folder--active" : "")} onClick={() => setView("requests")}>
           {Icon.book({})} Requests{requests.filter((r) => r.status === "pending").length > 0 ? ` (${requests.filter((r) => r.status === "pending").length})` : ""}
         </button>
+        <button className={"folder" + (view === "approved" ? " folder--active" : "")} onClick={() => setView("approved")}>
+          {Icon.check({})} Approved{requests.filter((r) => r.status === "approved").length > 0 ? ` (${requests.filter((r) => r.status === "approved").length})` : ""}
+        </button>
         <button className={"folder" + (view === "rejected" ? " folder--active" : "")} onClick={() => setView("rejected")}>
           {Icon.close({})} Rejected{requests.filter((r) => r.status === "rejected").length > 0 ? ` (${requests.filter((r) => r.status === "rejected").length})` : ""}
         </button>
@@ -284,9 +287,9 @@ export function ClientsAdmin() {
           <div className="panel__head"><div className="panel__title">Site requests</div><span style={{ color: "var(--muted)", fontSize: 13 }}>Submitted from the /apply wizard — approve to create the site</span></div>
           <div className="panel__body--flush table-wrap">
             <table className="tbl">
-              <thead><tr><th>Couple</th><th>Site address</th><th>Email</th><th>Theme</th><th>RSVP</th><th>Status</th><th></th></tr></thead>
+              <thead><tr><th>Couple</th><th>Site address</th><th>Email</th><th>Theme</th><th>RSVP</th><th></th></tr></thead>
               <tbody>
-                {requests.filter((r) => r.status !== "rejected").map((r) => (
+                {requests.filter((r) => r.status === "pending").map((r) => (
                   <React.Fragment key={r.id}>
                     <tr>
                       <td><strong>{r.partner_a} & {r.partner_b}</strong></td>
@@ -294,10 +297,9 @@ export function ClientsAdmin() {
                       <td>{r.email}</td>
                       <td>{r.template_key}</td>
                       <td>{r.content && r.content.strictRsvp ? "Strict" : "Open"}</td>
-                      <td><span className={"tag " + (r.status === "pending" ? "tag--maybe" : r.status === "approved" ? "tag--attending" : "tag--not_attending")}>{r.status}</span></td>
                       <td>
                         <div className="row-actions">
-                          <button className="icon-btn" title="Details" onClick={() => setReqOpen(reqOpen === r.id ? null : r.id)}>{Icon.eye({})}</button>
+                          <button className="icon-btn" title="Details" onClick={() => setReqInfo(r)}>{Icon.eye({})}</button>
                           {r.status === "pending" && (
                             <>
                               <button className="icon-btn" title="Edit request" onClick={() => setReqEdit(r)}>{Icon.edit({})}</button>
@@ -319,21 +321,39 @@ export function ClientsAdmin() {
                         </div>
                       </td>
                     </tr>
-                    {reqOpen === r.id && (
-                      <tr><td colSpan={7} style={{ background: "var(--surface-2)" }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "8px 18px", padding: "12px 6px", fontSize: 13 }}>
-                          <span style={{ color: "var(--muted)" }}>Date</span><span>{(r.content && r.content.weddingDateLabel) || "Not set"}</span>
-                          <span style={{ color: "var(--muted)" }}>Venue</span><span>{[r.content && r.content.venueName, r.content && r.content.venueAddress].filter(Boolean).join(" — ") || "Not set"}</span>
-                          <span style={{ color: "var(--muted)" }}>Map pin</span><span>{r.content && r.content.mapQuery ? `${r.content.mapQuery} (${r.content.mapLat}, ${r.content.mapLng})` : "Not pinned"}</span>
-                          <span style={{ color: "var(--muted)" }}>Schedule</span><span>{Array.isArray(r.content && r.content.schedule) && r.content.schedule.length ? r.content.schedule.map((x) => `${x.time} ${x.title}`).join(" · ") : "None"}</span>
-                          <span style={{ color: "var(--muted)" }}>Entourage</span><span>{Array.isArray(r.content && r.content.entourage) && r.content.entourage.length ? r.content.entourage.map((g) => `${g.title} (${g.people.length})`).join(" · ") : "Skipped"}</span>
-                          <span style={{ color: "var(--muted)" }}>Submitted</span><span>{new Date(r.created_at).toLocaleString()}</span>
-                        </div>
-                      </td></tr>
-                    )}
                   </React.Fragment>
                 ))}
-                {requests.filter((r) => r.status !== "rejected").length === 0 && <tr><td colSpan={7} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>No requests yet — share celebrately.us/apply with a prospect.</td></tr>}
+                {requests.filter((r) => r.status === "pending").length === 0 && <tr><td colSpan={6} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>No pending requests — share celebrately.us/apply with a prospect.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Approved requests — history of what's been turned into a live site. */}
+      {view === "approved" && (
+        <div className="panel">
+          <div className="panel__head"><div className="panel__title">Approved requests</div><span style={{ color: "var(--muted)", fontSize: 13 }}>These sites were created — manage them in the Clients tab</span></div>
+          <div className="panel__body--flush table-wrap">
+            <table className="tbl">
+              <thead><tr><th>Couple</th><th>Site address</th><th>Email</th><th>Theme</th><th>Submitted</th><th></th></tr></thead>
+              <tbody>
+                {requests.filter((r) => r.status === "approved").map((r) => (
+                  <tr key={r.id}>
+                    <td><strong>{r.partner_a} & {r.partner_b}</strong></td>
+                    <td className="client-domain">{r.subdomain}.celebrately.us</td>
+                    <td>{r.email}</td>
+                    <td>{r.template_key}</td>
+                    <td style={{ color: "var(--muted)", fontSize: 13 }}>{new Date(r.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</td>
+                    <td>
+                      <div className="row-actions">
+                        <button className="icon-btn" title="Details" onClick={() => setReqInfo(r)}>{Icon.eye({})}</button>
+                        <a className="icon-btn" href={clientUrl(r.subdomain)} target="_blank" rel="noreferrer" title="Open live site">{Icon.arrow({})}</a>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {requests.filter((r) => r.status === "approved").length === 0 && <tr><td colSpan={6} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>No approved requests yet.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -358,6 +378,7 @@ export function ClientsAdmin() {
                     <td style={{ color: "var(--muted)", fontSize: 13 }}>{new Date(r.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</td>
                     <td>
                       <div className="row-actions">
+                        <button className="icon-btn" title="Details" onClick={() => setReqInfo(r)}>{Icon.eye({})}</button>
                         <Button variant="primary" size="sm" disabled={busy} onClick={async () => {
                           const ok = await confirmDialog({ title: "Reopen this request?", message: `Move the request for ${r.subdomain}.celebrately.us back to pending? You can then edit or approve it in Requests.`, confirmLabel: "Reopen" });
                           if (!ok) return;
@@ -600,6 +621,52 @@ export function ClientsAdmin() {
                 <a className="btn btn--ghost" href={clientUrl(c.subdomain)} target="_blank" rel="noreferrer">{Icon.eye({})} Open live site</a>
                 <a className="btn btn--ghost" href={`/admin?client=${c.subdomain}`}>{Icon.grid({})} Open admin</a>
               </div>
+            </div>
+          );
+        })()}
+      </Modal>
+
+      {/* Eye on a request row → everything the prospect filled in the wizard. */}
+      <Modal open={!!reqInfo} onClose={() => setReqInfo(null)} label="Request details">
+        {reqInfo && (() => {
+          const r = reqInfo;
+          const c = r.content || {};
+          const row = { display: "flex", gap: 12, padding: "9px 0", borderBottom: "1px solid var(--line)", fontSize: 14 };
+          const lab = { flex: "none", width: 110, color: "var(--muted)", fontSize: 12, letterSpacing: ".06em", textTransform: "uppercase", paddingTop: 2 };
+          const sched = Array.isArray(c.schedule) ? c.schedule.filter((x) => x && x.title) : [];
+          const ent = Array.isArray(c.entourage) ? c.entourage : [];
+          return (
+            <div>
+              <SectionHead eyebrow="Site request" title={`${r.partner_a} & ${r.partner_b}`} />
+              <div style={{ marginTop: -6 }}>
+                <div style={row}><span style={lab}>Status</span><span className={"tag " + (r.status === "pending" ? "tag--maybe" : r.status === "approved" ? "tag--attending" : "tag--not_attending")}>{r.status}</span></div>
+                <div style={row}><span style={lab}>Site address</span><span className="client-domain">{r.subdomain}.{PLATFORM_DOMAIN}</span></div>
+                <div style={row}><span style={lab}>Email</span><span>{r.email || "—"}</span></div>
+                <div style={row}><span style={lab}>Date</span><span>{c.weddingDateLabel || c.weddingDate || "Not set"}</span></div>
+                <div style={row}><span style={lab}>Theme</span><span>{THEMES[r.template_key]?.label || r.template_key}</span></div>
+                <div style={row}><span style={lab}>Venue</span><span>{[c.venueName, c.venueAddress].filter(Boolean).join(" — ") || "Not set"}</span></div>
+                <div style={row}><span style={lab}>Map pin</span><span>{c.mapQuery ? `${c.mapQuery} (${c.mapLat}, ${c.mapLng})` : "Not pinned"}</span></div>
+                <div style={row}><span style={lab}>RSVP</span><span>{c.strictRsvp ? "Strict (invited guests only)" : "Open"}</span></div>
+                <div style={row}>
+                  <span style={lab}>Schedule</span>
+                  <span>{sched.length ? sched.map((x, i) => <span key={i} style={{ display: "block" }}>{[x.time, x.title].filter(Boolean).join(" — ")}{x.loc ? ` · ${x.loc}` : ""}</span>) : "None"}</span>
+                </div>
+                <div style={row}>
+                  <span style={lab}>Entourage</span>
+                  <span>{ent.length ? ent.map((g) => (
+                    <span key={g.id || g.title} style={{ display: "block", marginBottom: 6 }}>
+                      <strong>{g.title}</strong>
+                      {(g.people || []).map((x, i) => <span key={x.id || i} style={{ display: "block", color: "var(--ink-soft)" }}>{x.name}{x.role ? ` — ${x.role}` : ""}</span>)}
+                    </span>
+                  )) : "Skipped"}</span>
+                </div>
+                <div style={row}><span style={lab}>Submitted</span><span>{new Date(r.created_at).toLocaleString()}</span></div>
+              </div>
+              {r.status === "pending" && (
+                <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+                  <Button variant="primary" onClick={() => { setReqInfo(null); setReqEdit(r); }}>{Icon.edit({})} Edit request</Button>
+                </div>
+              )}
             </div>
           );
         })()}
