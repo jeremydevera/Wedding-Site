@@ -12,11 +12,17 @@ Claude test run. Done items stay here as the permanent history.
 
 ## Next IDs
 - Next Bug ID: **0007**
-- Next Enhancement ID: **0009**
+- Next Enhancement ID: **0011**
 
 ---
 
 ## Pending
+
+### Enhancement ID: 0010 — [APPROVAL] Olive Envelope: custom envelope color wheel
+- **Severity:** P3 · **Status:** Pending · **Added:** 2026-07-03 (Claude follow-up idea)
+- **Where:** Admin → Design → Envelope Color (Olive Envelope theme)
+- **Action:** Today the envelope color offers 8 fixed swatches; a free color wheel would let owners match any wedding palette exactly.
+- **Plan:** Convert the picked color to a hue-rotate/saturate/brightness filter chain relative to the olive base at save time; keep the 8 presets as quick picks.
 
 ### Enhancement ID: 0008 — Server-side notification read/cleared state (multi-device sync)
 - **Severity:** P3 · **Status:** Pending · **Added:** 2026-07-03 (requested by Jeremy)
@@ -33,6 +39,12 @@ Claude test run. Done items stay here as the permanent history.
 ---
 
 ## Done / History
+
+### Enhancement ID: 0009 — Olive Envelope: envelope paper color setting
+- **Severity:** P2 · **Status:** Done — commit `d7b510e`, 2026-07-03
+- **Where:** Admin → Design → Envelope Color (shows only when the Olive Envelope theme is selected)
+- **Action:** Owners can recolor the envelope itself — 8 paper colors (Olive, Sage, Kraft, Dusty Blue, Navy, Wine, Blush, Charcoal) with a live preview.
+- **Resolution:** CSS filter presets (`ENV_COLORS`) recolor the sealed cover + open front pocket only; the cream wax seal, card, flowers, heart, and falling leaves stay unchanged. `envColor` setting persists in content JSON (older clients default to Olive). Verified all 8 presets on the real artwork via Playwright screenshot grid; 135 tests pass.
 
 ### Bug ID: 0006 — Strict RSVP: duplicate first+last blocked a middle-less guest
 - **Severity:** P2 · **Status:** Done — migration `0014` + commit `4ecc39d`, 2026-07-02
