@@ -163,8 +163,21 @@ export function subscribeAdminRealtime() {
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "rsvps", filter }, refetch)
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "guestbook", filter }, refetch)
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "quiz_answers", filter }, refetch)
-    .subscribe();
-  return () => { clearTimeout(t); supabase.removeChannel(ch); };
+    // Status surfaced for diagnosis (SUBSCRIBED / CHANNEL_ERROR / TIMED_OUT…);
+    // supabase-js auto-rejoins with backoff, and the visibility catch-up below
+    // re-syncs anything missed while the socket was down.
+    .subscribe((status, err) => {
+      console.info("[api] realtime:", status, err ? String(err) : "");
+    });
+  // Catch-up: refetch when the tab becomes visible again — covers events missed
+  // while the laptop slept or the websocket was reconnecting.
+  const onVisible = () => { if (document.visibilityState === "visible") refetch(); };
+  document.addEventListener("visibilitychange", onVisible);
+  return () => {
+    document.removeEventListener("visibilitychange", onVisible);
+    clearTimeout(t);
+    supabase.removeChannel(ch);
+  };
 }
 
 // Admin moderation — write-through to the DB (caller updates the store optimistically).
