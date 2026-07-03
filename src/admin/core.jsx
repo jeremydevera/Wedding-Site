@@ -156,7 +156,7 @@ export function AdminLogin({ onAuthed }) {
           {!isClient && (
             <>
               <p style={{ textAlign: "center", fontSize: 13, color: "var(--sg-sub)", marginTop: 18 }}>
-                New here? <a href="/register" style={{ color: "#1E5BD6", fontWeight: 600, textDecoration: "none" }}>Create your wedding site →</a>
+                New here? <a href="/apply" style={{ color: "#1E5BD6", fontWeight: 600, textDecoration: "none" }}>Request your wedding site →</a>
               </p>
               {/* Prospect intake link — one tap to copy and forward to a client */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 14, padding: "10px 12px", border: "1px solid var(--sg-inbd, #dcdce0)", borderRadius: 8, background: "#f8fafc" }}>

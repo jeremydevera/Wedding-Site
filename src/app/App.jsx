@@ -15,7 +15,6 @@ import { GalleryPage, UploadPage, VideoMessagePage } from "@/features/media.jsx"
 import { GuestbookPage, QuizPage } from "@/features/social.jsx";
 import { MusicMount } from "@/features/music.jsx";
 import { AdminApp, ImageUploadField } from "@/admin/manage.jsx";
-import { RegisterPage } from "@/admin/register.jsx";
 import { ApplyWizard } from "@/admin/apply.jsx";
 import { hasSection } from "@/config/eventTypes.js";
 import { moduleEnabled, moduleLabel } from "@/lib/roles.js";
@@ -396,9 +395,11 @@ export function App() {
   const Page = ROUTES[route] || Home;
   // apex hub or the admin route → admin shell (no public site).
   const isAdmin = view === "admin";
-  // Public self-serve signup lives on the apex hub only (/register).
+  // /register (old self-serve signup) is retired — every new site goes through
+  // the /apply approval flow. Old shared links land there too.
   if (isAdmin && resolveSubdomain() === null && /^\/register\/?$/.test(window.location.pathname)) {
-    return (<><RegisterPage /><ToastHost /><ConfirmHost /></>);
+    window.location.replace("/apply");
+    return null;
   }
   // Prospect intake wizard (link sent to possible clients) — apex /apply.
   if (isAdmin && resolveSubdomain() === null && /^\/apply\/?$/.test(window.location.pathname)) {
