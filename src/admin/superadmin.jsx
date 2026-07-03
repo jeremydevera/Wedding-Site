@@ -30,22 +30,28 @@ export function SuperOverview() {
   }, []);
 
   const stats = m ? [
-    { label: "Clients", value: m.clients, sub: `${m.active} active` },
-    { label: "Owner logins", value: m.logins, sub: `${m.clients - m.logins} without login` },
-    { label: "RSVPs", value: m.rsvps, sub: "across all events" },
-    { label: "Guestbook", value: m.guestbook, sub: "messages" },
-    { label: "Quiz plays", value: m.quiz, sub: "submissions" },
-  ] : Array.from({ length: 5 }).map(() => ({ label: "—", value: "·", sub: "" }));
+    { label: "Clients", value: m.clients, sub: `${m.active} active`, icon: "user", accent: "info" },
+    { label: "Owner logins", value: m.logins, sub: `${m.clients - m.logins} without login`, icon: "mail", accent: "success" },
+    { label: "RSVPs", value: m.rsvps, sub: "across all events", icon: "check", accent: "purple" },
+    { label: "Guestbook", value: m.guestbook, sub: "messages", icon: "book", accent: "amber" },
+    { label: "Quiz plays", value: m.quiz, sub: "submissions", icon: "quiz", accent: "info" },
+  ] : Array.from({ length: 5 }).map(() => ({ label: "—", value: "·", sub: "", icon: "grid", accent: "info" }));
   const typeTotal = Object.values(byType).reduce((a, b) => a + b, 0) || 1;
 
   return (
     <div>
+      {/* Same KPI card design as the client dashboard tiles (chip icon, bold
+          sans value, dashed footer) — counts here are plain totals, so the
+          footer shows the sub text instead of a week-over-week trend. */}
       <div className="sa-stats">
         {stats.map((s, i) => (
-          <div key={i} className="sa-stat" style={{ animationDelay: `${i * 50}ms` }}>
-            <div className="sa-stat__label">{s.label}</div>
-            <div className="sa-stat__value">{s.value}</div>
-            <div className="sa-stat__sub">{s.sub}</div>
+          <div key={i} className={"kpi kpi--" + s.accent}>
+            <div className="kpi__top">
+              <span className="kpi__chip" aria-hidden="true">{Icon[s.icon] ? Icon[s.icon]({}) : null}</span>
+              <span className="kpi__label">{s.label}</span>
+            </div>
+            <div className="kpi__value">{s.value}</div>
+            <div className="kpi__foot"><span className="kpi__tick" aria-hidden="true" />{s.sub}</div>
           </div>
         ))}
       </div>
@@ -370,7 +376,7 @@ export function ClientsAdmin() {
                       </td>
                     </tr>
                   ))}
-                  {filtered.length === 0 && <tr><td colSpan={4} style={{ textAlign: "center", padding: 40, color: "var(--muted)" }}>{clients.length ? "No matches." : "No clients yet — use “Add client”."}</td></tr>}
+                  {filtered.length === 0 && <tr><td colSpan={5} style={{ textAlign: "center", padding: 40, color: "var(--muted)" }}>{clients.length ? "No matches." : "No clients yet — use “Add client”."}</td></tr>}
                 </tbody>
               </table>
             </div>
