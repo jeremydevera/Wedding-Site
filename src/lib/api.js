@@ -142,6 +142,31 @@ export async function loadAdminData() {
   });
 }
 
+// Realtime: push new guest activity (RSVPs / guestbook / quiz) into the store
+// as it happens, so the notification bell, tiles, and charts update without a
+// refresh. One websocket channel per admin session; each INSERT triggers a
+// debounced loadAdminData() re-fetch so row mapping/ordering stays in that one
+// place (an event burst = one query). Delivery is RLS-gated server-side, and
+// the client_id filter keeps other clients' events from even waking the
+// debounce. Returns an unsubscribe fn for the mount effect's cleanup.
+export function subscribeAdminRealtime() {
+  const clientId = Store.get().clientId;
+  if (!clientId) return () => {};
+  let t = null;
+  const refetch = () => {
+    clearTimeout(t);
+    t = setTimeout(() => { loadAdminData().catch((e) => console.warn("[api] realtime refetch failed:", e?.message)); }, 400);
+  };
+  const filter = `client_id=eq.${clientId}`;
+  const ch = supabase
+    .channel(`admin-feed-${clientId}`)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "rsvps", filter }, refetch)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "guestbook", filter }, refetch)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "quiz_answers", filter }, refetch)
+    .subscribe();
+  return () => { clearTimeout(t); supabase.removeChannel(ch); };
+}
+
 // Admin moderation — write-through to the DB (caller updates the store optimistically).
 const GB_DB_STATUS = { visible: "approved", hidden: "hidden", pending: "pending" };
 export async function setGuestbookStatusDb(id, storeStatus) {

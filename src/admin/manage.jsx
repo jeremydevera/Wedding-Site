@@ -7,7 +7,7 @@ import { FX_LIST } from "@/lib/falling-fx.js";
 import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { signOut } from "@/lib/auth.js";
-import { loadAdminData, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb } from "@/lib/api.js";
+import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb } from "@/lib/api.js";
 import { reconcileGuests, guestFromRsvp, normName } from "@/lib/guests.js";
 import { headsOf } from "@/lib/rsvp.js";
 import { mediaUrl } from "@/lib/media.js";
@@ -2640,10 +2640,16 @@ export function AdminApp() {
 
   // Owner (or superadmin managing a client) — load that client's submissions from
   // the DB so RSVPs / guestbook / quiz show up, not just this session's echoes.
+  // Then keep them live: a Realtime channel pushes new guest activity into the
+  // store as it lands (bell badge/tiles update with no refresh). Cleanup drops
+  // the channel on sign-out / client switch.
   useEffect(() => {
     if (!auth.ready || !auth.session || !clientId) return;
     // owner manages their own client; superadmin manages whatever client site they're on
-    if (auth.role === "owner" || auth.role === "superadmin") loadAdminData();
+    if (auth.role === "owner" || auth.role === "superadmin") {
+      loadAdminData();
+      return subscribeAdminRealtime();
+    }
   }, [auth.ready, auth.session, auth.role, clientId]);
 
   if (!auth.ready) return <div style={{ position: "fixed", inset: 0, background: "#ffffff", color: "#6b7280", display: "grid", placeItems: "center" }}>…</div>;
