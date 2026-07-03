@@ -11,7 +11,7 @@ Claude test run. Done items stay here as the permanent history.
 - **`[APPROVAL]`** in a title = Claude found this (testing / scheduled run); needs your review before work.
 
 ## Next IDs
-- Next Bug ID: **0007**
+- Next Bug ID: **0008**
 - Next Enhancement ID: **0012**
 
 ---
@@ -44,7 +44,13 @@ Claude test run. Done items stay here as the permanent history.
 - **Severity:** P2 · **Status:** Done — commit `545008d`, 2026-07-03 (requested by Jeremy same day)
 - **Where:** Admin → Design → Envelope Color (Olive Envelope theme)
 - **Action:** Added a Terracotta (rust orange) preset, a "Custom" chip with a full color picker (any hex), and a "Match website colors" toggle so the page backgrounds/headings/buttons stop defaulting to green and take on the chosen envelope color.
-- **Resolution:** Custom colors are solved at runtime into the filter chain that maps the olive artwork to the picked hex (cached). Site palette re-hues the envelope theme's oklch tokens (`envSitePalette`); olive or toggle-off keeps the classic green. Very light custom picks flatten the wax-seal embossing (brightness clamp) — known cosmetic limit. 143 tests pass; presets + solver verified on artwork via screenshot grid.
+- **Resolution:** Custom colors are solved at runtime into the filter chain that maps the olive artwork to the picked hex (cached). Site palette re-hues the envelope theme's oklch tokens (`envSitePalette`); olive or toggle-off keeps the classic green. 143 tests pass; presets + solver verified on artwork via screenshot grid. (Wax-seal color shift fixed same day by `d15cbb3` — seal cut-out below.)
+
+### Bug ID: 0007 — Recolored envelope changed the wax seal color
+- **Severity:** P2 · **Status:** Done — commit `d15cbb3`, 2026-07-03 (requested by Jeremy)
+- **Where:** Guest site → Olive Envelope cover + opened envelope (with a non-olive envelope color)
+- **Action:** Picking an envelope color also tinted the cream wax seal (pink on wine, grey on navy, flat white on light custom colors). The seal should always stay cream.
+- **Resolution:** The color filter moved off the base envelope images onto a duplicate overlay masked with an ellipse cut-out over the seal — the unfiltered seal shows through. Covers the sealed cover, open front pocket, and the admin preview; seal position measured from the artwork pixels. Verified on wine/navy/rust/light-gold via screenshot grid.
 
 ### Enhancement ID: 0009 — Olive Envelope: envelope paper color setting
 - **Severity:** P2 · **Status:** Done — commit `d7b510e`, 2026-07-03
