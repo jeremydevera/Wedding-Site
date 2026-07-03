@@ -2517,6 +2517,11 @@ function NotificationBell({ goTab }) {
   const [open, setOpen] = useState(false);
   const key = "evermore_notif_seen_" + (clientId || "x");
   const [seen, setSeen] = useState(() => { try { return Number(localStorage.getItem(key) || 0); } catch (_) { return 0; } });
+  // "Clear" empties the box without touching any data: entries at/before the
+  // cleared timestamp are hidden from the list (per client, persisted), and
+  // anything that arrives afterwards shows up as usual.
+  const clearKey = "evermore_notif_cleared_" + (clientId || "x");
+  const [clearedAt, setClearedAt] = useState(() => { try { return Number(localStorage.getItem(clearKey) || 0); } catch (_) { return 0; } });
 
   const gbOn = moduleEnabled(settings.modules, "guestbook");
   const quizOn = moduleEnabled(settings.modules, "quiz");
@@ -2526,8 +2531,15 @@ function NotificationBell({ goTab }) {
     (rsvps || []).forEach((r) => a.push({ id: "r" + r.id, tab: "rsvps", icon: "mail", who: r.fullName || "Someone", text: stLabel[r.status] || "RSVP'd", at: r.createdAt || 0 }));
     if (gbOn) (guestbook || []).forEach((g) => a.push({ id: "g" + g.id, tab: "guestbook", icon: "book", who: g.name || "Someone", text: "signed the guestbook", at: g.createdAt || 0 }));
     if (quizOn) (quizSubs || []).forEach((q) => a.push({ id: "q" + q.id, tab: "quiz", icon: "quiz", who: q.name || "Someone", text: `took the quiz (${q.score}/${q.total})`, at: q.createdAt || 0 }));
-    return a.sort((x, y) => y.at - x.at);
-  }, [rsvps, guestbook, quizSubs, gbOn, quizOn]);
+    return a.filter((x) => x.at > clearedAt).sort((x, y) => y.at - x.at);
+  }, [rsvps, guestbook, quizSubs, gbOn, quizOn, clearedAt]);
+
+  const clearAll = () => {
+    const now = Date.now();
+    try { localStorage.setItem(clearKey, String(now)); localStorage.setItem(key, String(now)); } catch (_) {}
+    setClearedAt(now);
+    setSeen(now);
+  };
 
   const unseen = items.filter((i) => i.at > seen).length;
   // opening the panel marks everything up to now as seen
@@ -2548,10 +2560,15 @@ function NotificationBell({ goTab }) {
         <>
           <div className="notif__backdrop" onClick={() => setOpen(false)} />
           <div className="notif__panel" role="dialog" aria-label="Notifications">
-            <div className="notif__head">{Icon.bell({ style: { width: 15, height: 15 } })} Notifications{unseen > 0 ? ` · ${unseen} new` : ""}</div>
+            <div className="notif__head">
+              {Icon.bell({ style: { width: 15, height: 15 } })} Notifications{unseen > 0 ? ` · ${unseen} new` : ""}
+              {items.length > 0 && (
+                <button type="button" className="notif__clear" onClick={clearAll}>Clear</button>
+              )}
+            </div>
             <div className="notif__list">
               {items.length === 0 ? (
-                <div className="notif__empty">No activity yet.</div>
+                <div className="notif__empty">{clearedAt > 0 ? "You're all caught up." : "No activity yet."}</div>
               ) : items.slice(0, 20).map((it, i) => (
                 <button key={it.id} type="button" className={"notif__item" + (i < unseen ? " is-new" : "")}
                   onClick={() => { goTab(it.tab); setOpen(false); }}>
