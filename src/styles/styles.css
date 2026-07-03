@@ -1203,23 +1203,21 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
      the last content up into the visible area regardless of the toolbar state. */
   .admin__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 18px 18px calc(96px + env(safe-area-inset-bottom)); }
   .admin--sa .admin__body { padding: 18px 26px calc(96px + env(safe-area-inset-bottom)); }
-  /* topbar must wrap: title + action buttons can't sit on one phone row */
-  /* Extra TOP padding pushes the burger + title lower (more clearance below the
-     status bar / Dynamic Island); notch inset on .admin__head adds to it on
-     cover/standalone devices. */
-  .admin__topbar { position: static; padding: 30px 16px 18px; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .admin__topbar > div:last-child { flex-wrap: wrap; }
-  .admin__title { font-size: 24px; white-space: normal; }
-  .admin--sa .admin__title { font-size: 24px; }
-  .admin:not(.admin--sa) .admin__title { font-size: 22px; }
+  /* One slim row (like the Adminator mobile header): burger + title left,
+     bell + avatar right. Title truncates instead of wrapping the bar taller.
+     Top padding keeps clearance below the status bar / Dynamic Island. */
+  .admin__topbar { position: static; padding: 12px 12px 10px 14px; flex-wrap: nowrap; gap: 10px; align-items: center; }
+  .admin__topbar-left { flex: 1; min-width: 0; }
+  .admin__title { font-size: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .admin--sa .admin__title { font-size: 19px; }
+  .admin:not(.admin--sa) .admin__title { font-size: 18px; }
   /* Client (owner) drawer header: couple names can be long — shrink + allow wrap. */
   .admin:not(.admin--sa) .admin__brand-name { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .admin__sitechip { margin-left: 0; }
 }
-@media (max-width: 420px) {
-  /* tightest phones: action buttons share the row full-width, two-up */
-  .admin__topbar > div:last-child { width: 100%; }
-  .admin__topbar > div:last-child > .btn { flex: 1 1 44%; justify-content: center; }
+/* Phone: tiles stack one per row, full width (like the reference) */
+@media (max-width: 640px) {
+  .stat-grid { grid-template-columns: 1fr; }
 }
 
 /* Desktop: the shell is a passthrough wrapper — nav stays position:fixed (base
