@@ -195,13 +195,21 @@ export function AdminDashboard({ goTab }) {
     const WK = 7 * 86400000, now = Date.now();
     const tally = (from, to) => (list || []).reduce((s, x) => (x.createdAt > from && x.createdAt <= to ? s + weigh(x) : s), 0);
     const cur = tally(now - WK, now), prev = tally(now - 2 * WK, now - WK);
-    if (!prev && !cur) return { pill: "− steady", tone: "flat" };
-    if (!prev) return { pill: `↗ +${cur} new`, tone: "up" };
+    if (!prev && !cur) return { pill: "steady", tone: "flat" };
+    if (!prev) return { pill: `+${cur} new`, tone: "up" };
     const pct = Math.round(((cur - prev) / prev) * 100);
-    if (pct > 0) return { pill: `↗ +${pct}%`, tone: "up" };
-    if (pct < 0) return { pill: `↘ ${pct}%`, tone: "down" };
-    return { pill: "− steady", tone: "flat" };
+    if (pct > 0) return { pill: `+${pct}%`, tone: "up" };
+    if (pct < 0) return { pill: `${pct}%`, tone: "down" };
+    return { pill: "steady", tone: "flat" };
   };
+  // Adminator's exact pill arrows (10px, stroke 2.5, currentColor)
+  const pillArrow = (tone) => (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      {tone === "up" && <path d="M7 17l10-10M7 7h10v10" />}
+      {tone === "down" && <path d="M7 7l10 10M7 17h10V7" />}
+      {tone === "flat" && <path d="M5 12h14" />}
+    </svg>
+  );
   const attendingRaw = rsvps.filter((r) => r.status === "attending");
   const tRsvps  = trendOf(attendingRaw);
   const tGuests = trendOf(attendingRaw, (r) => headsOf(r));
@@ -233,7 +241,7 @@ export function AdminDashboard({ goTab }) {
             <div className="kpi__top">
               <span className="kpi__chip" aria-hidden="true">{Icon[s.icon] ? Icon[s.icon]({}) : null}</span>
               <span className="kpi__label">{s.label}</span>
-              {s.pill && <span className={"kpi__pill" + (s.tone ? " kpi__pill--" + s.tone : "")}>{s.pill}</span>}
+              {s.pill && <span className={"kpi__pill" + (s.tone ? " kpi__pill--" + s.tone : "")}>{s.tone && pillArrow(s.tone)}{s.pill}</span>}
             </div>
             <div className="kpi__value">{s.value}</div>
             <div className="kpi__foot"><span className="kpi__tick" aria-hidden="true" />{s.sub}</div>
