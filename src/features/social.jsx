@@ -30,6 +30,9 @@ export function GuestbookPage() {
   const [errors, setErrors] = useState({});
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // After posting: full thank-you card (like the RSVP confirmation), not just a
+  // toast — { name, approved } while showing, null otherwise.
+  const [submitted, setSubmitted] = useState(null);
 
   // Server-side pagination: fetch one page (30) of approved messages from the DB
   // at a time, with the total count for the page buttons. Never loads the whole list.
@@ -60,16 +63,43 @@ export function GuestbookPage() {
     try {
       const { status } = await postGuestbook({ name: form.name, relationship: form.relationship, message: form.message });
       // If it's live immediately (auto-approve on), jump to page 1 and refetch so
-      // the new message shows at the top.
+      // the new message shows at the top when they come back to the wall.
       if (status === "approved") { gb.setPage(1); gb.reload(); }
+      setSubmitted({ name: (form.name.trim().split(/\s+/)[0]) || "friend", approved: status === "approved" });
       setForm({ name: "", relationship: "", message: "" });
       setOpen(false);
-      toast(status === "approved" ? "Thank you for your message! \ud83d\udc95" : "Thank you! Your message will appear once the couple approves it.");
+      scrollToTop({ top: 0, behavior: "smooth" });
     } catch (err) {
       setErrors({ message: "Could not post right now. Please try again." });
     } finally {
       setSubmitting(false);
     }
+  }
+
+  // Same confirmation treatment as the RSVP page — a full thank-you card in
+  // place of the page, with a route back to the wall / home.
+  if (submitted) {
+    return (
+      <div className="fade-up">
+        <section className="block">
+          <div className="container container--narrow">
+            <div className="card card--pad-lg confirm">
+              <div className="confirm__seal">{Icon.heart({})}</div>
+              <h2 className="confirm__title">Thank you, {submitted.name}!</h2>
+              <p className="confirm__text">
+                {submitted.approved
+                  ? "Your message is up on the guestbook wall — we'll treasure every word."
+                  : "Your message is on its way to the couple — it will appear on the wall once they've had a chance to read and approve it."}
+              </p>
+              <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+                <Button variant="primary" onClick={() => setSubmitted(null)}>Back to the guestbook</Button>
+                <Button variant="ghost" onClick={() => go("home")}>Back home</Button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
   }
 
   return (
