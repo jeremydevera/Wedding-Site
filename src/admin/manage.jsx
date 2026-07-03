@@ -2541,7 +2541,7 @@ function NotificationBell({ goTab }) {
   return (
     <div className="notif">
       <button type="button" className="notif__btn notif__btn--plain" aria-label={`Notifications${unseen ? ` (${unseen} new)` : ""}`} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        {Icon.bell({ style: { width: 21, height: 21 } })}
+        {Icon.bell({ style: { width: 18, height: 18 } })}
         {unseen > 0 && <span className="notif__badge">{unseen > 9 ? "9+" : unseen}</span>}
       </button>
       {open && (
