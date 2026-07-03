@@ -2540,8 +2540,8 @@ function NotificationBell({ goTab }) {
 
   return (
     <div className="notif">
-      <button type="button" className="notif__btn" aria-label={`Notifications${unseen ? ` (${unseen} new)` : ""}`} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        {Icon.bell({ style: { width: 22, height: 22 } })}
+      <button type="button" className="notif__btn notif__btn--plain" aria-label={`Notifications${unseen ? ` (${unseen} new)` : ""}`} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        {Icon.bell({ style: { width: 21, height: 21 } })}
         {unseen > 0 && <span className="notif__badge">{unseen > 9 ? "9+" : unseen}</span>}
       </button>
       {open && (
@@ -2577,10 +2577,18 @@ function NotificationBell({ goTab }) {
 // and a Sign out action.
 function ProfileMenu({ email, onViewSite, onSignOut }) {
   const [open, setOpen] = useState(false);
+  // Adminator-style filled avatar: initials from the account email's local part
+  // ("jane.doe@x" -> JD; "jeremydevera03@x" -> JE).
+  const initials = (() => {
+    const local = String(email || "").split("@")[0].replace(/[0-9]+/g, "");
+    const parts = local.split(/[._-]+/).filter(Boolean);
+    const s = parts.length > 1 ? parts[0][0] + parts[1][0] : local.slice(0, 2);
+    return (s || "?").toUpperCase();
+  })();
   return (
     <div className="notif">
-      <button type="button" className="notif__btn" aria-label="Account" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        {Icon.user({ style: { width: 20, height: 20 } })}
+      <button type="button" className="notif__avatar" aria-label="Account" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        {initials}
       </button>
       {open && (
         <>
