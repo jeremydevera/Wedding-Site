@@ -798,7 +798,7 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 .kpi__top { display: flex; align-items: center; gap: 12px; }
 .kpi__chip { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; flex: none; background: color-mix(in srgb, var(--kpi, var(--accent)) 13%, transparent); color: var(--kpi, var(--accent)); }
 .kpi__chip svg { width: 20px; height: 20px; }
-.kpi__label { font-size: 15px; font-weight: 600; color: var(--ink-soft); }
+.kpi__label { font-size: 15px; font-weight: 600; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 /* trend-style pill, pushed to the right of the row */
 .kpi__pill { margin-left: auto; flex: none; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; font-weight: 600; letter-spacing: .01em; padding: 4px 10px; border-radius: 999px; color: var(--kpi, var(--accent)); background: color-mix(in srgb, var(--kpi, var(--accent)) 12%, transparent); white-space: nowrap; }
 /* big value in a heavy sans (matches the Adminator look, not the serif display) */
