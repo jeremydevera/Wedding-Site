@@ -6,7 +6,7 @@ import { themesForEvent } from "@/config/eventTypes.js";
 import { moduleLabel } from "@/lib/roles.js";
 import { PLATFORM_DOMAIN, clientUrl, isValidSubdomain } from "@/config/site.js"; // platform config → src/config/site.js
 import { Button, confirmDialog, Field, Icon, Input, Modal, Pager, SectionHead, Select, Textarea, toast, usePaged } from "@/ui/components.jsx";
-import { listMedia, deleteFromR2, listSiteRequests, approveSiteRequest, setSiteRequestStatus } from "@/lib/api.js";
+import { listMedia, deleteFromR2, listSiteRequests, approveSiteRequest, setSiteRequestStatus, updateSiteRequest } from "@/lib/api.js";
 import { fileNameFromKey } from "@/lib/mediaLibrary.js";
 import { mediaUrl } from "@/lib/media.js";
 const { useState, useEffect, useRef } = React;
@@ -99,7 +99,6 @@ export function ClientsAdmin() {
   const [clients, setClients] = useState([]);
   const [notes, setNotes] = useState({}); // client_id -> note text (superadmin-only, from client_notes)
   const [form, setForm] = useState({ subdomain: "", event_type: "wedding", template_key: "classic", ownerEmail: "", ownerPassword: "", note: "" });
-  const [cred, setCred] = useState({ client_id: "", email: "", password: "" });
   const [editing, setEditing] = useState(null);
   const [editForm, setEditForm] = useState({ subdomain: "", ownerEmail: "", ownerPassword: "", modules: {}, note: "" });
   const [busy, setBusy] = useState(false);
@@ -107,6 +106,7 @@ export function ClientsAdmin() {
   const [requests, setRequests] = useState([]);     // prospect intake (/apply) awaiting approval
   const [reqOpen, setReqOpen] = useState(null);      // expanded request id
   const [info, setInfo] = useState(null);            // client shown in the info modal (eye icon)
+  const [reqEdit, setReqEdit] = useState(null);      // request being edited in a modal (pencil)
 
   async function load() {
     const { data } = await supabase.from("clients").select("*").order("created_at", { ascending: false });
@@ -197,18 +197,6 @@ export function ClientsAdmin() {
     load();
   }
 
-  async function setOwner(e) {
-    e.preventDefault();
-    if (busy || !cred.client_id || !cred.email || !cred.password) return;
-    setBusy(true);
-    try {
-      await createOwner(cred);
-      await supabase.from("clients").update({ owner_email: cred.email.trim() }).eq("id", cred.client_id);
-      toast("Owner login set"); setCred({ client_id: "", email: "", password: "" }); load();
-    } catch (e2) { edgeOrToast(e2); }
-    finally { setBusy(false); }
-  }
-
   function openEdit(c) {
     setEditing(c);
     setEditForm({ subdomain: c.subdomain, ownerEmail: c.owner_email || "", ownerPassword: "", modules: Object.fromEntries(MODULES.map((m) => [m, c.content?.modules?.[m] !== false])), note: notes[c.id] || "" });
@@ -279,9 +267,11 @@ export function ClientsAdmin() {
           "Add client" is the toolbar button on the list, not a tab. */}
       <div className="folders">
         <button className={"folder" + (view === "list" || view === "add" ? " folder--active" : "")} onClick={() => { setEditing(null); setView("list"); }}>{Icon.user({})} Clients</button>
-        <button className={"folder" + (view === "owner" ? " folder--active" : "")} onClick={() => setView("owner")}>{Icon.mail({})} Owner login</button>
         <button className={"folder" + (view === "requests" ? " folder--active" : "")} onClick={() => setView("requests")}>
           {Icon.book({})} Requests{requests.filter((r) => r.status === "pending").length > 0 ? ` (${requests.filter((r) => r.status === "pending").length})` : ""}
+        </button>
+        <button className={"folder" + (view === "offline" ? " folder--active" : "")} onClick={() => setView("offline")}>
+          {Icon.eyeOff({})} Offline{clients.filter((c) => !c.is_active).length > 0 ? ` (${clients.filter((c) => !c.is_active).length})` : ""}
         </button>
       </div>
 
@@ -306,8 +296,9 @@ export function ClientsAdmin() {
                           <button className="icon-btn" title="Details" onClick={() => setReqOpen(reqOpen === r.id ? null : r.id)}>{Icon.eye({})}</button>
                           {r.status === "pending" && (
                             <>
+                              <button className="icon-btn" title="Edit request" onClick={() => setReqEdit({ id: r.id, partner_a: r.partner_a || "", partner_b: r.partner_b || "", subdomain: r.subdomain || "", email: r.email || "", template_key: r.template_key || "classic" })}>{Icon.edit({})}</button>
                               <Button variant="primary" size="sm" disabled={busy} onClick={async () => {
-                                const ok = await confirmDialog({ title: "Approve this site?", message: `Create ${r.subdomain}.celebrately.us for ${r.partner_a} & ${r.partner_b}? You'll still need to set the owner's login in Owner login.`, confirmLabel: "Approve & create" });
+                                const ok = await confirmDialog({ title: "Approve this site?", message: `Create ${r.subdomain}.celebrately.us for ${r.partner_a} & ${r.partner_b}? You can set the owner's login afterwards via the pencil (Edit) on the client.`, confirmLabel: "Approve & create" });
                                 if (!ok) return;
                                 setBusy(true);
                                 try { await approveSiteRequest(r); toast("Site created — set the owner's login next", "success"); await load(); }
@@ -339,6 +330,44 @@ export function ClientsAdmin() {
                   </React.Fragment>
                 ))}
                 {requests.length === 0 && <tr><td colSpan={7} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>No requests yet — share celebrately.us/apply with a prospect.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Offline — clients whose site access is disabled (is_active=false). */}
+      {view === "offline" && (
+        <div className="panel">
+          <div className="panel__head"><div className="panel__title">Offline clients</div><span style={{ color: "var(--muted)", fontSize: 13 }}>Sites currently disabled — guests can't load them until re-enabled</span></div>
+          <div className="panel__body--flush table-wrap">
+            <table className="tbl">
+              <thead><tr><th>Client</th><th>Notes</th><th>Actions</th></tr></thead>
+              <tbody>
+                {clients.filter((c) => !c.is_active).map((c) => (
+                  <tr key={c.id}>
+                    <td>
+                      <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                        <span className="sa-dot sa-dot--off" title="Disabled" />
+                        <div>
+                          <strong>{c.subdomain}</strong>
+                          <div className="client-domain">{c.custom_domain || `${c.subdomain}.${PLATFORM_DOMAIN}`}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ maxWidth: 220 }}>{notes[c.id]
+                      ? <span title={notes[c.id]} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{notes[c.id]}</span>
+                      : <span style={{ color: "var(--muted)" }}>—</span>}</td>
+                    <td>
+                      <div className="row-actions">
+                        <Button variant="primary" size="sm" disabled={busy} onClick={() => toggleActive(c)}>Enable</Button>
+                        <button className="icon-btn" onClick={() => setInfo(c)} title="Client info">{Icon.eye({})}</button>
+                        <button className="icon-btn" onClick={() => openEdit(c)} title="Edit">{Icon.edit({})}</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {clients.filter((c) => !c.is_active).length === 0 && <tr><td colSpan={3} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>All clients are online. 🎉</td></tr>}
               </tbody>
             </table>
           </div>
@@ -537,42 +566,41 @@ export function ClientsAdmin() {
         })()}
       </Modal>
 
-      {view === "owner" && (
-        <div className="panel sa-form">
-          <div className="panel__head"><div><div className="panel__title">Set a client's owner login</div><div className="panel__sub">Assign or reset the sign-in credentials for an existing client.</div></div></div>
-          <form onSubmit={setOwner} className="panel__body form-rows" style={{ paddingTop: 6, paddingBottom: 22 }}>
-            <div className="form-row">
-              <div className="form-row__head">
-                <div className="form-row__label">Client</div>
-                <div className="form-row__desc">Which client this login belongs to.</div>
-              </div>
-              <div className="form-row__fields">
-                <Field label="Client" id="o-client">
-                  <Select id="o-client" value={cred.client_id} onChange={(e) => setCred((c) => ({ ...c, client_id: e.target.value }))}>
-                    <option value="">Select…</option>
-                    {clients.map((c) => <option key={c.id} value={c.id}>{c.subdomain}</option>)}
-                  </Select>
-                </Field>
-              </div>
+      {/* Pencil on a pending request → fix up names/subdomain/email/theme before approving. */}
+      <Modal open={!!reqEdit} onClose={() => setReqEdit(null)} label="Edit request">
+        {reqEdit && (
+          <div>
+            <SectionHead eyebrow="Site request" title={`Edit ${reqEdit.subdomain || "request"}`} />
+            <div className="field-row field-row--2">
+              <Field label="Partner A" id="rq-a"><Input id="rq-a" value={reqEdit.partner_a} onChange={(e) => setReqEdit((f) => ({ ...f, partner_a: e.target.value }))} /></Field>
+              <Field label="Partner B" id="rq-b"><Input id="rq-b" value={reqEdit.partner_b} onChange={(e) => setReqEdit((f) => ({ ...f, partner_b: e.target.value }))} /></Field>
             </div>
-            <div className="form-row">
-              <div className="form-row__head">
-                <div className="form-row__label">Owner login</div>
-                <div className="form-row__desc">The email and password the client uses to sign in.</div>
-              </div>
-              <div className="form-row__fields">
-                <div className="form-grid2">
-                  <Field label="Owner email" id="o-email"><Input id="o-email" type="email" value={cred.email} onChange={(e) => setCred((c) => ({ ...c, email: e.target.value }))} placeholder="owner@theirdomain" /></Field>
-                  <Field label="Password" id="o-pw"><Input id="o-pw" value={cred.password} onChange={(e) => setCred((c) => ({ ...c, password: e.target.value }))} placeholder="••••••••" /></Field>
-                </div>
-              </div>
+            <div className="field-row field-row--2">
+              <Field label="Subdomain" id="rq-sub" hint={`${(reqEdit.subdomain || "…")}.${PLATFORM_DOMAIN}`}><Input id="rq-sub" value={reqEdit.subdomain} onChange={(e) => setReqEdit((f) => ({ ...f, subdomain: e.target.value }))} /></Field>
+              <Field label="Email" id="rq-email"><Input id="rq-email" type="email" value={reqEdit.email} onChange={(e) => setReqEdit((f) => ({ ...f, email: e.target.value }))} /></Field>
             </div>
-            <div className="form-foot">
-              <Button type="submit" variant="primary" disabled={busy}>Set owner login</Button>
+            <Field label="Theme" id="rq-theme">
+              <Select id="rq-theme" value={reqEdit.template_key} onChange={(e) => setReqEdit((f) => ({ ...f, template_key: e.target.value }))}>
+                {themesForEvent("wedding").filter((k) => THEMES[k]).map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
+              </Select>
+            </Field>
+            <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+              <Button variant="primary" block disabled={busy} onClick={async () => {
+                const sub = reqEdit.subdomain.trim().toLowerCase();
+                if (!isValidSubdomain(sub)) return toast("Invalid subdomain. Lowercase letters, numbers, hyphens — not a reserved name.");
+                setBusy(true);
+                try {
+                  await updateSiteRequest(reqEdit.id, { partner_a: reqEdit.partner_a.trim(), partner_b: reqEdit.partner_b.trim(), subdomain: sub, email: reqEdit.email.trim(), template_key: reqEdit.template_key });
+                  toast("Request updated", "success"); setReqEdit(null); await load();
+                } catch (e) { toast("Save failed: " + (e.message || "error"), "err"); }
+                finally { setBusy(false); }
+              }}>Save request</Button>
+              <Button variant="ghost" onClick={() => setReqEdit(null)}>Cancel</Button>
             </div>
-          </form>
-        </div>
-      )}
+          </div>
+        )}
+      </Modal>
+
     </div>
   );
 }

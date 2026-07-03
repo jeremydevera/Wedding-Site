@@ -472,6 +472,12 @@ export async function setSiteRequestStatus(id, status) {
   if (error) throw error;
 }
 
+// Superadmin: fix up a request before approving (typo'd names/subdomain/email).
+export async function updateSiteRequest(id, patch) {
+  const { error } = await supabase.from("site_requests").update(patch).eq("id", id);
+  if (error) throw error;
+}
+
 // Superadmin approve: create the client site from a request's payload, then
 // mark the request approved. Owner credentials are set afterwards with the
 // existing Credentials tool in the Clients tab.
