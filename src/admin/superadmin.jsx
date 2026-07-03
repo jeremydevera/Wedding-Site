@@ -270,6 +270,9 @@ export function ClientsAdmin() {
         <button className={"folder" + (view === "requests" ? " folder--active" : "")} onClick={() => setView("requests")}>
           {Icon.book({})} Requests{requests.filter((r) => r.status === "pending").length > 0 ? ` (${requests.filter((r) => r.status === "pending").length})` : ""}
         </button>
+        <button className={"folder" + (view === "rejected" ? " folder--active" : "")} onClick={() => setView("rejected")}>
+          {Icon.close({})} Rejected{requests.filter((r) => r.status === "rejected").length > 0 ? ` (${requests.filter((r) => r.status === "rejected").length})` : ""}
+        </button>
         <button className={"folder" + (view === "offline" ? " folder--active" : "")} onClick={() => setView("offline")}>
           {Icon.eyeOff({})} Offline{clients.filter((c) => !c.is_active).length > 0 ? ` (${clients.filter((c) => !c.is_active).length})` : ""}
         </button>
@@ -282,7 +285,7 @@ export function ClientsAdmin() {
             <table className="tbl">
               <thead><tr><th>Couple</th><th>Site address</th><th>Email</th><th>Theme</th><th>RSVP</th><th>Status</th><th></th></tr></thead>
               <tbody>
-                {requests.map((r) => (
+                {requests.filter((r) => r.status !== "rejected").map((r) => (
                   <React.Fragment key={r.id}>
                     <tr>
                       <td><strong>{r.partner_a} & {r.partner_b}</strong></td>
@@ -329,7 +332,42 @@ export function ClientsAdmin() {
                     )}
                   </React.Fragment>
                 ))}
-                {requests.length === 0 && <tr><td colSpan={7} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>No requests yet — share celebrately.us/apply with a prospect.</td></tr>}
+                {requests.filter((r) => r.status !== "rejected").length === 0 && <tr><td colSpan={7} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>No requests yet — share celebrately.us/apply with a prospect.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Rejected requests — parked, but the decision is reversible: Reopen
+          sends one back to the Requests tab as pending for editing/approval. */}
+      {view === "rejected" && (
+        <div className="panel">
+          <div className="panel__head"><div className="panel__title">Rejected requests</div><span style={{ color: "var(--muted)", fontSize: 13 }}>Reopen to move a request back to pending — nothing is deleted</span></div>
+          <div className="panel__body--flush table-wrap">
+            <table className="tbl">
+              <thead><tr><th>Couple</th><th>Site address</th><th>Email</th><th>Theme</th><th>Submitted</th><th></th></tr></thead>
+              <tbody>
+                {requests.filter((r) => r.status === "rejected").map((r) => (
+                  <tr key={r.id}>
+                    <td><strong>{r.partner_a} & {r.partner_b}</strong></td>
+                    <td className="client-domain">{r.subdomain}.celebrately.us</td>
+                    <td>{r.email}</td>
+                    <td>{r.template_key}</td>
+                    <td style={{ color: "var(--muted)", fontSize: 13 }}>{new Date(r.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</td>
+                    <td>
+                      <div className="row-actions">
+                        <Button variant="primary" size="sm" disabled={busy} onClick={async () => {
+                          const ok = await confirmDialog({ title: "Reopen this request?", message: `Move the request for ${r.subdomain}.celebrately.us back to pending? You can then edit or approve it in Requests.`, confirmLabel: "Reopen" });
+                          if (!ok) return;
+                          try { await setSiteRequestStatus(r.id, "pending"); toast("Request reopened — it's back in Requests", "success"); await load(); setView("requests"); }
+                          catch (e) { toast("Failed: " + (e.message || "error"), "err"); }
+                        }}>Reopen</Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {requests.filter((r) => r.status === "rejected").length === 0 && <tr><td colSpan={6} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>No rejected requests.</td></tr>}
               </tbody>
             </table>
           </div>
