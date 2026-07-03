@@ -637,7 +637,7 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
    top-padding — the same fixed+offset approach already used for the sidebar
    and the mobile head. */
 .admin__head { position: fixed; top: 0; left: 240px; right: 0; z-index: 30; background: var(--surface); }
-.admin__topbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 30px; border-bottom: 1px solid var(--line); background: var(--surface); z-index: 10; }
+.admin__topbar { display: flex; align-items: center; justify-content: space-between; padding: 9px 30px; border-bottom: 1px solid var(--line); background: var(--surface); z-index: 10; }
 /* Bold across every client theme — some display fonts render the title very
    thin at the default weight. (Superadmin overrides to 500 below.) */
 .admin__title { font-family: var(--font-display); font-size: 26px; font-weight: 700; white-space: nowrap; }
@@ -735,7 +735,7 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 
 /* overscroll-behavior:contain stops a drag at the top/bottom of this scroller
    from chaining into iOS Safari's pull-to-refresh ("half refresh" on scroll). */
-.admin__body { padding: 86px 30px 30px; overscroll-behavior: contain; }   /* top clears the fixed .admin__head (~70px) + a small gap */
+.admin__body { padding: 70px 30px 30px; overscroll-behavior: contain; }   /* top clears the fixed .admin__head (~54px) + a small gap */
 .admin__footer { text-align: center; color: var(--muted); font-size: 12px; letter-spacing: .02em; padding: 26px 0 8px; margin-top: 28px; border-top: 1px solid var(--line); }
 .admin__footer a { color: var(--muted); text-decoration: none; }
 .admin__footer a:hover { color: var(--ink); text-decoration: underline; }
@@ -957,7 +957,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 /* Data table + toolbar matched to the Supabase users page */
 .admin--sa .tbl th { background: #f3f3f3; color: #171717; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: normal; height: 36px; padding: 0 12px; border-bottom: 1px solid #dfdfdf; }
 .admin--sa .tbl td { font-size: 13px; padding: 10px 12px; }
-.admin--sa .admin__body { padding: 84px 26px 48px; }   /* top clears the fixed .admin__head (~70px) + a small gap */
+.admin--sa .admin__body { padding: 68px 26px 48px; }   /* top clears the fixed .admin__head (~54px) + a small gap */
 /* Clients table: fixed columns so width spreads evenly (no dead gap before Owner login) */
 .admin--sa .tbl--clients { table-layout: fixed; width: 100%; min-width: 820px; }
 .admin--sa .tbl--clients th:nth-child(1), .admin--sa .tbl--clients td:nth-child(1) { width: 38%; }
