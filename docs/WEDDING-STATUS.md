@@ -12,11 +12,17 @@ Claude test run. Done items stay here as the permanent history.
 
 ## Next IDs
 - Next Bug ID: **0007**
-- Next Enhancement ID: **0008**
+- Next Enhancement ID: **0009**
 
 ---
 
 ## Pending
+
+### Enhancement ID: 0008 — Server-side notification read/cleared state (multi-device sync)
+- **Severity:** P3 · **Status:** Pending · **Added:** 2026-07-03 (requested by Jeremy)
+- **Where:** Admin → topbar bell (Notifications dropdown)
+- **Action:** The bell's "seen" + "Clear" state lives in browser localStorage today — per device only. Clearing on the laptop doesn't clear on the phone, and wiping browser data un-clears everything. Move it server-side per user (GitHub/Slack style) so it syncs across devices.
+- **Plan:** See [enhancements/0008-notification-state-sync.md](enhancements/0008-notification-state-sync.md). Two timestamp columns on `profiles` (`notif_seen_at`, `notif_cleared_at`) + write on open/clear + read at load, with localStorage as offline fallback.
 
 ### Bug ID: 0003 — Guest photo/video uploads don't save
 - **Severity:** P2 · **Status:** Rejected (2026-06-26 — feature not used; gallery/upload dropped) · **Added:** 2026-06-25
