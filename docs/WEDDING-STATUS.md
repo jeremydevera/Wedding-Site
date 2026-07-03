@@ -51,6 +51,7 @@ Claude test run. Done items stay here as the permanent history.
 - **Where:** Guest site → Olive Envelope cover + opened envelope (with a non-olive envelope color)
 - **Action:** Picking an envelope color also tinted the cream wax seal (pink on wine, grey on navy, flat white on light custom colors). The seal should always stay cream.
 - **Resolution:** The color filter moved off the base envelope images onto a duplicate overlay masked with an ellipse cut-out over the seal — the unfiltered seal shows through. Covers the sealed cover, open front pocket, and the admin preview; seal position measured from the artwork pixels. Verified on wine/navy/rust/light-gold via screenshot grid.
+- **Follow-up (`a9758d1`, same day):** a faint tinted rim still showed (the seal's glow extends past any mask). The seal is now its own image — cut out of both artworks into `seal-closed.png` / `seal-front.png` with a feathered edge and laid unfiltered on top — pixel-identical seal for every color; the mask hole remains as a load-failure fallback. Verified with zoomed screenshot grids.
 
 ### Enhancement ID: 0009 — Olive Envelope: envelope paper color setting
 - **Severity:** P2 · **Status:** Done — commit `d7b510e`, 2026-07-03
