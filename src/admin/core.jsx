@@ -195,12 +195,20 @@ export function AdminDashboard({ goTab }) {
     const WK = 7 * 86400000, now = Date.now();
     const tally = (from, to) => (list || []).reduce((s, x) => (x.createdAt > from && x.createdAt <= to ? s + weigh(x) : s), 0);
     const cur = tally(now - WK, now), prev = tally(now - 2 * WK, now - WK);
-    if (!prev && !cur) return { pill: "steady", tone: "flat" };
-    if (!prev) return { pill: `+${cur} new`, tone: "up" };
+    if (!prev && !cur) return { pill: "steady", tone: "flat", cur };
+    if (!prev) return { pill: `+${cur} new`, tone: "up", cur };
     const pct = Math.round(((cur - prev) / prev) * 100);
-    if (pct > 0) return { pill: `+${pct}%`, tone: "up" };
-    if (pct < 0) return { pill: `${pct}%`, tone: "down" };
-    return { pill: "steady", tone: "flat" };
+    if (pct > 0) return { pill: `+${pct}%`, tone: "up", cur };
+    if (pct < 0) return { pill: `${pct}%`, tone: "down", cur };
+    return { pill: "steady", tone: "flat", cur };
+  };
+  // "up from N · last week" footer: N = the total as of a week ago (today's
+  // total minus what was added in the last 7 days).
+  const footOf = (value, t) => {
+    const prev = Math.max(0, value - (t.cur || 0));
+    return prev < value
+      ? { dir: "up", word: "up from", val: String(prev) }
+      : { dir: "flat", word: "matching", val: String(value) };
   };
   // Adminator's exact pill arrows (10px, stroke 2.5, currentColor)
   const pillArrow = (tone) => (
@@ -220,14 +228,14 @@ export function AdminDashboard({ goTab }) {
     // read from the one reconcileGuests summary (same field the Guests tab's
     // Attending folder counts, so they can never disagree). Sub is just
     // "confirmed"; maybe/declined/for-approval live in the Guests tab folders.
-    { label: "RSVPs", value: strict ? recon.summary.attending : attending.length, sub: "confirmed", tab: "rsvps", icon: "check", accent: "success", pill: tRsvps.pill, tone: tRsvps.tone },
-    { label: "Total Guests", value: guestCount, sub: "people coming", tab: "rsvps", icon: "user", accent: "info", pill: tGuests.pill, tone: tGuests.tone },
+    { label: "RSVPs", value: strict ? recon.summary.attending : attending.length, tab: "rsvps", icon: "check", accent: "success", pill: tRsvps.pill, tone: tRsvps.tone, foot: footOf(strict ? recon.summary.attending : attending.length, tRsvps) },
+    { label: "Total Guests", value: guestCount, tab: "rsvps", icon: "user", accent: "info", pill: tGuests.pill, tone: tGuests.tone, foot: footOf(guestCount, tGuests) },
     ...(mediaShelved ? [] : [
       { label: "Photos", value: photos.length, sub: pendingMedia.length ? `${pendingMedia.length} to review` : "all clear", tab: "media", icon: "camera", accent: "purple", pill: pendingMedia.length ? `${pendingMedia.length} new` : null },
       { label: "Videos", value: videos.length, sub: "uploaded", tab: "media", icon: "play", accent: "amber", pill: null },
     ]),
-    ...(gbOn ? [{ label: "Guestbook", value: guestbook.length, sub: "messages", tab: "guestbook", icon: "book", accent: "purple", pill: tGb.pill, tone: tGb.tone }] : []),
-    ...(quizOn ? [{ label: "Quiz Plays", value: quizSubs.length, sub: "submissions", tab: "quiz", icon: "quiz", accent: "amber", pill: tQuiz.pill, tone: tQuiz.tone }] : []),
+    ...(gbOn ? [{ label: "Guestbook", value: guestbook.length, tab: "guestbook", icon: "book", accent: "purple", pill: tGb.pill, tone: tGb.tone, foot: footOf(guestbook.length, tGb) }] : []),
+    ...(quizOn ? [{ label: "Quiz Plays", value: quizSubs.length, tab: "quiz", icon: "quiz", accent: "amber", pill: tQuiz.pill, tone: tQuiz.tone, foot: footOf(quizSubs.length, tQuiz) }] : []),
   ];
   const recentRsvps = rsvps.slice(0, 5);
   const recentMedia = media.slice(0, 6);
@@ -244,7 +252,16 @@ export function AdminDashboard({ goTab }) {
               {s.pill && <span className={"kpi__pill" + (s.tone ? " kpi__pill--" + s.tone : "")}>{s.tone && pillArrow(s.tone)}{s.pill}</span>}
             </div>
             <div className="kpi__value">{s.value}</div>
-            <div className="kpi__foot"><span className="kpi__tick" aria-hidden="true" />{s.sub}</div>
+            {s.foot ? (
+              <div className="kpi__foot">
+                <svg className={"kpi__cmp kpi__cmp--" + s.foot.dir} viewBox="0 0 24 24" aria-hidden="true">
+                  {s.foot.dir === "up" ? <path d="M7 17l10-10M7 7h10v10" /> : <path d="M5 12h14" />}
+                </svg>
+                {s.foot.word} <strong>{s.foot.val}</strong> <span className="kpi__sep">·</span> last week
+              </div>
+            ) : (
+              <div className="kpi__foot"><span className="kpi__tick" aria-hidden="true" />{s.sub}</div>
+            )}
           </button>
         ))}
       </div>
