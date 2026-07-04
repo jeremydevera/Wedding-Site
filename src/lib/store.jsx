@@ -58,10 +58,13 @@ export const DEFAULT_SETTINGS = {
   mapQuery: "Lipa, Batangas, Philippines",
   // Home maps: which venues' maps show on the home page. homeVenueIds is the
   // source of truth (array of venue ids, in venue-list order); null = legacy
-  // fallback to homeVenueId ("" = the first venue). homeShowTiles: whether each
-  // shown venue's tiles appear under its map. Default off = maps only.
+  // fallback to homeVenueId ("" = the first venue). homeTiles maps a venue id to
+  // the list of its tile ids to show under that venue's home map (absent = none).
+  // homeShowTiles is the legacy global "show all tiles" flag, still honored when
+  // homeTiles was never set.
   homeVenueIds: null,
   homeVenueId: "",
+  homeTiles: {},
   homeShowTiles: false,
   // Home-page section visibility (toggled in the admin Home tab). Default on;
   // read as `!== false` everywhere so existing clients without the flag show.

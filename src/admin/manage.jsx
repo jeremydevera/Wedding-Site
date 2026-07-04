@@ -1498,38 +1498,64 @@ export function VenueAdmin({ section = "editor", headRight = null }) {
     const selIds = Array.isArray(settings.homeVenueIds)
       ? settings.homeVenueIds
       : (settings.homeVenueId ? [settings.homeVenueId] : (list[0] ? [list[0].id] : []));
+    const homeTiles = (settings.homeTiles && typeof settings.homeTiles === "object") ? settings.homeTiles : {};
     const toggleVenue = (id, on) => {
       const next = on ? [...new Set([...selIds, id])] : selIds.filter((x) => x !== id);
       Store.updateSettings({ homeVenueIds: next });
+    };
+    const toggleTile = (vid, cid, on) => {
+      const cur = homeTiles[vid] || [];
+      const nextCards = on ? [...new Set([...cur, cid])] : cur.filter((x) => x !== cid);
+      Store.updateSettings({ homeTiles: { ...homeTiles, [vid]: nextCards } });
     };
     const selCount = list.filter((v) => selIds.includes(v.id)).length;
     return (
       <div className="panel">
         <div className="panel__head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}><div className="panel__title">Home page map</div>{headRight}</div>
         <div className="panel__body">
+          <p style={{ color: "var(--muted)", margin: "0 0 14px", fontSize: 14 }}>
+            Tick the locations to show on the home page. Under each ticked location, choose which info tiles appear beneath its map. Add or edit locations in the Venue &amp; Map tab.
+          </p>
           <Field label={`Maps to show on home (${selCount} of ${list.length})`} id="home-venues">
-            <div id="home-venues" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div id="home-venues" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {list.map((v, i) => {
                 const on = selIds.includes(v.id);
+                const chosen = homeTiles[v.id] || [];
+                const cards = v.cards || [];
                 return (
-                  <label key={v.id || i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", border: "1px solid var(--line)", borderRadius: 10, cursor: "pointer", background: on ? "color-mix(in srgb, var(--accent) 6%, var(--surface))" : "var(--surface)" }}>
-                    <input type="checkbox" checked={on} onChange={(e) => toggleVenue(v.id, e.target.checked)} style={{ accentColor: "var(--accent)" }} />
-                    <span style={{ fontWeight: 600 }}>{v.name || v.address || `Location ${i + 1}`}</span>
-                    {v.address && v.name && <span style={{ color: "var(--muted)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.address}</span>}
-                  </label>
+                  <div key={v.id || i} style={{ border: "1px solid var(--line)", borderRadius: 10, overflow: "hidden", background: on ? "color-mix(in srgb, var(--accent) 6%, var(--surface))" : "var(--surface)" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", cursor: "pointer" }}>
+                      <input type="checkbox" checked={on} onChange={(e) => toggleVenue(v.id, e.target.checked)} style={{ accentColor: "var(--accent)" }} />
+                      <span style={{ fontWeight: 600 }}>{v.name || v.address || `Location ${i + 1}`}</span>
+                      {v.address && v.name && <span style={{ color: "var(--muted)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.address}</span>}
+                    </label>
+                    {on && (
+                      <div style={{ padding: "0 12px 12px 36px", borderTop: "1px solid var(--line)" }}>
+                        {cards.length > 0 ? (
+                          <>
+                            <div style={{ fontSize: 12.5, color: "var(--muted)", margin: "10px 0 8px" }}>Info tiles to show under this map</div>
+                            <div className="mod-toggles">
+                              {cards.map((c) => {
+                                const tOn = chosen.includes(c.id);
+                                return (
+                                  <label key={c.id} className={"mod-pill" + (tOn ? " mod-pill--on" : "")}>
+                                    <input type="checkbox" checked={tOn} onChange={(e) => toggleTile(v.id, c.id, e.target.checked)} /> {c.t || "Untitled"}
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </>
+                        ) : (
+                          <div style={{ fontSize: 13, color: "var(--muted)", padding: "10px 0" }}>No info tiles yet — add some in the Venue &amp; Map tab.</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
               {list.length === 0 && <div style={{ color: "var(--muted)", fontSize: 14 }}>No locations yet — add them in the Venue &amp; Map tab.</div>}
             </div>
           </Field>
-          <div style={{ marginTop: 4 }}>
-            <AdminToggle
-              label="Show each location's tiles under its map"
-              desc="Off = maps only."
-              checked={settings.homeShowTiles === true}
-              onChange={(v) => Store.updateSettings({ homeShowTiles: v })}
-            />
-          </div>
         </div>
         <SaveFooter />
       </div>

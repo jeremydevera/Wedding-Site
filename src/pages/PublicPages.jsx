@@ -310,13 +310,18 @@ export function Home() {
     const q = (s.mapQuery && s.mapQuery.trim()) || s.venueAddress;
     return q ? [{ id: "legacy", mapQuery: q, mapLat: s.mapLat, mapLng: s.mapLng, address: s.venueAddress || s.venueName, cards: [] }] : [];
   })();
+  // Per-venue tile selection: homeTiles[venueId] = [cardId,…]. Legacy fallback:
+  // if homeTiles was never set but the old homeShowTiles flag is on, show all.
+  const homeTiles = (s.homeTiles && typeof s.homeTiles === "object") ? s.homeTiles : null;
+  const legacyAllTiles = !homeTiles && s.homeShowTiles === true;
   const homeMaps = homeVenues.map((v) => {
     const q = (v.mapQuery && v.mapQuery.trim()) || v.address;
+    const chosen = homeTiles ? (homeTiles[v.id] || []) : [];
     return {
       id: v.id, query: q, lat: v.mapLat, lng: v.mapLng,
       url: mapEmbedUrl(q, v.mapLat, v.mapLng),
       addr: v.address || v.name || "",
-      cards: s.homeShowTiles ? (v.cards || []).filter((c) => (c.t || "").trim() || (c.d || "").trim()) : [],
+      cards: (v.cards || []).filter((c) => ((c.t || "").trim() || (c.d || "").trim()) && (legacyAllTiles || chosen.includes(c.id))),
     };
   }).filter((m) => m.url);
 
