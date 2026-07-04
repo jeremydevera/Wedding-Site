@@ -307,7 +307,10 @@ function HomeMapBlock({ m }) {
         <div className="home-map__bar">
           <div className="home-map__where">
             <span className="home-map__pin">{Icon.pin({})}</span>
-            <div className="home-map__addr">{m.addr}</div>
+            <div className="home-map__addr">
+              {m.name && <div className="home-map__name">{m.name}</div>}
+              {m.addr || (!m.name ? m.query : "")}
+            </div>
           </div>
           <div className="home-map__actions">
             <Button variant="ghost" size="sm" onClick={() => go("venue")}>See full details</Button>
@@ -412,7 +415,8 @@ export function Home() {
     return {
       id: v.id, query: q, lat: v.mapLat, lng: v.mapLng,
       url: mapEmbedUrl(q, v.mapLat, v.mapLng),
-      addr: v.address || v.name || "",
+      name: v.name || "",
+      addr: v.address || "",
       cards: (v.cards || []).filter((c) => ((c.t || "").trim() || (c.d || "").trim()) && (legacyAllTiles || chosen.includes(c.id))),
     };
   }).filter((m) => m.url);
