@@ -300,18 +300,18 @@ export function ClientsAdmin() {
       {/* Folder-style sub-tabs — same design as the client admin's sub-folders.
           "Add client" is the toolbar button on the list, not a tab. */}
       <div className="folders">
-        <button className={"folder" + (view === "list" || view === "add" ? " folder--active" : "")} onClick={() => { setEditing(null); setView("list"); }}>{Icon.user({})} Clients</button>
+        <button className={"folder" + (view === "list" || view === "add" ? " folder--active" : "")} onClick={() => { setEditing(null); setView("list"); }}>Clients</button>
         <button className={"folder" + (view === "requests" ? " folder--active" : "")} onClick={() => setView("requests")}>
-          {Icon.book({})} Requests{requests.filter((r) => r.status === "pending").length > 0 ? ` (${requests.filter((r) => r.status === "pending").length})` : ""}
+          Requests{requests.filter((r) => r.status === "pending").length > 0 ? ` (${requests.filter((r) => r.status === "pending").length})` : ""}
         </button>
         <button className={"folder" + (view === "approved" ? " folder--active" : "")} onClick={() => setView("approved")}>
-          {Icon.check({})} Approved{requests.filter((r) => r.status === "approved").length > 0 ? ` (${requests.filter((r) => r.status === "approved").length})` : ""}
+          Approved{requests.filter((r) => r.status === "approved").length > 0 ? ` (${requests.filter((r) => r.status === "approved").length})` : ""}
         </button>
         <button className={"folder" + (view === "rejected" ? " folder--active" : "")} onClick={() => setView("rejected")}>
-          {Icon.close({})} Rejected{requests.filter((r) => r.status === "rejected").length > 0 ? ` (${requests.filter((r) => r.status === "rejected").length})` : ""}
+          Rejected{requests.filter((r) => r.status === "rejected").length > 0 ? ` (${requests.filter((r) => r.status === "rejected").length})` : ""}
         </button>
         <button className={"folder" + (view === "offline" ? " folder--active" : "")} onClick={() => setView("offline")}>
-          {Icon.eyeOff({})} Offline{clients.filter((c) => !c.is_active).length > 0 ? ` (${clients.filter((c) => !c.is_active).length})` : ""}
+          Offline{clients.filter((c) => !c.is_active).length > 0 ? ` (${clients.filter((c) => !c.is_active).length})` : ""}
         </button>
       </div>
 
