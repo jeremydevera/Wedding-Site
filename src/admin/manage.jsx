@@ -1601,8 +1601,9 @@ export function VenueAdmin({ section = "editor", headRight = null }) {
         open={editVi != null && !!list[editVi]}
         venue={editVi != null ? list[editVi] : null}
         onPatch={(patch) => patchVenue(editVi, patch)}
+        onSave={persistChanges}
         onClose={() => setEditVi(null)}
-        onDiscard={() => { commit(list.filter((_, idx) => idx !== editVi)); setEditVi(null); }}
+        onDiscard={async () => { commit(list.filter((_, idx) => idx !== editVi)); setEditVi(null); await persistChanges(); }}
       />
     </div>
   );
@@ -1610,7 +1611,7 @@ export function VenueAdmin({ section = "editor", headRight = null }) {
 
 // Add/edit one venue in a modal: name, address, map, and its tiles (edited
 // inline). Edits apply live to the store; the list's Save changes persists.
-function VenueEditorModal({ open, venue, onPatch, onClose, onDiscard }) {
+function VenueEditorModal({ open, venue, onPatch, onSave, onClose, onDiscard }) {
   if (!open || !venue) return null;
   const cards = venue.cards || [];
   const setCards = (cs) => onPatch({ cards: cs });
@@ -1619,8 +1620,9 @@ function VenueEditorModal({ open, venue, onPatch, onClose, onDiscard }) {
   const removeTile = (i) => setCards(cards.filter((_, idx) => idx !== i));
   const moveTile = (i, dir) => { const a = [...cards]; const j = i + dir; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; setCards(a); };
   // On close: drop empty info rows; discard the location if nothing was entered;
-  // otherwise require a name AND address (map is optional) — no blank locations.
-  const finish = () => {
+  // otherwise require a name AND address (map optional), then PERSIST to the
+  // database (Done saves — no separate Save-changes step needed).
+  const finish = async () => {
     const clean = cards.filter((c) => (c.t || "").trim() || (c.d || "").trim());
     const name = (venue.name || "").trim();
     const address = (venue.address || "").trim();
@@ -1628,6 +1630,7 @@ function VenueEditorModal({ open, venue, onPatch, onClose, onDiscard }) {
     if (!anything) { onDiscard(); return; }
     if (!name || !address) { toast("Location name and address are required.", "err"); return; }
     if (clean.length !== cards.length) onPatch({ cards: clean });
+    if (onSave) await onSave();
     onClose();
   };
   return (
