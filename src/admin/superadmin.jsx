@@ -6,7 +6,7 @@ import { themesForEvent } from "@/config/eventTypes.js";
 import { moduleLabel } from "@/lib/roles.js";
 import { PLATFORM_DOMAIN, clientUrl, isValidSubdomain } from "@/config/site.js"; // platform config → src/config/site.js
 import { Button, confirmDialog, Field, Icon, Input, Modal, Pager, SectionHead, Select, Textarea, toast, usePaged } from "@/ui/components.jsx";
-import { listMedia, deleteFromR2, listSiteRequests, approveSiteRequest, setSiteRequestStatus, updateSiteRequest } from "@/lib/api.js";
+import { listMedia, deleteFromR2, listSiteRequests, approveSiteRequest, setSiteRequestStatus, updateSiteRequest, deleteSiteRequest } from "@/lib/api.js";
 import { ApplyWizard } from "@/admin/apply.jsx";
 import { fileNameFromKey } from "@/lib/mediaLibrary.js";
 import { mediaUrl } from "@/lib/media.js";
@@ -108,6 +108,7 @@ export function ClientsAdmin() {
   const [reqInfo, setReqInfo] = useState(null);      // request shown in the details modal (eye)
   const [info, setInfo] = useState(null);            // client shown in the info modal (eye icon)
   const [reqEdit, setReqEdit] = useState(null);      // request being edited in a modal (pencil)
+  const [delReq, setDelReq] = useState(null);        // { r, typed } — type-the-address delete confirm
 
   async function load() {
     const { data } = await supabase.from("clients").select("*").order("created_at", { ascending: false });
@@ -318,6 +319,7 @@ export function ClientsAdmin() {
                               }}>Reject</Button>
                             </>
                           )}
+                          <button className="icon-btn icon-btn--danger" title="Delete request" onClick={() => setDelReq({ r, typed: "" })}>{Icon.trash({})}</button>
                         </div>
                       </td>
                     </tr>
@@ -348,7 +350,9 @@ export function ClientsAdmin() {
                     <td>
                       <div className="row-actions">
                         <button className="icon-btn" title="Details" onClick={() => setReqInfo(r)}>{Icon.eye({})}</button>
+                        <button className="icon-btn" title="Edit request" onClick={() => setReqEdit(r)}>{Icon.edit({})}</button>
                         <a className="icon-btn" href={clientUrl(r.subdomain)} target="_blank" rel="noreferrer" title="Open live site">{Icon.arrow({})}</a>
+                        <button className="icon-btn icon-btn--danger" title="Delete request" onClick={() => setDelReq({ r, typed: "" })}>{Icon.trash({})}</button>
                       </div>
                     </td>
                   </tr>
@@ -379,6 +383,8 @@ export function ClientsAdmin() {
                     <td>
                       <div className="row-actions">
                         <button className="icon-btn" title="Details" onClick={() => setReqInfo(r)}>{Icon.eye({})}</button>
+                        <button className="icon-btn" title="Edit request" onClick={() => setReqEdit(r)}>{Icon.edit({})}</button>
+                        <button className="icon-btn icon-btn--danger" title="Delete request" onClick={() => setDelReq({ r, typed: "" })}>{Icon.trash({})}</button>
                         <Button variant="primary" size="sm" disabled={busy} onClick={async () => {
                           const ok = await confirmDialog({ title: "Reopen this request?", message: `Move the request for ${r.subdomain}.celebrately.us back to pending? You can then edit or approve it in Requests.`, confirmLabel: "Reopen" });
                           if (!ok) return;
@@ -662,11 +668,9 @@ export function ClientsAdmin() {
                 </div>
                 <div style={row}><span style={lab}>Submitted</span><span>{new Date(r.created_at).toLocaleString()}</span></div>
               </div>
-              {r.status === "pending" && (
-                <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
-                  <Button variant="primary" onClick={() => { setReqInfo(null); setReqEdit(r); }}>{Icon.edit({})} Edit request</Button>
-                </div>
-              )}
+              <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+                <Button variant="primary" onClick={() => { setReqInfo(null); setReqEdit(r); }}>{Icon.edit({})} Edit request</Button>
+              </div>
             </div>
           );
         })()}
@@ -679,6 +683,11 @@ export function ClientsAdmin() {
         {reqEdit && (
           <div>
             <SectionHead eyebrow="Site request" title={`Edit ${reqEdit.subdomain || "request"}`} />
+            {reqEdit.status === "approved" && (
+              <p style={{ color: "var(--muted)", fontSize: 13, margin: "0 0 12px" }}>
+                This edits the request record only — the live site it created is managed in the Clients tab.
+              </p>
+            )}
             <ApplyWizard
               initial={reqEdit}
               onCancel={() => setReqEdit(null)}
@@ -695,6 +704,38 @@ export function ClientsAdmin() {
             />
           </div>
         )}
+      </Modal>
+
+      {/* Trash on a request row → type the site address to confirm the delete. */}
+      <Modal open={!!delReq} onClose={() => setDelReq(null)} label="Delete request">
+        {delReq && (() => {
+          const r = delReq.r;
+          const match = delReq.typed.trim().toLowerCase() === (r.subdomain || "").toLowerCase();
+          return (
+            <div>
+              <SectionHead eyebrow="Danger zone" title="Delete this request?" />
+              <p style={{ color: "var(--ink-soft)", fontSize: 14, marginTop: -6 }}>
+                This permanently removes the request from <strong>{r.partner_a} & {r.partner_b}</strong>
+                {" "}({r.subdomain}.{PLATFORM_DOMAIN}). It can't be undone.
+                {r.status === "approved" ? " The live site created from it is NOT affected — manage that in Clients." : ""}
+              </p>
+              <Field label={`Type ${r.subdomain} to confirm`} id="del-req-confirm">
+                <Input id="del-req-confirm" value={delReq.typed} spellCheck={false} autoComplete="off"
+                  placeholder={r.subdomain}
+                  onChange={(e) => setDelReq((d) => ({ ...d, typed: e.target.value }))} />
+              </Field>
+              <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+                <Button variant="primary" block disabled={!match || busy} onClick={async () => {
+                  setBusy(true);
+                  try { await deleteSiteRequest(r.id); toast("Request deleted", "success"); setDelReq(null); await load(); }
+                  catch (e) { toast("Delete failed: " + (e.message || "error"), "err"); }
+                  finally { setBusy(false); }
+                }}>{busy ? "Deleting…" : "Delete request"}</Button>
+                <Button variant="ghost" onClick={() => setDelReq(null)}>Cancel</Button>
+              </div>
+            </div>
+          );
+        })()}
       </Modal>
 
     </div>

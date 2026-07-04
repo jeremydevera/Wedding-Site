@@ -478,6 +478,13 @@ export async function updateSiteRequest(id, patch) {
   if (error) throw error;
 }
 
+// Superadmin: permanently remove a request row (typed-confirmation in the UI).
+// Deleting a request never touches a client site created from it.
+export async function deleteSiteRequest(id) {
+  const { error } = await supabase.from("site_requests").delete().eq("id", id);
+  if (error) throw error;
+}
+
 // Superadmin approve: create the client site from a request's payload, then
 // mark the request approved. Owner credentials are set afterwards with the
 // existing Credentials tool in the Clients tab.
