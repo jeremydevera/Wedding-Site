@@ -59,13 +59,16 @@ export function egTintVars(s) {
 // Recolor stack for the envelope art: a duplicate image carrying the color
 // filter (masked with a hole over the seal as a fallback), then the wax seal
 // as its OWN unfiltered image on top — so the seal is pixel-identical to the
-// original artwork no matter the paper color.
+// original artwork no matter the paper color. The sealed-cover seal renders
+// even WITHOUT a recolor: it carries the "pump" click-affordance animation.
 function envRecolorOverlay(s, kind) {
-  if (!envColorFilterFor(s.envColor, s.envColorCustom)) return null;
-  return kind === "sealed" ? (<>
-    <img className="inv-art-recolor inv-art-recolor--sealed" src="/assets/invite/env-closed.webp" alt="" aria-hidden="true" />
+  const recolor = envColorFilterFor(s.envColor, s.envColorCustom);
+  if (kind === "sealed") return (<>
+    {recolor ? <img className="inv-art-recolor inv-art-recolor--sealed" src="/assets/invite/env-closed.webp" alt="" aria-hidden="true" /> : null}
     <img className="inv-seal-img inv-seal-img--sealed" src="/assets/invite/seal-closed-v2.png" alt="" aria-hidden="true" />
-  </>) : (<>
+  </>);
+  if (!recolor) return null;
+  return (<>
     <img className="inv-l-front inv-art-recolor inv-art-recolor--front" src="/assets/invite/p2-envelope-front.png" alt="" aria-hidden="true" />
     <img className="inv-seal-img inv-seal-img--front" src="/assets/invite/seal-front-v2.png" alt="" aria-hidden="true" />
   </>);
@@ -323,13 +326,15 @@ function HomeMapBlock({ m }) {
   );
 }
 
-// Multiple home maps → a snap-scroll carousel, one full-width slide per
-// location, with the same frosted arrows + dots pill as the horizontal
-// timeline ("glimpse of the day").
-function HomeMapsCarousel({ maps }) {
+// Snap-scroll carousel shell: one full-width slide per child, with the same
+// frosted arrows + dots pill as the horizontal timeline ("glimpse of the
+// day"). `labels[i]` names each dot for screen readers. Used by the home maps
+// and the Venue page's multi-location layout.
+function SnapCarousel({ labels = [], children }) {
+  const slides = React.Children.toArray(children);
+  const n = slides.length;
   const ref = useRef(null);
   const [active, setActive] = useState(0);
-  const n = maps.length;
   const update = useCallback(() => {
     const el = ref.current; if (!el) return;
     const idx = el.clientWidth ? Math.round(el.scrollLeft / el.clientWidth) : 0;
@@ -351,10 +356,8 @@ function HomeMapsCarousel({ maps }) {
   return (
     <div className="map-car">
       <div className="map-car__rail" ref={ref}>
-        {maps.map((m, mi) => (
-          <div className="map-car__slide" key={m.id || mi} aria-hidden={mi !== active}>
-            <HomeMapBlock m={m} />
-          </div>
+        {slides.map((c, i) => (
+          <div className="map-car__slide" key={i} aria-hidden={i !== active}>{c}</div>
         ))}
       </div>
       <div className="tl-nav">
@@ -362,8 +365,8 @@ function HomeMapsCarousel({ maps }) {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
         </button>
         <div className="tl-nav__dots">
-          {maps.map((m, i) => (
-            <button key={i} type="button" className={"tl-nav__dot" + (i === active ? " is-active" : "")} onClick={() => toItem(i)} aria-label={"Go to " + (m.addr || "location " + (i + 1))} aria-current={i === active} />
+          {slides.map((_, i) => (
+            <button key={i} type="button" className={"tl-nav__dot" + (i === active ? " is-active" : "")} onClick={() => toItem(i)} aria-label={"Go to " + (labels[i] || "location " + (i + 1))} aria-current={i === active} />
           ))}
         </div>
         <button type="button" className="tl-nav__arrow" onClick={() => toItem(active + 1)} disabled={active === n - 1} aria-label="Next location">
@@ -371,6 +374,15 @@ function HomeMapsCarousel({ maps }) {
         </button>
       </div>
     </div>
+  );
+}
+
+// Multiple home maps → one slide per location.
+function HomeMapsCarousel({ maps }) {
+  return (
+    <SnapCarousel labels={maps.map((m) => m.addr)}>
+      {maps.map((m, mi) => <HomeMapBlock key={m.id || mi} m={m} />)}
+    </SnapCarousel>
   );
 }
 
@@ -835,14 +847,14 @@ export function VenuePage() {
   return (
     <div className="fade-up">
       <PageHero eyebrow="Venue & Map" title={heroTitle} lead={heroLead} />
-      {list.map((v, vi) => {
-        const query = (v.mapQuery && v.mapQuery.trim()) || v.address;
-        const mapUrl = mapEmbedUrl(query, v.mapLat, v.mapLng);
-        const dirUrl = mapDirUrl(query, v.mapLat, v.mapLng);
-        const cards = (v.cards || []).filter((c) => (c.d || "").trim() || (c.t || "").trim());
-        return (
-          <section className="block" key={v.id || vi} style={{ paddingTop: vi === 0 ? 24 : 8 }}>
-            <div className="container">
+      {(() => {
+        const sectionOf = (v, vi) => {
+          const query = (v.mapQuery && v.mapQuery.trim()) || v.address;
+          const mapUrl = mapEmbedUrl(query, v.mapLat, v.mapLng);
+          const dirUrl = mapDirUrl(query, v.mapLat, v.mapLng);
+          const cards = (v.cards || []).filter((c) => (c.d || "").trim() || (c.t || "").trim());
+          return (
+            <>
               {multi && <SectionHead center eyebrow={`Location ${vi + 1}`} title={v.name || v.address} />}
               <div className="card" style={{ padding: 0, overflow: "hidden", marginBottom: 30 }}>
                 <iframe title={"Venue map" + (multi ? " " + (vi + 1) : "")} src={mapUrl} style={{ width: "100%", height: 420, border: 0, display: "block" }} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
@@ -860,10 +872,24 @@ export function VenuePage() {
                   ))}
                 </div>
               )}
+            </>
+          );
+        };
+        // 2+ locations → the same snap carousel as the home maps; one stays flat.
+        return multi ? (
+          <section className="block" style={{ paddingTop: 24 }}>
+            <div className="container">
+              <SnapCarousel labels={list.map((v) => v.name || v.address)}>
+                {list.map((v, vi) => <React.Fragment key={v.id || vi}>{sectionOf(v, vi)}</React.Fragment>)}
+              </SnapCarousel>
             </div>
           </section>
+        ) : (
+          <section className="block" style={{ paddingTop: 24 }}>
+            <div className="container">{list[0] ? sectionOf(list[0], 0) : null}</div>
+          </section>
         );
-      })}
+      })()}
     </div>
   );
 }

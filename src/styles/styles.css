@@ -1524,7 +1524,16 @@ img.inv-art-recolor--front {
    unfiltered on top of the recolor overlay — the seal stays pixel-identical to
    the original for any paper color; the mask hole above is just the fallback. */
 img.inv-seal-img { position: absolute; pointer-events: none; filter: none; }
-img.inv-seal-img--sealed { left: 49.4%; top: 56.99%; width: 10.46%; transform: translate(-50%, -50%); }
+img.inv-seal-img--sealed {
+  left: 49.4%; top: 56.99%; width: 10.46%; transform: translate(-50%, -50%);
+  /* "pump" = click affordance on the cover seal. Intentionally NOT gated on
+     prefers-reduced-motion (owner's choice, same as the cover type-on). */
+  animation: invSealPump 2.4s ease-in-out infinite;
+}
+@keyframes invSealPump {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50%      { transform: translate(-50%, -50%) scale(1.07); }
+}
 /* front seal position is in STACK coords: the front art is inset (left 6%, top 30%,
    width 84%), so image-space (50.44%, 70.7%, 12.3%) converts to the values below */
 img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.63%; transform: translate(-50%, -50%); z-index: 6; }
@@ -1535,9 +1544,9 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.63%; transform: t
 }
 .inv-seal-hotspot::after { content: ""; position: absolute; inset: 0; border-radius: 50%; animation: invSealPulse 2.4s ease-out infinite; }
 @keyframes invSealPulse {
-  0%   { box-shadow: 0 0 0 0 rgba(150, 140, 90, .40); }
-  70%  { box-shadow: 0 0 0 18px rgba(150, 140, 90, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(150, 140, 90, 0); }
+  0%   { box-shadow: 0 0 0 0 rgba(255, 248, 235, .55); }
+  70%  { box-shadow: 0 0 0 18px rgba(255, 248, 235, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 248, 235, 0); }
 }
 .inv-seal-hotspot:focus-visible { outline: 2px solid rgba(120, 110, 70, .6); outline-offset: 4px; }
 .inv-letter-from {
@@ -1727,7 +1736,13 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 @media (max-width: 860px) {
   .eg-sealed .inv-sealed-art, .eg-sealed .inv-art-recolor--sealed { transform: translateX(0.7%); }
   /* keep the standalone seal registered with the shifted art (0.7% of the wrap = 0.7cqw) */
-  .eg-sealed .inv-seal-img--sealed { transform: translate(calc(-50% + 0.7cqw), -50%); }
+  .eg-sealed .inv-seal-img--sealed { transform: translate(calc(-50% + 0.7cqw), -50%); animation-name: invSealPumpM; }
+}
+@keyframes invSealPumpM {
+  0%, 100% { transform: translate(calc(-50% + 0.7cqw), -50%) scale(1); }
+  50%      { transform: translate(calc(-50% + 0.7cqw), -50%) scale(1.07); }
+}
+@media (max-width: 860px) {
 }
 .eg-open { width: min(1140px, 100vw, 105vh); flex: none; transition: width .6s ease; }
 .eg-cue {
