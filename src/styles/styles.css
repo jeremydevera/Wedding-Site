@@ -1531,7 +1531,7 @@ img.inv-seal-img--sealed {
    width 84%), so image-space (50.44%, 70.7%, 12.3%) converts to the values below */
 img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: translate(-50%, -50%); z-index: 6; }
 .inv-seal-hotspot {
-  position: absolute; left: 49.3%; top: 56.8%; width: 13%; height: 26%;
+  position: absolute; left: 49.4%; top: 56.99%; width: 13%; height: 26%;
   transform: translate(-50%, -50%); border: 0; background: transparent; padding: 0; margin: 0;
   border-radius: 50%; cursor: pointer; z-index: 3; -webkit-tap-highlight-color: transparent;
 }
