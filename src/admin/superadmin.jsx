@@ -429,6 +429,7 @@ export function ClientsAdmin() {
                         <Button variant="primary" size="sm" disabled={busy} onClick={() => toggleActive(c)}>Enable</Button>
                         <button className="icon-btn" onClick={() => setInfo(c)} title="Client info">{Icon.eye({})}</button>
                         <button className="icon-btn" onClick={() => openEdit(c)} title="Edit">{Icon.edit({})}</button>
+                        <button className="icon-btn icon-btn--danger" onClick={() => deleteClient(c)} title="Delete">{Icon.trash({})}</button>
                       </div>
                     </td>
                   </tr>
