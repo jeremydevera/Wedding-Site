@@ -485,6 +485,19 @@ export async function deleteSiteRequest(id) {
   if (error) throw error;
 }
 
+// Realtime for the console bell: new /apply submissions push over websocket
+// (publication 0020; RLS delivers only to superadmin). Debounced like the
+// owner-side feed; returns an unsubscribe fn for the effect cleanup.
+export function subscribeSiteRequestsRealtime(onChange) {
+  let t = null;
+  const ping = () => { clearTimeout(t); t = setTimeout(onChange, 400); };
+  const ch = supabase
+    .channel("sa-site-requests")
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "site_requests" }, ping)
+    .subscribe((status, err) => { console.info("[api] sa realtime:", status, err ? String(err) : ""); });
+  return () => { clearTimeout(t); supabase.removeChannel(ch); };
+}
+
 // Superadmin approve: create the client site from a request's payload, then
 // mark the request approved. Owner credentials are set afterwards with the
 // existing Credentials tool in the Clients tab.

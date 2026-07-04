@@ -96,7 +96,17 @@ export function SuperOverview() {
 }
 
 export function ClientsAdmin() {
-  const [view, setView] = useState("list"); // list | add | owner | edit
+  // list | add | edit | requests | approved | rejected | offline. The console
+  // bell deep-links to Requests via a one-shot sessionStorage flag.
+  const [view, setView] = useState(() => {
+    try {
+      if (sessionStorage.getItem("evermore_sa_view") === "requests") {
+        sessionStorage.removeItem("evermore_sa_view");
+        return "requests";
+      }
+    } catch (_) {}
+    return "list";
+  });
   const [clients, setClients] = useState([]);
   const [notes, setNotes] = useState({}); // client_id -> note text (superadmin-only, from client_notes)
   const [form, setForm] = useState({ subdomain: "", event_type: "wedding", template_key: "classic", ownerEmail: "", ownerPassword: "", note: "" });

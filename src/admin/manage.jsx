@@ -7,7 +7,7 @@ import { FX_LIST } from "@/lib/falling-fx.js";
 import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { signOut } from "@/lib/auth.js";
-import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb, updateRsvpDietDb } from "@/lib/api.js";
+import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb, updateRsvpDietDb, listSiteRequests, subscribeSiteRequestsRealtime } from "@/lib/api.js";
 import { DIET_OPTIONS } from "@/features/rsvp.jsx";
 import { reconcileGuests, guestFromRsvp, normName } from "@/lib/guests.js";
 import { headsOf } from "@/lib/rsvp.js";
@@ -2810,6 +2810,91 @@ function NotificationBell({ goTab }) {
   );
 }
 
+// Superadmin console bell — new /apply site requests, pushed live over the
+// site_requests realtime publication (0020; RLS delivers to superadmin only).
+// Same seen/Clear semantics as the owner bell, keyed separately.
+function SuperNotificationBell({ goTab }) {
+  const [open, setOpen] = useState(false);
+  const [reqs, setReqs] = useState([]);
+  const key = "evermore_notif_seen_sa";
+  const clearKey = "evermore_notif_cleared_sa";
+  const [seen, setSeen] = useState(() => { try { return Number(localStorage.getItem(key) || 0); } catch (_) { return 0; } });
+  const [clearedAt, setClearedAt] = useState(() => { try { return Number(localStorage.getItem(clearKey) || 0); } catch (_) { return 0; } });
+
+  useEffect(() => {
+    let dead = false;
+    const refresh = () => listSiteRequests().then((rows) => { if (!dead) setReqs(rows || []); }).catch(() => {});
+    refresh();
+    const off = subscribeSiteRequestsRealtime(refresh);
+    return () => { dead = true; off(); };
+  }, []);
+
+  const items = useMemo(() => (reqs || [])
+    .map((r) => ({ id: r.id, who: `${r.partner_a || "?"} & ${r.partner_b || "?"}`, text: `requested ${r.subdomain}.celebrately.us`, at: new Date(r.created_at).getTime() || 0, status: r.status }))
+    .filter((x) => x.at > clearedAt)
+    .sort((x, y) => y.at - x.at), [reqs, clearedAt]);
+
+  const clearAll = () => {
+    const now = Date.now();
+    try { localStorage.setItem(clearKey, String(now)); localStorage.setItem(key, String(now)); } catch (_) {}
+    setClearedAt(now);
+    setSeen(now);
+  };
+  const unseen = items.filter((i) => i.at > seen).length;
+  useEffect(() => {
+    if (!open) return;
+    const now = Date.now();
+    try { localStorage.setItem(key, String(now)); } catch (_) {}
+    setSeen(now);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Land on the Clients tab with the Requests folder open (ClientsAdmin
+  // consumes this flag as its initial view).
+  const goRequests = () => {
+    try { sessionStorage.setItem("evermore_sa_view", "requests"); } catch (_) {}
+    goTab("clients");
+    setOpen(false);
+  };
+
+  return (
+    <div className="notif">
+      <button type="button" className="notif__btn notif__btn--plain" aria-label={`Notifications${unseen ? ` (${unseen} new)` : ""}`} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        {Icon.bell({ style: { width: 18, height: 18 } })}
+        {unseen > 0 && <span className="notif__badge">{unseen > 9 ? "9+" : unseen}</span>}
+      </button>
+      {open && (
+        <>
+          <div className="notif__backdrop" onClick={() => setOpen(false)} />
+          <div className="notif__panel" role="dialog" aria-label="Notifications">
+            <div className="notif__head">
+              {Icon.bell({ style: { width: 15, height: 15 } })} Site requests{unseen > 0 ? ` · ${unseen} new` : ""}
+              {items.length > 0 && (
+                <button type="button" className="notif__clear" onClick={clearAll}>Clear</button>
+              )}
+            </div>
+            <div className="notif__list">
+              {items.length === 0 ? (
+                <div className="notif__empty">{clearedAt > 0 ? "You're all caught up." : "No requests yet."}</div>
+              ) : items.slice(0, 20).map((it, i) => (
+                <button key={it.id} type="button" className={"notif__item" + (i < unseen ? " is-new" : "")} onClick={goRequests}>
+                  <span className={"notif__ava notif__ava--" + (["a", "b", "c", "d"][(it.who.charCodeAt(0) || 0) % 4])}>{initialsOf(it.who)}</span>
+                  <span className="notif__body">
+                    <span className="notif__line"><strong>{it.who}</strong> {it.text}</span>
+                    <span className="notif__time">{timeAgo(it.at)}{it.status !== "pending" ? ` · ${it.status}` : ""}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+            {items.length > 0 && (
+              <button type="button" className="notif__footer" onClick={goRequests}>View all requests →</button>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // Account menu in the admin topbar — click the avatar for the signed-in email
 // and a Sign out action.
 function ProfileMenu({ name, email, onViewSite, onSignOut }) {
@@ -2996,6 +3081,7 @@ export function AdminApp() {
           </div>
           <div className="admin__topbar-right">
             {clientId && <NotificationBell goTab={setTab} />}
+            {!clientId && auth.role === "superadmin" && <SuperNotificationBell goTab={setTab} />}
             <ProfileMenu name={auth.role === "superadmin" ? "Superadmin" : [settings.partnerA, settings.partnerB].filter(Boolean).join(" & ") || "Owner"} email={auth.email} onViewSite={() => go("home")} onSignOut={() => signOut().then(() => { if (clientOverride) exitToConsole(); else go("home"); })} />
           </div>
         </div>
