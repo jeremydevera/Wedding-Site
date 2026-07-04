@@ -294,6 +294,86 @@ export function EnvelopeInvite() {
   );
 }
 
+// One framed home map (map + address bar + optional tiles). Shared by the
+// single-map layout and each carousel slide.
+function HomeMapBlock({ m }) {
+  return (
+    <>
+      <div className="home-map">
+        <iframe className="home-map__frame" title={m.addr ? `Map — ${m.addr}` : "Venue map"} src={m.url} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
+        <div className="home-map__bar">
+          <div className="home-map__where">
+            <span className="home-map__pin">{Icon.pin({})}</span>
+            <div className="home-map__addr">{m.addr}</div>
+          </div>
+          <div className="home-map__actions">
+            <Button variant="ghost" size="sm" onClick={() => go("venue")}>See full details</Button>
+            <Button variant="primary" size="sm" onClick={() => window.open(mapDirUrl(m.query, m.lat, m.lng), "_blank")}>{Icon.pin({})} Get directions</Button>
+          </div>
+        </div>
+      </div>
+      {m.cards.length > 0 && (
+        <div className="info-grid info-grid--3" style={{ marginTop: 22 }}>
+          {m.cards.map((n, i) => (
+            <div className="card info-card" key={n.id || i}><h3>{n.t}</h3><p>{n.d}</p></div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+// Multiple home maps → a snap-scroll carousel, one full-width slide per
+// location, with the same frosted arrows + dots pill as the horizontal
+// timeline ("glimpse of the day").
+function HomeMapsCarousel({ maps }) {
+  const ref = useRef(null);
+  const [active, setActive] = useState(0);
+  const n = maps.length;
+  const update = useCallback(() => {
+    const el = ref.current; if (!el) return;
+    const idx = el.clientWidth ? Math.round(el.scrollLeft / el.clientWidth) : 0;
+    const j = Math.max(0, Math.min(n - 1, idx));
+    setActive((p) => (p === j ? p : j));
+  }, [n]);
+  useEffect(() => {
+    update();
+    const el = ref.current; if (!el) return;
+    el.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => { el.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
+  }, [update]);
+  const toItem = (i) => {
+    const el = ref.current; if (!el) return;
+    const j = Math.max(0, Math.min(n - 1, i));
+    el.scrollTo({ left: j * el.clientWidth, behavior: "smooth" });
+  };
+  return (
+    <div className="map-car">
+      <div className="map-car__rail" ref={ref}>
+        {maps.map((m, mi) => (
+          <div className="map-car__slide" key={m.id || mi} aria-hidden={mi !== active}>
+            <HomeMapBlock m={m} />
+          </div>
+        ))}
+      </div>
+      <div className="tl-nav">
+        <button type="button" className="tl-nav__arrow" onClick={() => toItem(active - 1)} disabled={active === 0} aria-label="Previous location">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+        </button>
+        <div className="tl-nav__dots">
+          {maps.map((m, i) => (
+            <button key={i} type="button" className={"tl-nav__dot" + (i === active ? " is-active" : "")} onClick={() => toItem(i)} aria-label={"Go to " + (m.addr || "location " + (i + 1))} aria-current={i === active} />
+          ))}
+        </div>
+        <button type="button" className="tl-nav__arrow" onClick={() => toItem(active + 1)} disabled={active === n - 1} aria-label="Next location">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function Home() {
   const { settings, story, schedule, entourage, attire, playlist, venues } = useStore();
   const s = settings;
@@ -412,30 +492,9 @@ export function Home() {
         <section className="block" id="home-map">
           <div className="container">
             <SectionHead center eyebrow="The Venue" title="Where we'll celebrate" />
-            {homeMaps.map((m, mi) => (
-              <React.Fragment key={m.id || mi}>
-                <div className="home-map" style={mi > 0 ? { marginTop: 28 } : undefined}>
-                  <iframe className="home-map__frame" title={m.addr ? `Map — ${m.addr}` : "Venue map"} src={m.url} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
-                  <div className="home-map__bar">
-                    <div className="home-map__where">
-                      <span className="home-map__pin">{Icon.pin({})}</span>
-                      <div className="home-map__addr">{m.addr}</div>
-                    </div>
-                    <div className="home-map__actions">
-                      <Button variant="ghost" size="sm" onClick={() => go("venue")}>See full details</Button>
-                      <Button variant="primary" size="sm" onClick={() => window.open(mapDirUrl(m.query, m.lat, m.lng), "_blank")}>{Icon.pin({})} Get directions</Button>
-                    </div>
-                  </div>
-                </div>
-                {m.cards.length > 0 && (
-                  <div className="info-grid info-grid--3" style={{ marginTop: 22 }}>
-                    {m.cards.map((n, i) => (
-                      <div className="card info-card" key={n.id || i}><h3>{n.t}</h3><p>{n.d}</p></div>
-                    ))}
-                  </div>
-                )}
-              </React.Fragment>
-            ))}
+            {homeMaps.length > 1
+              ? <HomeMapsCarousel maps={homeMaps} />
+              : <HomeMapBlock m={homeMaps[0]} />}
           </div>
         </section>
       )}
