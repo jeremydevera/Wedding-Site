@@ -1536,7 +1536,7 @@ img.inv-seal-img--sealed {
 }
 /* front seal position is in STACK coords: the front art is inset (left 6%, top 30%,
    width 84%), so image-space (50.44%, 70.7%, 12.3%) converts to the values below */
-img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.63%; transform: translate(-50%, -50%); z-index: 6; }
+img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: translate(-50%, -50%); z-index: 6; }
 .inv-seal-hotspot {
   position: absolute; left: 49.3%; top: 56.8%; width: 13%; height: 26%;
   transform: translate(-50%, -50%); border: 0; background: transparent; padding: 0; margin: 0;
