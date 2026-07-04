@@ -64,10 +64,10 @@ function envRecolorOverlay(s, kind) {
   if (!envColorFilterFor(s.envColor, s.envColorCustom)) return null;
   return kind === "sealed" ? (<>
     <img className="inv-art-recolor inv-art-recolor--sealed" src="/assets/invite/env-closed.webp" alt="" aria-hidden="true" />
-    <img className="inv-seal-img inv-seal-img--sealed" src="/assets/invite/seal-closed.png" alt="" aria-hidden="true" />
+    <img className="inv-seal-img inv-seal-img--sealed" src="/assets/invite/seal-closed-v2.png" alt="" aria-hidden="true" />
   </>) : (<>
     <img className="inv-l-front inv-art-recolor inv-art-recolor--front" src="/assets/invite/p2-envelope-front.png" alt="" aria-hidden="true" />
-    <img className="inv-seal-img inv-seal-img--front" src="/assets/invite/seal-front.png" alt="" aria-hidden="true" />
+    <img className="inv-seal-img inv-seal-img--front" src="/assets/invite/seal-front-v2.png" alt="" aria-hidden="true" />
   </>);
 }
 

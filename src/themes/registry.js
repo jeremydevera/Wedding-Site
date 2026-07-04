@@ -497,7 +497,7 @@ export function envColorFilterFor(envColor, envColorCustom) {
 export const ENV_SEAL_MASK = "radial-gradient(3% 6.5% at 49.5% 56.85%, transparent 60%, #000 100%)";
 // Placement of the standalone seal image (public/assets/invite/seal-closed.png)
 // over the sealed art — mirrors .inv-seal-img--sealed in styles.css.
-export const ENV_SEAL_POS = { left: "49.5%", top: "56.85%", width: "9.87%" };
+export const ENV_SEAL_POS = { left: "49.4%", top: "56.99%", width: "10.46%" };
 
 // oklch hue (degrees) of an sRGB color — for deriving the matching site palette.
 export function rgbToOklchHue([r, g, b]) {

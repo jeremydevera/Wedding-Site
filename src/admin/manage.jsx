@@ -1933,7 +1933,7 @@ export function SettingsAdmin() {
                     {flt ? <>
                       <img src="/assets/invite/env-closed.webp" alt="" aria-hidden="true"
                         style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "auto", borderRadius: 8, pointerEvents: "none", filter: flt, WebkitMaskImage: ENV_SEAL_MASK, maskImage: ENV_SEAL_MASK }} />
-                      <img src="/assets/invite/seal-closed.png" alt="" aria-hidden="true"
+                      <img src="/assets/invite/seal-closed-v2.png" alt="" aria-hidden="true"
                         style={{ position: "absolute", left: ENV_SEAL_POS.left, top: ENV_SEAL_POS.top, width: ENV_SEAL_POS.width, transform: "translate(-50%, -50%)", pointerEvents: "none" }} />
                     </> : null}
                   </div>
