@@ -109,10 +109,12 @@ export function ClientsAdmin() {
   const [info, setInfo] = useState(null);            // client shown in the info modal (eye icon)
   const [reqEdit, setReqEdit] = useState(null);      // request being edited in a modal (pencil)
   const [delReq, setDelReq] = useState(null);        // { r, typed } — type-the-address delete confirm
+  const [sel, setSel] = useState(() => new Set());   // client ids checked for bulk delete
 
   async function load() {
     const { data } = await supabase.from("clients").select("*").order("created_at", { ascending: false });
     setClients(data || []);
+    setSel(new Set()); // rows changed — stale checks would be dangerous on delete
     try { setRequests(await listSiteRequests()); } catch (_) { /* non-superadmin or table missing */ }
     // Notes live in a superadmin-only table (never exposed to anon/owners).
     const { data: nd } = await supabase.from("client_notes").select("client_id,note");
@@ -236,6 +238,18 @@ export function ClientsAdmin() {
     setBusy(false); setEditing(null); await load();
   }
 
+  // Remove the owner's auth account FIRST, while profiles.client_id still links
+  // to this client (so the lookup works even when owner_email is null). Deleting
+  // the auth user cascades its profile. Then delete the client (cascades its
+  // RSVPs/guestbook/quiz). A noop is fine for clients that never had an owner.
+  async function deleteClientCore(c) {
+    let ownerWarn = false;
+    try { await deleteOwner({ email: c.owner_email || undefined, client_id: c.id }); }
+    catch (e2) { ownerWarn = true; }
+    const { error } = await supabase.from("clients").delete().eq("id", c.id);
+    if (error) throw error;
+    return { ownerWarn };
+  }
   async function deleteClient(c) {
     const ok = await confirmDialog({
       title: "Delete client?",
@@ -244,19 +258,37 @@ export function ClientsAdmin() {
       danger: true,
     });
     if (!ok) return;
-    // Remove the owner's auth account FIRST, while profiles.client_id still links
-    // to this client (so the lookup works even when owner_email is null). Deleting
-    // the auth user cascades its profile. Then delete the client (cascades its
-    // RSVPs/guestbook/quiz). A noop is fine for clients that never had an owner.
-    let ownerWarn = false;
     try {
-      await deleteOwner({ email: c.owner_email || undefined, client_id: c.id });
-    } catch (e2) {
-      ownerWarn = true;
+      const { ownerWarn } = await deleteClientCore(c);
+      toast(ownerWarn ? "Client deleted — owner login may remain; remove it in Supabase Auth." : "Client and owner login deleted");
+    } catch (e) { return toast("Delete failed: " + e.message); }
+    load();
+  }
+  // Bulk: checked rows -> one confirm listing the sites -> delete them all.
+  const toggleSel = (id) => setSel((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  async function deleteSelected() {
+    const targets = clients.filter((c) => sel.has(c.id));
+    if (!targets.length) return;
+    const ok = await confirmDialog({
+      title: `Delete ${targets.length} client${targets.length === 1 ? "" : "s"}?`,
+      message: `Delete ${targets.map((c) => c.subdomain).join(", ")} — including all their data (RSVPs, guestbook, quiz) and owner logins? This can't be undone.`,
+      confirmLabel: `Delete ${targets.length}`,
+      danger: true,
+    });
+    if (!ok) return;
+    setBusy(true);
+    let fail = 0, warn = 0;
+    for (const c of targets) {
+      try { const { ownerWarn } = await deleteClientCore(c); if (ownerWarn) warn++; }
+      catch (_) { fail++; }
     }
-    const { error } = await supabase.from("clients").delete().eq("id", c.id);
-    if (error) return toast("Delete failed: " + error.message);
-    toast(ownerWarn ? "Client deleted — owner login may remain; remove it in Supabase Auth." : "Client and owner login deleted");
+    setBusy(false);
+    toast(
+      fail ? `Deleted ${targets.length - fail} — ${fail} failed` :
+      warn ? `Deleted ${targets.length} — ${warn} owner login(s) may remain (Supabase Auth)` :
+      `Deleted ${targets.length} client${targets.length === 1 ? "" : "s"}`,
+      fail ? "err" : "success",
+    );
     load();
   }
 
@@ -405,13 +437,19 @@ export function ClientsAdmin() {
       {/* Offline — clients whose site access is disabled (is_active=false). */}
       {view === "offline" && (
         <div className="panel">
-          <div className="panel__head"><div className="panel__title">Offline clients</div><span style={{ color: "var(--muted)", fontSize: 13 }}>Sites currently disabled — guests can't load them until re-enabled</span></div>
+          <div className="panel__head"><div className="panel__title">Offline clients</div><span style={{ color: "var(--muted)", fontSize: 13 }}>Sites currently disabled — guests can't load them until re-enabled</span>
+            {sel.size > 0 && <Button variant="ghost" size="sm" disabled={busy} onClick={deleteSelected} style={{ color: "#e5484d", borderColor: "#e5484d" }}>{Icon.trash({})} Delete selected ({sel.size})</Button>}</div>
           <div className="panel__body--flush table-wrap">
             <table className="tbl">
-              <thead><tr><th>Client</th><th>Notes</th><th>Actions</th></tr></thead>
+              <thead><tr>
+                <th style={{ width: 34 }}><input type="checkbox" aria-label="Select all offline"
+                  checked={clients.filter((c) => !c.is_active).length > 0 && clients.filter((c) => !c.is_active).every((c) => sel.has(c.id))}
+                  onChange={(e) => setSel((p) => { const n = new Set(p); clients.filter((c) => !c.is_active).forEach((c) => e.target.checked ? n.add(c.id) : n.delete(c.id)); return n; })} /></th>
+                <th>Client</th><th>Notes</th><th>Actions</th></tr></thead>
               <tbody>
                 {clients.filter((c) => !c.is_active).map((c) => (
                   <tr key={c.id}>
+                    <td><input type="checkbox" aria-label={`Select ${c.subdomain}`} checked={sel.has(c.id)} onChange={() => toggleSel(c.id)} /></td>
                     <td>
                       <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                         <span className="sa-dot sa-dot--off" title="Disabled" />
@@ -434,7 +472,7 @@ export function ClientsAdmin() {
                     </td>
                   </tr>
                 ))}
-                {clients.filter((c) => !c.is_active).length === 0 && <tr><td colSpan={3} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>All clients are online. 🎉</td></tr>}
+                {clients.filter((c) => !c.is_active).length === 0 && <tr><td colSpan={4} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>All clients are online. 🎉</td></tr>}
               </tbody>
             </table>
           </div>
@@ -445,15 +483,21 @@ export function ClientsAdmin() {
         <div>
           <div className="sa-toolbar">
             <div className="sa-search">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search clients by subdomain…" /></div>
+            {sel.size > 0 && <Button variant="ghost" size="sm" disabled={busy} onClick={deleteSelected} style={{ color: "#e5484d", borderColor: "#e5484d" }}>{Icon.trash({})} Delete selected ({sel.size})</Button>}
             <Button variant="primary" size="sm" onClick={() => setView("add")}>{Icon.check({})} Add client</Button>
           </div>
           <div className="panel" style={{ marginBottom: 10 }}>
             <div className="panel__body--flush table-wrap">
               <table className="tbl tbl--clients">
-                <thead><tr><th>Client</th><th>Theme</th><th>Notes</th><th>Actions</th></tr></thead>
+                <thead><tr>
+                  <th style={{ width: 34 }}><input type="checkbox" aria-label="Select all on this page"
+                    checked={pg.pageItems.length > 0 && pg.pageItems.every((c) => sel.has(c.id))}
+                    onChange={(e) => setSel((p) => { const n = new Set(p); pg.pageItems.forEach((c) => e.target.checked ? n.add(c.id) : n.delete(c.id)); return n; })} /></th>
+                  <th>Client</th><th>Theme</th><th>Notes</th><th>Actions</th></tr></thead>
                 <tbody>
                   {pg.pageItems.map((c) => (
                     <tr key={c.id}>
+                      <td><input type="checkbox" aria-label={`Select ${c.subdomain}`} checked={sel.has(c.id)} onChange={() => toggleSel(c.id)} /></td>
                       <td>
                         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                           <span className={"sa-dot" + (c.is_active ? "" : " sa-dot--off")} title={c.is_active ? "Active" : "Disabled"} />
@@ -480,7 +524,7 @@ export function ClientsAdmin() {
                       </td>
                     </tr>
                   ))}
-                  {filtered.length === 0 && <tr><td colSpan={4} style={{ textAlign: "center", padding: 40, color: "var(--muted)" }}>{clients.length ? "No matches." : "No clients yet — use “Add client”."}</td></tr>}
+                  {filtered.length === 0 && <tr><td colSpan={5} style={{ textAlign: "center", padding: 40, color: "var(--muted)" }}>{clients.length ? "No matches." : "No clients yet — use “Add client”."}</td></tr>}
                 </tbody>
               </table>
             </div>
