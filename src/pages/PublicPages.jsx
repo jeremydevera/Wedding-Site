@@ -767,9 +767,15 @@ export function VenuePage() {
     ((v.mapQuery || v.address || v.name || "").trim()) ||
     (v.cards || []).some((c) => (c.t || "").trim() || (c.d || "").trim()));
   const multi = list.length > 1;
+  // Header follows the venues you edit (not the legacy settings map). Single
+  // location → its name + address; multiple → a generic title (each location
+  // gets its own heading below).
+  const first = list[0];
+  const heroTitle = multi ? "Where we'll celebrate" : ((first && (first.name || first.address)) || s.venueName);
+  const heroLead = multi ? "Here's where we'll be." : ((first && first.address) || s.venueAddress);
   return (
     <div className="fade-up">
-      <PageHero eyebrow="Venue & Map" title={s.venueName} lead={s.venueAddress} />
+      <PageHero eyebrow="Venue & Map" title={heroTitle} lead={heroLead} />
       {list.map((v, vi) => {
         const query = (v.mapQuery && v.mapQuery.trim()) || v.address;
         const mapUrl = mapEmbedUrl(query, v.mapLat, v.mapLng);
