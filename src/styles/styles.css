@@ -1730,8 +1730,8 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   .eg-sealed .inv-sealed-art, .eg-sealed .inv-art-recolor--sealed { transform: translateX(0.7%); }
   /* keep the standalone seal registered with the shifted art (0.7% of the wrap = 0.7cqw) */
   .eg-sealed .inv-seal-img--sealed { transform: translate(calc(-50% + 0.7cqw), -50%); }
-}
-@media (max-width: 860px) {
+  /* pulse ring hotspot must follow the same offset so the ring stays centered on the seal */
+  .eg-sealed .inv-seal-hotspot { transform: translate(calc(-50% + 0.7cqw), -50%); }
 }
 .eg-open { width: min(1140px, 100vw, 105vh); flex: none; transition: width .6s ease; }
 .eg-cue {
