@@ -304,23 +304,22 @@ function HomeMapBlock({ m }) {
     <>
       <div className="home-map">
         <iframe className="home-map__frame" title={m.addr ? `Map — ${m.addr}` : "Venue map"} src={m.url} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
-        <div className="home-map__bar home-map__bar--actions">
+        <div className="home-map__bar">
+          {(m.name || m.addr || m.query) && (
+            <div className="home-map__where">
+              <span className="home-map__pin">{Icon.pin({})}</span>
+              <div className="home-map__addr">
+                {m.name && <div className="home-map__name">{m.name}</div>}
+                <div>{m.addr || (!m.name ? m.query : "")}</div>
+              </div>
+            </div>
+          )}
           <div className="home-map__actions">
             <Button variant="ghost" size="sm" onClick={() => go("venue")}>See full details</Button>
             <Button variant="primary" size="sm" onClick={() => window.open(mapDirUrl(m.query, m.lat, m.lng), "_blank")}>{Icon.pin({})} Get directions</Button>
           </div>
         </div>
       </div>
-      {/* Location name + address as a caption UNDER the map card */}
-      {(m.name || m.addr || m.query) && (
-        <div className="home-map__caption">
-          <span className="home-map__pin">{Icon.pin({})}</span>
-          <div>
-            {m.name && <div className="home-map__name">{m.name}</div>}
-            <div className="home-map__caption-addr">{m.addr || (!m.name ? m.query : "")}</div>
-          </div>
-        </div>
-      )}
       {m.cards.length > 0 && (
         <div className="info-grid info-grid--3" style={{ marginTop: 22 }}>
           {m.cards.map((n, i) => (
