@@ -47,6 +47,7 @@ import { ADMIN_SESSION } from "@/admin/core.jsx";
 
   function pct(el) {
     var p = el.offsetParent || el.parentElement;
+    if (!p) return { left: 0, top: 0, width: 0 };
     var r = el.getBoundingClientRect();
     var pr = p.getBoundingClientRect();
     return {

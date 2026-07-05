@@ -1,6 +1,10 @@
 import React from "react";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
+// Captured from first parent message — lets postMessage target a specific origin
+// rather than broadcasting to '*'. Stays '*' until the parent sends a message.
+let _parentOrigin = '*';
+
 // @ds-adherence-ignore -- omelette starter scaffold (raw elements/hex/px by design)
 
 /* BEGIN USAGE */
@@ -182,7 +186,7 @@ export function useTweaks(defaults) {
     const edits = typeof keyOrEdits === 'object' && keyOrEdits !== null
       ? keyOrEdits : { [keyOrEdits]: val };
     setValues((prev) => ({ ...prev, ...edits }));
-    window.parent.postMessage({ type: '__edit_mode_set_keys', edits }, '*');
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits }, _parentOrigin);
     // Same-window signal so in-page listeners (deck-stage rail thumbnails)
     // can react — the parent message only reaches the host, not peers.
     window.dispatchEvent(new CustomEvent('tweakchange', { detail: edits }));
@@ -231,6 +235,8 @@ export function TweaksPanel({ title = 'Tweaks', children }) {
 
   React.useEffect(() => {
     const onMsg = (e) => {
+      if (e.source !== window.parent) return;
+      if (_parentOrigin === '*' && e.origin && e.origin !== 'null') _parentOrigin = e.origin;
       const t = e?.data?.type;
       if (t === '__activate_edit_mode') setOpen(true);
       else if (t === '__deactivate_edit_mode') setOpen(false);
@@ -242,7 +248,7 @@ export function TweaksPanel({ title = 'Tweaks', children }) {
 
   const dismiss = () => {
     setOpen(false);
-    window.parent.postMessage({ type: '__edit_mode_dismissed' }, '*');
+    window.parent.postMessage({ type: '__edit_mode_dismissed' }, _parentOrigin);
   };
 
   const onDragStart = (e) => {
@@ -433,6 +439,8 @@ export function TweakNumber({ label, value, min, max, step = 1, unit = '', onCha
     if (max != null && n > max) return max;
     return n;
   };
+  const [inputVal, setInputVal] = React.useState(String(value));
+  React.useEffect(() => { setInputVal(String(value)); }, [value]);
   const startRef = React.useRef({ x: 0, val: 0 });
   const onScrubStart = (e) => {
     e.preventDefault();
@@ -454,8 +462,13 @@ export function TweakNumber({ label, value, min, max, step = 1, unit = '', onCha
   return (
     <div className="twk-num">
       <span className="twk-num-lbl" onPointerDown={onScrubStart}>{label}</span>
-      <input type="number" value={value} min={min} max={max} step={step}
-             onChange={(e) => onChange(clamp(Number(e.target.value)))} />
+      <input type="number" value={inputVal} min={min} max={max} step={step}
+             onChange={(e) => {
+               setInputVal(e.target.value);
+               const n = parseFloat(e.target.value);
+               if (!isNaN(n)) onChange(clamp(n));
+             }}
+             onBlur={() => setInputVal(String(value))} />
       {unit && <span className="twk-num-unit">{unit}</span>}
     </div>
   );

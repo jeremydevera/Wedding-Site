@@ -41,7 +41,14 @@ export function videoToThumb(file) {
     const url = URL.createObjectURL(file);
     const v = document.createElement("video");
     v.preload = "metadata"; v.muted = true; v.src = url;
-    const done = (dataUrl, ratio) => resolve({ dataUrl, src: url, ratio });
+    let settled = false;
+    let timer;
+    const done = (dataUrl, ratio) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve({ dataUrl, src: url, ratio });
+    };
     v.onloadeddata = () => { try { v.currentTime = Math.min(0.5, (v.duration || 1) / 3); } catch (e) {} };
     v.onseeked = () => {
       try {
@@ -52,7 +59,7 @@ export function videoToThumb(file) {
       } catch (e) { done(null, "4 / 3"); }
     };
     v.onerror = () => done(null, "4 / 3");
-    setTimeout(() => done(null, "4 / 3"), 4000); // safety
+    timer = setTimeout(() => done(null, "4 / 3"), 4000); // safety
   });
 }
 
@@ -64,8 +71,11 @@ export function UploadFlow({ category = "gallery", title, eyebrow, lead, accept 
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
   const [done, setDone] = useState(false);
+  const progressIntervalRef = useRef(null);
   const [err, setErr] = useState("");
   const inputRef = useRef(null);
+
+  useEffect(() => () => { if (progressIntervalRef.current) clearInterval(progressIntervalRef.current); }, []);
 
   const acceptAttr = accept === "photo" ? PHOTO_TYPES.join(",")
     : accept === "video" ? VIDEO_TYPES.join(",")
@@ -76,7 +86,8 @@ export function UploadFlow({ category = "gallery", title, eyebrow, lead, accept 
     const files = Array.from(fileList).slice(0, 10 - items.length);
     const next = [];
     for (const file of files) {
-      const isPhoto = file.type.startsWith("image/") || PHOTO_TYPES.includes(file.type);
+      const ext = file.name.split(".").pop().toLowerCase();
+      const isPhoto = file.type.startsWith("image/") || PHOTO_TYPES.includes(file.type) || ["heic", "heif"].includes(ext);
       const isVideo = file.type.startsWith("video/") || VIDEO_TYPES.includes(file.type);
       if (accept === "photo" && !isPhoto) { setErr("That file type isn't supported here. Please choose a photo."); continue; }
       if (accept === "video" && !isVideo) { setErr("That file type isn't supported here. Please choose a video."); continue; }
@@ -91,7 +102,13 @@ export function UploadFlow({ category = "gallery", title, eyebrow, lead, accept 
     setItems((cur) => [...cur, ...next].slice(0, 10));
   }
 
-  function removeItem(id) { setItems((cur) => cur.filter((x) => x.id !== id)); }
+  function removeItem(id) {
+    setItems((cur) => {
+      const item = cur.find((x) => x.id === id);
+      if (item?.type === "video" && item.thumb?.src?.startsWith("blob:")) URL.revokeObjectURL(item.thumb.src);
+      return cur.filter((x) => x.id !== id);
+    });
+  }
 
   async function upload() {
     if (!name.trim()) { setErr("Please enter your name first."); return; }
@@ -100,15 +117,16 @@ export function UploadFlow({ category = "gallery", title, eyebrow, lead, accept 
     // simulate upload progress
     await new Promise((res) => {
       let p = 0;
-      const t = setInterval(() => {
+      progressIntervalRef.current = setInterval(() => {
         p += Math.random() * 18 + 6;
         setProgress(Math.min(98, p));
-        if (p >= 98) { clearInterval(t); res(); }
+        if (p >= 98) { clearInterval(progressIntervalRef.current); progressIntervalRef.current = null; res(); }
       }, 160);
     });
     Store.addMedia(items.map((it) => ({
       type: it.type, category,
-      dataUrl: it.thumb.dataUrl, src: it.thumb.src || it.thumb.dataUrl,
+      // Always use dataUrl for src so the value survives a page reload (blob: URLs are ephemeral).
+      dataUrl: it.thumb.dataUrl, src: it.thumb.dataUrl || it.thumb.src,
       ratio: it.thumb.ratio, name: name.trim(), message: msg.trim(),
       status: category === "gallery" ? (Store.get().settings.autoApproveMedia ? "approved" : "pending") : "approved", size: it.size,
     })));

@@ -139,11 +139,14 @@ export async function loadAdminData() {
   if (gb.error) console.warn("[api] guestbook load failed:", gb.error.message);
   if (qz.error) console.warn("[api] quiz load failed:", qz.error.message);
   if (gu.error) console.warn("[api] guests load failed:", gu.error.message);
+  // Preserve existing store data for any query that errored — don't wipe
+  // previously-loaded rows with an empty array on a transient failure.
+  const prev = Store.get();
   Store.setSubmissions({
-    rsvps: (rs.data || []).map(rowToRsvp),
-    guestbook: (gb.data || []).map(rowToGuestbook),
-    quizSubs: (qz.data || []).map(rowToQuizSub),
-    guests: (gu.data || []).map(rowToGuest),
+    rsvps: rs.error ? (prev.rsvps || []) : rs.data.map(rowToRsvp),
+    guestbook: gb.error ? (prev.guestbook || []) : gb.data.map(rowToGuestbook),
+    quizSubs: qz.error ? (prev.quizSubs || []) : qz.data.map(rowToQuizSub),
+    guests: gu.error ? (prev.guests || []) : gu.data.map(rowToGuest),
   });
 }
 
@@ -506,7 +509,7 @@ export async function approveSiteRequest(reqRow) {
   const content = {
     partnerA: reqRow.partner_a,
     partnerB: reqRow.partner_b,
-    hashtag: `#${(reqRow.partner_a + "And" + reqRow.partner_b).replace(/[^A-Za-z0-9]/g, "")}`,
+    hashtag: `#${((reqRow.partner_a || "") + "And" + (reqRow.partner_b || "")).replace(/[^A-Za-z0-9]/g, "")}`,
     ...(c.weddingDate ? { weddingDate: c.weddingDate } : {}),
     ...(c.weddingDateLabel ? { weddingDateLabel: c.weddingDateLabel } : {}),
     ...(c.venueName ? { venueName: c.venueName } : {}),

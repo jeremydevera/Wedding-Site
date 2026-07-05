@@ -52,12 +52,17 @@ export function SetupWizard() {
         bodyFont: (THEME_FONTS[f.theme] || {}).body,
         onboarded: true,
       };
+      const prevSettings = { ...Store.get().settings };
       Store.updateSettings(patch);
-      await saveClientData();
-      toast(skip ? "You can finish setup anytime in Home & Settings" : "You're all set — welcome!", "success");
+      try {
+        await saveClientData();
+        toast(skip ? "You can finish setup anytime in Home & Settings" : "You're all set — welcome!", "success");
+      } catch (saveErr) {
+        Store.updateSettings({ ...prevSettings, onboarded: false }); // full rollback
+        throw saveErr;
+      }
     } catch (e) {
       toast("Couldn't save — please try again", "err");
-      Store.updateSettings({ onboarded: false }); // keep the wizard available
     } finally {
       setBusy(false);
     }

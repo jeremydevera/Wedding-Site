@@ -7,7 +7,7 @@ export function subdomainFromHost(hostname, search = "") {
     return "demo";
   }
   const parts = hostname.split(".");
-  if (hostname.endsWith("pages.dev")) {
+  if (hostname === "pages.dev" || hostname.endsWith(".pages.dev")) {
     // project.pages.dev = 3 parts (no client); client.project.pages.dev = 4
     return parts.length >= 4 ? parts[0] : "demo";
   }

@@ -80,6 +80,7 @@ export function LocationPicker({ value, lat, lng, onChange }) {
   const debounceRef = useRef(null);
   const blurRef = useRef(null);
   const selectingRef = useRef(false); // suppress search right after a pick
+  const reverseGeocodeRef = useRef(null); // always points to latest reverseGeocode
 
   onChangeRef.current = onChange;
 
@@ -88,6 +89,7 @@ export function LocationPicker({ value, lat, lng, onChange }) {
   }, []);
 
   // Reverse-geocode a pinned point into a readable label, then emit.
+  // Keep a ref so the map's once-bound dragend/click handlers always call the latest version.
   const reverseGeocode = useCallback(async (la, lo) => {
     emit(text || "", la, lo); // emit coords immediately; refine label below
     try {
@@ -100,6 +102,7 @@ export function LocationPicker({ value, lat, lng, onChange }) {
       if (name) { setText(name); emit(name, la, lo); }
     } catch (e) { /* keep coords even if naming fails */ }
   }, [emit, text]);
+  reverseGeocodeRef.current = reverseGeocode;
 
   // Move the marker + recenter, optionally resolving a label from the point.
   const placePin = useCallback((la, lo, { reverse = false, zoom } = {}) => {
@@ -121,8 +124,8 @@ export function LocationPicker({ value, lat, lng, onChange }) {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
     const marker = L.marker(start, { draggable: true, icon: PIN_ICON }).addTo(map);
-    marker.on("dragend", () => { const p = marker.getLatLng(); reverseGeocode(p.lat, p.lng); });
-    map.on("click", (e) => { marker.setLatLng(e.latlng); reverseGeocode(e.latlng.lat, e.latlng.lng); });
+    marker.on("dragend", () => { const p = marker.getLatLng(); reverseGeocodeRef.current(p.lat, p.lng); });
+    map.on("click", (e) => { marker.setLatLng(e.latlng); reverseGeocodeRef.current(e.latlng.lat, e.latlng.lng); });
     mapRef.current = map; markerRef.current = marker;
     // tiles can render blank if the panel sized after init — nudge a reflow
     setTimeout(() => map.invalidateSize(), 60);

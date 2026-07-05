@@ -42,7 +42,7 @@ export const THEMES = {
       "--accent-soft": "oklch(0.92 0.004 250)",
       "--accent-ink": "oklch(0.99 0 0)",
       "--gold": "oklch(0.7 0.05 80)",
-      "--font-display": "'Cormorant Garamond', serif",
+      "--font-display": "'Playfair Display', serif",
       "--font-body": "'Jost', sans-serif",
       "--radius": "0px",
       "--hero-tint": "oklch(0.2 0.005 250 / 0.45)",

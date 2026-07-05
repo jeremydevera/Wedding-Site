@@ -77,7 +77,8 @@ export function RegisterPage() {
   }
 
   if (done) {
-    const site = `${done.subdomain}.celebrately.us`;
+    const safeSub = /^[a-z0-9-]{1,63}$/.test(done.subdomain) ? done.subdomain : "";
+    const site = safeSub ? `${safeSub}.celebrately.us` : "celebrately.us";
     return (
       <div className="signin">
         <div className="signin__pane">

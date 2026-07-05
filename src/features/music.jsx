@@ -36,9 +36,12 @@ function load(i) {
 }
 export function setTracks(tracks) {
   _tracks = tracks || [];
-  if (_st.index >= _tracks.length) _st = { ..._st, index: 0 };
-  if (_tracks.length && _loadedUrl == null) load(0);
-  if (!_tracks.length && _audio) { _audio.pause(); _loadedUrl = null; }
+  if (_st.index >= _tracks.length) { _st = { ..._st, index: 0 }; _loadedUrl = null; }
+  if (_tracks.length) {
+    // Reload when the loaded URL is no longer in the new playlist (playlist replaced).
+    const loadedStillValid = _tracks.some((t) => t.url === _loadedUrl);
+    if (!loadedStillValid) load(_st.index < _tracks.length ? _st.index : 0);
+  } else if (_audio) { _audio.pause(); _loadedUrl = null; }
   _emit();
 }
 export function play() { const a = el(); if (_loadedUrl == null && _tracks[0]) load(0); if (a) a.play().catch(() => {}); }

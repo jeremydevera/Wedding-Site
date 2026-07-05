@@ -27,7 +27,7 @@ export function SuperOverview() {
       const [rsvps, guestbook, quiz] = await Promise.all([cnt("rsvps"), cnt("guestbook"), cnt("quiz_answers")]);
       setByType(bt); setRecent(list.slice(0, 6));
       setM({ clients: list.length, active: list.filter((c) => c.is_active).length, logins: list.filter((c) => c.owner_email).length, rsvps, guestbook, quiz });
-    })();
+    })().catch((e) => console.warn("[superadmin] overview load failed:", e?.message));
   }, []);
 
   const stats = m ? [

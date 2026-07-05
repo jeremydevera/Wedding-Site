@@ -176,6 +176,7 @@ export function QuizPage() {
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState({});
   const [nameErr, setNameErr] = useState("");
+  const [choosing, setChoosing] = useState(false);
 
   const q = quiz[idx];
   const total = quiz.length;
@@ -183,13 +184,15 @@ export function QuizPage() {
 
   function start() {
     if (!name.trim()) { setNameErr("Please enter your name to play."); return; }
-    setStage("playing"); setIdx(0); setAnswers({});
+    setStage("playing"); setIdx(0); setAnswers({}); setChoosing(false);
   }
   function choose(optIdx) {
+    if (choosing) return;
+    setChoosing(true);
     const next = { ...answers, [q.id]: optIdx };
     setAnswers(next);
     setTimeout(() => {
-      if (idx + 1 < total) setIdx(idx + 1);
+      if (idx + 1 < total) { setIdx(idx + 1); setChoosing(false); }
       else finish(next);
     }, 220);
   }
@@ -311,7 +314,7 @@ export function QuizPage() {
           <h2 className="quiz-q__text">{q.q}</h2>
           <div className="quiz-opts">
             {q.options.map((opt, i) => (
-              <button key={i} className={"quiz-opt" + (answers[q.id] === i ? " quiz-opt--on" : "")} onClick={() => choose(i)}>
+              <button key={i} className={"quiz-opt" + (answers[q.id] === i ? " quiz-opt--on" : "")} onClick={() => choose(i)} disabled={choosing}>
                 <span className="quiz-opt__key">{String.fromCharCode(65 + i)}</span>{opt}
               </button>
             ))}

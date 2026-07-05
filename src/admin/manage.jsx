@@ -226,14 +226,19 @@ export function QuestionEditor({ open, question, onClose }) {
     if (!f.q.trim()) { toast("Please enter the question.", "err"); return; }
     const cleanOpts = (isTF ? ["True", "False"] : f.options.map((o) => o.trim())).filter((o, i) => isTF || o);
     if (cleanOpts.length < 2) { toast("Please provide at least two answer options.", "err"); return; }
-    let answer = f.answer;
-    if (answer >= cleanOpts.length) answer = 0;
+    const answerOpt = (f.options[f.answer] || "").trim();
+    const answer = cleanOpts.indexOf(answerOpt) >= 0 ? cleanOpts.indexOf(answerOpt) : 0;
     const payload = { type: f.type, q: f.q.trim(), options: cleanOpts, answer };
     if (question) Store.updateQuizQuestion(question.id, payload);
     else Store.addQuizQuestion(payload);
     // Persist to the database right away (and clear the table's unsaved state) so
     // the edit survives a refresh without a second "Save changes" click.
-    await persistChanges();
+    try {
+      await persistChanges();
+    } catch (e) {
+      toast("Couldn't save — please try again", "err");
+      return;
+    }
     onClose();
   }
 
@@ -1084,10 +1089,10 @@ export function QuizAdmin() {
                   <td>{q.options ? q.options[q.answer] : ""}</td>
                   <td>
                     <div className="row-actions">
-                      <MoveArrows i={i} count={quiz.length} onMove={async (dir) => { Store.moveQuizQuestion(q.id, dir); await persistChanges(); }} />
+                      <MoveArrows i={i} count={quiz.length} onMove={async (dir) => { Store.moveQuizQuestion(q.id, dir); try { await persistChanges(); } catch (e) { Store.moveQuizQuestion(q.id, dir === "up" ? "down" : "up"); toast("Couldn't reorder — please try again", "err"); } }} />
                       <button className="icon-btn" title="View question" onClick={() => setViewing(q)}>{Icon.eye({})}</button>
                       <button className="icon-btn" title="Edit question" onClick={() => openEdit(q)}>{Icon.edit({})}</button>
-                      <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete question?", message: "This removes the question from the quiz.", confirmLabel: "Delete", danger: true }).then(async (ok) => { if (ok) { Store.deleteQuizQuestion(q.id); await persistChanges(); } })}>{Icon.trash({})}</button>
+                      <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => confirmDialog({ title: "Delete question?", message: "This removes the question from the quiz.", confirmLabel: "Delete", danger: true }).then(async (ok) => { if (ok) { Store.deleteQuizQuestion(q.id); try { await persistChanges(); } catch (e) { toast("Couldn't delete — please try again", "err"); } } })}>{Icon.trash({})}</button>
                     </div>
                   </td>
                 </tr>
@@ -1248,7 +1253,12 @@ export function ScheduleEditor({ open, index, item, onClose }) {
     // Persist to the DB right away so the edit survives a refresh (mirrors the
     // quiz editor). persistChanges shows the single "Changes saved" toast — don't
     // add another here, or the user sees two popups.
-    await persistChanges();
+    try {
+      await persistChanges();
+    } catch (e) {
+      toast("Couldn't save — please try again", "err");
+      return;
+    }
     onClose();
   }
 
@@ -1276,7 +1286,7 @@ export function ScheduleAdmin() {
   const [editingIndex, setEditingIndex] = useState(null);
   const openNew = () => { setEditingIndex(null); setEditorOpen(true); };
   const openEdit = (i) => { setEditingIndex(i); setEditorOpen(true); };
-  const doDelete = async (i) => { if (await confirmDialog({ title: "Delete schedule item?", message: "This removes it from the wedding-day timeline.", confirmLabel: "Delete", danger: true })) { Store.updateSchedule(schedule.filter((_, j) => j !== i)); await persistChanges(); } };
+  const doDelete = async (i) => { if (await confirmDialog({ title: "Delete schedule item?", message: "This removes it from the wedding-day timeline.", confirmLabel: "Delete", danger: true })) { Store.updateSchedule(schedule.filter((_, j) => j !== i)); try { await persistChanges(); } catch (e) { toast("Couldn't delete — please try again", "err"); } } };
   const editingItem = editingIndex != null ? schedule[editingIndex] : null;
   return (
     <div className="panel">
@@ -1297,7 +1307,7 @@ export function ScheduleAdmin() {
                 <td style={{ color: "var(--muted)" }}>{item.loc || "—"}</td>
                 <td>
                   <div className="row-actions">
-                    <MoveArrows i={i} count={schedule.length} onMove={async (dir) => { Store.moveSchedule(i, dir); await persistChanges(); }} />
+                    <MoveArrows i={i} count={schedule.length} onMove={async (dir) => { Store.moveSchedule(i, dir); try { await persistChanges(); } catch (e) { Store.moveSchedule(i, dir === "up" ? "down" : "up"); toast("Couldn't reorder — please try again", "err"); } }} />
                     <button className="icon-btn" title="Edit moment" onClick={() => openEdit(i)}>{Icon.edit({})}</button>
                     <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => doDelete(i)}>{Icon.trash({})}</button>
                   </div>
@@ -2785,7 +2795,7 @@ function NotificationBell({ goTab }) {
     const now = Date.now();
     try { localStorage.setItem(key, String(now)); } catch (_) {}
     setSeen(now);
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, key]);
 
   return (
     <div className="notif">
@@ -2968,7 +2978,6 @@ export function AdminApp() {
   // what's saved — mirrors the Supabase settings Save button.
   const snapshot = () => { try { return JSON.stringify(stateToClientRow(Store.get())); } catch (e) { return ""; } };
   const savedRef = useRef(null);
-  useEffect(() => { savedRef.current = snapshot(); }, []);   // baseline once client data is loaded
   const dirty = savedRef.current != null && snapshot() !== savedRef.current;
   const saveChanges = async () => {
     setSaving(true);
@@ -3004,7 +3013,9 @@ export function AdminApp() {
     if (!auth.ready || !auth.session || !clientId) return;
     // owner manages their own client; superadmin manages whatever client site they're on
     if (auth.role === "owner" || auth.role === "superadmin") {
-      loadAdminData();
+      loadAdminData()
+        .then(() => { savedRef.current = snapshot(); })
+        .catch((e) => console.warn("[admin] loadAdminData failed:", e?.message));
       return subscribeAdminRealtime();
     }
   }, [auth.ready, auth.session, auth.role, clientId]);

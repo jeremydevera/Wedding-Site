@@ -102,7 +102,7 @@ export function guestFromRsvp(rsvp) {
   }
   return {
     firstName: first, middleName: middle, lastName: last,
-    allocation: Math.max(1, Number(r.count) || 1),
+    allocation: Math.max(1, headsOf(r)),
     email: r.email || "", notes: "",
   };
 }
