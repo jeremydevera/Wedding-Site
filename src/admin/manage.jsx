@@ -2573,7 +2573,14 @@ export function TrackEditor({ open, track, onClose }) {
         onPick={(key) => setF((p) => ({ ...p, url: key }))}
       />
       <Field label="Cover image" id="trk-art" hint="Shown on the Retro Device player screen. Image, GIF, or MP4 — square works best. Optional; falls back to a themed gradient.">
-        <TrackCoverField value={f.art} onChange={(v) => setF((p) => ({ ...p, art: v || "" }))} />
+        <TrackCoverField value={f.art} onChange={(v) => {
+          const art = v || "";
+          setF((p) => ({ ...p, art }));
+          // Existing track: persist the cover to the DB right away (like the
+          // envelope frame) so it can't be lost by closing without "Save track".
+          // New/draft tracks (no id yet) still save atomically on "Save track".
+          if (track && track.id) { Store.updateTrack(track.id, { art }); Promise.resolve(persistChanges()).catch(() => {}); }
+        }} />
       </Field>
       <div style={{ display: "flex", gap: 12, marginTop: 8, justifyContent: "flex-end" }}>
         <Button variant="ghost" onClick={onClose}>Cancel</Button>
