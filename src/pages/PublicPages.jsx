@@ -482,7 +482,7 @@ export function Home() {
       {/* WELCOME / invitation — RSVP button lives right under this section */}
       {s.theme !== "envelope" && (
       <section className="block" id="home-rsvp">
-        <div className="container container--narrow" style={{ textAlign: "center" }}>
+        <div className="container container--narrow rsvp-cta-inner" style={{ textAlign: "center" }}>
           <div className="divider-mark">{Icon.rings({})}</div>
           <h2 style={{ fontSize: "clamp(28px,4.6vw,44px)", margin: "26px 0 18px" }}>
             {s.inviteTitle}

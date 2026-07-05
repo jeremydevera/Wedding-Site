@@ -68,7 +68,9 @@ export function MusicMount() {
   // Autoplay is opt-out (default on). When off, the engine still has the tracks
   // loaded so the home player works — it just won't start on its own.
   const autoplay = (settings && settings.musicAutoplay) !== false;
-  useEffect(() => { setTracks(playlist || []); }, [playlist]);
+  const playlistKey = JSON.stringify(playlist);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setTracks(playlist || []); }, [playlistKey]);
   useEffect(() => {
     if (!n || !autoplay) return;
     let done = false;

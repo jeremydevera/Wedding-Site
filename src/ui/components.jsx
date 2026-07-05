@@ -228,12 +228,14 @@ export function SectionHead({ eyebrow, title, lead, center, light }) {
 
 // --- Modal ------------------------------------------------------------------
 export function Modal({ open, onClose, children, wide, solid, label = "Dialog" }) {
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   useEffect(() => {
     if (!open) return;
-    const onKey = (e) => { if (e.key === "Escape") onClose && onClose(); };
+    const onKey = (e) => { if (e.key === "Escape") onCloseRef.current && onCloseRef.current(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open]);
   // Scroll-lock as its own effect keyed only on `open` — so it runs once per
   // open/close, not on every parent re-render (onClose is a new fn each render).
   useEffect(() => {
@@ -300,13 +302,15 @@ export function Modal({ open, onClose, children, wide, solid, label = "Dialog" }
 export let _toastFn = null;
 export function ToastHost() {
   const [toasts, setToasts] = useState([]);
+  const timersRef = useRef([]);
   useEffect(() => {
     _toastFn = (msg, kind = "ok") => {
       const id = uid();
       setToasts((t) => [...t, { id, msg, kind }]);
-      setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3200);
+      const timer = setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3200);
+      timersRef.current.push(timer);
     };
-    return () => { _toastFn = null; };
+    return () => { _toastFn = null; timersRef.current.forEach(clearTimeout); timersRef.current = []; };
   }, []);
   // When shown from the admin console, adopt the admin palette/typography
   // (.admin--sa = Mulish + neutral surfaces) so the toast matches the console
@@ -399,8 +403,7 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc }
 
   useEffect(() => {
     if (nat.w) setOff(clamp({ x: (W - dispW) / 2, y: (H - dispH) / 2 }));
-    // eslint-disable-next-line
-  }, [nat.w, nat.h, zoom]);
+  }, [nat.w, nat.h, zoom, aspect]);
 
   function onDown(e) {
     e.preventDefault();
