@@ -1909,7 +1909,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .home-map__addr { min-width: 0; font-size: 14px; color: var(--ink-soft); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; }
 .home-map__name { font-weight: 600; color: var(--ink); font-size: 16px; }
 .home-map__bar--actions { justify-content: center; }
-.home-map__caption { max-width: 900px; margin: 16px auto 0; display: flex; align-items: center; justify-content: center; gap: 12px; text-align: left; }
+.home-map__caption { max-width: 900px; margin: 28px auto 0; padding: 0 16px; display: flex; align-items: center; justify-content: center; gap: 12px; text-align: left; }
 .home-map__caption-addr { color: var(--ink-soft); font-size: 14px; line-height: 1.4; }
 .home-map__actions { display: flex; align-items: center; gap: 10px; flex: none; }
 @media (max-width: 640px) {
