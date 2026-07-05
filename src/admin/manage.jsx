@@ -2072,7 +2072,11 @@ export function SettingsAdmin() {
       {tab === "access" && (<><div className="panel">
         <div className="panel__head"><div className="panel__title">Moderation</div></div>
         <div className="panel__body">
-          <AdminToggle label="Auto-approve photos &amp; videos" desc="When on, guest uploads appear in the gallery instantly. When off, they wait in the Media queue for your approval." checked={f.autoApproveMedia} onChange={(v) => setKey("autoApproveMedia", v)} />
+          {/* Gallery/uploads are globally shelved (roles.js DISABLED_MODULES) — hide the
+              dead moderation toggle so it can't mislead. Reappears when the gallery ships. */}
+          {!DISABLED_MODULES.has("gallery") && (
+            <AdminToggle label="Auto-approve photos &amp; videos" desc="When on, guest uploads appear in the gallery instantly. When off, they wait in the Media queue for your approval." checked={f.autoApproveMedia} onChange={(v) => setKey("autoApproveMedia", v)} />
+          )}
           <AdminToggle label="Auto-approve guestbook messages" desc="When on, messages post immediately. When off, they stay hidden until you approve them in the Guestbook tab." checked={f.autoApproveGuestbook} onChange={(v) => setKey("autoApproveGuestbook", v)} />
         </div>
       </div>
@@ -2093,8 +2097,12 @@ export function SettingsAdmin() {
         <div className="panel__head"><div className="panel__title">Access &amp; Toggles</div></div>
         <div className="panel__body">
           <Field label="Admin password" id="s-pw"><Input id="s-pw" value={f.adminPassword} onChange={set("adminPassword")} /></Field>
-          <AdminToggle label="Allow guest uploads" desc="Master switch for the photo/video upload pages." checked={f.uploadsEnabled} onChange={(v) => setKey("uploadsEnabled", v)} />
-          <AdminToggle label="Show public gallery" desc="Hide the gallery from guests entirely if you prefer." checked={f.galleryEnabled} onChange={(v) => setKey("galleryEnabled", v)} />
+          {/* Guest uploads + public gallery are globally shelved (roles.js DISABLED_MODULES);
+              hide these dead master switches so they can't mislead. Reappear when it ships. */}
+          {!DISABLED_MODULES.has("gallery") && (<>
+            <AdminToggle label="Allow guest uploads" desc="Master switch for the photo/video upload pages." checked={f.uploadsEnabled} onChange={(v) => setKey("uploadsEnabled", v)} />
+            <AdminToggle label="Show public gallery" desc="Hide the gallery from guests entirely if you prefer." checked={f.galleryEnabled} onChange={(v) => setKey("galleryEnabled", v)} />
+          </>)}
           <AdminToggle label="Enable Strict RSVP" desc="Track an invited-guest list with seat allocations, and see who hasn't replied. Adds a Guests tab. Only guests on the list can RSVP, and party size is capped at their seat allocation." checked={f.strictRsvp === true} onChange={(v) => setKey("strictRsvp", v)} />
         </div>
         <SaveFooter />
