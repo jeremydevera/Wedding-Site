@@ -224,7 +224,7 @@ export function EnvelopeHero() {
             </div>
             <div className="inv-l-heart">
               <img src="/assets/invite/p2-heart.webp" alt="Burgundy lace heart" />
-              <span className="inv-heart-text">{heartDate}</span>
+              <span className="inv-heart-text">{(s.heartText || "").trim() || heartDate}</span>
             </div>
             <img className="inv-l-front" src="/assets/invite/p2-envelope-front.png" alt="Olive envelope front pocket" />
             {envRecolorOverlay(s, "front")}
@@ -286,7 +286,7 @@ export function EnvelopeInvite() {
           </div>
           <div className="inv-l-heart">
             <img src="/assets/invite/p2-heart.webp" alt="Burgundy lace heart" />
-            <span className="inv-heart-text">{heartDate}</span>
+            <span className="inv-heart-text">{(s.heartText || "").trim() || heartDate}</span>
           </div>
           <img className="inv-l-front" src="/assets/invite/p2-envelope-front.png" alt="Olive envelope front pocket" />
           {envRecolorOverlay(s, "front")}

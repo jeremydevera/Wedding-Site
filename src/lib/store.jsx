@@ -54,6 +54,7 @@ export const DEFAULT_SETTINGS = {
   envColorCustom: "", // hex for envColor === "custom" (e.g. "#9e6243")
   envMatchSite: true, // site palette follows the envelope color (read as !== false)
   envTitleSize: 5, // envelope cover title size, 1–10 scale; maps to a cqw fraction that scales with the envelope
+  heartText: "", // text inside the envelope heart; blank = the formatted wedding date
   arrangeEnabled: false,
   mapQuery: "Lipa, Batangas, Philippines",
   // Home maps: which venues' maps show on the home page. homeVenueIds is the

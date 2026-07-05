@@ -55,11 +55,16 @@ export function SaveFooter() {
 // Reusable image uploader for admin (hero, story milestones)
 export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", framePreview, defaultPreview, tintStrength, tintGradient, purpose = "misc" }) {
   const { clientId } = useStore();
+  const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const ref = useRef(null);
   const [cropSrc, setCropSrc] = useState(null);
   const [busy, setBusy] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const aspect = (() => { const m = String(ratio).split("/").map((n) => parseFloat(n)); return (m.length === 2 && m[1]) ? m[0] / m[1] : 1; })();
+  // Apply the change AND persist to the DB immediately, so an uploaded/removed
+  // photo can't be lost by forgetting the separate "Save changes" step (the file
+  // is already in R2 — this saves the reference to it). Noop outside admin.
+  const commit = (v) => { onChange(v); if (persistChanges) Promise.resolve(persistChanges()).catch(() => {}); };
   function pick(file) {
     if (!file) return;
     if (!file.type.startsWith("image/")) { toast("Please choose an image file.", "err"); return; }
@@ -76,7 +81,7 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
       const blob = await (await fetch(dataUrl)).blob();
       const file = new File([blob], `image-${Date.now()}.jpg`, { type: blob.type || "image/jpeg" });
       const { key } = await uploadToR2(file, { scope: "owner", purpose }, clientId);
-      onChange(key);
+      commit(key);
     } catch (e) {
       toast("Image upload failed: " + (e && e.message || "error"), "err");
     } finally {
@@ -103,7 +108,7 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
         <div className="imgup__actions">
           <Button variant="ghost" size="sm" disabled={busy} onClick={() => setPickerOpen(true)}>{Icon.upload({})} {busy ? "Uploading…" : (value ? "Replace" : "Add photo")}</Button>
           {value && !busy && <Button variant="ghost" size="sm" onClick={() => setCropSrc(value)}>{Icon.crop({})} Crop</Button>}
-          {value && !busy && <Button variant="ghost" size="sm" onClick={() => onChange("")}>Remove</Button>}
+          {value && !busy && <Button variant="ghost" size="sm" onClick={() => commit("")}>Remove</Button>}
         </div>
         <input ref={ref} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { setPickerOpen(false); pick(e.target.files[0]); }} />
       </div>
@@ -114,7 +119,7 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
         clientId={clientId}
         uploadLabel={value ? "Replace photo" : "Choose a photo"}
         onUploadNew={() => ref.current && ref.current.click()}
-        onPick={(key) => onChange(key)}
+        onPick={(key) => commit(key)}
       />
       <CropModal open={!!cropSrc} src={cropSrc} aspect={aspect} frameSrc={framePreview} onCancel={() => setCropSrc(null)} onApply={applyCrop} />
     </div>
@@ -1873,6 +1878,11 @@ export function SettingsAdmin() {
           <ImageUploadField purpose="frame" label="Photo inside the oval frame" ratio="1 / 1" framePreview="/assets/invite/p2-frame.png" defaultPreview="/assets/invite/frame-video.gif"
             value={f.frameImage} onChange={(v) => setKey("frameImage", v)} />
           <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 10, maxWidth: 360 }}>A square photo of the two of you works best. Leave empty to keep the default animated frame.</p>
+          <div style={{ width: "100%", maxWidth: 360, marginTop: 18, textAlign: "left" }}>
+            <Field label="Heart text" id="s-heart" hint="Shown inside the heart on the envelope. Leave blank to use the wedding date.">
+              <Input id="s-heart" value={f.heartText} onChange={(e) => setKey("heartText", e.target.value)} placeholder="Blank = wedding date (e.g. 19.09.2026)" />
+            </Field>
+          </div>
         </div>
         <SaveFooter />
       </div>
