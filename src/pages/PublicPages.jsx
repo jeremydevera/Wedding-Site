@@ -78,10 +78,6 @@ export function EnvelopeHero() {
   const { settings } = useStore();
   const s = settings;
   const [open, setOpen] = React.useState(false);
-  const heartDate = React.useMemo(() => {
-    const m = /(\d{4})-(\d{2})-(\d{2})/.exec(s.weddingDate || "");
-    return m ? `${m[3]}.${m[2]}.${m[1]}` : s.weddingDateLabel;
-  }, [s.weddingDate, s.weddingDateLabel]);
 
   // first screen = envelope only: lock scroll AND hide the nav until it's opened
   const [ready, setReady] = React.useState(false);
@@ -224,7 +220,7 @@ export function EnvelopeHero() {
             </div>
             <div className="inv-l-heart">
               <img src="/assets/invite/p2-heart.webp" alt="Burgundy lace heart" />
-              <span className="inv-heart-text">{(s.heartText || "").trim() || heartDate}</span>
+              <span className="inv-heart-text">{(s.heartText || "").trim()}</span>
             </div>
             <img className="inv-l-front" src="/assets/invite/p2-envelope-front.png" alt="Olive envelope front pocket" />
             {envRecolorOverlay(s, "front")}
@@ -245,10 +241,6 @@ export function EnvelopeInvite() {
   const { settings } = useStore();
   const s = settings;
   const [open, setOpen] = React.useState(false);
-  const heartDate = React.useMemo(() => {
-    const m = /(\d{4})-(\d{2})-(\d{2})/.exec(s.weddingDate || "");
-    return m ? `${m[3]}.${m[2]}.${m[1]}` : s.weddingDateLabel;
-  }, [s.weddingDate, s.weddingDateLabel]);
 
   return (
     <div className={"inv-stage" + (open ? " is-open" : "")} style={egTintVars(s)}>
@@ -286,7 +278,7 @@ export function EnvelopeInvite() {
           </div>
           <div className="inv-l-heart">
             <img src="/assets/invite/p2-heart.webp" alt="Burgundy lace heart" />
-            <span className="inv-heart-text">{(s.heartText || "").trim() || heartDate}</span>
+            <span className="inv-heart-text">{(s.heartText || "").trim()}</span>
           </div>
           <img className="inv-l-front" src="/assets/invite/p2-envelope-front.png" alt="Olive envelope front pocket" />
           {envRecolorOverlay(s, "front")}

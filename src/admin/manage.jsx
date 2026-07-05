@@ -1879,8 +1879,8 @@ export function SettingsAdmin() {
             value={f.frameImage} onChange={(v) => setKey("frameImage", v)} />
           <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 10, maxWidth: 360 }}>A square photo of the two of you works best. Leave empty to keep the default animated frame.</p>
           <div style={{ width: "100%", maxWidth: 360, marginTop: 18, textAlign: "left" }}>
-            <Field label="Heart text" id="s-heart" hint="Shown inside the heart on the envelope. Leave blank to use the wedding date.">
-              <Input id="s-heart" value={f.heartText} onChange={(e) => setKey("heartText", e.target.value)} placeholder="Blank = wedding date (e.g. 19.09.2026)" />
+            <Field label="Heart text" id="s-heart" hint="Shown inside the heart on the envelope. Leave blank to show no text.">
+              <Input id="s-heart" value={f.heartText} onChange={(e) => setKey("heartText", e.target.value)} placeholder="Blank = no text (e.g. 19.09.2026)" />
             </Field>
           </div>
         </div>
