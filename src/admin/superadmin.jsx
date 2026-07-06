@@ -741,11 +741,6 @@ export function ClientsAdmin() {
         {reqEdit && (
           <div>
             <SectionHead eyebrow="Site request" title={`Edit ${reqEdit.subdomain || "request"}`} />
-            {reqEdit.status === "approved" && (
-              <p style={{ color: "var(--muted)", fontSize: 13, margin: "0 0 12px" }}>
-                This edits the request record only — the live site it created is managed in the Clients tab.
-              </p>
-            )}
             <ApplyWizard
               initial={reqEdit}
               onCancel={() => setReqEdit(null)}
