@@ -112,7 +112,7 @@ export function RegisterPage() {
         </header>
         <div className="signin__center">
           <form className="signin__form" onSubmit={submit} noValidate>
-            <h1 className="signin__title">Create your wedding site</h1>
+            <h1 className="signin__title">Create your event site</h1>
             <p className="signin__sub">Live in minutes. Free to start.</p>
 
             <div className="field-row field-row--2">
@@ -140,7 +140,7 @@ export function RegisterPage() {
             </div>
 
             <div className="signin__field">
-              <label htmlFor="r-date">Wedding date <span style={{ color: "var(--sg-sub)", fontWeight: 400 }}>(optional — you can set it later)</span></label>
+              <label htmlFor="r-date">Event date <span style={{ color: "var(--sg-sub)", fontWeight: 400 }}>(optional — you can set it later)</span></label>
               <input id="r-date" type="datetime-local" value={f.weddingDate} onChange={set("weddingDate")} />
             </div>
 

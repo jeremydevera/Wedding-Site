@@ -245,7 +245,7 @@ export function ApplyWizard({ initial = null, onSave, onCancel }) {
           <Field label="Partner B — first name" id="a-pb"><Input id="a-pb" value={f.partnerB} onChange={set("partnerB")} placeholder="Juliet" /></Field>
         </div>
         <Field label="Your email" id="a-email" hint="We'll reach you here once your site is approved."><Input id="a-email" type="email" value={f.email} onChange={set("email")} placeholder="you@example.com" /></Field>
-        <Field label="Wedding date" id="a-date" hint="Optional — skip it if you haven't picked a date yet.">
+        <Field label="Event date" id="a-date" hint="Optional — skip it if you haven't picked a date yet.">
           <EasyDateInput value={f.weddingDate} onChange={set("weddingDate")} />
         </Field>
         <Field label="Site address" id="a-sub">
