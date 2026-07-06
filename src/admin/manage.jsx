@@ -2384,8 +2384,8 @@ export function HomeAdmin() {
               </div>
               {f.rsvpDeadlineOn !== false && (
                 <div className="field-row field-row--2">
-                  <Field label="RSVP deadline (display text)" id="s-rsvp" hint="Shown on the RSVP page — e.g. “August 15, 2027”"><Input id="s-rsvp" value={f.rsvpDeadline} onChange={set("rsvpDeadline")} /></Field>
                   <Field label="RSVP closes at" id="s-rsvpd" hint="Optional. Set a date/time to auto-close the form."><ClosesAtInput value={f.rsvpDeadlineDate} onChange={(e) => { const v = e.target.value; const patch = { rsvpDeadlineDate: v }; if (!f.rsvpDeadline || f.rsvpDeadline === fmtDeadlineLabel(f.rsvpDeadlineDate)) patch.rsvpDeadline = fmtDeadlineLabel(v); Store.updateSettings(patch); }} /></Field>
+                  <Field label="RSVP deadline (display text)" id="s-rsvp" hint="Shown on the RSVP page — e.g. “August 15, 2027”"><Input id="s-rsvp" value={f.rsvpDeadline} onChange={set("rsvpDeadline")} /></Field>
                 </div>
               )}
               <Field label="Hashtag" id="s-hash"><Input id="s-hash" value={f.hashtag} onChange={set("hashtag")} /></Field>
