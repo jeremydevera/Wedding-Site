@@ -44,6 +44,36 @@ async function requireSuperadmin(SUPABASE_URL, SUPABASE_ANON_KEY, token) {
   return { ok: true, uid };
 }
 
+// Resolve the caller's identity for library scoping. Verifies the bearer token,
+// then reads their role + client_id from profiles. Returns { ok, status } on
+// failure, or { ok:true, uid, role, clientId } — clientId is null for anyone
+// not bound to a client (e.g. a bare 'guest' account). Superadmin sees the whole
+// library; an owner is scoped to their own client's prefix so they can never see
+// another tenant's media.
+async function resolveCaller(SUPABASE_URL, SUPABASE_ANON_KEY, token) {
+  if (!token) return { ok: false, status: 401 };
+  let uid;
+  try {
+    const who = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
+    });
+    if (!who.ok) return { ok: false, status: 401 };
+    const user = await who.json();
+    uid = user && user.id;
+  } catch { return { ok: false, status: 502 }; }
+  if (!uid) return { ok: false, status: 401 };
+  try {
+    const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${uid}&select=role,client_id`, {
+      headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
+    });
+    if (!pr.ok) return { ok: false, status: 502 };
+    const rows = await pr.json();
+    const row = Array.isArray(rows) && rows[0];
+    if (!row) return { ok: false, status: 403 };
+    return { ok: true, uid, role: row.role, clientId: row.client_id || null };
+  } catch { return { ok: false, status: 502 }; }
+}
+
 // Fetch the stringified content of the given client UUIDs. Returns
 // Map<clientId, { subdomain, content }> where content is JSON.stringify of the
 // client's content column (so callers can substring-match a key). Non-UUID ids
@@ -76,19 +106,23 @@ export async function onRequestGet(context) {
   const url = new URL(request.url);
   const usage = url.searchParams.get("usage") === "1";
 
+  // Decide the R2 listing scope from the caller's role. listPrefix === undefined
+  // means "list the whole bucket" and is reachable ONLY by a superadmin; an owner
+  // is always constrained to `${clientId}/` so the MediaPicker can never surface
+  // another tenant's files.
+  let listPrefix;
   if (usage) {
     // Usage annotation reveals which client references each file, so it is
     // superadmin-only (owners using the MediaPicker never pass usage=1).
     const chk = await requireSuperadmin(SUPABASE_URL, SUPABASE_ANON_KEY, token);
     if (!chk.ok) return json({ error: chk.status === 403 ? "forbidden" : "unauthorized" }, chk.status);
   } else {
-    try {
-      const who = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-        headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
-      });
-      if (!who.ok) return json({ error: "unauthorized" }, 401);
-    } catch {
-      return json({ error: "auth check failed" }, 502);
+    const who = await resolveCaller(SUPABASE_URL, SUPABASE_ANON_KEY, token);
+    if (!who.ok) return json({ error: who.status === 403 ? "forbidden" : "unauthorized" }, who.status);
+    if (who.role !== "superadmin") {
+      // Non-superadmin must be an owner bound to a client; scope to that prefix.
+      if (!who.clientId) return json({ error: "forbidden" }, 403);
+      listPrefix = `${who.clientId}/`;
     }
   }
 
@@ -99,7 +133,7 @@ export async function onRequestGet(context) {
   try {
     let cursor;
     do {
-      const page = await env.MEDIA.list({ cursor });
+      const page = await env.MEDIA.list({ cursor, prefix: listPrefix });
       for (const o of page.objects || []) {
         if (o.key.split("/")[2] === type) objects.push(o);
       }

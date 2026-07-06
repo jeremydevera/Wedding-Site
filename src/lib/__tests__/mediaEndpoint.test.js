@@ -5,13 +5,30 @@ import { onRequestGet } from "../../../functions/api/media.js";
 function req(url, headers = {}) { return new Request(url, { headers }); }
 const AUTH = { authorization: "Bearer good-token" };
 
+// MEDIA.list honors `prefix` so owner-scoping is testable; no prefix => whole bucket.
 function envWith(objects, extra = {}) {
-  return { MEDIA: { list: vi.fn().mockResolvedValue({ objects, truncated: false, cursor: undefined }) }, ...extra };
+  return {
+    MEDIA: {
+      list: vi.fn().mockImplementation((opts = {}) => ({
+        objects: opts.prefix ? objects.filter((o) => o.key.startsWith(opts.prefix)) : objects,
+        truncated: false,
+        cursor: undefined,
+      })),
+    },
+    ...extra,
+  };
+}
+
+// Mock the two resolveCaller fetches: /auth/v1/user then profiles(role,client_id).
+function mockCaller(role, clientId = null) {
+  globalThis.fetch = vi.fn()
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "uid-1" }) })
+    .mockResolvedValueOnce({ ok: true, json: async () => [{ role, client_id: clientId }] });
 }
 
 beforeEach(() => {
-  // auth verify → Supabase /auth/v1/user returns ok
-  globalThis.fetch = vi.fn().mockResolvedValue({ ok: true });
+  // default caller = superadmin (sees the whole library)
+  mockCaller("superadmin");
 });
 afterEach(() => { vi.restoreAllMocks(); });
 
@@ -26,7 +43,7 @@ describe("GET /api/media", () => {
     expect(res.status).toBe(503);
   });
 
-  it("lists images from all clients and returns shaped, newest-first items", async () => {
+  it("superadmin lists images from ALL clients, newest-first", async () => {
     const env = envWith([
       { key: "c1/owner/image/hero/aaaaaaaa-old.jpg", size: 10, uploaded: "2026-01-01T00:00:00Z" },
       { key: "c2/owner/image/story/bbbbbbbb-new.jpg", size: 20, uploaded: "2026-06-01T00:00:00Z" },
@@ -38,9 +55,40 @@ describe("GET /api/media", () => {
     expect(body.items).toHaveLength(2); // audio excluded
     expect(body.items.map((i) => i.name)).toEqual(["new.jpg", "old.jpg"]); // newest first
     expect(body.items[0]).toMatchObject({ key: "c2/owner/image/story/bbbbbbbb-new.jpg", size: 20 });
+    // superadmin lists the whole bucket — no prefix constraint
+    expect(env.MEDIA.list).toHaveBeenCalledWith(expect.objectContaining({ prefix: undefined }));
   });
 
-  it("returns audio from all clients when type=audio", async () => {
+  it("owner sees ONLY their own client's images (scoped by prefix)", async () => {
+    mockCaller("owner", "c1");
+    const env = envWith([
+      { key: "c1/owner/image/hero/aaaaaaaa-mine.jpg", size: 10, uploaded: "2026-01-01T00:00:00Z" },
+      { key: "c2/owner/image/story/bbbbbbbb-theirs.jpg", size: 20, uploaded: "2026-06-01T00:00:00Z" },
+    ]);
+    const res = await onRequestGet({ request: req("https://x/api/media?type=image", AUTH), env });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.items).toHaveLength(1);
+    expect(body.items[0].key).toBe("c1/owner/image/hero/aaaaaaaa-mine.jpg");
+    // the other tenant's file must never appear
+    expect(body.items.some((i) => i.key.startsWith("c2/"))).toBe(false);
+    // and the listing was constrained to the owner's prefix
+    expect(env.MEDIA.list).toHaveBeenCalledWith(expect.objectContaining({ prefix: "c1/" }));
+  });
+
+  it("403 when a non-superadmin caller has no client_id (bare guest account)", async () => {
+    mockCaller("guest", null);
+    const res = await onRequestGet({ request: req("https://x/api/media?type=image", AUTH), env: envWith([]) });
+    expect(res.status).toBe(403);
+  });
+
+  it("403 when an owner role has a null client_id", async () => {
+    mockCaller("owner", null);
+    const res = await onRequestGet({ request: req("https://x/api/media?type=image", AUTH), env: envWith([]) });
+    expect(res.status).toBe(403);
+  });
+
+  it("returns audio from all clients when type=audio (superadmin)", async () => {
     const env = envWith([
       { key: "c1/owner/audio/playlist/aaaaaaaa-song.mp3", size: 5, uploaded: "2026-01-01T00:00:00Z" },
       { key: "c2/owner/audio/playlist/bbbbbbbb-track.mp3", size: 8, uploaded: "2026-06-01T00:00:00Z" },
@@ -52,7 +100,7 @@ describe("GET /api/media", () => {
     expect(body.items.map((i) => i.name)).toEqual(["track.mp3", "song.mp3"]);
   });
 
-  it("defaults an unknown type to image", async () => {
+  it("defaults an unknown type to image (superadmin)", async () => {
     const env = envWith([
       { key: "c1/owner/image/hero/aaaaaaaa-photo.jpg", size: 10, uploaded: "2026-01-01T00:00:00Z" },
       { key: "c1/owner/audio/playlist/bbbbbbbb-song.mp3", size: 5, uploaded: "2026-02-01T00:00:00Z" },
@@ -93,7 +141,7 @@ describe("GET /api/media", () => {
     expect(res.status).toBe(403);
   });
 
-  it("follows the cursor when the listing is truncated", async () => {
+  it("follows the cursor when the listing is truncated (superadmin)", async () => {
     const list = vi.fn()
       .mockResolvedValueOnce({ objects: [{ key: "c1/owner/image/a/xxxxxxxx-1.jpg", size: 1, uploaded: "2026-01-01T00:00:00Z" }], truncated: true, cursor: "C1" })
       .mockResolvedValueOnce({ objects: [{ key: "c2/owner/image/a/yyyyyyyy-2.jpg", size: 1, uploaded: "2026-02-01T00:00:00Z" }], truncated: false });
