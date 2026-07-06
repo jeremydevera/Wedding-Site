@@ -472,7 +472,8 @@ export function Home() {
             </p>
             <div style={{ color: "var(--ink-soft)", letterSpacing: ".12em", textTransform: "uppercase", fontSize: 14, margin: "18px 0 26px" }}>{s.weddingDateLabel}</div>
             {s.showCountdown !== false && <Countdown targetIso={s.weddingDate} light />}
-            <div style={{ marginTop: 30 }}>
+            {s.rsvpDeadline && <p style={{ color: "var(--ink-soft)", fontSize: 15, margin: "26px 0 0", letterSpacing: ".04em" }}>Kindly respond by {s.rsvpDeadline}.</p>}
+            <div style={{ marginTop: 22 }}>
               <Button variant="primary" size="lg" onClick={() => go("rsvp")}>{Icon.check({})} Respond now</Button>
             </div>
           </div>
