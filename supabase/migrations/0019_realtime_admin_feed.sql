@@ -11,6 +11,16 @@ begin
   end if;
 end $$;
 
-alter publication supabase_realtime add table public.rsvps;
-alter publication supabase_realtime add table public.guestbook;
-alter publication supabase_realtime add table public.quiz_answers;
+-- Idempotent: add each table only if it exists and isn't already published, so a
+-- re-apply or a fresh rebuild never aborts with "relation is already member of
+-- publication" (the tables may already be published via the dashboard toggle).
+do $$
+declare t text;
+begin
+  foreach t in array array['rsvps','guestbook','quiz_answers'] loop
+    if exists (select 1 from information_schema.tables where table_schema = 'public' and table_name = t)
+       and not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t) then
+      execute format('alter publication supabase_realtime add table public.%I', t);
+    end if;
+  end loop;
+end $$;
