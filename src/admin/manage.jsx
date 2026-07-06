@@ -2087,9 +2087,13 @@ export function SettingsAdmin() {
           {/* Per-section grants: each one opens that content area to the couple's
               owner account (normally superadmin-only). Stored in settings.ownerEdit. */}
           <AdminToggle label="Edit Home" desc="Let the owner edit the Home tab — couple & event info and the invitation section." checked={(f.ownerEdit || {}).home === true} onChange={(v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), home: v })} />
+          <AdminToggle label="Edit Google Maps" desc="Let the owner edit the Google Maps folder inside the Home tab (home-page map + its pin)." checked={(f.ownerEdit || {}).maps === true} onChange={(v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), maps: v })} />
+          <AdminToggle label="Edit Timeline" desc="Let the owner edit the Timeline folder inside the Home tab (the home-page schedule glimpse layout)." checked={(f.ownerEdit || {}).timeline === true} onChange={(v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), timeline: v })} />
+          <AdminToggle label="Edit Attire" desc="Let the owner edit the Attire folder inside the Home tab (dress-code guide)." checked={(f.ownerEdit || {}).attire === true} onChange={(v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), attire: v })} />
+          <AdminToggle label="Edit Music playlist" desc="Let the owner edit the Music playlist folder inside the Home tab (home-page player + tracks)." checked={(f.ownerEdit || {}).music === true} onChange={(v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), music: v })} />
+          <AdminToggle label="Edit Entourage" desc="Let the owner edit the Entourage folder inside the Home tab (wedding party groups & names)." checked={(f.ownerEdit || {}).entourage === true} onChange={(v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), entourage: v })} />
           <AdminToggle label="Edit Schedule" desc="Let the owner edit the Schedule tab (wedding-day timeline guests see)." checked={(f.ownerEdit || {}).schedule === true} onChange={(v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), schedule: v })} />
           <AdminToggle label="Edit Venue &amp; Map" desc="Let the owner edit the Venue & Map tab (venue cards, map, directions)." checked={(f.ownerEdit || {}).venue === true} onChange={(v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), venue: v })} />
-          <AdminToggle label="Edit Entourage" desc="Let the owner edit the Entourage folder inside the Home tab (wedding party groups & names)." checked={(f.ownerEdit || {}).entourage === true} onChange={(v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), entourage: v })} />
         </div>
       </div>
 
@@ -2157,25 +2161,24 @@ export function HomeAdmin() {
   // flip a home-section visibility flag and save immediately (auto-save tabs)
   const toggleShow = async (k, v) => { Store.updateSettings({ [k]: v }); await persistChanges(); };
   const isSuper = auth.role === "superadmin";
-  // Folder sub-tabs. Maps/Timeline/Attire/Music are superadmin-managed content.
-  // Couple & Event + Invitation show for superadmin or an owner with the "home"
-  // grant; Entourage for superadmin or the "entourage" grant (settings.ownerEdit,
-  // flipped in Settings → Access). An owner reaches this tab at all only when
-  // one of those grants is on (see visibleAdminTabs).
+  // Folder sub-tabs. Each folder shows for the superadmin, or for an owner the
+  // superadmin granted that folder in Settings → Access (settings.ownerEdit):
+  //   home → Couple & Event + Invitation · maps · timeline · attire · music ·
+  //   entourage. An owner reaches this tab at all only when at least one of
+  //   these grants is on (see visibleAdminTabs / HOME_EDIT_KEYS).
   const grants = settings.ownerEdit || {};
-  const canHome = isSuper || grants.home === true;
-  const canEntourage = isSuper || grants.entourage === true;
+  const can = (k) => isSuper || grants[k] === true;
+  const canHome = can("home");
+  const canEntourage = can("entourage");
   const TABS = [
     ...(canHome ? [
       { k: "couple", label: "Couple & Event", icon: "rings" },
       { k: "invite", label: "Invitation", icon: "home" },
     ] : []),
-    ...(isSuper ? [
-      { k: "maps", label: "Google Maps", icon: "pin" },
-      { k: "timeline", label: "Timeline", icon: "calendar" },
-      { k: "attire", label: "Attire", icon: "book" },
-      { k: "music", label: "Music playlist", icon: "play" },
-    ] : []),
+    ...(can("maps") ? [{ k: "maps", label: "Google Maps", icon: "pin" }] : []),
+    ...(can("timeline") ? [{ k: "timeline", label: "Timeline", icon: "calendar" }] : []),
+    ...(can("attire") ? [{ k: "attire", label: "Attire", icon: "book" }] : []),
+    ...(can("music") ? [{ k: "music", label: "Music playlist", icon: "play" }] : []),
     ...(canEntourage ? [{ k: "entourage", label: "Entourage", icon: "user" }] : []),
   ];
   const [tab, setTab] = useState("couple");
@@ -2240,7 +2243,7 @@ export function HomeAdmin() {
         </>
       )}
 
-      {isSuper && active === "timeline" && (
+      {can("timeline") && active === "timeline" && (
         <div className="panel">
           <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Home timeline</div><HeadSwitch label="Show timeline on the home page" checked={f.showTimeline !== false} onChange={(v) => toggleShow("showTimeline", v)} /></div>
           <div className="panel__body">
@@ -2267,7 +2270,7 @@ export function HomeAdmin() {
         </div>
       )}
 
-      {isSuper && active === "music" && (
+      {can("music") && active === "music" && (
         <>
           <div className="panel">
             <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Music player</div><HeadSwitch label="Show music player on the home page" checked={f.showMusic !== false} onChange={(v) => toggleShow("showMusic", v)} /></div>
@@ -2306,12 +2309,12 @@ export function HomeAdmin() {
           <EntourageAdmin headRight={<HeadSwitch label="Show entourage on the home page" checked={f.showEntourage !== false} onChange={(v) => toggleShow("showEntourage", v)} />} />
         </>
       )}
-      {isSuper && active === "attire" && (
+      {can("attire") && active === "attire" && (
         <>
           <AttireAdmin headRight={<HeadSwitch label="Show attire guide on the home page" checked={f.showAttire !== false} onChange={(v) => toggleShow("showAttire", v)} />} />
         </>
       )}
-      {isSuper && active === "maps" && (
+      {can("maps") && active === "maps" && (
         <>
           <VenueAdmin section="home" headRight={<HeadSwitch label="Show map on the home page" checked={f.showMap !== false} onChange={(v) => toggleShow("showMap", v)} />} />
         </>

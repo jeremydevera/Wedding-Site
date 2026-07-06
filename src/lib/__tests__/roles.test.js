@@ -32,11 +32,16 @@ describe("visibleAdminTabs", () => {
     expect(keys({ home: true })).not.toContain("schedule");
     expect(keys({ schedule: true })).toContain("schedule");
     expect(keys({ venue: true })).toContain("venue");
-    // entourage lives inside the Home tab, so that grant exposes Home too
+    // any Home-folder grant (entourage/maps/timeline/attire/music) exposes Home
     expect(keys({ entourage: true })).toContain("home");
+    expect(keys({ maps: true })).toContain("home");
+    expect(keys({ timeline: true })).toContain("home");
+    expect(keys({ attire: true })).toContain("home");
+    expect(keys({ music: true })).toContain("home");
     // grants never open the superadmin-only Settings/Media tabs
-    expect(keys({ home: true, schedule: true, venue: true, entourage: true })).not.toContain("settings");
-    expect(keys({ home: true, schedule: true, venue: true, entourage: true })).not.toContain("media");
+    const all = { home: true, maps: true, timeline: true, attire: true, music: true, entourage: true, schedule: true, venue: true };
+    expect(keys(all)).not.toContain("settings");
+    expect(keys(all)).not.toContain("media");
   });
 });
 

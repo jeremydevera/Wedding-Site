@@ -20,12 +20,14 @@ export function visibleAdminTabs(role, allTabs, ownerEdit) {
   }
   if (role === "owner") {
     // Per-client grants (settings.ownerEdit, flipped by the superadmin in
-    // Settings → Access) open individual content tabs to the owner. An
-    // entourage grant exposes the Home tab too — the Entourage folder lives
-    // inside it (HomeAdmin gates each folder individually).
+    // Settings → Access) open individual content tabs to the owner. Any Home
+    // sub-folder grant (couple&event/invitation via "home", plus the standalone
+    // maps/timeline/attire/music/entourage folders) exposes the Home tab — the
+    // grant then decides which folders show inside it (HomeAdmin gates each).
     const g = ownerEdit || {};
+    const homeGranted = HOME_EDIT_KEYS.some((k) => g[k] === true);
     const granted = new Set([
-      ...(g.home === true || g.entourage === true ? ["home"] : []),
+      ...(homeGranted ? ["home"] : []),
       ...(g.schedule === true ? ["schedule"] : []),
       ...(g.venue === true ? ["venue"] : []),
     ]);
@@ -33,6 +35,11 @@ export function visibleAdminTabs(role, allTabs, ownerEdit) {
   }
   return [];
 }
+
+// Grant keys for the folders that live inside the Home tab — any one exposes
+// the Home tab to the owner (see visibleAdminTabs + HomeAdmin). Keep in sync
+// with the "Owner editing" toggles in Settings → Access.
+export const HOME_EDIT_KEYS = ["home", "maps", "timeline", "attire", "music", "entourage"];
 
 export function canEnterAdmin(profile, currentClientId) {
   if (!profile) return false;
