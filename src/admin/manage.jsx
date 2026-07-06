@@ -2238,18 +2238,34 @@ export function SettingsAdmin() {
 // swap that eats the first click), but hide the placeholder text while the
 // field is empty and unfocused by making its text transparent. On focus (click)
 // or once it has a value, the text shows normally.
-function DateTimeInput({ id, value, onChange }) {
-  const [focused, setFocused] = useState(false);
-  const hidePlaceholder = !value && !focused;
-  // Open the native calendar/time picker on click/focus — otherwise it only
-  // opens from the tiny calendar icon. showPicker() needs a user gesture, so
-  // fire it from the click; guard for older browsers that lack it.
-  const openPicker = (e) => { const el = e.currentTarget; try { el.showPicker && el.showPicker(); } catch (_) {} };
+function DateTimeInput({ id, value, onChange, placeholder = "" }) {
+  const ref = useRef(null);
+  const fmt = (v) => {
+    if (!v) return "";
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? v : d.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+  };
+  const openPicker = () => {
+    const el = ref.current;
+    if (!el) return;
+    try { el.showPicker ? el.showPicker() : el.focus(); } catch (_) { el.focus(); }
+  };
   return (
-    <Input id={id} type="datetime-local" value={value || ""} onChange={onChange}
-      onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-      onClick={openPicker} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") openPicker(e); }}
-      style={hidePlaceholder ? { color: "transparent" } : undefined} />
+    <div style={{ position: "relative" }}>
+      <Input id={id} readOnly value={fmt(value)} placeholder={placeholder}
+        onClick={openPicker} style={{ cursor: "pointer", paddingRight: value ? 66 : 42 }} />
+      <button type="button" onClick={openPicker} aria-label="Pick a date & time"
+        style={{ position: "absolute", top: "50%", right: 8, transform: "translateY(-50%)", display: "grid", placeItems: "center", width: 30, height: 30, background: "none", border: "none", color: "var(--muted)", cursor: "pointer" }}>
+        {Icon.calendar({ style: { width: 18, height: 18 } })}
+      </button>
+      {value && (
+        <button type="button" onClick={() => onChange({ target: { value: "" } })} aria-label="Clear date"
+          style={{ position: "absolute", top: "50%", right: 38, transform: "translateY(-50%)", display: "grid", placeItems: "center", width: 26, height: 26, background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 20, lineHeight: 1 }}>&times;</button>
+      )}
+      {/* real native picker, visually hidden — opened via showPicker() above */}
+      <input ref={ref} type="datetime-local" value={value || ""} onChange={onChange} tabIndex={-1} aria-hidden="true"
+        style={{ position: "absolute", left: 12, bottom: 0, width: 1, height: 1, opacity: 0, pointerEvents: "none" }} />
+    </div>
   );
 }
 
