@@ -456,8 +456,8 @@ export function Home() {
           <h1 className="hero__names">
             {s.partnerA}<span className="amp">&amp;</span>{s.partnerB}
           </h1>
-          <div className="hero__date">{s.weddingDateLabel}</div>
-          {s.showCountdown !== false && <Countdown targetIso={s.weddingDate} />}
+          {s.weddingDateOn !== false && s.weddingDateLabel && <div className="hero__date">{s.weddingDateLabel}</div>}
+          {s.weddingDateOn !== false && s.showCountdown !== false && <Countdown targetIso={s.weddingDate} />}
           <p className="hero__welcome">{s.welcome}</p>
         </div>
         <div className="hero__scroll">Scroll</div>
@@ -479,8 +479,8 @@ export function Home() {
             <p style={{ color: "var(--ink-soft)", fontSize: 19, margin: "0 0 10px" }}>
               {s.inviteBody}
             </p>
-            <div style={{ color: "var(--ink-soft)", letterSpacing: ".12em", textTransform: "uppercase", fontSize: 14, margin: "18px 0 26px" }}>{s.weddingDateLabel}</div>
-            {s.showCountdown !== false && <Countdown targetIso={s.weddingDate} light />}
+            {s.weddingDateOn !== false && s.weddingDateLabel && <div style={{ color: "var(--ink-soft)", letterSpacing: ".12em", textTransform: "uppercase", fontSize: 14, margin: "18px 0 26px" }}>{s.weddingDateLabel}</div>}
+            {s.weddingDateOn !== false && s.showCountdown !== false && <Countdown targetIso={s.weddingDate} light />}
             {s.rsvpDeadlineOn !== false && s.rsvpDeadline && <p style={{ color: "var(--ink-soft)", fontSize: 15, margin: "26px 0 0", letterSpacing: ".04em" }}>Kindly respond by {s.rsvpDeadline}.</p>}
             <div style={{ marginTop: 22 }}>
               <Button variant="primary" size="lg" onClick={() => go("rsvp")}>{Icon.check({})} Respond now</Button>
@@ -652,7 +652,7 @@ export function DetailsPage() {
   const [open, setOpen] = useState(0);
   return (
     <div className="fade-up">
-      <PageHero eyebrow="Wedding Details" title="Everything you need to know" lead={`We can't wait to celebrate with you on ${s.weddingDateLabel}.`} />
+      <PageHero eyebrow="Wedding Details" title="Everything you need to know" lead={(s.weddingDateOn !== false && s.weddingDateLabel) ? `We can't wait to celebrate with you on ${s.weddingDateLabel}.` : "We can't wait to celebrate with you."} />
       <section className="block" style={{ paddingTop: 20 }}>
         <div className="container">
           <div className="info-grid info-grid--2">

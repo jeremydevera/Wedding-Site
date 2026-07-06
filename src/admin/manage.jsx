@@ -2302,14 +2302,20 @@ export function HomeAdmin() {
                 <Field label="Partner A" id="s-a"><Input id="s-a" value={f.partnerA} onChange={set("partnerA")} /></Field>
                 <Field label="Partner B" id="s-b"><Input id="s-b" value={f.partnerB} onChange={set("partnerB")} /></Field>
               </div>
-              <div className="field-row field-row--2">
-                <Field label="Wedding date & time" hint="Drives the countdown" id="s-date"><Input id="s-date" type="datetime-local" value={f.weddingDate} onChange={set("weddingDate")} /></Field>
-                <Field label="Display date label" id="s-datel"><Input id="s-datel" value={f.weddingDateLabel} onChange={set("weddingDateLabel")} /></Field>
-              </div>
               {/* narrow wrapper so the switch sits next to its label, not far across the wide panel */}
               <div style={{ maxWidth: 460 }}>
-                <AdminToggle noRule label="Show countdown timer" desc="The live days/hours/minutes counter on the home page. Turn off to hide it." checked={f.showCountdown !== false} onChange={(v) => Store.updateSettings({ showCountdown: v })} />
+                <AdminToggle noRule label="Show wedding date & countdown" desc="Show the wedding date and the countdown on the site. Turn off to hide the date and counter entirely." checked={f.weddingDateOn !== false} onChange={(v) => Store.updateSettings({ weddingDateOn: v })} />
               </div>
+              {f.weddingDateOn !== false && (<>
+                <div className="field-row field-row--2">
+                  <Field label="Wedding date & time" hint="Drives the countdown. Leave blank to hide just the counter." id="s-date"><Input id="s-date" type="datetime-local" value={f.weddingDate} onChange={set("weddingDate")} /></Field>
+                  <Field label="Display date label" id="s-datel" hint="The date text shown on the site. Leave blank to hide it."><Input id="s-datel" value={f.weddingDateLabel} onChange={set("weddingDateLabel")} /></Field>
+                </div>
+                {/* narrow wrapper so the switch sits next to its label, not far across the wide panel */}
+                <div style={{ maxWidth: 460 }}>
+                  <AdminToggle noRule label="Show countdown timer" desc="The live days/hours/minutes counter. Turn off to keep the date but hide the counter." checked={f.showCountdown !== false} onChange={(v) => Store.updateSettings({ showCountdown: v })} />
+                </div>
+              </>)}
               <Field label="Welcome message" id="s-welcome"><Textarea id="s-welcome" rows={3} value={f.welcome} onChange={set("welcome")} /></Field>
               {/* narrow wrapper so the switch sits next to its label, not far across the wide panel */}
               <div style={{ maxWidth: 460 }}>
