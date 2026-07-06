@@ -1021,9 +1021,8 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .owner-edit__grouptitle svg { color: var(--accent); }
 .owner-edit__all { background: none; border: 1px solid var(--line); border-radius: 999px; padding: 3px 11px; font: inherit; font-size: 12px; font-weight: 600; color: var(--accent); cursor: pointer; }
 .owner-edit__all:hover { background: var(--surface-2); border-color: var(--accent); }
-/* Folder toggles sit indented under the Home group heading, with a rule to
-   read as "inside Home". */
-.owner-edit__items { padding-left: 18px; border-left: 2px solid var(--line); margin-left: 4px; }
+/* Folder toggles sit indented under the Home group heading. */
+.owner-edit__items { padding-left: 18px; }
 .form-rows { display: block; }
 .form-row { display: grid; grid-template-columns: 1fr; gap: 8px; padding: 22px 0; border-bottom: 1px solid var(--line); }
 .form-row:first-child { padding-top: 6px; }
