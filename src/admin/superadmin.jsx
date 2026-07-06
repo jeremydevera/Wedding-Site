@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabase.js";
 import { createOwner, updateOwnerEmail, deleteOwner } from "@/lib/auth.js";
 import { THEMES } from "@/themes";
@@ -364,11 +365,16 @@ export function ClientsAdmin() {
   return (
     <div className="sa">
       {/* Blocking overlay for every superadmin mutation (add/edit/delete/bulk) —
-          slow data must always show progress. Reuses the admin saving overlay. */}
-      {busy && (
-        <div className="admin-saving" role="status" aria-live="polite" aria-label={busyLabel || "Working"}>
-          <div className="admin-saving__box"><span className="admin-saving__spin" aria-hidden="true" />{busyLabel || "Working…"}</div>
-        </div>
+          slow data must always show progress. Portaled to <body> so it paints
+          ABOVE the Edit-client Modal (also portaled, z80) — otherwise it was
+          trapped behind the modal on save and looked like nothing happened. */}
+      {busy && createPortal(
+        <div className="admin--sa">
+          <div className="admin-saving" role="status" aria-live="polite" aria-label={busyLabel || "Working"}>
+            <div className="admin-saving__box"><span className="admin-saving__spin" aria-hidden="true" />{busyLabel || "Working…"}</div>
+          </div>
+        </div>,
+        document.body,
       )}
       {/* Folder-style sub-tabs — same design as the client admin's sub-folders.
           "Add client" is the toolbar button on the list, not a tab. */}
@@ -652,7 +658,7 @@ export function ClientsAdmin() {
             </div>
             <div className="form-foot">
               <Button type="button" variant="ghost" onClick={() => setView("list")}>Cancel</Button>
-              <Button type="submit" variant="primary" disabled={busy}>Create client</Button>
+              <Button type="submit" variant="primary" disabled={busy}>{busy ? "Creating…" : "Create client"}</Button>
             </div>
           </form>
         </div>
@@ -775,7 +781,7 @@ export function ClientsAdmin() {
 
               <div className="form-foot">
                 <Button type="button" variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
-                <Button type="submit" variant="primary" disabled={busy}>Save changes</Button>
+                <Button type="submit" variant="primary" disabled={busy}>{busy ? "Saving…" : "Save changes"}</Button>
               </div>
             </form>
           </div>
