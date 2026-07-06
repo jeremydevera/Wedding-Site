@@ -1632,6 +1632,7 @@ export function VenueAdmin({ section = "editor", headRight = null }) {
         onPatch={(patch) => patchVenue(editVi, patch)}
         onSave={persistChanges}
         onClose={() => setEditVi(null)}
+        onRemoveNoPersist={() => { commit(list.filter((_, idx) => idx !== editVi)); setEditVi(null); }}
         onDiscard={async () => { commit(list.filter((_, idx) => idx !== editVi)); setEditVi(null); await persistChanges(); }}
       />
     </div>
@@ -1640,7 +1641,11 @@ export function VenueAdmin({ section = "editor", headRight = null }) {
 
 // Add/edit one venue in a modal: name, address, map, and its tiles (edited
 // inline). Edits apply live to the store; the list's Save changes persists.
-function VenueEditorModal({ open, venue, onPatch, onSave, onClose, onDiscard }) {
+function VenueEditorModal({ open, venue, onPatch, onSave, onClose, onDiscard, onRemoveNoPersist }) {
+  // Snapshot the venue when the modal opens so Cancel / closing can revert the
+  // live edits (edits apply to the store as you type; only Save persists to DB).
+  const snapRef = React.useRef(null);
+  React.useEffect(() => { if (open && venue) snapRef.current = JSON.parse(JSON.stringify(venue)); }, [open, venue && venue.id]);
   if (!open || !venue) return null;
   const cards = venue.cards || [];
   const setCards = (cs) => onPatch({ cards: cs });
@@ -1662,8 +1667,17 @@ function VenueEditorModal({ open, venue, onPatch, onSave, onClose, onDiscard }) 
     if (onSave) await onSave();
     onClose();
   };
+  // Cancel / close-without-save: revert the live edits to the snapshot (or remove
+  // the location entirely if it was a brand-new, never-saved one). Never persists.
+  const cancel = () => {
+    const orig = snapRef.current;
+    const has = orig && ((orig.name || "").trim() || (orig.address || "").trim() || (orig.mapQuery || "").trim() || orig.mapLat != null || (orig.cards || []).some((c) => (c.t || "").trim() || (c.d || "").trim()));
+    if (!has) { onRemoveNoPersist(); return; }
+    onPatch({ name: orig.name, address: orig.address, mapQuery: orig.mapQuery, mapLat: orig.mapLat, mapLng: orig.mapLng, cards: orig.cards });
+    onClose();
+  };
   return (
-    <Modal open={open} onClose={finish} label="Location">
+    <Modal open={open} onClose={cancel} label="Location">
       <SectionHead eyebrow="Venue & Map" title={venue.name || "Location"} />
       <Field label="Location name" required id="v-name" hint="e.g. Ceremony — St. Mary's Church"><Input id="v-name" value={venue.name} onChange={(e) => onPatch({ name: e.target.value })} /></Field>
       <Field label="Address" required id="v-addr"><Input id="v-addr" value={venue.address} onChange={(e) => onPatch({ address: e.target.value })} /></Field>
@@ -1695,7 +1709,8 @@ function VenueEditorModal({ open, venue, onPatch, onSave, onClose, onDiscard }) 
       </div>
 
       <div style={{ display: "flex", gap: 12, marginTop: 16, justifyContent: "flex-end" }}>
-        <Button variant="primary" onClick={finish}>Done</Button>
+        <Button variant="ghost" onClick={cancel}>Cancel</Button>
+        <Button variant="primary" onClick={finish}>Save</Button>
       </div>
     </Modal>
   );
