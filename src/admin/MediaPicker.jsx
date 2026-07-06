@@ -6,6 +6,7 @@ import React, { useEffect, useState } from "react";
 import { Modal, Button } from "@/ui/components.jsx";
 import { mediaUrl } from "@/lib/media.js";
 import { listMedia } from "@/lib/api.js";
+import { useStore } from "@/lib/store.jsx";
 
 export function MediaLibrary({ type, clientId, onPick }) {
   const [state, setState] = useState({ status: "loading", items: [], error: "" });
@@ -50,15 +51,22 @@ export function MediaLibrary({ type, clientId, onPick }) {
 // button on the "Upload new" tab (the caller triggers its own file input / crop).
 // uploading + uploadLabel let the caller reflect upload progress in this modal.
 export function MediaPickerModal({ open, onClose, type, clientId, onPick, onUploadNew, uploading, uploadLabel }) {
+  const { auth } = useStore();
+  // "Choose from library" reuses R2 assets — a superadmin-only tool. Clients
+  // (owners) only ever upload their own file, so the library tab is hidden for
+  // them and the modal is upload-only.
+  const canLibrary = auth?.role === "superadmin";
   const [tab, setTab] = useState("upload");
   useEffect(() => { if (open) setTab("upload"); }, [open]);
   return (
     <Modal open={open} onClose={onClose} label="Media">
-      <div className="medialib__tabs" role="tablist">
-        <button type="button" role="tab" aria-selected={tab === "upload"} className={"medialib__tab" + (tab === "upload" ? " is-on" : "")} onClick={() => setTab("upload")}>Upload new</button>
-        <button type="button" role="tab" aria-selected={tab === "library"} className={"medialib__tab" + (tab === "library" ? " is-on" : "")} onClick={() => setTab("library")}>Choose from library</button>
-      </div>
-      {tab === "upload" ? (
+      {canLibrary && (
+        <div className="medialib__tabs" role="tablist">
+          <button type="button" role="tab" aria-selected={tab === "upload"} className={"medialib__tab" + (tab === "upload" ? " is-on" : "")} onClick={() => setTab("upload")}>Upload new</button>
+          <button type="button" role="tab" aria-selected={tab === "library"} className={"medialib__tab" + (tab === "library" ? " is-on" : "")} onClick={() => setTab("library")}>Choose from library</button>
+        </div>
+      )}
+      {(!canLibrary || tab === "upload") ? (
         <div className="medialib__upload">
           <Button variant="primary" disabled={uploading} onClick={onUploadNew}>{uploading ? "Uploading…" : (uploadLabel || "Choose a file")}</Button>
           <p className="medialib__msg">Pick a file from your device.</p>
