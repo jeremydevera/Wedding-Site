@@ -3,11 +3,14 @@ import { supabase } from "@/lib/supabase.js";
 import { createOwner, updateOwnerEmail, deleteOwner } from "@/lib/auth.js";
 import { THEMES } from "@/themes";
 import { themesForEvent } from "@/config/eventTypes.js";
-import { moduleLabel } from "@/lib/roles.js";
+import { moduleLabel, DISABLED_MODULES } from "@/lib/roles.js";
 import { PLATFORM_DOMAIN, clientUrl, isValidSubdomain } from "@/config/site.js"; // platform config → src/config/site.js
 import { Button, confirmDialog, Field, Icon, Input, Modal, Pager, SectionHead, Select, Textarea, toast, usePaged } from "@/ui/components.jsx";
 import { listMedia, deleteFromR2, listSiteRequests, approveSiteRequest, setSiteRequestStatus, updateSiteRequest, deleteSiteRequest } from "@/lib/api.js";
 import { ApplyWizard } from "@/admin/apply.jsx";
+// AdminToggle is a hoisted export; manage.jsx already imports from here, so this
+// completes a function-only import cycle that ESM resolves safely (used at render).
+import { AdminToggle } from "@/admin/manage.jsx";
 import { fileNameFromKey } from "@/lib/mediaLibrary.js";
 import { mediaUrl } from "@/lib/media.js";
 const { useState, useEffect, useRef } = React;
@@ -112,6 +115,7 @@ export function ClientsAdmin() {
   const [form, setForm] = useState({ subdomain: "", event_type: "wedding", template_key: "classic", ownerEmail: "", ownerPassword: "", note: "" });
   const [editing, setEditing] = useState(null);
   const [editForm, setEditForm] = useState({ subdomain: "", ownerEmail: "", ownerPassword: "", modules: {}, note: "" });
+  const [editTab, setEditTab] = useState("design"); // Edit-client modal: design | access
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState("");
   const [requests, setRequests] = useState([]);     // prospect intake (/apply) awaiting approval
@@ -215,8 +219,24 @@ export function ClientsAdmin() {
   }
 
   function openEdit(c) {
+    const ct = c.content || {};
     setEditing(c);
-    setEditForm({ subdomain: c.subdomain, ownerEmail: c.owner_email || "", ownerPassword: "", modules: Object.fromEntries(MODULES.map((m) => [m, c.content?.modules?.[m] !== false])), note: notes[c.id] || "" });
+    setEditTab("design");
+    // Load the identity fields PLUS the client's access/feature settings (stored in
+    // content JSON) so the Access tab mirrors the client's own Admin → Settings.
+    // Absent keys fall back to the same defaults the client admin uses.
+    setEditForm({
+      subdomain: c.subdomain, ownerEmail: c.owner_email || "", ownerPassword: "",
+      modules: Object.fromEntries(MODULES.map((m) => [m, ct.modules?.[m] !== false])),
+      note: notes[c.id] || "",
+      autoApproveMedia: ct.autoApproveMedia !== false,
+      autoApproveGuestbook: ct.autoApproveGuestbook !== false,
+      uploadsEnabled: ct.uploadsEnabled !== false,
+      galleryEnabled: ct.galleryEnabled !== false,
+      strictRsvp: ct.strictRsvp === true,
+      adminPassword: ct.adminPassword || "wedding",
+      ownerEdit: { ...(ct.ownerEdit || {}) },
+    });
     // renders as a Modal over the list — no page swap
   }
   async function saveEdit(e) {
@@ -230,7 +250,19 @@ export function ClientsAdmin() {
       if (error) { setBusy(false); return toast("Save failed: " + error.message); }
     }
     {
-      const { error } = await supabase.from("clients").update({ content: { ...(editing.content || {}), modules: editForm.modules } }).eq("id", id);
+      // Persist modules + the Access-tab settings back into the client's content JSON.
+      const content = {
+        ...(editing.content || {}),
+        modules: editForm.modules,
+        autoApproveMedia: editForm.autoApproveMedia,
+        autoApproveGuestbook: editForm.autoApproveGuestbook,
+        uploadsEnabled: editForm.uploadsEnabled,
+        galleryEnabled: editForm.galleryEnabled,
+        strictRsvp: editForm.strictRsvp,
+        adminPassword: editForm.adminPassword,
+        ownerEdit: editForm.ownerEdit || {},
+      };
+      const { error } = await supabase.from("clients").update({ content }).eq("id", id);
       if (error) { setBusy(false); return toast("Save failed: " + error.message); }
     }
     try { await saveNote(id, editForm.note); } catch (_) { /* note is best-effort */ }
@@ -598,66 +630,129 @@ export function ClientsAdmin() {
         </div>
       )}
 
-      <Modal open={!!editing} onClose={() => setEditing(null)} label="Edit client">
-        {editing && (
-        <div>
-          <SectionHead eyebrow="Client" title={`Edit ${editing.subdomain}`} />
-          <form onSubmit={saveEdit} className="form-rows">
-            <div className="form-row">
-              <div className="form-row__head">
-                <div className="form-row__label">Project</div>
-                <div className="form-row__desc">The client's subdomain.</div>
-              </div>
-              <div className="form-row__fields">
-                <Field label="Subdomain" id="e-sub"><Input id="e-sub" value={editForm.subdomain} onChange={(e) => setEditForm((f) => ({ ...f, subdomain: e.target.value }))} /></Field>
-              </div>
+      <Modal open={!!editing} onClose={() => setEditing(null)} label="Edit client" wide>
+        {editing && (() => {
+          const galleryOff = DISABLED_MODULES.has("gallery");
+          const setGrant = (k, v) => setEditForm((f) => ({ ...f, ownerEdit: { ...(f.ownerEdit || {}), [k]: v } }));
+          const HOME_GRANTS = [
+            ["home", "Couple & Event + Invitation"], ["maps", "Google Maps"], ["timeline", "Timeline"],
+            ["attire", "Attire"], ["music", "Music playlist"], ["entourage", "Entourage"],
+          ];
+          const TAB_GRANTS = [["schedule", "Schedule"], ["venue", "Venue & Map"]];
+          return (
+          <div>
+            <SectionHead eyebrow="Client" title={`Edit ${editing.subdomain}`} />
+            <div className="folders" style={{ marginBottom: 18 }}>
+              <button type="button" className={"folder" + (editTab === "design" ? " folder--active" : "")} onClick={() => setEditTab("design")}>{Icon.grid({})} Design</button>
+              <button type="button" className={"folder" + (editTab === "access" ? " folder--active" : "")} onClick={() => setEditTab("access")}>{Icon.check({})} Access</button>
             </div>
-            <div className="form-row">
-              <div className="form-row__head">
-                <div className="form-row__label">Modules</div>
-                <div className="form-row__desc">Sections shown on this client's site. Toggle to enable or hide.</div>
-              </div>
-              <div className="form-row__fields">
-                <div className="mod-toggles mod-toggles--edit">
-                  {MODULES.map((m) => {
-                    const on = editForm.modules?.[m] !== false;
-                    return (
-                      <label key={m} className={"mod-pill" + (on ? " mod-pill--on" : "")}>
-                        <input type="checkbox" checked={on} onChange={(e) => setEditForm((f) => ({ ...f, modules: { ...f.modules, [m]: e.target.checked } }))} /> {moduleLabel(m)}
-                      </label>
-                    );
-                  })}
+            <form onSubmit={saveEdit} className="form-rows">
+              {editTab === "design" && (<>
+                <div className="form-row">
+                  <div className="form-row__head">
+                    <div className="form-row__label">Project</div>
+                    <div className="form-row__desc">The client's subdomain.</div>
+                  </div>
+                  <div className="form-row__fields">
+                    <Field label="Subdomain" id="e-sub"><Input id="e-sub" value={editForm.subdomain} onChange={(e) => setEditForm((f) => ({ ...f, subdomain: e.target.value }))} /></Field>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-row__head">
-                <div className="form-row__label">Owner login</div>
-                <div className="form-row__desc">Change the owner email or reset the password. Passwords can't be viewed.</div>
-              </div>
-              <div className="form-row__fields">
-                <div className="form-grid2">
-                  <Field label="Owner email" id="e-oemail"><Input id="e-oemail" type="email" value={editForm.ownerEmail} onChange={(e) => setEditForm((f) => ({ ...f, ownerEmail: e.target.value }))} placeholder="owner@theirdomain" /></Field>
-                  <Field label="New password" id="e-opw" hint="Leave blank to keep current"><Input id="e-opw" value={editForm.ownerPassword} onChange={(e) => setEditForm((f) => ({ ...f, ownerPassword: e.target.value }))} placeholder="••••••••" /></Field>
+                <div className="form-row">
+                  <div className="form-row__head">
+                    <div className="form-row__label">Owner login</div>
+                    <div className="form-row__desc">Change the owner email or reset the password. Passwords can't be viewed.</div>
+                  </div>
+                  <div className="form-row__fields">
+                    <div className="form-grid2">
+                      <Field label="Owner email" id="e-oemail"><Input id="e-oemail" type="email" value={editForm.ownerEmail} onChange={(e) => setEditForm((f) => ({ ...f, ownerEmail: e.target.value }))} placeholder="owner@theirdomain" /></Field>
+                      <Field label="New password" id="e-opw" hint="Leave blank to keep current"><Input id="e-opw" value={editForm.ownerPassword} onChange={(e) => setEditForm((f) => ({ ...f, ownerPassword: e.target.value }))} placeholder="••••••••" /></Field>
+                    </div>
+                  </div>
                 </div>
+                <div className="form-row">
+                  <div className="form-row__head">
+                    <div className="form-row__label">Note</div>
+                    <div className="form-row__desc">Private to superadmin — never shown on the client's site or to the owner.</div>
+                  </div>
+                  <div className="form-row__fields">
+                    <Field label="Note (optional)" id="e-note"><Textarea id="e-note" value={editForm.note} onChange={(e) => setEditForm((f) => ({ ...f, note: e.target.value }))} placeholder="Add a private note about this client…" /></Field>
+                  </div>
+                </div>
+              </>)}
+
+              {editTab === "access" && (<>
+                <div className="form-row">
+                  <div className="form-row__head">
+                    <div className="form-row__label">Features</div>
+                    <div className="form-row__desc">Sections shown on this client's site. Toggle to enable or hide.</div>
+                  </div>
+                  <div className="form-row__fields">
+                    <div className="mod-toggles mod-toggles--edit">
+                      {MODULES.map((m) => {
+                        const locked = DISABLED_MODULES.has(m);
+                        const on = !locked && editForm.modules?.[m] !== false;
+                        return (
+                          <label key={m} className={"mod-pill" + (on ? " mod-pill--on" : "") + (locked ? " mod-pill--locked" : "")} title={locked ? "Pending — feature not available yet" : undefined}>
+                            <input type="checkbox" checked={on} disabled={locked} onChange={(e) => setEditForm((f) => ({ ...f, modules: { ...f.modules, [m]: e.target.checked } }))} /> {moduleLabel(m)}
+                            {locked && <span className="mod-pill__pending">Pending</span>}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-row__head">
+                    <div className="form-row__label">Moderation</div>
+                    <div className="form-row__desc">How guest submissions are approved.</div>
+                  </div>
+                  <div className="form-row__fields">
+                    {!galleryOff && (
+                      <AdminToggle label="Auto-approve photos &amp; videos" desc="When on, guest uploads appear in the gallery instantly. When off, they wait in the Media queue." checked={editForm.autoApproveMedia} onChange={(v) => setEditForm((f) => ({ ...f, autoApproveMedia: v }))} />
+                    )}
+                    <AdminToggle label="Auto-approve guestbook messages" desc="When on, messages post immediately. When off, they stay hidden until approved." checked={editForm.autoApproveGuestbook} onChange={(v) => setEditForm((f) => ({ ...f, autoApproveGuestbook: v }))} noRule />
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-row__head">
+                    <div className="form-row__label">Owner editing</div>
+                    <div className="form-row__desc">Which sections the couple's own login may edit. Everything else stays superadmin-only.</div>
+                  </div>
+                  <div className="form-row__fields">
+                    <div style={{ fontSize: 12, letterSpacing: ".1em", textTransform: "uppercase", fontWeight: 600, color: "var(--ink-soft)", margin: "2px 0 4px" }}>Home tab folders</div>
+                    {HOME_GRANTS.map(([k, l]) => (
+                      <AdminToggle key={k} label={l} checked={editForm.ownerEdit?.[k] === true} onChange={(v) => setGrant(k, v)} />
+                    ))}
+                    <div style={{ fontSize: 12, letterSpacing: ".1em", textTransform: "uppercase", fontWeight: 600, color: "var(--ink-soft)", margin: "14px 0 4px" }}>Other tabs</div>
+                    {TAB_GRANTS.map(([k, l], i) => (
+                      <AdminToggle key={k} label={l} checked={editForm.ownerEdit?.[k] === true} onChange={(v) => setGrant(k, v)} noRule={i === TAB_GRANTS.length - 1} />
+                    ))}
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-row__head">
+                    <div className="form-row__label">Access &amp; toggles</div>
+                    <div className="form-row__desc">Admin password and site-wide switches.</div>
+                  </div>
+                  <div className="form-row__fields">
+                    <Field label="Admin password" id="e-pw"><Input id="e-pw" value={editForm.adminPassword} onChange={(e) => setEditForm((f) => ({ ...f, adminPassword: e.target.value }))} /></Field>
+                    {!galleryOff && (<>
+                      <AdminToggle label="Allow guest uploads" desc="Master switch for the photo/video upload pages." checked={editForm.uploadsEnabled} onChange={(v) => setEditForm((f) => ({ ...f, uploadsEnabled: v }))} />
+                      <AdminToggle label="Show public gallery" desc="Hide the gallery from guests entirely if you prefer." checked={editForm.galleryEnabled} onChange={(v) => setEditForm((f) => ({ ...f, galleryEnabled: v }))} />
+                    </>)}
+                    <AdminToggle label="Enable Strict RSVP" desc="Track an invited-guest list with seat allocations and see who hasn't replied. Adds a Guests tab; only listed guests can RSVP, capped at their allocation." checked={editForm.strictRsvp} onChange={(v) => setEditForm((f) => ({ ...f, strictRsvp: v }))} noRule />
+                  </div>
+                </div>
+              </>)}
+
+              <div className="form-foot">
+                <Button type="button" variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
+                <Button type="submit" variant="primary" disabled={busy}>Save changes</Button>
               </div>
-            </div>
-            <div className="form-row">
-              <div className="form-row__head">
-                <div className="form-row__label">Note</div>
-                <div className="form-row__desc">Private to superadmin — never shown on the client's site or to the owner.</div>
-              </div>
-              <div className="form-row__fields">
-                <Field label="Note (optional)" id="e-note"><Textarea id="e-note" value={editForm.note} onChange={(e) => setEditForm((f) => ({ ...f, note: e.target.value }))} placeholder="Add a private note about this client…" /></Field>
-              </div>
-            </div>
-            <div className="form-foot">
-              <Button type="button" variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
-              <Button type="submit" variant="primary" disabled={busy}>Save changes</Button>
-            </div>
-          </form>
-        </div>
-        )}
+            </form>
+          </div>
+          );
+        })()}
       </Modal>
 
       {/* Eye icon → read-only snapshot of the client (links + quick Edit). */}
