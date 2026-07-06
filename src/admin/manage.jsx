@@ -2245,6 +2245,12 @@ export function SettingsAdmin() {
 // swap that eats the first click), but hide the placeholder text while the
 // field is empty and unfocused by making its text transparent. On focus (click)
 // or once it has a value, the text shows normally.
+// Format a naive datetime-local ISO string into the friendly display text that
+// auto-fills the paired label field. Wedding label includes the weekday; the
+// RSVP deadline label is date-only (matches the original demo copy).
+const fmtWeddingLabel = (iso) => { if (!iso) return ""; const d = new Date(iso); return isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }); };
+const fmtDeadlineLabel = (iso) => { if (!iso) return ""; const d = new Date(iso); return isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }); };
+
 function DateTimeInput({ id, value, onChange, placeholder = "" }) {
   const ref = useRef(null);
   const fmt = (v) => {
@@ -2363,7 +2369,7 @@ export function HomeAdmin() {
               </div>
               {f.weddingDateOn !== false && (<>
                 <div className="field-row field-row--2">
-                  <Field label="Wedding date & time" hint="Drives the countdown. Leave blank to hide just the counter." id="s-date"><DateTimeInput id="s-date" value={f.weddingDate} onChange={set("weddingDate")} /></Field>
+                  <Field label="Wedding date & time" hint="Drives the countdown. Leave blank to hide just the counter." id="s-date"><DateTimeInput id="s-date" value={f.weddingDate} onChange={(e) => { const v = e.target.value; const patch = { weddingDate: v }; if (!f.weddingDateLabel || f.weddingDateLabel === fmtWeddingLabel(f.weddingDate)) patch.weddingDateLabel = fmtWeddingLabel(v); Store.updateSettings(patch); }} /></Field>
                   <Field label="Display date label" id="s-datel" hint="The date text shown on the site. Leave blank to hide it."><Input id="s-datel" value={f.weddingDateLabel} onChange={set("weddingDateLabel")} /></Field>
                 </div>
                 {/* narrow wrapper so the switch sits next to its label, not far across the wide panel */}
@@ -2379,7 +2385,7 @@ export function HomeAdmin() {
               {f.rsvpDeadlineOn !== false && (
                 <div className="field-row field-row--2">
                   <Field label="RSVP deadline (display text)" id="s-rsvp" hint="Shown on the RSVP page — e.g. “August 15, 2027”"><Input id="s-rsvp" value={f.rsvpDeadline} onChange={set("rsvpDeadline")} /></Field>
-                  <Field label="RSVP closes at" id="s-rsvpd" hint="Optional. Set a date/time to auto-close the form."><ClosesAtInput value={f.rsvpDeadlineDate} onChange={set("rsvpDeadlineDate")} /></Field>
+                  <Field label="RSVP closes at" id="s-rsvpd" hint="Optional. Set a date/time to auto-close the form."><ClosesAtInput value={f.rsvpDeadlineDate} onChange={(e) => { const v = e.target.value; const patch = { rsvpDeadlineDate: v }; if (!f.rsvpDeadline || f.rsvpDeadline === fmtDeadlineLabel(f.rsvpDeadlineDate)) patch.rsvpDeadline = fmtDeadlineLabel(v); Store.updateSettings(patch); }} /></Field>
                 </div>
               )}
               <Field label="Hashtag" id="s-hash"><Input id="s-hash" value={f.hashtag} onChange={set("hashtag")} /></Field>
