@@ -503,7 +503,7 @@ export function Home() {
           <p style={{ color: "var(--ink-soft)", fontSize: 19 }}>
             {s.inviteBody}
           </p>
-          {s.rsvpDeadlineOn !== false && <p style={{ color: "var(--ink-soft)", fontSize: 15, margin: "22px 0 16px", letterSpacing: ".04em" }}>Kindly respond by {s.rsvpDeadline}.</p>}
+          {s.rsvpDeadlineOn !== false && s.rsvpDeadline && <p style={{ color: "var(--ink-soft)", fontSize: 15, margin: "22px 0 16px", letterSpacing: ".04em" }}>Kindly respond by {s.rsvpDeadline}.</p>}
           <Button variant="primary" size="lg" onClick={() => go("rsvp")}>{Icon.check({})} Respond now</Button>
         </div>
       </section>

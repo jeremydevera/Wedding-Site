@@ -270,7 +270,11 @@ export function RSVPPage() {
     );
   }
 
-  if (settings.rsvpDeadlineOn !== false && isRsvpClosed(deadlineUTC(settings.rsvpDeadlineDate), Date.now())) {
+  // The form auto-closes based on the "RSVP closes at" date alone (matching the
+  // server-side rsvp_guard). The rsvpDeadlineOn toggle is display-only — it does
+  // NOT reopen/close the form — so it must NOT gate this check, or the site would
+  // show an open form the DB then rejects. Leave the date blank to keep RSVPs open.
+  if (isRsvpClosed(deadlineUTC(settings.rsvpDeadlineDate), Date.now())) {
     return (
       <div className="fade-up">
         <section className="block">
@@ -293,7 +297,7 @@ export function RSVPPage() {
 
   return (
     <div className="fade-up">
-      <PageHero eyebrow="RSVP" title="Will you be there?" lead={settings.rsvpDeadlineOn !== false ? `Kindly respond by ${settings.rsvpDeadline}.` : undefined} />
+      <PageHero eyebrow="RSVP" title="Will you be there?" lead={settings.rsvpDeadlineOn !== false && settings.rsvpDeadline ? `Kindly respond by ${settings.rsvpDeadline}.` : undefined} />
       <section className="block" style={{ paddingTop: 20 }}>
         <div className="container container--narrow">
           <form className="card card--pad-lg" onSubmit={submit} noValidate>

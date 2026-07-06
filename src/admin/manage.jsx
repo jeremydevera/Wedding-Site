@@ -2417,14 +2417,15 @@ export function HomeAdmin() {
               <Field label="Welcome message" id="s-welcome"><Textarea id="s-welcome" rows={3} value={f.welcome} onChange={set("welcome")} /></Field>
               {/* narrow wrapper so the switch sits next to its label, not far across the wide panel */}
               <div style={{ maxWidth: 460 }}>
-                <AdminToggle noRule label="Show RSVP deadline" desc="Show the “Kindly respond by …” line on the site and auto-close the form at the closing time. Turn off to hide the deadline entirely." checked={f.rsvpDeadlineOn !== false} onChange={(v) => Store.updateSettings({ rsvpDeadlineOn: v })} />
+                <AdminToggle noRule label="Show RSVP deadline" desc="Show the “Kindly respond by …” line on the public site. The form still auto-closes at the “RSVP closes at” time below whether or not this line is shown — leave that blank to keep RSVPs open." checked={f.rsvpDeadlineOn !== false} onChange={(v) => Store.updateSettings({ rsvpDeadlineOn: v })} />
               </div>
-              {f.rsvpDeadlineOn !== false && (
-                <div className="field-row field-row--2">
-                  <Field label="RSVP closes at" id="s-rsvpd" hint="Optional. Set a date/time to auto-close the form."><ClosesAtInput value={f.rsvpDeadlineDate} onChange={(e) => { const v = e.target.value; const patch = { rsvpDeadlineDate: v }; if (!f.rsvpDeadline || f.rsvpDeadline === fmtDeadlineLabel(f.rsvpDeadlineDate)) patch.rsvpDeadline = fmtDeadlineLabel(v); Store.updateSettings(patch); }} /></Field>
-                  <Field label="RSVP deadline (display text)" id="s-rsvp" hint="Shown on the RSVP page — e.g. “August 15, 2027”"><Input id="s-rsvp" value={f.rsvpDeadline} onChange={set("rsvpDeadline")} /></Field>
-                </div>
-              )}
+              {/* The closing time is the functional auto-close and is ALWAYS editable —
+                  the toggle above only controls the public "Kindly respond by …" line,
+                  it does NOT hide this field. Leave "RSVP closes at" blank to keep RSVPs open. */}
+              <div className="field-row field-row--2">
+                <Field label="RSVP closes at" id="s-rsvpd" hint="Optional. Set a date/time to auto-close the form; leave blank to keep RSVPs open."><ClosesAtInput value={f.rsvpDeadlineDate} onChange={(e) => { const v = e.target.value; const patch = { rsvpDeadlineDate: v }; if (!f.rsvpDeadline || f.rsvpDeadline === fmtDeadlineLabel(f.rsvpDeadlineDate)) patch.rsvpDeadline = fmtDeadlineLabel(v); Store.updateSettings(patch); }} /></Field>
+                <Field label="RSVP deadline (display text)" id="s-rsvp" hint="Shown on the RSVP page when “Show RSVP deadline” is on — e.g. “August 15, 2027”"><Input id="s-rsvp" value={f.rsvpDeadline} onChange={set("rsvpDeadline")} /></Field>
+              </div>
               <Field label="Hashtag" id="s-hash"><Input id="s-hash" value={f.hashtag} onChange={set("hashtag")} /></Field>
             </div>
           </div>
