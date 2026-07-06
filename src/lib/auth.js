@@ -32,30 +32,41 @@ export async function signOut() {
   Store.setAuth({ session: null, role: null, clientId: null, email: null });
 }
 
+// Invoke the superadmin edge function with a FRESHLY-REFRESHED access token.
+// getSession() refreshes an expired token before we read it, and we attach it
+// explicitly — otherwise a long-open console sends a stale JWT and the function
+// rejects with 401 (seen in prod: password resets silently failed). Also surface
+// the function's JSON `{error}` body, which supabase-js hides behind a generic
+// "non-2xx" FunctionsHttpError.
+async function invokeOwnerFn(body) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  const { data, error } = await supabase.functions.invoke("admin-create-owner", {
+    body,
+    ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+  });
+  if (error) {
+    let msg = error.message || "Request failed";
+    try { const detail = await error.context?.json?.(); if (detail?.error) msg = detail.error; } catch (_) {}
+    if (!token || /unauthor|forbidden|jwt|token/i.test(msg)) msg = "Your session expired — sign in again, then retry.";
+    throw new Error(msg);
+  }
+  if (data && data.error) throw new Error(data.error);
+  return data;
+}
+
 // Superadmin-only: create the owner, or reset an existing owner's password.
 export async function createOwner({ email, password, client_id }) {
-  const { data, error } = await supabase.functions.invoke("admin-create-owner", {
-    body: { email, password, client_id },
-  });
-  if (error) throw error;
-  return data;
+  return invokeOwnerFn({ email, password, client_id });
 }
 
 // Superadmin-only: change an existing owner's login email.
 export async function updateOwnerEmail({ old_email, new_email }) {
-  const { data, error } = await supabase.functions.invoke("admin-create-owner", {
-    body: { action: "update_email", old_email, new_email },
-  });
-  if (error) throw error;
-  return data;
+  return invokeOwnerFn({ action: "update_email", old_email, new_email });
 }
 
 // Superadmin-only: delete an owner's auth account (its profile cascades).
 // Pass any of email / user_id / client_id; the function resolves the user.
 export async function deleteOwner({ email, user_id, client_id }) {
-  const { data, error } = await supabase.functions.invoke("admin-create-owner", {
-    body: { action: "delete_owner", email, user_id, client_id },
-  });
-  if (error) throw error;
-  return data;
+  return invokeOwnerFn({ action: "delete_owner", email, user_id, client_id });
 }

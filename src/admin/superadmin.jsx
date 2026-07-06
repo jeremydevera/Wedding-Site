@@ -415,17 +415,26 @@ export function ClientsAdmin() {
       const { error } = await supabase.from("clients").update({ content }).eq("id", id);
       if (error) { toast("Save failed: " + error.message, "err"); return; }
       try { await saveNote(id, editForm.note); } catch (_) { /* note is best-effort */ }
+      // Password reset is authoritative: NEVER report success if it failed, or
+      // the owner is silently locked to their old password (the exact bug hit).
       const pw = editForm.ownerPassword;
+      let pwErr = "";
       if (pw) {
-        try {
-          if (!editing.owner_email) throw new Error("Set the owner email on the Design tab first.");
-          await createOwner({ email: editing.owner_email, password: pw, client_id: id });
-        } catch (e2) { edgeOrToast(e2); }
+        if (!editing.owner_email) pwErr = "this client has no owner email yet — set it on the Design tab and save first";
+        else {
+          try { await createOwner({ email: editing.owner_email, password: pw, client_id: id }); }
+          catch (e2) { pwErr = e2?.message || "password change failed"; }
+        }
       }
       setEditing((c) => (c ? { ...c, content } : c)); // keep local row fresh for a later Design save
-      setEditForm((f) => ({ ...f, ownerPassword: "" }));
-      toast("Access settings saved", "success");
       await load();
+      if (pwErr) {
+        // keep the typed password so they can retry after fixing the cause
+        toast("Settings saved, but the password was NOT changed: " + pwErr, "err");
+      } else {
+        setEditForm((f) => ({ ...f, ownerPassword: "" }));
+        toast(pw ? "Settings saved and owner password reset" : "Access settings saved", "success");
+      }
     });
   }
 
