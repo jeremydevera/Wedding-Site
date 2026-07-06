@@ -30,7 +30,7 @@ const ACCESS_TAB_GRANTS = [["schedule", "Schedule"], ["venue", "Venue & Map"]];
 // tabbed editor is identical everywhere. `v` is a settings-shaped object; `set`
 // merges a patch; `omit` skips fields the surrounding editor already owns
 // (e.g. the request wizard already has its own Strict RSVP step).
-function AccessFields({ v, set, omit = [] }) {
+function AccessFields({ v, set, omit = [], passwordEnabled = true }) {
   const galleryOff = DISABLED_MODULES.has("gallery");
   const skip = new Set(omit);
   const setGrant = (k, val) => set({ ownerEdit: { ...(v.ownerEdit || {}), [k]: val } });
@@ -98,6 +98,18 @@ function AccessFields({ v, set, omit = [] }) {
           {!skip.has("strictRsvp") && (
             <AdminToggle label="Enable Strict RSVP" desc="Track an invited-guest list with seat allocations and see who hasn't replied. Adds a Guests tab; only listed guests can RSVP, capped at their allocation." checked={v.strictRsvp} onChange={(x) => set({ strictRsvp: x })} noRule />
           )}
+        </div>
+      </div>
+      <div className="form-row">
+        <div className="form-row__head">
+          <div className="form-row__label">Owner login &amp; note</div>
+          <div className="form-row__desc">Reset the owner's password and keep a private note. The owner email is on the Design tab.</div>
+        </div>
+        <div className="form-row__fields">
+          <Field label="New password" id="af-opw" hint={passwordEnabled ? "Leave blank to keep current" : "The owner login is created when you approve this request"}>
+            <Input id="af-opw" value={v.ownerPassword || ""} disabled={!passwordEnabled} onChange={(e) => set({ ownerPassword: e.target.value })} placeholder="••••••••" />
+          </Field>
+          <Field label="Private note (superadmin only)" id="af-note"><Textarea id="af-note" value={v.note || ""} onChange={(e) => set({ note: e.target.value })} placeholder="Add a private note…" /></Field>
         </div>
       </div>
     </>
@@ -248,6 +260,7 @@ export function ClientsAdmin() {
       galleryEnabled: c.galleryEnabled !== false,
       adminPassword: c.adminPassword || "wedding",
       ownerEdit: { ...(c.ownerEdit || {}) },
+      note: c.note || "",
     });
     setReqEditTab("design");
     setReqEdit(r);
@@ -808,16 +821,6 @@ export function ClientsAdmin() {
             <div style={{ display: editTab === "access" ? "block" : "none" }}>
               <div className="form-rows">
                 <AccessFields v={editForm} set={(patch) => setEditForm((f) => ({ ...f, ...patch }))} omit={["strictRsvp"]} />
-                <div className="form-row">
-                  <div className="form-row__head">
-                    <div className="form-row__label">Owner login &amp; note</div>
-                    <div className="form-row__desc">Reset the owner's password and keep a private note. The owner email is on the Design tab.</div>
-                  </div>
-                  <div className="form-row__fields">
-                    <Field label="New password" id="e-opw" hint="Leave blank to keep current"><Input id="e-opw" value={editForm.ownerPassword} onChange={(e) => setEditForm((f) => ({ ...f, ownerPassword: e.target.value }))} placeholder="••••••••" /></Field>
-                    <Field label="Private note (superadmin only)" id="e-note"><Textarea id="e-note" value={editForm.note} onChange={(e) => setEditForm((f) => ({ ...f, note: e.target.value }))} placeholder="Add a private note about this client…" /></Field>
-                  </div>
-                </div>
                 <div className="form-foot">
                   <Button type="button" variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
                   <Button type="button" variant="primary" disabled={busy} onClick={saveClientAccess}>{busy ? "Saving…" : "Save changes"}</Button>
@@ -938,7 +941,7 @@ export function ClientsAdmin() {
                 merges into the request's content (Strict RSVP lives in the wizard). */}
             <div style={{ display: reqEditTab === "access" ? "block" : "none" }}>
               <div className="form-rows">
-                <AccessFields v={reqAccess} set={(patch) => setReqAccess((a) => ({ ...a, ...patch }))} omit={["strictRsvp"]} />
+                <AccessFields v={reqAccess} set={(patch) => setReqAccess((a) => ({ ...a, ...patch }))} omit={["strictRsvp"]} passwordEnabled={false} />
                 <div className="form-foot">
                   <Button type="button" variant="ghost" onClick={() => setReqEdit(null)}>Cancel</Button>
                   <Button type="button" variant="primary" disabled={busy} onClick={() => runBusy("Saving…", async () => {
@@ -951,6 +954,7 @@ export function ClientsAdmin() {
                       galleryEnabled: reqAccess.galleryEnabled,
                       adminPassword: reqAccess.adminPassword,
                       ownerEdit: reqAccess.ownerEdit || {},
+                      note: reqAccess.note || "",
                     };
                     await updateSiteRequest(reqEdit.id, { content });
                     setReqEdit((r) => (r ? { ...r, content } : r)); // keep local row in sync for a later Design save
