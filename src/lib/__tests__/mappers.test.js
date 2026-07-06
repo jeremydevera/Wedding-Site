@@ -47,6 +47,19 @@ describe("stateToClientRow (reverse of clientToState)", () => {
     expect(back.content.partnerA).toBe("Al");
     expect("adminPassword" in back.content).toBe(false);
   });
+
+  // DEV-RULES R1: the admin Save button is gated on this serializer's output
+  // changing. Any Store.updateSettings key MUST survive into content, or the
+  // control that sets it can never enable Save. Guards new settings keys
+  // (e.g. mapStyle) against being silently dropped.
+  it("reflects an arbitrary settings key so a change enables the Save button", () => {
+    const base = { settings: { theme: "garden", eventType: "wedding", partnerA: "Al" },
+      schedule: [], story: [], faq: [], quiz: [], venueCards: [], venues: [], detailCards: [], entourage: [], attire: [], playlist: [] };
+    const before = JSON.stringify(stateToClientRow(base));
+    const after = JSON.stringify(stateToClientRow({ ...base, settings: { ...base.settings, mapStyle: "night", mapNight: true } }));
+    expect(after).not.toBe(before);          // dirty would flip → Save enables
+    expect(after).toContain('"mapStyle":"night"');
+  });
 });
 
 describe("rsvpToRow", () => {

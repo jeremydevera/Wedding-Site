@@ -1,5 +1,10 @@
 # Project notes for Claude
 
+## 🔴 Before adding admin controls — read docs/DEV-RULES.md
+Hard rules. R1: any control editing a persisted setting MUST write via
+`Store.updateSettings` (never local state / `previewSettings`) or the "Save
+changes" button won't enable. Verify Save enables after adding any settings control.
+
 ## 🔴 Before any bug scan — read docs/BY-DESIGN.md
 `docs/BY-DESIGN.md` is an allowlist of INTENTIONAL behaviors. When asked to scan
 for bugs, consult it first and do NOT flag anything listed there (e.g. the media
