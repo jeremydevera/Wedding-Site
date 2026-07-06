@@ -2241,9 +2241,14 @@ export function SettingsAdmin() {
 function DateTimeInput({ id, value, onChange }) {
   const [focused, setFocused] = useState(false);
   const hidePlaceholder = !value && !focused;
+  // Open the native calendar/time picker on click/focus — otherwise it only
+  // opens from the tiny calendar icon. showPicker() needs a user gesture, so
+  // fire it from the click; guard for older browsers that lack it.
+  const openPicker = (e) => { const el = e.currentTarget; try { el.showPicker && el.showPicker(); } catch (_) {} };
   return (
     <Input id={id} type="datetime-local" value={value || ""} onChange={onChange}
       onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+      onClick={openPicker} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") openPicker(e); }}
       style={hidePlaceholder ? { color: "transparent" } : undefined} />
   );
 }
