@@ -6,7 +6,8 @@ import { Button, CropModal, DecorPreview, FallingFx, Field, Icon, Input, Modal, 
 import { FX_LIST } from "@/lib/falling-fx.js";
 import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
-import { signOut } from "@/lib/auth.js";
+import { signOut, createOwner } from "@/lib/auth.js";
+import { supabase } from "@/lib/supabase.js";
 import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb, updateRsvpDietDb, listSiteRequests, subscribeSiteRequestsRealtime } from "@/lib/api.js";
 import { DIET_OPTIONS } from "@/features/rsvp.jsx";
 import { reconcileGuests, guestFromRsvp, normName } from "@/lib/guests.js";
@@ -1740,6 +1741,58 @@ function ThemePreviewFrame({ theme, decorStyle, decorOn }) {
   );
 }
 
+// Reset the client's owner login password (Settings → Access). Settings is
+// superadmin-only (roles.js SUPERADMIN_ONLY), so this panel is only ever seen
+// by the superadmin managing a client. Uses the admin-create-owner edge
+// function, which upserts the auth user's password by email + client_id.
+function ClientPasswordReset() {
+  const { clientId } = useStore();
+  const [email, setEmail] = useState("");
+  const [pw, setPw] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    let dead = false;
+    if (!clientId) { setLoaded(true); return; }
+    supabase.from("clients").select("owner_email").eq("id", clientId).single()
+      .then(({ data }) => { if (!dead) { setEmail(data?.owner_email || ""); setLoaded(true); } })
+      .catch(() => { if (!dead) setLoaded(true); });
+    return () => { dead = true; };
+  }, [clientId]);
+
+  async function reset() {
+    const mail = email.trim();
+    if (!mail) return toast("Enter the owner's email first.", "err");
+    if (pw.length < 6) return toast("Use a password of at least 6 characters.", "err");
+    setBusy(true);
+    try {
+      await createOwner({ email: mail, password: pw, client_id: clientId });
+      await supabase.from("clients").update({ owner_email: mail }).eq("id", clientId);
+      setPw("");
+      toast("Owner password updated", "success");
+    } catch (e) {
+      toast("Couldn't update password: " + (e?.message || "error"), "err");
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="panel">
+      <div className="panel__head"><div><div className="panel__title">Client login</div><div className="panel__sub">Set or reset the couple's sign-in password. Passwords can't be viewed — only replaced.</div></div></div>
+      <div className="panel__body">
+        <div className="field-row field-row--2">
+          <Field label="Owner email" id="cpr-email" hint={loaded && !email ? "No owner login yet — set one here" : "The email the couple signs in with"}>
+            <Input id="cpr-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="owner@theirdomain" />
+          </Field>
+          <Field label="New password" id="cpr-pw" hint="At least 6 characters">
+            <Input id="cpr-pw" type="text" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="••••••••" autoComplete="new-password" />
+          </Field>
+        </div>
+        <Button variant="primary" disabled={busy || !pw || !email.trim()} onClick={reset}>{busy ? "Updating…" : (email && loaded ? "Reset password" : "Set login")}</Button>
+      </div>
+    </div>
+  );
+}
+
 export function SettingsAdmin() {
   const { settings, story } = useStore();
   const f = settings;
@@ -2111,9 +2164,11 @@ export function SettingsAdmin() {
                   <span className="owner-edit__grouptitle">{Icon.home({ style: { width: 15, height: 15 } })} Home tab folders</span>
                   <button type="button" className="owner-edit__all" onClick={() => toggleAllHome(!allHomeOn)}>{allHomeOn ? "Turn all off" : "Enable all"}</button>
                 </div>
-                {HOME_GRANTS.map((g) => (
-                  <AdminToggle key={g.k} label={g.label} desc={g.desc} checked={oe[g.k] === true} onChange={(v) => setGrant(g.k, v)} />
-                ))}
+                <div className="owner-edit__items">
+                  {HOME_GRANTS.map((g) => (
+                    <AdminToggle key={g.k} label={g.label} desc={g.desc} checked={oe[g.k] === true} onChange={(v) => setGrant(g.k, v)} />
+                  ))}
+                </div>
               </div>
               <div className="owner-edit__group">
                 <div className="owner-edit__grouphead"><span className="owner-edit__grouptitle">{Icon.grid({ style: { width: 15, height: 15 } })} Other tabs</span></div>
@@ -2139,7 +2194,9 @@ export function SettingsAdmin() {
           <AdminToggle label="Enable Strict RSVP" desc="Track an invited-guest list with seat allocations, and see who hasn't replied. Adds a Guests tab. Only guests on the list can RSVP, and party size is capped at their seat allocation." checked={f.strictRsvp === true} onChange={(v) => setKey("strictRsvp", v)} />
         </div>
         <SaveFooter />
-      </div></>)}
+      </div>
+
+      <ClientPasswordReset /></>)}
     </div>
   );
 }
