@@ -18,6 +18,92 @@ const { useState, useEffect, useRef } = React;
 
 const MODULES = ["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"];
 
+// Per-section owner-edit grants, mirrored from the client admin's Settings → Access.
+const ACCESS_HOME_GRANTS = [
+  ["home", "Couple & Event + Invitation"], ["maps", "Google Maps"], ["timeline", "Timeline"],
+  ["attire", "Attire"], ["music", "Music playlist"], ["entourage", "Entourage"],
+];
+const ACCESS_TAB_GRANTS = [["schedule", "Schedule"], ["venue", "Venue & Map"]];
+
+// Shared "Access" tab body — features + moderation + owner-edit grants + toggles.
+// Used by BOTH the Edit-client modal and the Edit-request (wizard) modal so the
+// tabbed editor is identical everywhere. `v` is a settings-shaped object; `set`
+// merges a patch; `omit` skips fields the surrounding editor already owns
+// (e.g. the request wizard already has its own Strict RSVP step).
+function AccessFields({ v, set, omit = [] }) {
+  const galleryOff = DISABLED_MODULES.has("gallery");
+  const skip = new Set(omit);
+  const setGrant = (k, val) => set({ ownerEdit: { ...(v.ownerEdit || {}), [k]: val } });
+  return (
+    <>
+      <div className="form-row">
+        <div className="form-row__head">
+          <div className="form-row__label">Features</div>
+          <div className="form-row__desc">Sections shown on this site. Toggle to enable or hide.</div>
+        </div>
+        <div className="form-row__fields">
+          <div className="mod-toggles mod-toggles--edit">
+            {MODULES.map((m) => {
+              const locked = DISABLED_MODULES.has(m);
+              const on = !locked && v.modules?.[m] !== false;
+              return (
+                <label key={m} className={"mod-pill" + (on ? " mod-pill--on" : "") + (locked ? " mod-pill--locked" : "")} title={locked ? "Pending — feature not available yet" : undefined}>
+                  <input type="checkbox" checked={on} disabled={locked} onChange={(e) => set({ modules: { ...(v.modules || {}), [m]: e.target.checked } })} /> {moduleLabel(m)}
+                  {locked && <span className="mod-pill__pending">Pending</span>}
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      <div className="form-row">
+        <div className="form-row__head">
+          <div className="form-row__label">Moderation</div>
+          <div className="form-row__desc">How guest submissions are approved.</div>
+        </div>
+        <div className="form-row__fields">
+          {!galleryOff && (
+            <AdminToggle label="Auto-approve photos &amp; videos" desc="When on, guest uploads appear in the gallery instantly. When off, they wait in the Media queue." checked={v.autoApproveMedia} onChange={(x) => set({ autoApproveMedia: x })} />
+          )}
+          <AdminToggle label="Auto-approve guestbook messages" desc="When on, messages post immediately. When off, they stay hidden until approved." checked={v.autoApproveGuestbook} onChange={(x) => set({ autoApproveGuestbook: x })} noRule />
+        </div>
+      </div>
+      <div className="form-row">
+        <div className="form-row__head">
+          <div className="form-row__label">Owner editing</div>
+          <div className="form-row__desc">Which sections the couple's own login may edit. Everything else stays superadmin-only.</div>
+        </div>
+        <div className="form-row__fields">
+          <div style={{ fontSize: 12, letterSpacing: ".1em", textTransform: "uppercase", fontWeight: 600, color: "var(--ink-soft)", margin: "2px 0 4px" }}>Home tab folders</div>
+          {ACCESS_HOME_GRANTS.map(([k, l]) => (
+            <AdminToggle key={k} label={l} checked={v.ownerEdit?.[k] === true} onChange={(x) => setGrant(k, x)} />
+          ))}
+          <div style={{ fontSize: 12, letterSpacing: ".1em", textTransform: "uppercase", fontWeight: 600, color: "var(--ink-soft)", margin: "14px 0 4px" }}>Other tabs</div>
+          {ACCESS_TAB_GRANTS.map(([k, l], i) => (
+            <AdminToggle key={k} label={l} checked={v.ownerEdit?.[k] === true} onChange={(x) => setGrant(k, x)} noRule={i === ACCESS_TAB_GRANTS.length - 1} />
+          ))}
+        </div>
+      </div>
+      <div className="form-row">
+        <div className="form-row__head">
+          <div className="form-row__label">Access &amp; toggles</div>
+          <div className="form-row__desc">Admin password and site-wide switches.</div>
+        </div>
+        <div className="form-row__fields">
+          <Field label="Admin password" id="af-pw"><Input id="af-pw" value={v.adminPassword} onChange={(e) => set({ adminPassword: e.target.value })} /></Field>
+          {!galleryOff && (<>
+            <AdminToggle label="Allow guest uploads" desc="Master switch for the photo/video upload pages." checked={v.uploadsEnabled} onChange={(x) => set({ uploadsEnabled: x })} />
+            <AdminToggle label="Show public gallery" desc="Hide the gallery from guests entirely if you prefer." checked={v.galleryEnabled} onChange={(x) => set({ galleryEnabled: x })} />
+          </>)}
+          {!skip.has("strictRsvp") && (
+            <AdminToggle label="Enable Strict RSVP" desc="Track an invited-guest list with seat allocations and see who hasn't replied. Adds a Guests tab; only listed guests can RSVP, capped at their allocation." checked={v.strictRsvp} onChange={(x) => set({ strictRsvp: x })} noRule />
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
 export function SuperOverview() {
   const [m, setM] = useState(null);
   const [byType, setByType] = useState({});
@@ -131,6 +217,8 @@ export function ClientsAdmin() {
   const [reqInfo, setReqInfo] = useState(null);      // request shown in the details modal (eye)
   const [info, setInfo] = useState(null);            // client shown in the info modal (eye icon)
   const [reqEdit, setReqEdit] = useState(null);      // request being edited in a modal (pencil)
+  const [reqEditTab, setReqEditTab] = useState("design"); // Edit-request modal: design (wizard) | access
+  const [reqAccess, setReqAccess] = useState(null);  // request's access/feature settings for the Access tab
   const [delReq, setDelReq] = useState(null);        // { r, typed } — type-the-address delete confirm
   const [sel, setSel] = useState(() => new Set());   // client ids checked for bulk delete
 
@@ -147,6 +235,23 @@ export function ClientsAdmin() {
   // Selection is per-tab: clear checks when switching views so a bulk delete can
   // never target off-screen rows selected in another tab (e.g. list → offline).
   useEffect(() => { setSel(new Set()); }, [view]);
+
+  // Open the request editor: seed the Access-tab settings from the request's
+  // content (same defaults as the client admin) and reset to the Design tab.
+  function openReqEdit(r) {
+    const c = r.content || {};
+    setReqAccess({
+      modules: Object.fromEntries(MODULES.map((m) => [m, c.modules?.[m] !== false])),
+      autoApproveMedia: c.autoApproveMedia !== false,
+      autoApproveGuestbook: c.autoApproveGuestbook !== false,
+      uploadsEnabled: c.uploadsEnabled !== false,
+      galleryEnabled: c.galleryEnabled !== false,
+      adminPassword: c.adminPassword || "wedding",
+      ownerEdit: { ...(c.ownerEdit || {}) },
+    });
+    setReqEditTab("design");
+    setReqEdit(r);
+  }
 
   // Save (or clear) the private note for a client. Empty note removes the row.
   async function saveNote(clientId, note) {
@@ -414,7 +519,7 @@ export function ClientsAdmin() {
                           <button className="icon-btn" title="Details" onClick={() => setReqInfo(r)}>{Icon.eye({})}</button>
                           {r.status === "pending" && (
                             <>
-                              <button className="icon-btn" title="Edit request" onClick={() => setReqEdit(r)}>{Icon.edit({})}</button>
+                              <button className="icon-btn" title="Edit request" onClick={() => openReqEdit(r)}>{Icon.edit({})}</button>
                               <Button variant="primary" size="sm" disabled={busy} onClick={async () => {
                                 const ok = await confirmDialog({ title: "Approve this site?", message: `Create ${r.subdomain}.celebrately.us for ${r.partner_a} & ${r.partner_b}? You can set the owner's login afterwards via the pencil (Edit) on the client.`, confirmLabel: "Approve & create" });
                                 if (!ok) return;
@@ -461,7 +566,7 @@ export function ClientsAdmin() {
                     <td>
                       <div className="row-actions">
                         <button className="icon-btn" title="Details" onClick={() => setReqInfo(r)}>{Icon.eye({})}</button>
-                        <button className="icon-btn" title="Edit request" onClick={() => setReqEdit(r)}>{Icon.edit({})}</button>
+                        <button className="icon-btn" title="Edit request" onClick={() => openReqEdit(r)}>{Icon.edit({})}</button>
                         <a className="icon-btn" href={clientUrl(r.subdomain)} target="_blank" rel="noreferrer" title="Open live site">{Icon.arrow({})}</a>
                         <button className="icon-btn icon-btn--danger" title="Delete request" onClick={() => setDelReq({ r, typed: "" })}>{Icon.trash({})}</button>
                       </div>
@@ -494,7 +599,7 @@ export function ClientsAdmin() {
                     <td>
                       <div className="row-actions">
                         <button className="icon-btn" title="Details" onClick={() => setReqInfo(r)}>{Icon.eye({})}</button>
-                        <button className="icon-btn" title="Edit request" onClick={() => setReqEdit(r)}>{Icon.edit({})}</button>
+                        <button className="icon-btn" title="Edit request" onClick={() => openReqEdit(r)}>{Icon.edit({})}</button>
                         <button className="icon-btn icon-btn--danger" title="Delete request" onClick={() => setDelReq({ r, typed: "" })}>{Icon.trash({})}</button>
                         <Button variant="primary" size="sm" disabled={busy} onClick={async () => {
                           const ok = await confirmDialog({ title: "Reopen this request?", message: `Move the request for ${r.subdomain}.celebrately.us back to pending? You can then edit or approve it in Requests.`, confirmLabel: "Reopen" });
@@ -666,13 +771,6 @@ export function ClientsAdmin() {
 
       <Modal open={!!editing} onClose={() => setEditing(null)} label="Edit client" wide>
         {editing && (() => {
-          const galleryOff = DISABLED_MODULES.has("gallery");
-          const setGrant = (k, v) => setEditForm((f) => ({ ...f, ownerEdit: { ...(f.ownerEdit || {}), [k]: v } }));
-          const HOME_GRANTS = [
-            ["home", "Couple & Event + Invitation"], ["maps", "Google Maps"], ["timeline", "Timeline"],
-            ["attire", "Attire"], ["music", "Music playlist"], ["entourage", "Entourage"],
-          ];
-          const TAB_GRANTS = [["schedule", "Schedule"], ["venue", "Venue & Map"]];
           return (
           <div>
             <SectionHead eyebrow="Client" title={`Edit ${editing.subdomain}`} />
@@ -714,70 +812,9 @@ export function ClientsAdmin() {
                 </div>
               </>)}
 
-              {editTab === "access" && (<>
-                <div className="form-row">
-                  <div className="form-row__head">
-                    <div className="form-row__label">Features</div>
-                    <div className="form-row__desc">Sections shown on this client's site. Toggle to enable or hide.</div>
-                  </div>
-                  <div className="form-row__fields">
-                    <div className="mod-toggles mod-toggles--edit">
-                      {MODULES.map((m) => {
-                        const locked = DISABLED_MODULES.has(m);
-                        const on = !locked && editForm.modules?.[m] !== false;
-                        return (
-                          <label key={m} className={"mod-pill" + (on ? " mod-pill--on" : "") + (locked ? " mod-pill--locked" : "")} title={locked ? "Pending — feature not available yet" : undefined}>
-                            <input type="checkbox" checked={on} disabled={locked} onChange={(e) => setEditForm((f) => ({ ...f, modules: { ...f.modules, [m]: e.target.checked } }))} /> {moduleLabel(m)}
-                            {locked && <span className="mod-pill__pending">Pending</span>}
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-                <div className="form-row">
-                  <div className="form-row__head">
-                    <div className="form-row__label">Moderation</div>
-                    <div className="form-row__desc">How guest submissions are approved.</div>
-                  </div>
-                  <div className="form-row__fields">
-                    {!galleryOff && (
-                      <AdminToggle label="Auto-approve photos &amp; videos" desc="When on, guest uploads appear in the gallery instantly. When off, they wait in the Media queue." checked={editForm.autoApproveMedia} onChange={(v) => setEditForm((f) => ({ ...f, autoApproveMedia: v }))} />
-                    )}
-                    <AdminToggle label="Auto-approve guestbook messages" desc="When on, messages post immediately. When off, they stay hidden until approved." checked={editForm.autoApproveGuestbook} onChange={(v) => setEditForm((f) => ({ ...f, autoApproveGuestbook: v }))} noRule />
-                  </div>
-                </div>
-                <div className="form-row">
-                  <div className="form-row__head">
-                    <div className="form-row__label">Owner editing</div>
-                    <div className="form-row__desc">Which sections the couple's own login may edit. Everything else stays superadmin-only.</div>
-                  </div>
-                  <div className="form-row__fields">
-                    <div style={{ fontSize: 12, letterSpacing: ".1em", textTransform: "uppercase", fontWeight: 600, color: "var(--ink-soft)", margin: "2px 0 4px" }}>Home tab folders</div>
-                    {HOME_GRANTS.map(([k, l]) => (
-                      <AdminToggle key={k} label={l} checked={editForm.ownerEdit?.[k] === true} onChange={(v) => setGrant(k, v)} />
-                    ))}
-                    <div style={{ fontSize: 12, letterSpacing: ".1em", textTransform: "uppercase", fontWeight: 600, color: "var(--ink-soft)", margin: "14px 0 4px" }}>Other tabs</div>
-                    {TAB_GRANTS.map(([k, l], i) => (
-                      <AdminToggle key={k} label={l} checked={editForm.ownerEdit?.[k] === true} onChange={(v) => setGrant(k, v)} noRule={i === TAB_GRANTS.length - 1} />
-                    ))}
-                  </div>
-                </div>
-                <div className="form-row">
-                  <div className="form-row__head">
-                    <div className="form-row__label">Access &amp; toggles</div>
-                    <div className="form-row__desc">Admin password and site-wide switches.</div>
-                  </div>
-                  <div className="form-row__fields">
-                    <Field label="Admin password" id="e-pw"><Input id="e-pw" value={editForm.adminPassword} onChange={(e) => setEditForm((f) => ({ ...f, adminPassword: e.target.value }))} /></Field>
-                    {!galleryOff && (<>
-                      <AdminToggle label="Allow guest uploads" desc="Master switch for the photo/video upload pages." checked={editForm.uploadsEnabled} onChange={(v) => setEditForm((f) => ({ ...f, uploadsEnabled: v }))} />
-                      <AdminToggle label="Show public gallery" desc="Hide the gallery from guests entirely if you prefer." checked={editForm.galleryEnabled} onChange={(v) => setEditForm((f) => ({ ...f, galleryEnabled: v }))} />
-                    </>)}
-                    <AdminToggle label="Enable Strict RSVP" desc="Track an invited-guest list with seat allocations and see who hasn't replied. Adds a Guests tab; only listed guests can RSVP, capped at their allocation." checked={editForm.strictRsvp} onChange={(v) => setEditForm((f) => ({ ...f, strictRsvp: v }))} noRule />
-                  </div>
-                </div>
-              </>)}
+              {editTab === "access" && (
+                <AccessFields v={editForm} set={(patch) => setEditForm((f) => ({ ...f, ...patch }))} />
+              )}
 
               <div className="form-foot">
                 <Button type="button" variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
@@ -856,7 +893,7 @@ export function ClientsAdmin() {
                 <div style={row}><span style={lab}>Submitted</span><span>{new Date(r.created_at).toLocaleString()}</span></div>
               </div>
               <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
-                <Button variant="primary" onClick={() => { setReqInfo(null); setReqEdit(r); }}>{Icon.edit({})} Edit request</Button>
+                <Button variant="primary" onClick={() => { setReqInfo(null); openReqEdit(r); }}>{Icon.edit({})} Edit request</Button>
               </div>
             </div>
           );
@@ -867,22 +904,59 @@ export function ClientsAdmin() {
           editor. One component, one payload serializer (requestPayload), so any
           field added to the wizard is automatically editable here too. */}
       <Modal open={!!reqEdit} onClose={() => setReqEdit(null)} label="Edit request" wide>
-        {reqEdit && (
+        {reqEdit && reqAccess && (
           <div>
-            <ApplyWizard
-              initial={reqEdit}
-              onCancel={() => setReqEdit(null)}
-              onSave={async (p) => {
-                if (!isValidSubdomain(p.subdomain)) throw new Error("Invalid subdomain — lowercase letters, numbers, hyphens; not a reserved name.");
-                await updateSiteRequest(reqEdit.id, {
-                  partner_a: p.partnerA, partner_b: p.partnerB, subdomain: p.subdomain,
-                  email: p.email, template_key: p.templateKey, content: p.content,
-                });
-                toast("Request updated", "success");
-                setReqEdit(null);
-                await load();
-              }}
-            />
+            <div className="folders" style={{ marginBottom: 18 }}>
+              <button type="button" className={"folder" + (reqEditTab === "design" ? " folder--active" : "")} onClick={() => setReqEditTab("design")}>{Icon.grid({})} Design</button>
+              <button type="button" className={"folder" + (reqEditTab === "access" ? " folder--active" : "")} onClick={() => setReqEditTab("access")}>{Icon.check({})} Access</button>
+            </div>
+            {/* Design = the full intake wizard (all request fields). Kept mounted and
+                hidden (not unmounted) so switching to Access doesn't reset its steps. */}
+            <div style={{ display: reqEditTab === "design" ? "block" : "none" }}>
+              <ApplyWizard
+                initial={reqEdit}
+                onCancel={() => setReqEdit(null)}
+                onSave={async (p) => {
+                  if (!isValidSubdomain(p.subdomain)) throw new Error("Invalid subdomain — lowercase letters, numbers, hyphens; not a reserved name.");
+                  await updateSiteRequest(reqEdit.id, {
+                    partner_a: p.partnerA, partner_b: p.partnerB, subdomain: p.subdomain,
+                    email: p.email, template_key: p.templateKey,
+                    // merge so the Access-tab keys (modules/ownerEdit/…) the wizard
+                    // doesn't manage survive a Design save.
+                    content: { ...(reqEdit.content || {}), ...p.content },
+                  });
+                  toast("Request updated", "success");
+                  setReqEdit(null);
+                  await load();
+                }}
+              />
+            </div>
+            {/* Access = the same shared settings as the client editor; its own Save
+                merges into the request's content (Strict RSVP lives in the wizard). */}
+            <div style={{ display: reqEditTab === "access" ? "block" : "none" }}>
+              <div className="form-rows">
+                <AccessFields v={reqAccess} set={(patch) => setReqAccess((a) => ({ ...a, ...patch }))} omit={["strictRsvp"]} />
+                <div className="form-foot">
+                  <Button type="button" variant="ghost" onClick={() => setReqEdit(null)}>Cancel</Button>
+                  <Button type="button" variant="primary" disabled={busy} onClick={() => runBusy("Saving…", async () => {
+                    const content = {
+                      ...(reqEdit.content || {}),
+                      modules: reqAccess.modules,
+                      autoApproveMedia: reqAccess.autoApproveMedia,
+                      autoApproveGuestbook: reqAccess.autoApproveGuestbook,
+                      uploadsEnabled: reqAccess.uploadsEnabled,
+                      galleryEnabled: reqAccess.galleryEnabled,
+                      adminPassword: reqAccess.adminPassword,
+                      ownerEdit: reqAccess.ownerEdit || {},
+                    };
+                    await updateSiteRequest(reqEdit.id, { content });
+                    setReqEdit((r) => (r ? { ...r, content } : r)); // keep local row in sync for a later Design save
+                    toast("Access settings saved", "success");
+                    await load();
+                  })}>{busy ? "Saving…" : "Save changes"}</Button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </Modal>
