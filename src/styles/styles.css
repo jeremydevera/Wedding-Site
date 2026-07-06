@@ -573,6 +573,11 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 .modal__backdrop { position: absolute; inset: 0; background: rgba(15,15,15,.6); backdrop-filter: blur(3px); animation: fade .2s ease; }
 .modal__panel { position: relative; background: var(--surface); border-radius: var(--radius); padding: 36px; width: min(560px, 100%); max-height: 90vh; overflow-y: auto; animation: pop .24s cubic-bezier(.2,.7,.3,1); }
 .modal__panel--wide { width: min(920px, 100%); }
+/* SectionHead is a page-level heading (title up to 50px). Scale it down inside
+   modals so the dialog header isn't oversized — public-page section titles,
+   which live outside .modal__panel, are unaffected. */
+.modal__panel .sec-head { margin-bottom: 22px; }
+.modal__panel .sec-head__title { font-size: clamp(21px, 2.6vw, 26px); margin-top: 6px; }
 /* Confirm/message dialogs stay opaque even under the glass theme — a translucent
    blurred panel makes a short message box hard to read. Overrides the
    [data-theme="glass"] .modal__panel rule above. */
