@@ -361,18 +361,38 @@ export function ClientsAdmin() {
     });
     // renders as a Modal over the list — no page swap
   }
-  async function saveEdit(e) {
-    e.preventDefault();
-    if (busy || !editing) return;
-    setBusyLabel("Saving…"); setBusy(true);
+  // DESIGN tab (client): the same intake wizard as the request editor. Saves the
+  // site fields (couple → content.partnerA/B, subdomain, theme, date, venue,
+  // schedule, entourage) back to the client, and applies an owner-email change.
+  // Merges content so the Access-tab keys survive. Throws on bad subdomain so the
+  // wizard surfaces the error inline.
+  async function saveClientDesign(p) {
+    if (!editing) return;
+    if (!isValidSubdomain(p.subdomain)) throw new Error("Invalid subdomain — lowercase letters, numbers, hyphens; not a reserved name.");
     const id = editing.id;
-    const sub = editForm.subdomain.trim().toLowerCase();
-    if (sub && sub !== editing.subdomain) {
-      const { error } = await supabase.from("clients").update({ subdomain: sub }).eq("id", id);
-      if (error) { setBusy(false); setBusyLabel(""); return toast("Save failed: " + error.message); }
-    }
-    {
-      // Persist modules + the Access-tab settings back into the client's content JSON.
+    await runBusy("Saving…", async () => {
+      const content = { ...(editing.content || {}), partnerA: p.partnerA, partnerB: p.partnerB, ...p.content };
+      const { error } = await supabase.from("clients").update({ subdomain: p.subdomain, template_key: p.templateKey, content }).eq("id", id);
+      if (error) { toast("Save failed: " + error.message, "err"); return; }
+      const email = (p.email || "").trim();
+      try {
+        if (email && email !== (editing.owner_email || "")) {
+          if (editing.owner_email) await updateOwnerEmail({ old_email: editing.owner_email, new_email: email });
+          await supabase.from("clients").update({ owner_email: email }).eq("id", id);
+        }
+      } catch (e2) { edgeOrToast(e2); }
+      toast("Client updated", "success");
+      await load();
+      setEditing(null);
+    });
+  }
+  // ACCESS tab (client): shared feature/access settings + the client-only owner
+  // password reset and private note. Strict RSVP lives on the Design wizard, so
+  // it's omitted here and not written (can't clobber the wizard's value).
+  async function saveClientAccess() {
+    if (busy || !editing) return;
+    const id = editing.id;
+    await runBusy("Saving…", async () => {
       const content = {
         ...(editing.content || {}),
         modules: editForm.modules,
@@ -380,30 +400,24 @@ export function ClientsAdmin() {
         autoApproveGuestbook: editForm.autoApproveGuestbook,
         uploadsEnabled: editForm.uploadsEnabled,
         galleryEnabled: editForm.galleryEnabled,
-        strictRsvp: editForm.strictRsvp,
         adminPassword: editForm.adminPassword,
         ownerEdit: editForm.ownerEdit || {},
       };
       const { error } = await supabase.from("clients").update({ content }).eq("id", id);
-      if (error) { setBusy(false); setBusyLabel(""); return toast("Save failed: " + error.message); }
-    }
-    try { await saveNote(id, editForm.note); } catch (_) { /* note is best-effort */ }
-    const email = editForm.ownerEmail.trim();
-    const pw = editForm.ownerPassword;
-    try {
-      if (pw) { // set owner / reset password (also sets email)
-        const useEmail = email || editing.owner_email;
-        if (!useEmail) throw new Error("Enter an owner email");
-        await createOwner({ email: useEmail, password: pw, client_id: id });
-        await supabase.from("clients").update({ owner_email: useEmail }).eq("id", id);
-      } else if (email && email !== (editing.owner_email || "")) { // change email only
-        if (editing.owner_email) await updateOwnerEmail({ old_email: editing.owner_email, new_email: email });
-        await supabase.from("clients").update({ owner_email: email }).eq("id", id);
+      if (error) { toast("Save failed: " + error.message, "err"); return; }
+      try { await saveNote(id, editForm.note); } catch (_) { /* note is best-effort */ }
+      const pw = editForm.ownerPassword;
+      if (pw) {
+        try {
+          if (!editing.owner_email) throw new Error("Set the owner email on the Design tab first.");
+          await createOwner({ email: editing.owner_email, password: pw, client_id: id });
+        } catch (e2) { edgeOrToast(e2); }
       }
-      toast("Client updated");
-    } catch (e2) { toast("Saved client info."); edgeOrToast(e2); }
-    await load();
-    setBusy(false); setBusyLabel(""); setEditing(null);
+      setEditing((c) => (c ? { ...c, content } : c)); // keep local row fresh for a later Design save
+      setEditForm((f) => ({ ...f, ownerPassword: "" }));
+      toast("Access settings saved", "success");
+      await load();
+    });
   }
 
   // Remove the owner's auth account FIRST, while profiles.client_id still links
@@ -771,56 +785,45 @@ export function ClientsAdmin() {
 
       <Modal open={!!editing} onClose={() => setEditing(null)} label="Edit client" wide>
         {editing && (() => {
+          // Feed the client through the SAME wizard as the request editor by
+          // shaping it like a site_requests row (couple names live in content).
+          const clientReq = {
+            partner_a: editing.content?.partnerA || "", partner_b: editing.content?.partnerB || "",
+            email: editing.owner_email || "", subdomain: editing.subdomain,
+            template_key: editing.template_key, content: editing.content || {},
+          };
           return (
           <div>
-            <SectionHead eyebrow="Client" title={`Edit ${editing.subdomain}`} />
             <div className="folders" style={{ marginBottom: 18 }}>
               <button type="button" className={"folder" + (editTab === "design" ? " folder--active" : "")} onClick={() => setEditTab("design")}>{Icon.grid({})} Design</button>
               <button type="button" className={"folder" + (editTab === "access" ? " folder--active" : "")} onClick={() => setEditTab("access")}>{Icon.check({})} Access</button>
             </div>
-            <form onSubmit={saveEdit} className="form-rows">
-              {editTab === "design" && (<>
+            {/* Design = the same intake wizard as the request editor. Kept mounted
+                (hidden) so switching to Access doesn't reset its steps. */}
+            <div style={{ display: editTab === "design" ? "block" : "none" }}>
+              <ApplyWizard initial={clientReq} onCancel={() => setEditing(null)} onSave={saveClientDesign} />
+            </div>
+            {/* Access = shared AccessFields (identical to the request editor) plus
+                the client-only owner password reset + private note. */}
+            <div style={{ display: editTab === "access" ? "block" : "none" }}>
+              <div className="form-rows">
+                <AccessFields v={editForm} set={(patch) => setEditForm((f) => ({ ...f, ...patch }))} omit={["strictRsvp"]} />
                 <div className="form-row">
                   <div className="form-row__head">
-                    <div className="form-row__label">Project</div>
-                    <div className="form-row__desc">The client's subdomain.</div>
+                    <div className="form-row__label">Owner login &amp; note</div>
+                    <div className="form-row__desc">Reset the owner's password and keep a private note. The owner email is on the Design tab.</div>
                   </div>
                   <div className="form-row__fields">
-                    <Field label="Subdomain" id="e-sub"><Input id="e-sub" value={editForm.subdomain} onChange={(e) => setEditForm((f) => ({ ...f, subdomain: e.target.value }))} /></Field>
+                    <Field label="New password" id="e-opw" hint="Leave blank to keep current"><Input id="e-opw" value={editForm.ownerPassword} onChange={(e) => setEditForm((f) => ({ ...f, ownerPassword: e.target.value }))} placeholder="••••••••" /></Field>
+                    <Field label="Private note (superadmin only)" id="e-note"><Textarea id="e-note" value={editForm.note} onChange={(e) => setEditForm((f) => ({ ...f, note: e.target.value }))} placeholder="Add a private note about this client…" /></Field>
                   </div>
                 </div>
-                <div className="form-row">
-                  <div className="form-row__head">
-                    <div className="form-row__label">Owner login</div>
-                    <div className="form-row__desc">Change the owner email or reset the password. Passwords can't be viewed.</div>
-                  </div>
-                  <div className="form-row__fields">
-                    <div className="form-grid2">
-                      <Field label="Owner email" id="e-oemail"><Input id="e-oemail" type="email" value={editForm.ownerEmail} onChange={(e) => setEditForm((f) => ({ ...f, ownerEmail: e.target.value }))} placeholder="owner@theirdomain" /></Field>
-                      <Field label="New password" id="e-opw" hint="Leave blank to keep current"><Input id="e-opw" value={editForm.ownerPassword} onChange={(e) => setEditForm((f) => ({ ...f, ownerPassword: e.target.value }))} placeholder="••••••••" /></Field>
-                    </div>
-                  </div>
+                <div className="form-foot">
+                  <Button type="button" variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
+                  <Button type="button" variant="primary" disabled={busy} onClick={saveClientAccess}>{busy ? "Saving…" : "Save changes"}</Button>
                 </div>
-                <div className="form-row">
-                  <div className="form-row__head">
-                    <div className="form-row__label">Note</div>
-                    <div className="form-row__desc">Private to superadmin — never shown on the client's site or to the owner.</div>
-                  </div>
-                  <div className="form-row__fields">
-                    <Field label="Note (optional)" id="e-note"><Textarea id="e-note" value={editForm.note} onChange={(e) => setEditForm((f) => ({ ...f, note: e.target.value }))} placeholder="Add a private note about this client…" /></Field>
-                  </div>
-                </div>
-              </>)}
-
-              {editTab === "access" && (
-                <AccessFields v={editForm} set={(patch) => setEditForm((f) => ({ ...f, ...patch }))} />
-              )}
-
-              <div className="form-foot">
-                <Button type="button" variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
-                <Button type="submit" variant="primary" disabled={busy}>{busy ? "Saving…" : "Save changes"}</Button>
               </div>
-            </form>
+            </div>
           </div>
           );
         })()}
