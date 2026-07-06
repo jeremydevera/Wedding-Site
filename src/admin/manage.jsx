@@ -2295,12 +2295,12 @@ export function HomeAdmin() {
               </div>
               {/* narrow wrapper so the switch sits next to its label, not far across the wide panel */}
               <div style={{ maxWidth: 460 }}>
-                <AdminToggle noRule label="Show countdown timer" desc="The live days/hours/minutes counter on the home page. Turn off to hide it." checked={f.showCountdown !== false} onChange={(v) => toggleShow("showCountdown", v)} />
+                <AdminToggle noRule label="Show countdown timer" desc="The live days/hours/minutes counter on the home page. Turn off to hide it." checked={f.showCountdown !== false} onChange={(v) => Store.updateSettings({ showCountdown: v })} />
               </div>
               <Field label="Welcome message" id="s-welcome"><Textarea id="s-welcome" rows={3} value={f.welcome} onChange={set("welcome")} /></Field>
               {/* narrow wrapper so the switch sits next to its label, not far across the wide panel */}
               <div style={{ maxWidth: 460 }}>
-                <AdminToggle noRule label="Show RSVP deadline" desc="Show the “Kindly respond by …” line on the site and auto-close the form at the closing time. Turn off to hide the deadline entirely." checked={f.rsvpDeadlineOn !== false} onChange={(v) => toggleShow("rsvpDeadlineOn", v)} />
+                <AdminToggle noRule label="Show RSVP deadline" desc="Show the “Kindly respond by …” line on the site and auto-close the form at the closing time. Turn off to hide the deadline entirely." checked={f.rsvpDeadlineOn !== false} onChange={(v) => Store.updateSettings({ rsvpDeadlineOn: v })} />
               </div>
               {f.rsvpDeadlineOn !== false && (
                 <div className="field-row field-row--2">
