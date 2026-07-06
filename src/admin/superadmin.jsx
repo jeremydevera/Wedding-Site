@@ -86,11 +86,10 @@ function AccessFields({ v, set, omit = [], passwordEnabled = true }) {
       </div>
       <div className="form-row">
         <div className="form-row__head">
-          <div className="form-row__label">Access &amp; toggles</div>
-          <div className="form-row__desc">Admin password and site-wide switches.</div>
+          <div className="form-row__label">Site-wide switches</div>
+          <div className="form-row__desc">Toggles that apply to the whole site.</div>
         </div>
         <div className="form-row__fields">
-          <Field label="Admin password" id="af-pw"><Input id="af-pw" value={v.adminPassword} onChange={(e) => set({ adminPassword: e.target.value })} /></Field>
           {!galleryOff && (<>
             <AdminToggle label="Allow guest uploads" desc="Master switch for the photo/video upload pages." checked={v.uploadsEnabled} onChange={(x) => set({ uploadsEnabled: x })} />
             <AdminToggle label="Show public gallery" desc="Hide the gallery from guests entirely if you prefer." checked={v.galleryEnabled} onChange={(x) => set({ galleryEnabled: x })} />
@@ -258,7 +257,6 @@ export function ClientsAdmin() {
       autoApproveGuestbook: c.autoApproveGuestbook !== false,
       uploadsEnabled: c.uploadsEnabled !== false,
       galleryEnabled: c.galleryEnabled !== false,
-      adminPassword: c.adminPassword || "wedding",
       ownerEdit: { ...(c.ownerEdit || {}) },
       note: c.note || "",
     });
@@ -369,7 +367,6 @@ export function ClientsAdmin() {
       uploadsEnabled: ct.uploadsEnabled !== false,
       galleryEnabled: ct.galleryEnabled !== false,
       strictRsvp: ct.strictRsvp === true,
-      adminPassword: ct.adminPassword || "wedding",
       ownerEdit: { ...(ct.ownerEdit || {}) },
     });
     // renders as a Modal over the list — no page swap
@@ -413,7 +410,6 @@ export function ClientsAdmin() {
         autoApproveGuestbook: editForm.autoApproveGuestbook,
         uploadsEnabled: editForm.uploadsEnabled,
         galleryEnabled: editForm.galleryEnabled,
-        adminPassword: editForm.adminPassword,
         ownerEdit: editForm.ownerEdit || {},
       };
       const { error } = await supabase.from("clients").update({ content }).eq("id", id);
@@ -952,7 +948,6 @@ export function ClientsAdmin() {
                       autoApproveGuestbook: reqAccess.autoApproveGuestbook,
                       uploadsEnabled: reqAccess.uploadsEnabled,
                       galleryEnabled: reqAccess.galleryEnabled,
-                      adminPassword: reqAccess.adminPassword,
                       ownerEdit: reqAccess.ownerEdit || {},
                       note: reqAccess.note || "",
                     };

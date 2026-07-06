@@ -2248,7 +2248,9 @@ export function SettingsAdmin() {
       <div className="panel">
         <div className="panel__head"><div className="panel__title">Access &amp; Toggles</div></div>
         <div className="panel__body">
-          <Field label="Admin password" id="s-pw"><Input id="s-pw" value={f.adminPassword} onChange={set("adminPassword")} /></Field>
+          {/* NOTE: the old "Admin password" field was removed — it gated nothing
+              (admin login is Supabase email/password) and was stripped before save
+              (mappers CONTENT_SECRET_KEYS), so editing it never persisted. */}
           {/* Guest uploads + public gallery are globally shelved (roles.js DISABLED_MODULES);
               hide these dead master switches so they can't mislead. Reappear when it ships. */}
           {!DISABLED_MODULES.has("gallery") && (<>
