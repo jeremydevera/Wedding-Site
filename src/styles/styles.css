@@ -1014,6 +1014,13 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 /* full content width (no narrow cap) — fills the page like the Supabase billing layout */
 .sa-form { max-width: none; }
 .panel__sub { font-size: 13px; color: var(--muted); margin-top: 4px; font-family: var(--font-body); font-weight: 400; }
+/* Owner-editing grants, grouped (Home folders vs standalone tabs) */
+.owner-edit__group + .owner-edit__group { margin-top: 22px; }
+.owner-edit__grouphead { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 8px; margin-bottom: 6px; border-bottom: 1px solid var(--line); }
+.owner-edit__grouptitle { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; color: var(--ink); }
+.owner-edit__grouptitle svg { color: var(--accent); }
+.owner-edit__all { background: none; border: 1px solid var(--line); border-radius: 999px; padding: 3px 11px; font: inherit; font-size: 12px; font-weight: 600; color: var(--accent); cursor: pointer; }
+.owner-edit__all:hover { background: var(--surface-2); border-color: var(--accent); }
 .form-rows { display: block; }
 .form-row { display: grid; grid-template-columns: 1fr; gap: 8px; padding: 22px 0; border-bottom: 1px solid var(--line); }
 .form-row:first-child { padding-top: 6px; }

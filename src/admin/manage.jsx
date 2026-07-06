@@ -2081,21 +2081,50 @@ export function SettingsAdmin() {
         </div>
       </div>
 
-      <div className="panel">
-        <div className="panel__head"><div className="panel__title">Owner editing</div></div>
-        <div className="panel__body">
-          {/* Per-section grants: each one opens that content area to the couple's
-              owner account (normally superadmin-only). Stored in settings.ownerEdit. */}
-          <AdminToggle label="Edit Home" desc="Let the owner edit the Home tab — couple & event info and the invitation section." checked={(f.ownerEdit || {}).home === true} onChange={(v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), home: v })} />
-          <AdminToggle label="Edit Google Maps" desc="Let the owner edit the Google Maps folder inside the Home tab (home-page map + its pin)." checked={(f.ownerEdit || {}).maps === true} onChange={(v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), maps: v })} />
-          <AdminToggle label="Edit Timeline" desc="Let the owner edit the Timeline folder inside the Home tab (the home-page schedule glimpse layout)." checked={(f.ownerEdit || {}).timeline === true} onChange={(v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), timeline: v })} />
-          <AdminToggle label="Edit Attire" desc="Let the owner edit the Attire folder inside the Home tab (dress-code guide)." checked={(f.ownerEdit || {}).attire === true} onChange={(v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), attire: v })} />
-          <AdminToggle label="Edit Music playlist" desc="Let the owner edit the Music playlist folder inside the Home tab (home-page player + tracks)." checked={(f.ownerEdit || {}).music === true} onChange={(v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), music: v })} />
-          <AdminToggle label="Edit Entourage" desc="Let the owner edit the Entourage folder inside the Home tab (wedding party groups & names)." checked={(f.ownerEdit || {}).entourage === true} onChange={(v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), entourage: v })} />
-          <AdminToggle label="Edit Schedule" desc="Let the owner edit the Schedule tab (wedding-day timeline guests see)." checked={(f.ownerEdit || {}).schedule === true} onChange={(v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), schedule: v })} />
-          <AdminToggle label="Edit Venue &amp; Map" desc="Let the owner edit the Venue & Map tab (venue cards, map, directions)." checked={(f.ownerEdit || {}).venue === true} onChange={(v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), venue: v })} />
-        </div>
-      </div>
+      {(() => {
+        // Per-section grants: each opens that content area to the owner account
+        // (normally superadmin-only). Stored in settings.ownerEdit. Grouped so
+        // the Home folders read as folders-inside-Home, separate from the
+        // standalone tabs. HOME_GRANTS keys mirror HomeAdmin's folder tabs.
+        const oe = f.ownerEdit || {};
+        const setGrant = (k, v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), [k]: v });
+        const HOME_GRANTS = [
+          { k: "home", label: "Couple & Event + Invitation", desc: "Couple & event details and the invitation section." },
+          { k: "maps", label: "Google Maps", desc: "The home-page map and its pin." },
+          { k: "timeline", label: "Timeline", desc: "The home-page schedule-glimpse layout." },
+          { k: "attire", label: "Attire", desc: "The dress-code guide." },
+          { k: "music", label: "Music playlist", desc: "The home-page player and its tracks." },
+          { k: "entourage", label: "Entourage", desc: "Wedding-party groups and names." },
+        ];
+        const TAB_GRANTS = [
+          { k: "schedule", label: "Schedule", desc: "The Schedule tab (wedding-day timeline guests see)." },
+          { k: "venue", label: "Venue & Map", desc: "The Venue & Map tab (venue cards, map, directions)." },
+        ];
+        const allHomeOn = HOME_GRANTS.every((g) => oe[g.k] === true);
+        const toggleAllHome = (v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), ...Object.fromEntries(HOME_GRANTS.map((g) => [g.k, v])) });
+        return (
+          <div className="panel">
+            <div className="panel__head"><div><div className="panel__title">Owner editing</div><div className="panel__sub">Choose which sections the couple's own login may edit. Everything else stays superadmin-only.</div></div></div>
+            <div className="panel__body">
+              <div className="owner-edit__group">
+                <div className="owner-edit__grouphead">
+                  <span className="owner-edit__grouptitle">{Icon.home({ style: { width: 15, height: 15 } })} Home tab folders</span>
+                  <button type="button" className="owner-edit__all" onClick={() => toggleAllHome(!allHomeOn)}>{allHomeOn ? "Turn all off" : "Enable all"}</button>
+                </div>
+                {HOME_GRANTS.map((g) => (
+                  <AdminToggle key={g.k} label={g.label} desc={g.desc} checked={oe[g.k] === true} onChange={(v) => setGrant(g.k, v)} />
+                ))}
+              </div>
+              <div className="owner-edit__group">
+                <div className="owner-edit__grouphead"><span className="owner-edit__grouptitle">{Icon.grid({ style: { width: 15, height: 15 } })} Other tabs</span></div>
+                {TAB_GRANTS.map((g) => (
+                  <AdminToggle key={g.k} label={g.label} desc={g.desc} checked={oe[g.k] === true} onChange={(v) => setGrant(g.k, v)} />
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="panel">
         <div className="panel__head"><div className="panel__title">Access &amp; Toggles</div></div>
