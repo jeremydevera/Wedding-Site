@@ -2212,10 +2212,16 @@ export function HomeAdmin() {
                 <AdminToggle noRule label="Show countdown timer" desc="The live days/hours/minutes counter on the home page. Turn off to hide it." checked={f.showCountdown !== false} onChange={(v) => toggleShow("showCountdown", v)} />
               </div>
               <Field label="Welcome message" id="s-welcome"><Textarea id="s-welcome" rows={3} value={f.welcome} onChange={set("welcome")} /></Field>
-              <div className="field-row field-row--2">
-                <Field label="RSVP deadline (display text)" id="s-rsvp" hint="Shown on the RSVP page — e.g. “August 15, 2027”"><Input id="s-rsvp" value={f.rsvpDeadline} onChange={set("rsvpDeadline")} /></Field>
-                <Field label="RSVP closes at" id="s-rsvpd" hint="Optional. Set a date/time to auto-close the form."><ClosesAtInput value={f.rsvpDeadlineDate} onChange={set("rsvpDeadlineDate")} /></Field>
+              {/* narrow wrapper so the switch sits next to its label, not far across the wide panel */}
+              <div style={{ maxWidth: 460 }}>
+                <AdminToggle noRule label="Show RSVP deadline" desc="Show the “Kindly respond by …” line on the site and auto-close the form at the closing time. Turn off to hide the deadline entirely." checked={f.rsvpDeadlineOn !== false} onChange={(v) => toggleShow("rsvpDeadlineOn", v)} />
               </div>
+              {f.rsvpDeadlineOn !== false && (
+                <div className="field-row field-row--2">
+                  <Field label="RSVP deadline (display text)" id="s-rsvp" hint="Shown on the RSVP page — e.g. “August 15, 2027”"><Input id="s-rsvp" value={f.rsvpDeadline} onChange={set("rsvpDeadline")} /></Field>
+                  <Field label="RSVP closes at" id="s-rsvpd" hint="Optional. Set a date/time to auto-close the form."><ClosesAtInput value={f.rsvpDeadlineDate} onChange={set("rsvpDeadlineDate")} /></Field>
+                </div>
+              )}
               <Field label="Hashtag" id="s-hash"><Input id="s-hash" value={f.hashtag} onChange={set("hashtag")} /></Field>
             </div>
           </div>

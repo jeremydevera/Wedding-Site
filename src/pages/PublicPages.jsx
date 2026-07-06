@@ -472,7 +472,7 @@ export function Home() {
             </p>
             <div style={{ color: "var(--ink-soft)", letterSpacing: ".12em", textTransform: "uppercase", fontSize: 14, margin: "18px 0 26px" }}>{s.weddingDateLabel}</div>
             {s.showCountdown !== false && <Countdown targetIso={s.weddingDate} light />}
-            {s.rsvpDeadline && <p style={{ color: "var(--ink-soft)", fontSize: 15, margin: "26px 0 0", letterSpacing: ".04em" }}>Kindly respond by {s.rsvpDeadline}.</p>}
+            {s.rsvpDeadlineOn !== false && s.rsvpDeadline && <p style={{ color: "var(--ink-soft)", fontSize: 15, margin: "26px 0 0", letterSpacing: ".04em" }}>Kindly respond by {s.rsvpDeadline}.</p>}
             <div style={{ marginTop: 22 }}>
               <Button variant="primary" size="lg" onClick={() => go("rsvp")}>{Icon.check({})} Respond now</Button>
             </div>
@@ -491,7 +491,7 @@ export function Home() {
           <p style={{ color: "var(--ink-soft)", fontSize: 19 }}>
             {s.inviteBody}
           </p>
-          <p style={{ color: "var(--ink-soft)", fontSize: 15, margin: "22px 0 16px", letterSpacing: ".04em" }}>Kindly respond by {s.rsvpDeadline}.</p>
+          {s.rsvpDeadlineOn !== false && <p style={{ color: "var(--ink-soft)", fontSize: 15, margin: "22px 0 16px", letterSpacing: ".04em" }}>Kindly respond by {s.rsvpDeadline}.</p>}
           <Button variant="primary" size="lg" onClick={() => go("rsvp")}>{Icon.check({})} Respond now</Button>
         </div>
       </section>

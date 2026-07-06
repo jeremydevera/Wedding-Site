@@ -254,7 +254,7 @@ export function RSVPPage() {
     );
   }
 
-  if (isRsvpClosed(settings.rsvpDeadlineDate, Date.now())) {
+  if (settings.rsvpDeadlineOn !== false && isRsvpClosed(settings.rsvpDeadlineDate, Date.now())) {
     return (
       <div className="fade-up">
         <section className="block">
@@ -277,7 +277,7 @@ export function RSVPPage() {
 
   return (
     <div className="fade-up">
-      <PageHero eyebrow="RSVP" title="Will you be there?" lead={`Kindly respond by ${settings.rsvpDeadline}.`} />
+      <PageHero eyebrow="RSVP" title="Will you be there?" lead={settings.rsvpDeadlineOn !== false ? `Kindly respond by ${settings.rsvpDeadline}.` : undefined} />
       <section className="block" style={{ paddingTop: 20 }}>
         <div className="container container--narrow">
           <form className="card card--pad-lg" onSubmit={submit} noValidate>
