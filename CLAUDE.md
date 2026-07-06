@@ -1,5 +1,11 @@
 # Project notes for Claude
 
+## 🔴 Before any bug scan — read docs/BY-DESIGN.md
+`docs/BY-DESIGN.md` is an allowlist of INTENTIONAL behaviors. When asked to scan
+for bugs, consult it first and do NOT flag anything listed there (e.g. the media
+"Choose from library" tab being superadmin-only, owner-edit grants defaulting
+off). Add a new entry there whenever a behavior is confirmed intentional.
+
 ## 🔴 CRITICAL — demo.celebrately.us is the client-facing demo
 `demo.celebrately.us` is what the owner shows to prospective clients. **It MUST reflect every change.**
 
