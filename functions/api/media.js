@@ -15,8 +15,6 @@ function fileNameFromKey(key) {
   return seg.replace(/^([0-9a-f]{8}|[0-9]{9,})-/i, "");
 }
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 // Verify the bearer token belongs to a superadmin. Returns { ok, status } —
 // ok:true when the caller is a superadmin; otherwise ok:false with an HTTP status
 // (401 no/invalid token, 403 not superadmin, 502 role lookup failed).
@@ -74,14 +72,15 @@ async function resolveCaller(SUPABASE_URL, SUPABASE_ANON_KEY, token) {
   } catch { return { ok: false, status: 502 }; }
 }
 
-// Fetch the stringified content of the given client UUIDs. Returns
-// Map<clientId, { subdomain, content }> where content is JSON.stringify of the
-// client's content column (so callers can substring-match a key). Non-UUID ids
-// (e.g. "shared") are skipped. Throws on a failed lookup.
-async function fetchClientsContent(SUPABASE_URL, SUPABASE_ANON_KEY, token, clientIds) {
-  const ids = [...new Set((clientIds || []).filter((c) => UUID_RE.test(c)))];
-  if (!ids.length) return new Map();
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/clients?id=in.(${ids.join(",")})&select=id,subdomain,content`, {
+// Fetch EVERY client's stringified content. Returns the same shape as
+// fetchClientsContent (Map<clientId, { subdomain, content }>). Because the media
+// library is cross-tenant (client B can reference client A's key), a file's
+// in-use status must be checked against ALL clients, not just the key's
+// owner-prefix client — otherwise deleting a file still referenced by a
+// different tenant would orphan that reference. Throws on a failed lookup so
+// callers fail CLOSED (treat a lookup error as "can't prove it's free").
+async function fetchAllClientsContent(SUPABASE_URL, SUPABASE_ANON_KEY, token) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/clients?select=id,subdomain,content`, {
     headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error("clients lookup failed");
@@ -91,6 +90,17 @@ async function fetchClientsContent(SUPABASE_URL, SUPABASE_ANON_KEY, token, clien
     m.set(r.id, { subdomain: r.subdomain, content: JSON.stringify(r.content || {}) });
   }
   return m;
+}
+
+// Scan all client contents for a key; return the subdomains of every client
+// whose content references it (cross-tenant aware). `all` is the Map returned by
+// fetchAllClientsContent.
+function usersOfKey(all, key) {
+  const subs = [];
+  for (const e of all.values()) {
+    if (e.content.includes(key)) subs.push(e.subdomain);
+  }
+  return subs;
 }
 
 export async function onRequestGet(context) {
@@ -148,17 +158,21 @@ export async function onRequestGet(context) {
     .sort((a, b) => new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime());
 
   if (usage) {
-    let map;
+    // Cross-tenant: a file may be referenced by ANY client, not just its
+    // owner-prefix client, so scan every client's content (superadmin-only path).
+    let all;
     try {
-      map = await fetchClientsContent(SUPABASE_URL, SUPABASE_ANON_KEY, token, items.map((i) => i.key.split("/")[0]));
+      all = await fetchAllClientsContent(SUPABASE_URL, SUPABASE_ANON_KEY, token);
     } catch (e) {
       return json({ error: "usage lookup failed", detail: String((e && e.message) || e) }, 502);
     }
     for (const it of items) {
-      const owner = it.key.split("/")[0];
-      const e = map.get(owner);
-      it.inUse = !!(e && e.content.includes(it.key));
-      it.usedBy = it.inUse ? e.subdomain : null;
+      const subs = usersOfKey(all, it.key);
+      it.inUse = subs.length > 0;
+      // Preserve the single-subdomain contract other code depends on: report the
+      // first referencing client (owner-prefix preferred when it is among them).
+      const ownerSub = all.get(it.key.split("/")[0])?.subdomain;
+      it.usedBy = it.inUse ? (subs.includes(ownerSub) ? ownerSub : subs[0]) : null;
     }
   }
 
@@ -189,13 +203,19 @@ export async function onRequestDelete(context) {
   const key = String((body && body.key) || "").trim();
   if (!key) return json({ error: "key is required" }, 400);
 
-  // Hard-block deleting a file that a client still references in its content.
-  const owner = key.split("/")[0];
+  // Hard-block deleting a file that ANY client still references in its content.
+  // The library is cross-tenant (client B can pick client A's key into B's site),
+  // so checking only the key's owner-prefix client would miss a foreign reference
+  // and orphan it. Scan every client and fail CLOSED on a lookup error.
   let usedBy = null;
   try {
-    const map = await fetchClientsContent(SUPABASE_URL, SUPABASE_ANON_KEY, token, [owner]);
-    const e = map.get(owner);
-    if (e && e.content.includes(key)) usedBy = e.subdomain;
+    const all = await fetchAllClientsContent(SUPABASE_URL, SUPABASE_ANON_KEY, token);
+    const subs = usersOfKey(all, key);
+    if (subs.length) {
+      // Prefer the owner-prefix client's subdomain when it is among the referrers.
+      const ownerSub = all.get(key.split("/")[0])?.subdomain;
+      usedBy = subs.includes(ownerSub) ? ownerSub : subs[0];
+    }
   } catch (e) {
     return json({ error: "usage check failed", detail: String((e && e.message) || e) }, 502);
   }

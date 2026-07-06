@@ -281,7 +281,7 @@ export function TweaksContent() {
 
 export function THEME_DEFAULT_ACCENT(themeKey) {
   // approximate hex of each theme's accent so the swatch shows a selection
-  return ({ classic: "#5b7560", noir: "#b08d57", garden: "#3f7a52", blush: "#b06a72", dusk: "#5f7d9c", burgundy: "#7d2f3c", lavender: "#8f7fb0", emerald: "#2f7a5a", terracotta: "#c06a44", champagne: "#b08d57", envelope: "#5c6b3c" })[themeKey] || "#5b7560";
+  return ({ classic: "#5b7560", classic2: "#3a3f47", classic3: "#6b7079", glass: "#5f78a6", noir: "#b08d57", garden: "#3f7a52", blush: "#b06a72", dusk: "#5f7d9c", burgundy: "#7d2f3c", lavender: "#8f7fb0", emerald: "#2f7a5a", terracotta: "#c06a44", champagne: "#b08d57", envelope: "#5c6b3c" })[themeKey] || "#5b7560";
 }
 
 // Pure render decision for the app root — testable without React/network.
@@ -407,7 +407,13 @@ export function App() {
   }
   // BUG-0005: a switched-off section used to silently render Home. Show a short
   // "not available" note instead so the guest knows the link isn't broken.
-  const routeBlocked = route !== "home" && route !== "admin" && !moduleEnabled(settings.modules, route);
+  // Also gate event-type-excluded sections (e.g. a corporate site reached via a
+  // direct /story link): a nav-section route that the active event type doesn't
+  // list is blocked too, matching visibleNav. Auxiliary routes (upload,
+  // video-message) aren't event-type sections, so they only check the module flag.
+  const isNavSection = NAV_LINKS.some((l) => l.key === route && l.key !== "home");
+  const routeBlocked = route !== "home" && route !== "admin" &&
+    (!moduleEnabled(settings.modules, route) || (isNavSection && !hasSection(settings.eventType, route)));
   const ActivePage = routeBlocked ? SectionUnavailable : Page;
 
   return (

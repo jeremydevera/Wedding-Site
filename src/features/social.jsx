@@ -180,10 +180,11 @@ export function QuizPage() {
 
   const q = quiz[idx];
   const total = quiz.length;
-  const progress = stage === "result" ? 100 : (idx / total) * 100;
+  const progress = stage === "result" ? 100 : total > 0 ? (idx / total) * 100 : 0;
 
   function start() {
     if (!name.trim()) { setNameErr("Please enter your name to play."); return; }
+    if (total === 0) return; // no questions yet — stay on intro (empty state shown)
     setStage("playing"); setIdx(0); setAnswers({}); setChoosing(false);
   }
   function choose(optIdx) {
@@ -197,6 +198,7 @@ export function QuizPage() {
     }, 220);
   }
   async function finish(finalAnswers) {
+    if (total === 0) { go("home"); return; } // nothing to score — never post total:0
     let score = 0;
     const detail = quiz.map((qq) => {
       const sel = finalAnswers[qq.id];
@@ -236,6 +238,25 @@ export function QuizPage() {
   }
 
   if (stage === "intro") {
+    // Quiz module can be enabled with no questions yet (owner deleted them all).
+    // Show a friendly empty state instead of a Start button that would enter a
+    // question-less "playing" stage and crash on the undefined question.
+    if (total === 0) {
+      return (
+        <div className="fade-up">
+          <PageHero eyebrow="Couple Quiz" title="How well do you know us?" lead="Five quick questions about the happy couple." />
+          <section className="block" style={{ paddingTop: 12 }}>
+            <div className="container container--narrow">
+              <div className="card card--pad-lg" style={{ textAlign: "center" }}>
+                <div style={{ color: "var(--accent)", marginBottom: 16 }}>{Icon.quiz({ style: { width: 48, height: 48, margin: "0 auto" } })}</div>
+                <h2 style={{ fontSize: 30, margin: "4px 0 8px" }}>The quiz is coming soon!</h2>
+                <p style={{ color: "var(--ink-soft)", maxWidth: "40ch", margin: "0 auto" }}>The couple hasn't added any questions yet — check back a little later.</p>
+              </div>
+            </div>
+          </section>
+        </div>
+      );
+    }
     return (
       <div className="fade-up">
         <PageHero eyebrow="Couple Quiz" title="How well do you know us?" lead="Five quick questions about the happy couple. Bragging rights on the line!" />
@@ -305,6 +326,9 @@ export function QuizPage() {
   }
 
   // playing
+  // Defensive: if the quiz emptied out mid-play (owner deleted questions) the
+  // current question can be undefined — bail to home rather than crash on q.q.
+  if (!q) { go("home"); return null; }
   return (
     <div className="fade-up">
       <section className="block">

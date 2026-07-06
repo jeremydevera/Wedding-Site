@@ -41,6 +41,13 @@ export function setTracks(tracks) {
     // Reload when the loaded URL is no longer in the new playlist (playlist replaced).
     const loadedStillValid = _tracks.some((t) => t.url === _loadedUrl);
     if (!loadedStillValid) load(_st.index < _tracks.length ? _st.index : 0);
+    else {
+      // Playlist reordered but the playing track is still present — re-sync the
+      // index to where the loaded track now lives so the UI's "Now Playing"
+      // highlight/label follows the audio instead of pointing at a moved row.
+      const li = _tracks.findIndex((t) => t.url === _loadedUrl);
+      if (li >= 0 && li !== _st.index) _st = { ..._st, index: li };
+    }
   } else if (_audio) { _audio.pause(); _loadedUrl = null; }
   _emit();
 }

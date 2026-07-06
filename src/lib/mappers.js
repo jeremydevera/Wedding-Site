@@ -69,11 +69,19 @@ export function clientToState(client) {
   };
 }
 
+// Settings keys that must NEVER be persisted into clients.content — the public
+// boot path reads content with the anon key under the "read active clients"
+// select policy, so anything left here is world-readable. adminPassword is a
+// credential-shaped field (gates nothing today; real admin auth is Supabase
+// email/password) and must not be published to visitors.
+const CONTENT_SECRET_KEYS = ["adminPassword"];
+
 // Reverse of clientToState: in-memory store state -> a clients-row update.
 // Theme tokens + all settings live in `content`; `theme` column is kept empty so
 // it can't shadow content on reload (clientToState spreads `theme` after content).
 export function stateToClientRow(state) {
   const { theme, eventType, ...rest } = state.settings || {};
+  for (const k of CONTENT_SECRET_KEYS) delete rest[k];
   return {
     template_key: theme,
     event_type: eventType,

@@ -54,8 +54,11 @@ Deno.serve(async (req) => {
   // 1. auth user (confirmed immediately so they can sign in right away)
   const { data: created, error: userErr } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
   if (userErr || !created?.user) {
-    const msg = userErr?.message || "Could not create the account.";
-    const friendly = /already/i.test(msg) ? "An account with this email already exists — sign in instead." : msg;
+    const raw = userErr?.message || ""; // keep the backend/auth internals server-side only
+    console.error("self-signup: createUser failed", raw);
+    const friendly = /already|registered|exists/i.test(raw)
+      ? "An account with this email already exists — sign in instead."
+      : "Could not create the account.";
     return json({ error: friendly }, 400);
   }
   const userId = created.user.id;

@@ -99,7 +99,10 @@ export function LocationPicker({ value, lat, lng, onChange }) {
       if (!r.ok) return;
       const rows = normalizePhoton(await r.json());
       const name = rows[0] && rows[0].label;
-      if (name) { setText(name); emit(name, la, lo); }
+      // Suppress the debounced autocomplete effect for this programmatic label
+      // set (same guard pick() uses) so placing a pin doesn't reopen the dropdown
+      // or fire a wasted Photon search.
+      if (name) { selectingRef.current = true; setText(name); emit(name, la, lo); }
     } catch (e) { /* keep coords even if naming fails */ }
   }, [emit, text]);
   reverseGeocodeRef.current = reverseGeocode;
@@ -128,8 +131,8 @@ export function LocationPicker({ value, lat, lng, onChange }) {
     map.on("click", (e) => { marker.setLatLng(e.latlng); reverseGeocodeRef.current(e.latlng.lat, e.latlng.lng); });
     mapRef.current = map; markerRef.current = marker;
     // tiles can render blank if the panel sized after init — nudge a reflow
-    setTimeout(() => map.invalidateSize(), 60);
-    return () => { map.remove(); mapRef.current = null; markerRef.current = null; };
+    const t = setTimeout(() => map.invalidateSize(), 60);
+    return () => { clearTimeout(t); map.remove(); mapRef.current = null; markerRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

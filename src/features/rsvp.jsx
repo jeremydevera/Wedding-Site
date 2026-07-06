@@ -14,6 +14,22 @@ const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 export const DIET_OPTIONS = ["None", "Vegetarian", "Vegan", "Gluten-free", "Halal", "Kosher", "Seafood allergy", "Nut allergy", "Other"];
 
+// The deadline is stored as a naive <datetime-local> string ("2026-08-15T23:00",
+// no timezone). The server guard (0018) closes the form via `(dl)::timestamptz <
+// now()`, which anchors that same naive string to the DB session timezone (UTC).
+// Date.parse of a naive string uses the GUEST's browser-local timezone, so the
+// client gate would drift per visitor and disagree with the server near the
+// deadline. Anchor the naive string to UTC so client and server close at the
+// same absolute instant. Strings that already carry a timezone (Z / ±hh:mm) and
+// empty/unparseable values pass through unchanged (isRsvpClosed handles those).
+export function deadlineUTC(dl) {
+  if (!dl || typeof dl !== "string") return dl;
+  // Already has an explicit timezone designator? leave as-is.
+  if (/(?:Z|[+-]\d{2}:?\d{2})$/.test(dl)) return dl;
+  // Naive datetime-local (with optional seconds): interpret as UTC.
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(dl) ? dl + "Z" : dl;
+}
+
 export function RSVPPage() {
   const { settings } = useStore();
   const [form, setForm] = useState({
@@ -254,7 +270,7 @@ export function RSVPPage() {
     );
   }
 
-  if (settings.rsvpDeadlineOn !== false && isRsvpClosed(settings.rsvpDeadlineDate, Date.now())) {
+  if (settings.rsvpDeadlineOn !== false && isRsvpClosed(deadlineUTC(settings.rsvpDeadlineDate), Date.now())) {
     return (
       <div className="fade-up">
         <section className="block">

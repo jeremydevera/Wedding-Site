@@ -57,6 +57,16 @@ Deno.serve(async (req) => {
   const { data, error } = await admin.from("site_requests")
     .insert({ email, partner_a: partnerA, partner_b: partnerB, subdomain, template_key: templateKey, content })
     .select("id").single();
+  // The isFree() pre-check above is advisory only — it and this INSERT are not
+  // atomic, so two concurrent /apply submissions for the same subdomain can both
+  // pass isFree() and both reach this INSERT. The authoritative guard is a partial
+  // unique index on site_requests(subdomain) WHERE status='pending' (DB migration,
+  // outside this file). When that index exists, a colliding insert fails closed
+  // with a unique_violation (Postgres 23505); map it to the same "already taken"
+  // 409 the pre-check returns rather than a generic error.
+  if (error && (error as { code?: string }).code === "23505") {
+    return json({ error: "That site address is already taken or requested." }, 409);
+  }
   if (error || !data) return json({ error: "Could not submit — please try again." }, 400);
 
   return json({ ok: true, id: data.id });

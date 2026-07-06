@@ -143,10 +143,10 @@ export async function loadAdminData() {
   // previously-loaded rows with an empty array on a transient failure.
   const prev = Store.get();
   Store.setSubmissions({
-    rsvps: rs.error ? (prev.rsvps || []) : rs.data.map(rowToRsvp),
-    guestbook: gb.error ? (prev.guestbook || []) : gb.data.map(rowToGuestbook),
-    quizSubs: qz.error ? (prev.quizSubs || []) : qz.data.map(rowToQuizSub),
-    guests: gu.error ? (prev.guests || []) : gu.data.map(rowToGuest),
+    rsvps: rs.error ? (prev.rsvps || []) : (rs.data || []).map(rowToRsvp),
+    guestbook: gb.error ? (prev.guestbook || []) : (gb.data || []).map(rowToGuestbook),
+    quizSubs: qz.error ? (prev.quizSubs || []) : (qz.data || []).map(rowToQuizSub),
+    guests: gu.error ? (prev.guests || []) : (gu.data || []).map(rowToGuest),
   });
 }
 
@@ -496,7 +496,7 @@ export function subscribeSiteRequestsRealtime(onChange) {
   const ping = () => { clearTimeout(t); t = setTimeout(onChange, 400); };
   const ch = supabase
     .channel("sa-site-requests")
-    .on("postgres_changes", { event: "INSERT", schema: "public", table: "site_requests" }, ping)
+    .on("postgres_changes", { event: "*", schema: "public", table: "site_requests" }, ping)
     .subscribe((status, err) => { console.info("[api] sa realtime:", status, err ? String(err) : ""); });
   return () => { clearTimeout(t); supabase.removeChannel(ch); };
 }

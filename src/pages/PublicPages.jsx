@@ -5,7 +5,7 @@ import { mediaUrl } from "@/lib/media.js";
 import { useStore } from "@/lib/store.jsx";
 import { moduleEnabled } from "@/lib/roles.js";
 import { egTintGradientFor, envColorFilterFor } from "@/themes";
-import { Button, Countdown, FloatingDecor, Icon, Placeholder, SectionHead, mapDirUrl, mapEmbedUrl } from "@/ui/components.jsx";
+import { Button, Countdown, FloatingDecor, Icon, Placeholder, SectionHead, mapCoordStr, mapDirUrl, mapEmbedUrl, mapResolveQuery } from "@/ui/components.jsx";
 import { VinylPlayer } from "@/features/music.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
@@ -299,7 +299,7 @@ function HomeMapBlock({ m }) {
         <div className="home-map__bar home-map__bar--actions">
           <div className="home-map__actions">
             <Button variant="ghost" size="sm" onClick={() => go("venue")}>See full details</Button>
-            <Button variant="primary" size="sm" onClick={() => window.open(mapDirUrl(m.query, m.lat, m.lng), "_blank")}>{Icon.pin({})} Get directions</Button>
+            {m.target && <Button variant="primary" size="sm" onClick={() => window.open(mapDirUrl(m.query, m.lat, m.lng), "_blank", "noopener,noreferrer")}>{Icon.pin({})} Get directions</Button>}
           </div>
         </div>
       </div>
@@ -384,7 +384,11 @@ function HomeMapsCarousel({ maps }) {
 }
 
 export function Home() {
-  const { settings, story, schedule, entourage, attire, playlist, venues } = useStore();
+  const { settings, story, schedule: scheduleRaw, entourage, attire, playlist, venues } = useStore();
+  // Guard against a non-array truthy schedule in tenant content (bad import /
+  // manual DB edit): clientToState only falls back to seeds on falsiness, so an
+  // object/string would reach .slice/.length below and white-screen the home.
+  const schedule = Array.isArray(scheduleRaw) ? scheduleRaw : [];
   const s = settings;
   // Home maps: every venue the owner ticked (homeVenueIds, in venue-list order).
   // Legacy fallback: homeVenueId, else the first venue; no venues at all falls
@@ -408,12 +412,17 @@ export function Home() {
     const chosen = homeTiles ? (homeTiles[v.id] || []) : [];
     return {
       id: v.id, query: q, lat: v.mapLat, lng: v.mapLng,
+      // Resolved geocodable target: coords when present, else a parsed query.
+      // Empty when the venue has no address/query/coords — filtered out below so
+      // we never render a blank/garbage Google Maps embed (mapEmbedUrl is always
+      // truthy, so the old `.filter(m => m.url)` was a no-op).
+      target: mapCoordStr(v.mapLat, v.mapLng) || mapResolveQuery(q),
       url: mapEmbedUrl(q, v.mapLat, v.mapLng),
       name: v.name || "",
       addr: v.address || "",
       cards: (v.cards || []).filter((c) => ((c.t || "").trim() || (c.d || "").trim()) && (legacyAllTiles || chosen.includes(c.id))),
     };
-  }).filter((m) => m.url);
+  }).filter((m) => m.target);
 
   // replay the "Will you be there?" rise-in every time it scrolls into view
   React.useEffect(() => {
@@ -621,7 +630,7 @@ export function StoryPage() {
       <PageHero eyebrow="Our Story" title="How we got here" lead="Every love story is beautiful, but this one is ours." />
       <section className="block" style={{ paddingTop: 30 }}>
         <div className="container" style={{ maxWidth: 920 }}>
-          {story.map((row, i) => (
+          {(Array.isArray(story) ? story : []).map((row, i) => (
             <div className="story-row" key={i}>
               <div className="story-row__media"><StoryImg row={row} /></div>
               <div>
@@ -662,7 +671,7 @@ export function DetailsPage() {
         <div className="container container--narrow">
           <SectionHead center eyebrow="Good to know" title="Frequently asked" />
           <div>
-            {faq.map((item, i) => (
+            {(Array.isArray(faq) ? faq : []).map((item, i) => (
               <div className={"faq-item" + (open === i ? " faq-item--open" : "")} key={i}>
                 <button className="faq-q" onClick={() => setOpen(open === i ? -1 : i)}>
                   {item.q}<span className="faq-q__icon" />
@@ -749,7 +758,8 @@ function HorizontalTimeline({ items }) {
   );
 }
 
-export function ScheduleView({ items, style }) {
+export function ScheduleView({ items: itemsProp, style }) {
+  const items = Array.isArray(itemsProp) ? itemsProp : [];
   const s = style || "line";
   if (s === "cards") {
     return (
@@ -849,18 +859,27 @@ export function VenuePage() {
       {(() => {
         const sectionOf = (v, vi) => {
           const query = (v.mapQuery && v.mapQuery.trim()) || v.address;
+          // Only render the map + directions when there's a resolvable target
+          // (coords or a geocodable query). A venue admitted on name alone with
+          // no address/query/coords would otherwise show a blank Google embed
+          // and a directions link with an empty destination.
+          const target = mapCoordStr(v.mapLat, v.mapLng) || mapResolveQuery(query);
           const mapUrl = mapEmbedUrl(query, v.mapLat, v.mapLng);
           const dirUrl = mapDirUrl(query, v.mapLat, v.mapLng);
           const cards = (v.cards || []).filter((c) => (c.d || "").trim() || (c.t || "").trim());
           return (
             <>
               {multi && <SectionHead center eyebrow={`Location ${vi + 1}`} title={v.name || v.address} />}
-              <div className="card" style={{ padding: 0, overflow: "hidden", marginBottom: 30 }}>
-                <iframe title={"Venue map" + (multi ? " " + (vi + 1) : "")} src={mapUrl} style={{ width: "100%", height: 420, border: 0, display: "block" }} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
-              </div>
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 44 }}>
-                <Button variant="primary" size="lg" onClick={() => window.open(dirUrl, "_blank")}>{Icon.pin({})} Get Directions</Button>
-              </div>
+              {target && (
+                <>
+                  <div className="card" style={{ padding: 0, overflow: "hidden", marginBottom: 30 }}>
+                    <iframe title={"Venue map" + (multi ? " " + (vi + 1) : "")} src={mapUrl} style={{ width: "100%", height: 420, border: 0, display: "block" }} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "center", marginBottom: 44 }}>
+                    <Button variant="primary" size="lg" onClick={() => window.open(dirUrl, "_blank", "noopener,noreferrer")}>{Icon.pin({})} Get Directions</Button>
+                  </div>
+                </>
+              )}
               {cards.length > 0 && (
                 <div className="info-grid info-grid--3">
                   {cards.map((n, i) => (

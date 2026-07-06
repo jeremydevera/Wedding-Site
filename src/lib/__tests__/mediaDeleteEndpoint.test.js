@@ -65,10 +65,13 @@ describe("DELETE /api/media", () => {
   });
 
   it("500 when env.MEDIA.delete throws", async () => {
-    // c1/... owner is non-UUID → clients lookup skipped; still needs auth+role mocks
+    // Cross-tenant fix: the in-use guard now scans ALL clients (no longer skipped
+    // for a non-UUID prefix), so mock auth+role AND the clients lookup (nothing
+    // references the key → not in use → delete runs and throws).
     globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "u1" }) })
-      .mockResolvedValueOnce({ ok: true, json: async () => [{ role: "superadmin" }] });
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ role: "superadmin" }] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ id: "c9", subdomain: "other", content: {} }] });
     const env = { MEDIA: { delete: vi.fn().mockRejectedValue(new Error("r2 down")) } };
     const res = await onRequestDelete({
       request: req("https://x/api/media", { key: "c1/owner/image/hero/aaaaaaaa-photo.jpg" }, AUTH),

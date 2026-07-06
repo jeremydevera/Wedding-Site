@@ -131,6 +131,9 @@ export function ClientsAdmin() {
     setNotes(Object.fromEntries((nd || []).map((r) => [r.client_id, r.note || ""])));
   }
   useEffect(() => { load(); }, []);
+  // Selection is per-tab: clear checks when switching views so a bulk delete can
+  // never target off-screen rows selected in another tab (e.g. list → offline).
+  useEffect(() => { setSel(new Set()); }, [view]);
 
   // Save (or clear) the private note for a client. Empty note removes the row.
   async function saveNote(clientId, note) {

@@ -40,17 +40,28 @@ export function reconcileGuests(guests, rsvps) {
   const gs = guests || [];
   const rs = (rsvps || []).map((r, i) => ({ r, i }));
   const used = new Set();
+  const rp = (r) => ({ first: r.firstName, last: r.lastName, middle: r.middleName });
+  const gp = (g) => ({ first: g.firstName, last: g.lastName, middle: g.middleName });
 
-  const rows = gs.map((g) => {
-    const gp = { first: g.firstName, last: g.lastName, middle: g.middleName };
-    const rp = (r) => ({ first: r.firstName, last: r.lastName, middle: r.middleName });
-    // Two tiers, mirroring the SQL gate: exact/initial middle first, then the
-    // empty-middle wildcard — so a stale middle-less reply can't shadow the
-    // right one.
-    const hit = rs.find(({ r, i }) => !used.has(i) && namePartsMatchExact(gp, rp(r)))
-      || rs.find(({ r, i }) => !used.has(i) && namePartsMatch(gp, rp(r)));
-    if (hit) used.add(hit.i);
-    const rsvp = hit ? hit.r : null;
+  // GLOBAL two-pass assignment, mirroring the SQL gate's tiering but applied
+  // across ALL guests at once — NOT per-guest in isolation. Pass 1 lets every
+  // guest claim an exact/initial-middle reply first; only then does Pass 2 hand
+  // out empty-middle wildcard matches. This stops a middle-less guest listed
+  // earlier from stealing the RSVP that exactly matches a later middle-specified
+  // guest (which would leave the true owner shown as "no reply").
+  const hits = new Array(gs.length).fill(null);
+  const claim = (matcher) => {
+    gs.forEach((g, gi) => {
+      if (hits[gi]) return;
+      const hit = rs.find(({ r, i }) => !used.has(i) && matcher(gp(g), rp(r)));
+      if (hit) { used.add(hit.i); hits[gi] = hit.r; }
+    });
+  };
+  claim(namePartsMatchExact); // Pass 1: exact/initial middle wins globally
+  claim(namePartsMatch);      // Pass 2: empty-middle wildcard fills the rest
+
+  const rows = gs.map((g, gi) => {
+    const rsvp = hits[gi];
     // A reply always wins; otherwise the owner-set guest status applies
     // (owner-added guests default to "attending" — no reply required).
     const status = rsvp ? rsvp.status : (g.status || "none");

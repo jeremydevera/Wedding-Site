@@ -31,9 +31,16 @@ Deno.serve(async (req) => {
   const body = await req.json();
 
   async function findByEmail(email: string) {
-    const { data: list, error } = await admin.auth.admin.listUsers({ perPage: 1000 });
-    if (error) throw new Error(error.message);
-    return list.users.find((x) => x.email === email);
+    // Paginate fully — do NOT assume the project has <=1000 auth users, or owners
+    // past the first page become invisible (update/delete/reset silently misbehave).
+    const perPage = 1000;
+    for (let page = 1; ; page++) {
+      const { data: list, error } = await admin.auth.admin.listUsers({ page, perPage });
+      if (error) throw new Error(error.message);
+      const hit = list.users.find((x) => x.email === email);
+      if (hit) return hit;
+      if (list.users.length < perPage) return undefined; // last page reached
+    }
   }
 
   // 2a. change an existing owner's login email
@@ -71,12 +78,22 @@ Deno.serve(async (req) => {
   if (!email || !password || !client_id) return json({ error: "Bad request" }, 400);
   const { data: created, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
   let userId = created?.user?.id;
+  const wasCreated = !error && !!userId; // did THIS call create the auth user?
   if (error) {
     const existing = await findByEmail(email);
     if (!existing) return json({ error: error.message }, 400);
     userId = existing.id;
-    await admin.auth.admin.updateUserById(userId, { password });
+    // Reset the existing owner's password — do NOT ignore the result; a failed
+    // reset must not be reported as success (owner would be locked out).
+    const { error: pwErr } = await admin.auth.admin.updateUserById(userId, { password });
+    if (pwErr) return json({ error: pwErr.message }, 400);
   }
-  await admin.from("profiles").upsert({ id: userId, role: "owner", client_id });
+  const { error: profErr } = await admin.from("profiles").upsert({ id: userId, role: "owner", client_id });
+  if (profErr) {
+    // Fail closed: a created-but-profile-less auth user is a broken owner. Roll back
+    // the auth user we just created (mirror self-signup) and surface the error.
+    if (wasCreated) await admin.auth.admin.deleteUser(userId!);
+    return json({ error: profErr.message }, 400);
+  }
   return json({ ok: true, userId });
 });

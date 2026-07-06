@@ -18,6 +18,7 @@ export const DEFAULT_SETTINGS = {
   // ISO date string for the wedding moment
   weddingDate: "2026-09-19T15:00",
   weddingDateLabel: "Saturday, September 19, 2026",
+  weddingDateOn: true, // master switch (admin Couple & Event): show the wedding date label + countdown
   tagline: "We're getting married",
   welcome:
     "Two families, one celebration. We would be honored to have you with us as we say \u201cI do.\u201d Find everything you need below \u2014 and don't forget to share your photos.",

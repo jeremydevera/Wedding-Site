@@ -108,7 +108,7 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
         </div>
         <div className="imgup__actions">
           <Button variant="ghost" size="sm" disabled={busy} onClick={() => setPickerOpen(true)}>{Icon.upload({})} {busy ? "Uploading…" : (value ? "Replace" : "Add photo")}</Button>
-          {value && !busy && <Button variant="ghost" size="sm" onClick={() => setCropSrc(value)}>{Icon.crop({})} Crop</Button>}
+          {value && !busy && <Button variant="ghost" size="sm" onClick={() => setCropSrc(mediaUrl(value))}>{Icon.crop({})} Crop</Button>}
           {value && !busy && <Button variant="ghost" size="sm" onClick={() => commit("")}>Remove</Button>}
         </div>
         <input ref={ref} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { setPickerOpen(false); pick(e.target.files[0]); }} />
@@ -225,10 +225,16 @@ export function QuestionEditor({ open, question, onClose }) {
 
   async function save() {
     if (!f.q.trim()) { toast("Please enter the question.", "err"); return; }
-    const cleanOpts = (isTF ? ["True", "False"] : f.options.map((o) => o.trim())).filter((o, i) => isTF || o);
+    // Track each surviving option's ORIGINAL index while filtering blanks, so the
+    // correct-answer index maps by position (not by text) — duplicate option
+    // texts must not collapse onto the first match (indexOf bug).
+    const kept = isTF
+      ? ["True", "False"].map((o, i) => ({ o, i }))
+      : f.options.map((o, i) => ({ o: o.trim(), i })).filter(({ o }) => o);
+    const cleanOpts = kept.map(({ o }) => o);
     if (cleanOpts.length < 2) { toast("Please provide at least two answer options.", "err"); return; }
-    const answerOpt = (f.options[f.answer] || "").trim();
-    const answer = cleanOpts.indexOf(answerOpt) >= 0 ? cleanOpts.indexOf(answerOpt) : 0;
+    const answerPos = kept.findIndex(({ i }) => i === f.answer);
+    const answer = answerPos >= 0 ? answerPos : 0;
     const payload = { type: f.type, q: f.q.trim(), options: cleanOpts, answer };
     if (question) Store.updateQuizQuestion(question.id, payload);
     else Store.addQuizQuestion(payload);
@@ -488,7 +494,11 @@ export function GuestsAdmin() {
     return arr.length ? arr.join(", ") : (r.plusOne || "");
   };
   const tabLabel = (st) => (st === "none" ? "No reply" : (STAT_LABEL[st] || st || ""));
-  const headsOfRow = (x) => (x.status === "attending" ? (x.rsvp ? headsOf(x.rsvp) : (Number(x.guest.allocation) || 0)) : "");
+  // Heads = named companions + the guest (guests.js confirmedHeads rule).
+  // Allocation is only a cap, never counted — an attending guest with no reply is
+  // 1 person, NOT their full allotment, so the exported caterer headcount can
+  // never drift from the dashboard confirmedHeads.
+  const headsOfRow = (x) => (x.status === "attending" ? (x.rsvp ? headsOf(x.rsvp) : 1) : "");
 
   const byStatus = (st) => recon.rows.filter((x) => x.status === st).length;
 
@@ -651,7 +661,10 @@ export function GuestsAdmin() {
                         ? <span title={x.rsvp.notes} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.rsvp.notes}</span>
                         : <span style={{ color: "var(--muted)" }}>—</span>}</td>
                       <td><div className="row-actions">
-                        <button className="icon-btn" onClick={() => setEditing({ ...blank, ...g })} aria-label="Edit" title="Edit guest">{Icon.edit({})}</button>
+                        {/* Seed the Status dropdown from the matched REPLY, not the
+                            stale guest-row status, so saving an unrelated field can't
+                            silently overwrite a real reply (e.g. flip Declined→Attending). */}
+                        <button className="icon-btn" onClick={() => setEditing({ ...blank, ...g, status: x.rsvp ? x.rsvp.status : (g.status || "none") })} aria-label="Edit" title="Edit guest">{Icon.edit({})}</button>
                         <button className="icon-btn icon-btn--danger" onClick={() => removeGuest(g)} aria-label="Remove">{Icon.trash({})}</button>
                       </div></td>
                     </tr>

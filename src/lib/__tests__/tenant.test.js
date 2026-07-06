@@ -20,4 +20,18 @@ describe("subdomainFromHost", () => {
   it("bare platform apex (celebrately.us, 2 parts) -> null (platform hub)", () => {
     expect(subdomainFromHost("celebrately.us", "")).toBe(null);
   });
+  it("www.celebrately.us -> null (platform hub, not a bogus 'www' client)", () => {
+    expect(subdomainFromHost("www.celebrately.us", "")).toBe(null);
+  });
+  it("other reserved labels (app/admin/api) -> null (platform hub)", () => {
+    expect(subdomainFromHost("app.celebrately.us", "")).toBe(null);
+    expect(subdomainFromHost("admin.celebrately.us", "")).toBe(null);
+    expect(subdomainFromHost("api.celebrately.us", "")).toBe(null);
+  });
+  it("a normal (non-reserved) label still resolves to that client", () => {
+    expect(subdomainFromHost("janandirish.celebrately.us", "")).toBe("janandirish");
+  });
+  it("demo.celebrately.us -> 'demo' (reserved-from-registration, but the live showcase client MUST resolve)", () => {
+    expect(subdomainFromHost("demo.celebrately.us", "")).toBe("demo");
+  });
 });

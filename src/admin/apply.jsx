@@ -209,6 +209,7 @@ export function ApplyWizard({ initial = null, onSave, onCancel }) {
     if (s === 0) {
       if (!f.partnerA.trim() || !f.partnerB.trim()) return "Please enter both names.";
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email.trim())) return "Please enter a valid email.";
+      if (!f.subdomain.trim()) return "Please choose a site address.";
       if (subState === "checking") return "Checking availability…";
       if (subState === "taken") return "That site address is already taken — try another.";
       if (subState === "invalid") return "Site address: 3–30 characters, letters/numbers/hyphens.";

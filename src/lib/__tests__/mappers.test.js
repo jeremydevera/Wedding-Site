@@ -38,6 +38,15 @@ describe("stateToClientRow (reverse of clientToState)", () => {
     expect(back.content.schedule).toHaveLength(1);
     expect(back.theme).toEqual({}); // tokens live in content; column kept empty
   });
+  it("never writes adminPassword into content (anon RLS exposes content to the public)", () => {
+    const back = stateToClientRow({
+      settings: { theme: "envelope", eventType: "wedding", partnerA: "Al", adminPassword: "wedding" },
+      schedule: [], story: [], faq: [], quiz: [], venueCards: [], venues: [],
+      detailCards: [], entourage: [], attire: [], playlist: [],
+    });
+    expect(back.content.partnerA).toBe("Al");
+    expect("adminPassword" in back.content).toBe(false);
+  });
 });
 
 describe("rsvpToRow", () => {

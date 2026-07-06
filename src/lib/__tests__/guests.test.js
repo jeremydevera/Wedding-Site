@@ -114,6 +114,23 @@ describe("reconcileGuests", () => {
     expect(rows[0].rsvp.id).toBe("r2"); // exact middle beats the wildcard row listed first
     expect(rows[0].status).toBe("attending");
   });
+  it("does not let an earlier middle-less guest steal a later exact guest's reply", () => {
+    // Regression: two guests share first+last; the middle-less one is listed
+    // FIRST. A single reply exactly matches the middle-specified guest. The
+    // wildcard guest must NOT grab it in a per-guest pass — the exact guest wins
+    // globally.
+    const gs = [
+      { id: "g1", firstName: "Jane", lastName: "Doe", middleName: "", allocation: 2, status: "attending" },
+      { id: "g2", firstName: "Jane", lastName: "Doe", middleName: "Ann", allocation: 2, status: "attending" },
+    ];
+    const rs = [
+      { id: "r1", fullName: "Jane Ann Doe", firstName: "Jane", lastName: "Doe", middleName: "Ann", status: "attending", count: 2 },
+    ];
+    const { rows } = reconcileGuests(gs, rs);
+    const byId = Object.fromEntries(rows.map((x) => [x.guest.id, x]));
+    expect(byId.g2.rsvp?.id).toBe("r1"); // exact-middle guest claims the reply
+    expect(byId.g1.rsvp).toBe(null);     // wildcard guest gets nothing
+  });
   it("lets a reply override the owner-set status (declining flips to not_attending)", () => {
     const gs = [{ id: "a", firstName: "Ana", lastName: "Cruz", middleName: "", allocation: 4, status: "attending" }];
     const rs = [{ id: "r1", fullName: "Ana Cruz", firstName: "Ana", lastName: "Cruz", middleName: "", status: "not_attending", count: 0 }];
