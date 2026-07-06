@@ -1,4 +1,4 @@
-import { DEFAULT_SETTINGS, SEED_SCHEDULE, SEED_STORY, SEED_FAQ, SEED_QUIZ, SEED_VENUE_CARDS, SEED_DETAIL_CARDS, SEED_ENTOURAGE, SEED_ATTIRE } from "@/lib/store.jsx";
+import { BASE_SETTINGS } from "@/lib/store.jsx";
 
 // Build the venue-cards array from a client's content. Prefer the new
 // `venueCards` array; fall back to the legacy flat keys (venueParking/Arrival/
@@ -10,7 +10,7 @@ function venueCardsFrom(content) {
     ["Arrival", content.venueArrival],
     ["Weather", content.venueWeather],
   ].filter(([, d]) => d != null).map(([t, d]) => ({ t, d }));
-  return legacy.length ? legacy : SEED_VENUE_CARDS;
+  return legacy.length ? legacy : [];
 }
 
 // Build the venues array (each = a map + its own tiles). Prefer the new `venues`
@@ -29,11 +29,15 @@ function venuesFrom(content, settings) {
       cards: withIds(v.cards, i),
     }));
   }
+  // Blank client (no venues, no legacy venue, no cards) → no venue at all,
+  // rather than a synthesized empty card.
+  const legacyCards = venueCardsFrom(content);
+  if (!settings.venueName && !settings.venueAddress && !settings.mapQuery && !legacyCards.length) return [];
   return [{
     id: "venue-main",
     name: settings.venueName || "", address: settings.venueAddress || "",
     mapQuery: settings.mapQuery || "", mapLat: settings.mapLat, mapLng: settings.mapLng,
-    cards: withIds(venueCardsFrom(content), 0),
+    cards: withIds(legacyCards, 0),
   }];
 }
 
@@ -43,7 +47,7 @@ export function clientToState(client) {
   const theme = client.theme || {};
   const { schedule, story, faq, quiz, venueCards, venues, detailCards, entourage, attire, playlist, venueParking, venueArrival, venueWeather, ...contentRest } = content;
   const settings = {
-    ...DEFAULT_SETTINGS,
+    ...BASE_SETTINGS,
     ...contentRest,
     ...theme,
     theme: client.template_key,
@@ -52,15 +56,15 @@ export function clientToState(client) {
   return {
     clientId: client.id,
     settings,
-    schedule: schedule || SEED_SCHEDULE,
-    story: story || SEED_STORY,
-    faq: faq || SEED_FAQ,
-    quiz: quiz || SEED_QUIZ,
+    schedule: schedule || [],
+    story: story || [],
+    faq: faq || [],
+    quiz: quiz || [],
     venueCards: venueCardsFrom(content),
     venues: venuesFrom(content, settings),
-    detailCards: Array.isArray(detailCards) ? detailCards : SEED_DETAIL_CARDS,
-    entourage: Array.isArray(entourage) ? entourage : SEED_ENTOURAGE,
-    attire: Array.isArray(attire) ? attire : SEED_ATTIRE,
+    detailCards: Array.isArray(detailCards) ? detailCards : [],
+    entourage: Array.isArray(entourage) ? entourage : [],
+    attire: Array.isArray(attire) ? attire : [],
     playlist: Array.isArray(playlist) ? playlist : [],
   };
 }

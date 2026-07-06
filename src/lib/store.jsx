@@ -89,6 +89,20 @@ export const DEFAULT_SETTINGS = {
   bodyFont: "Jost",
 };
 
+// Real-client fallback baseline: the SAME functional/config defaults as
+// DEFAULT_SETTINGS (theme, fonts, toggles, envelope styling), but every
+// content field blanked. clientToState uses this so an unconfigured client
+// renders EMPTY — the Jeremy & Irish demo copy never leaks onto a live site.
+// DEFAULT_SETTINGS keeps the demo content for local dev / first paint / the
+// "Reset demo data" button (real clients override it via hydrate anyway).
+export const BASE_SETTINGS = {
+  ...DEFAULT_SETTINGS,
+  partnerA: "", partnerB: "", weddingDate: "", weddingDateLabel: "",
+  tagline: "", welcome: "", inviteTitle: "", inviteBody: "",
+  venueName: "", venueAddress: "", ceremonyTime: "", receptionTime: "",
+  dressCode: "", rsvpDeadline: "", hashtag: "", mapQuery: "", adminPassword: "",
+};
+
 export const SEED_SCHEDULE = [
   { time: "2:15 PM", title: "Guest Arrival", desc: "Welcome drinks on the south lawn.", loc: "Garden Terrace" },
   { time: "3:00 PM", title: "Ceremony", desc: "Please be seated by 2:50. The ceremony begins promptly.", loc: "The Old Orchard" },

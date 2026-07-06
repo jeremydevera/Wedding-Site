@@ -1,9 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { DEFAULT_SETTINGS, SEED_SCHEDULE } from "@/lib/store.jsx";
 import { clientToState, stateToClientRow, rsvpToRow, guestbookToRow, quizToRow, rowToGuestbook, rowToRsvp, rowToQuizSub, guestToRow, rowToGuest } from "@/lib/mappers.js";
 
 describe("clientToState", () => {
-  it("maps template_key->settings.theme and event_type->eventType, falls back to defaults", () => {
+  it("maps template_key->theme + event_type->eventType; unspecified content stays blank (no demo leak)", () => {
     const st = clientToState({
       id: "c1", subdomain: "demo", event_type: "wedding", template_key: "envelope",
       theme: { themeAccent: "#abc" }, content: { partnerA: "Al", partnerB: "Bo" },
@@ -13,10 +12,13 @@ describe("clientToState", () => {
     expect(st.settings.eventType).toBe("wedding");
     expect(st.settings.themeAccent).toBe("#abc");
     expect(st.settings.partnerA).toBe("Al");
-    // unspecified field falls back to default
-    expect(st.settings.tagline).toBe(DEFAULT_SETTINGS.tagline);
-    // arrays fall back to seed when content lacks them
-    expect(st.schedule).toEqual(SEED_SCHEDULE);
+    // unspecified CONTENT field stays blank — demo copy must NOT leak onto a real client
+    expect(st.settings.tagline).toBe("");
+    // functional/config default still applies
+    expect(st.settings.displayFont).toBe("Cormorant Garamond");
+    // content arrays are empty when the row lacks them (no seed leak)
+    expect(st.schedule).toEqual([]);
+    expect(st.venues).toEqual([]);
   });
   it("uses content arrays when present", () => {
     const st = clientToState({ id: "c1", subdomain: "d", event_type: "wedding", template_key: "classic",
