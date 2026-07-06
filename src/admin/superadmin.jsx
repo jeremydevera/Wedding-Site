@@ -117,6 +117,14 @@ export function ClientsAdmin() {
   const [editForm, setEditForm] = useState({ subdomain: "", ownerEmail: "", ownerPassword: "", modules: {}, note: "" });
   const [editTab, setEditTab] = useState("design"); // Edit-client modal: design | access
   const [busy, setBusy] = useState(false);
+  const [busyLabel, setBusyLabel] = useState(""); // label shown in the blocking overlay
+  // Run an async mutation behind the blocking "working" overlay so slow data
+  // always shows progress (critical: every add/edit/delete must show loading).
+  async function runBusy(label, fn) {
+    setBusyLabel(label); setBusy(true);
+    try { return await fn(); }
+    finally { setBusy(false); setBusyLabel(""); }
+  }
   const [q, setQ] = useState("");
   const [requests, setRequests] = useState([]);     // prospect intake (/apply) awaiting approval
   const [reqInfo, setReqInfo] = useState(null);      // request shown in the details modal (eye)
@@ -166,10 +174,12 @@ export function ClientsAdmin() {
       });
       if (!ok) return;
     }
-    const { error } = await supabase.from("clients").update({ is_active: next }).eq("id", c.id);
-    if (error) return toast("Update failed: " + error.message);
-    toast(next ? "Access enabled — site is live" : "Access disabled — site is offline");
-    load();
+    await runBusy(next ? "Enabling…" : "Disabling…", async () => {
+      const { error } = await supabase.from("clients").update({ is_active: next }).eq("id", c.id);
+      if (error) return toast("Update failed: " + error.message);
+      toast(next ? "Access enabled — site is live" : "Access disabled — site is offline");
+      await load();
+    });
   }
 
   function edgeOrToast(e2) {
@@ -184,10 +194,10 @@ export function ClientsAdmin() {
     if (busy || !form.subdomain.trim()) return;
     const sub = form.subdomain.trim().toLowerCase();
     if (!isValidSubdomain(sub)) return toast("Invalid subdomain. Use lowercase letters, numbers, and hyphens — and not a reserved name (www, app, admin, demo…).");
-    setBusy(true);
+    setBusyLabel("Creating client…"); setBusy(true);
     const { data: created, error } = await supabase.from("clients")
       .insert({ subdomain: sub, event_type: form.event_type, template_key: form.template_key }).select().single();
-    if (error) { setBusy(false); return toast("Create failed: " + error.message); }
+    if (error) { setBusy(false); setBusyLabel(""); return toast("Create failed: " + error.message); }
     if (form.note.trim()) { try { await saveNote(created.id, form.note); } catch (_) { /* note is best-effort */ } }
     if (form.ownerEmail.trim() && form.ownerPassword) {
       try {
@@ -196,26 +206,32 @@ export function ClientsAdmin() {
         toast("Client + owner login created");
       } catch (e2) { toast("Client created — owner login pending:"); edgeOrToast(e2); }
     } else { toast("Client created"); }
-    setBusy(false);
     setForm({ subdomain: "", event_type: "wedding", template_key: "classic", ownerEmail: "", ownerPassword: "", note: "" });
     await load(); setView("list");
+    setBusy(false); setBusyLabel("");
   }
 
   async function assignTheme(id, template_key) {
-    const { error } = await supabase.from("clients").update({ template_key }).eq("id", id);
-    if (error) return toast("Update failed");
-    toast("Theme assigned"); load();
+    await runBusy("Saving…", async () => {
+      const { error } = await supabase.from("clients").update({ template_key }).eq("id", id);
+      if (error) return toast("Update failed");
+      toast("Theme assigned"); await load();
+    });
   }
   async function changeType(c, event_type) {
-    const { error } = await supabase.from("clients").update({ event_type, template_key: themesForEvent(event_type)[0] }).eq("id", c.id);
-    if (error) return toast("Update failed");
-    toast("Type updated"); load();
+    await runBusy("Saving…", async () => {
+      const { error } = await supabase.from("clients").update({ event_type, template_key: themesForEvent(event_type)[0] }).eq("id", c.id);
+      if (error) return toast("Update failed");
+      toast("Type updated"); await load();
+    });
   }
   async function toggleModule(c, key, on) {
-    const modules = { ...(c.content?.modules || {}), [key]: on };
-    const { error } = await supabase.from("clients").update({ content: { ...(c.content || {}), modules } }).eq("id", c.id);
-    if (error) return toast("Update failed");
-    load();
+    await runBusy("Saving…", async () => {
+      const modules = { ...(c.content?.modules || {}), [key]: on };
+      const { error } = await supabase.from("clients").update({ content: { ...(c.content || {}), modules } }).eq("id", c.id);
+      if (error) return toast("Update failed");
+      await load();
+    });
   }
 
   function openEdit(c) {
@@ -242,12 +258,12 @@ export function ClientsAdmin() {
   async function saveEdit(e) {
     e.preventDefault();
     if (busy || !editing) return;
-    setBusy(true);
+    setBusyLabel("Saving…"); setBusy(true);
     const id = editing.id;
     const sub = editForm.subdomain.trim().toLowerCase();
     if (sub && sub !== editing.subdomain) {
       const { error } = await supabase.from("clients").update({ subdomain: sub }).eq("id", id);
-      if (error) { setBusy(false); return toast("Save failed: " + error.message); }
+      if (error) { setBusy(false); setBusyLabel(""); return toast("Save failed: " + error.message); }
     }
     {
       // Persist modules + the Access-tab settings back into the client's content JSON.
@@ -263,7 +279,7 @@ export function ClientsAdmin() {
         ownerEdit: editForm.ownerEdit || {},
       };
       const { error } = await supabase.from("clients").update({ content }).eq("id", id);
-      if (error) { setBusy(false); return toast("Save failed: " + error.message); }
+      if (error) { setBusy(false); setBusyLabel(""); return toast("Save failed: " + error.message); }
     }
     try { await saveNote(id, editForm.note); } catch (_) { /* note is best-effort */ }
     const email = editForm.ownerEmail.trim();
@@ -280,7 +296,8 @@ export function ClientsAdmin() {
       }
       toast("Client updated");
     } catch (e2) { toast("Saved client info."); edgeOrToast(e2); }
-    setBusy(false); setEditing(null); await load();
+    await load();
+    setBusy(false); setBusyLabel(""); setEditing(null);
   }
 
   // Remove the owner's auth account FIRST, while profiles.client_id still links
@@ -303,11 +320,13 @@ export function ClientsAdmin() {
       danger: true,
     });
     if (!ok) return;
-    try {
-      const { ownerWarn } = await deleteClientCore(c);
-      toast(ownerWarn ? "Client deleted — owner login may remain; remove it in Supabase Auth." : "Client and owner login deleted");
-    } catch (e) { return toast("Delete failed: " + e.message); }
-    load();
+    await runBusy("Deleting client…", async () => {
+      try {
+        const { ownerWarn } = await deleteClientCore(c);
+        toast(ownerWarn ? "Client deleted — owner login may remain; remove it in Supabase Auth." : "Client and owner login deleted");
+      } catch (e) { return toast("Delete failed: " + e.message); }
+      await load();
+    });
   }
   // Bulk: checked rows -> one confirm listing the sites -> delete them all.
   const toggleSel = (id) => setSel((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -323,18 +342,20 @@ export function ClientsAdmin() {
     if (!ok) return;
     setBusy(true);
     let fail = 0, warn = 0;
-    for (const c of targets) {
-      try { const { ownerWarn } = await deleteClientCore(c); if (ownerWarn) warn++; }
+    for (let i = 0; i < targets.length; i++) {
+      setBusyLabel(`Deleting ${i + 1}/${targets.length}…`);
+      try { const { ownerWarn } = await deleteClientCore(targets[i]); if (ownerWarn) warn++; }
       catch (_) { fail++; }
     }
-    setBusy(false);
+    setSel(new Set()); // clear selection so the stale "Delete selected (N)" button goes away
+    await load();
+    setBusy(false); setBusyLabel("");
     toast(
       fail ? `Deleted ${targets.length - fail} — ${fail} failed` :
       warn ? `Deleted ${targets.length} — ${warn} owner login(s) may remain (Supabase Auth)` :
       `Deleted ${targets.length} client${targets.length === 1 ? "" : "s"}`,
       fail ? "err" : "success",
     );
-    load();
   }
 
   const filtered = clients.filter((c) => c.subdomain.toLowerCase().includes(q.trim().toLowerCase()));
@@ -342,6 +363,13 @@ export function ClientsAdmin() {
 
   return (
     <div className="sa">
+      {/* Blocking overlay for every superadmin mutation (add/edit/delete/bulk) —
+          slow data must always show progress. Reuses the admin saving overlay. */}
+      {busy && (
+        <div className="admin-saving" role="status" aria-live="polite" aria-label={busyLabel || "Working"}>
+          <div className="admin-saving__box"><span className="admin-saving__spin" aria-hidden="true" />{busyLabel || "Working…"}</div>
+        </div>
+      )}
       {/* Folder-style sub-tabs — same design as the client admin's sub-folders.
           "Add client" is the toolbar button on the list, not a tab. */}
       <div className="folders">
