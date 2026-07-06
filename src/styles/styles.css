@@ -1931,6 +1931,16 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
     #e8e6df;
   border: 1px solid var(--line);
 }
+/* Map-design: presets on the left, a live Google-embed simulator on the right
+   (stacks on narrow screens). The preview iframe carries the picked filter. */
+.map-design { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 320px); gap: 18px; align-items: start; }
+.map-design__picks { margin: 0; }
+.map-design__preview { position: sticky; top: 8px; }
+.map-design__previewlabel { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; font-weight: 700; color: var(--muted); margin-bottom: 8px; }
+.map-design__frame { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface-2); }
+.map-design__frame iframe { display: block; width: 100%; height: 260px; border: 0; }
+.map-design__empty { border: 1px dashed var(--line); border-radius: 10px; padding: 28px 16px; text-align: center; color: var(--muted); font-size: 13px; }
+@media (max-width: 720px) { .map-design { grid-template-columns: 1fr; } .map-design__preview { position: static; } }
 .home-map__bar { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 22px; background: linear-gradient(180deg, color-mix(in oklch, var(--accent) 7%, var(--surface)), var(--surface)); border-top: 1px solid color-mix(in oklch, var(--accent) 14%, var(--line)); }
 .home-map__where { display: flex; align-items: center; gap: 13px; min-width: 0; }
 .home-map__pin { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }

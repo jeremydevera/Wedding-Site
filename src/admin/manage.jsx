@@ -16,7 +16,7 @@ import { mediaUrl } from "@/lib/media.js";
 import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
 import { visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel, moduleEnabled } from "@/lib/roles.js";
-import { MAP_STYLES, mapStyleKey } from "@/lib/mapStyles.js";
+import { MAP_STYLES, mapStyleKey, mapStyleFilter } from "@/lib/mapStyles.js";
 import { ClientsAdmin, R2LibraryAdmin, SuperOverview } from "@/admin/superadmin.jsx";
 import { LocationPicker } from "@/ui/location-picker.jsx";
 import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
@@ -1536,6 +1536,14 @@ export function VenueAdmin({ section = "editor", headRight = null }) {
       Store.updateSettings({ homeTiles: { ...homeTiles, [vid]: nextCards } });
     };
     const selCount = list.filter((v) => selIds.includes(v.id)).length;
+    // Live preview: the ACTUAL Google embed for the first shown location, with
+    // the currently-picked design's filter applied. Re-renders on every pick
+    // (Store.updateSettings → settings.mapStyle), so it's a real simulator.
+    const previewVenue = list.find((v) => selIds.includes(v.id)) || list[0] || null;
+    const previewUrl = previewVenue
+      ? mapEmbedUrl((previewVenue.mapQuery && previewVenue.mapQuery.trim()) || previewVenue.address, previewVenue.mapLat, previewVenue.mapLng)
+      : null;
+    const previewFilter = mapStyleFilter(settings);
     return (
       <div className="panel">
         <div className="panel__head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}><div className="panel__title">Home page map</div>{headRight}</div>
@@ -1550,19 +1558,32 @@ export function VenueAdmin({ section = "editor", headRight = null }) {
           <div style={{ marginBottom: 18 }}>
             <div style={{ fontWeight: 600, marginBottom: 6 }}>Map design</div>
             <p style={{ color: "var(--muted)", margin: "0 0 12px", fontSize: 14 }}>How the maps look across the whole site. A styled approximation, not Google's own tiles.</p>
-            <div className="tl-pick tl-pick--maps">
-              {MAP_STYLES.map((s) => {
-                const on = mapStyleKey(settings) === s.key;
-                return (
-                  <button key={s.key} type="button"
-                    className={"tl-pick__opt" + (on ? " is-active" : "")}
-                    onClick={() => Store.updateSettings({ mapStyle: s.key, mapNight: s.key === "night" })}>
-                    <span className="map-swatch" style={s.filter ? { filter: s.filter } : undefined} aria-hidden="true" />
-                    <span className="tl-pick__label">{s.label}</span>
-                    <span className="tl-pick__sub">{s.blurb}</span>
-                  </button>
-                );
-              })}
+            <div className="map-design">
+              <div className="tl-pick tl-pick--maps map-design__picks">
+                {MAP_STYLES.map((s) => {
+                  const on = mapStyleKey(settings) === s.key;
+                  return (
+                    <button key={s.key} type="button"
+                      className={"tl-pick__opt" + (on ? " is-active" : "")}
+                      onClick={() => Store.updateSettings({ mapStyle: s.key, mapNight: s.key === "night" })}>
+                      <span className="map-swatch" style={s.filter ? { filter: s.filter } : undefined} aria-hidden="true" />
+                      <span className="tl-pick__label">{s.label}</span>
+                      <span className="tl-pick__sub">{s.blurb}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Live simulator: the real Google embed with the chosen filter. */}
+              <div className="map-design__preview">
+                <div className="map-design__previewlabel">Live preview{previewVenue ? ` — ${previewVenue.name || previewVenue.address || "location"}` : ""}</div>
+                {previewUrl ? (
+                  <div className="map-design__frame">
+                    <iframe title="Map design preview" src={previewUrl} style={{ filter: previewFilter || undefined }} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
+                  </div>
+                ) : (
+                  <div className="map-design__empty">Add a location in the Venue &amp; Map tab to preview the map.</div>
+                )}
+              </div>
             </div>
           </div>
           <Field label={`Maps to show on home (${selCount} of ${list.length})`} id="home-venues">
