@@ -10,7 +10,7 @@ import { signOut, createOwner } from "@/lib/auth.js";
 import { supabase } from "@/lib/supabase.js";
 import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb, updateRsvpDietDb, listSiteRequests, subscribeSiteRequestsRealtime } from "@/lib/api.js";
 import { DIET_OPTIONS } from "@/features/rsvp.jsx";
-import { reconcileGuests, guestFromRsvp, normName } from "@/lib/guests.js";
+import { reconcileGuests, guestFromRsvp, findDuplicateGuest } from "@/lib/guests.js";
 import { headsOf } from "@/lib/rsvp.js";
 import { mediaUrl } from "@/lib/media.js";
 import { stateToClientRow } from "@/lib/mappers.js";
@@ -413,10 +413,7 @@ export function GuestsAdmin() {
     const payload = { ...form, allocation: Math.max(1, parseInt(form.allocation, 10) || 1) };
     // Duplicate guard: exact same normalized first+middle+last already invited
     // (a different middle name is a legitimately different person, e.g. L vs R).
-    const dup = guests.find((g) => g.id !== form.id
-      && normName(g.firstName) === normName(form.firstName)
-      && normName(g.lastName) === normName(form.lastName)
-      && normName(g.middleName) === normName(form.middleName));
+    const dup = findDuplicateGuest(guests, form, form.id);
     if (dup) {
       await confirmDialog({
         title: "Already on the list",

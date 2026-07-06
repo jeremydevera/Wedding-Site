@@ -1,5 +1,30 @@
 import { describe, it, expect } from "vitest";
-import { normName, namePartsMatch, reconcileGuests, guestFromRsvp, matchedRsvps } from "@/lib/guests.js";
+import { normName, namePartsMatch, reconcileGuests, guestFromRsvp, matchedRsvps, findDuplicateGuest } from "@/lib/guests.js";
+
+describe("findDuplicateGuest", () => {
+  const guests = [
+    { id: "g1", firstName: "Laika", lastName: "Morris", middleName: "" },
+    { id: "g2", firstName: "Laika", lastName: "Morris", middleName: "A" },
+  ];
+  it("flags an exact first+last+middle duplicate (both middles empty)", () => {
+    expect(findDuplicateGuest(guests, { firstName: "Laika", lastName: "Morris", middleName: "" })).toMatchObject({ id: "g1" });
+  });
+  it("allows the same first+last when the middle differs", () => {
+    expect(findDuplicateGuest(guests, { firstName: "Laika", lastName: "Morris", middleName: "B" })).toBe(null);
+  });
+  it("flags a duplicate that matches an existing middle-specified guest", () => {
+    expect(findDuplicateGuest(guests, { firstName: "Laika", lastName: "Morris", middleName: "A" })).toMatchObject({ id: "g2" });
+  });
+  it("is case/whitespace-insensitive", () => {
+    expect(findDuplicateGuest(guests, { firstName: " laika ", lastName: "MORRIS", middleName: "" })).toMatchObject({ id: "g1" });
+  });
+  it("returns null when there is no match", () => {
+    expect(findDuplicateGuest(guests, { firstName: "Romeo", lastName: "Santos", middleName: "" })).toBe(null);
+  });
+  it("excludes the guest being edited (excludeId) so an unchanged save is not a self-duplicate", () => {
+    expect(findDuplicateGuest(guests, { firstName: "Laika", lastName: "Morris", middleName: "" }, "g1")).toBe(null);
+  });
+});
 
 describe("matchedRsvps", () => {
   const guests = [{ id: "g1", firstName: "Jeremy", lastName: "Reyes", middleName: "", allocation: 2 }];

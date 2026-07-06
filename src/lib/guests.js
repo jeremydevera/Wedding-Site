@@ -26,6 +26,23 @@ export function namePartsMatch(a, b) {
     && middleMatches(a.middle, b.middle);
 }
 
+// Duplicate-guest check for the owner's add/edit form. Returns the existing guest
+// row that EXACTLY matches the candidate on normalized first+last+middle (empty
+// middle counts as its own value), or null. A same first+last with a DIFFERENT
+// middle is NOT a duplicate — "Laika Morris" and "Laika Morris A" are two people —
+// which is also what keeps two indistinguishable no-middle entries out of the list
+// (the ambiguity that made RSVP reconciliation guess). Pass excludeId when editing
+// so a guest never flags itself. Guest rows use firstName/lastName/middleName.
+export function findDuplicateGuest(guests, cand, excludeId) {
+  const f = normName(cand.firstName), l = normName(cand.lastName), m = normName(cand.middleName);
+  return (guests || []).find((g) =>
+    g.id !== excludeId
+    && normName(g.firstName) === f
+    && normName(g.lastName) === l
+    && normName(g.middleName) === m
+  ) || null;
+}
+
 // Like namePartsMatch but WITHOUT the empty-middle wildcard — used to prefer an
 // exact/initial middle match before falling back to wildcard candidates.
 function namePartsMatchExact(a, b) {
