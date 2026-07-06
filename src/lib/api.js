@@ -504,6 +504,14 @@ export function subscribeSiteRequestsRealtime(onChange) {
 // Superadmin approve: create the client site from a request's payload, then
 // mark the request approved. Owner credentials are set afterwards with the
 // existing Credentials tool in the Clients tab.
+// Idempotent + convergent: the insert and the status update are two separate
+// writes (no cross-table transaction available from the client), so a failure
+// between them used to leave the site created but the request stuck "pending" —
+// re-approval then died forever on the unique-subdomain constraint. We now look
+// for an existing client with that subdomain first and skip the insert if it's
+// already there, and we treat a duplicate-subdomain insert error as
+// already-created; either way we always converge on marking the request
+// approved.
 export async function approveSiteRequest(reqRow) {
   const c = reqRow.content || {};
   const content = {
@@ -522,10 +530,30 @@ export async function approveSiteRequest(reqRow) {
     strictRsvp: c.strictRsvp === true,
     onboarded: true, // they already provided setup via the wizard
   };
-  const { data: created, error } = await supabase.from("clients")
-    .insert({ subdomain: reqRow.subdomain, event_type: "wedding", template_key: reqRow.template_key || "classic", owner_email: reqRow.email, content })
-    .select("id").single();
-  if (error) throw error;
+  // A prior approval may have created the client but failed to flip the status;
+  // reuse that row instead of colliding on the unique subdomain.
+  const { data: existing } = await supabase.from("clients")
+    .select("id").eq("subdomain", reqRow.subdomain).maybeSingle();
+  let created = existing || null;
+  if (!created) {
+    const { data, error } = await supabase.from("clients")
+      .insert({ subdomain: reqRow.subdomain, event_type: "wedding", template_key: reqRow.template_key || "classic", owner_email: reqRow.email, content })
+      .select("id").single();
+    if (error) {
+      // Unique-subdomain violation (Postgres 23505) = the client already exists
+      // from an earlier partial approval; recover its id and proceed.
+      if (error.code === "23505") {
+        const { data: dup, error: lookupErr } = await supabase.from("clients")
+          .select("id").eq("subdomain", reqRow.subdomain).single();
+        if (lookupErr) throw error; // couldn't recover — surface the original insert error
+        created = dup;
+      } else {
+        throw error;
+      }
+    } else {
+      created = data;
+    }
+  }
   await setSiteRequestStatus(reqRow.id, "approved");
   return created;
 }

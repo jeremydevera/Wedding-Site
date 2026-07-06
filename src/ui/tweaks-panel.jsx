@@ -74,7 +74,7 @@ export const __TWEAKS_STYLE = `
     box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 12px 40px rgba(0,0,0,.18);
     font:11.5px/1.4 ui-sans-serif,system-ui,-apple-system,sans-serif;overflow:hidden}
   .twk-hd{display:flex;align-items:center;justify-content:space-between;
-    padding:10px 8px 10px 14px;cursor:move;user-select:none}
+    padding:10px 8px 10px 14px;cursor:move;user-select:none;touch-action:none}
   .twk-hd b{font-size:12px;font-weight:600;letter-spacing:.01em}
   .twk-x{appearance:none;border:0;background:transparent;color:rgba(41,38,27,.55);
     width:22px;height:22px;border-radius:6px;cursor:default;font-size:13px;line-height:1}
@@ -266,11 +266,11 @@ export function TweaksPanel({ title = 'Tweaks', children }) {
       clampToViewport();
     };
     const up = () => {
-      window.removeEventListener('mousemove', move);
-      window.removeEventListener('mouseup', up);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
     };
-    window.addEventListener('mousemove', move);
-    window.addEventListener('mouseup', up);
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
   };
 
   if (!open) return null;
@@ -279,10 +279,10 @@ export function TweaksPanel({ title = 'Tweaks', children }) {
       <style>{__TWEAKS_STYLE}</style>
       <div ref={dragRef} className="twk-panel" data-omelette-chrome=""
            style={{ right: offsetRef.current.x, bottom: offsetRef.current.y }}>
-        <div className="twk-hd" onMouseDown={onDragStart}>
+        <div className="twk-hd" onPointerDown={onDragStart}>
           <b>{title}</b>
           <button className="twk-x" aria-label="Close tweaks"
-                  onMouseDown={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
                   onClick={dismiss}>✕</button>
         </div>
         <div className="twk-body">

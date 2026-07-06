@@ -11,6 +11,7 @@ const { useState, useEffect, useRef } = React;
 let _audio = null;
 let _tracks = [];
 let _loadedUrl = null;
+let _loadedId = null; // stable identity of the loaded track (id); url is the fallback key
 let _st = { playing: false, time: 0, duration: 0, index: 0 };
 let _vol = 1; // 0..1, adjusted by the device player's wheel; vinyl skin has no volume UI
 const _subs = new Set();
@@ -32,23 +33,27 @@ function load(i) {
   const t = _tracks[i]; if (!t) return;
   const a = el();
   if (_loadedUrl !== t.url) { a.src = mediaUrl(t.url); _loadedUrl = t.url; _st = { ..._st, duration: 0 }; }
+  _loadedId = t.id != null ? t.id : null;
   _st = { ..._st, index: i, time: 0 }; _emit();
 }
 export function setTracks(tracks) {
   _tracks = tracks || [];
-  if (_st.index >= _tracks.length) { _st = { ..._st, index: 0 }; _loadedUrl = null; }
+  if (_st.index >= _tracks.length) { _st = { ..._st, index: 0 }; _loadedUrl = null; _loadedId = null; }
   if (_tracks.length) {
-    // Reload when the loaded URL is no longer in the new playlist (playlist replaced).
-    const loadedStillValid = _tracks.some((t) => t.url === _loadedUrl);
+    // Match the loaded track by its stable id (falling back to url only when a
+    // track has no id) — url alone is ambiguous when two rows share a source.
+    const matches = (t) => (_loadedId != null ? t.id === _loadedId : t.url === _loadedUrl);
+    // Reload when the loaded track is no longer in the new playlist (playlist replaced).
+    const loadedStillValid = _tracks.some(matches);
     if (!loadedStillValid) load(_st.index < _tracks.length ? _st.index : 0);
     else {
       // Playlist reordered but the playing track is still present — re-sync the
       // index to where the loaded track now lives so the UI's "Now Playing"
       // highlight/label follows the audio instead of pointing at a moved row.
-      const li = _tracks.findIndex((t) => t.url === _loadedUrl);
+      const li = _tracks.findIndex(matches);
       if (li >= 0 && li !== _st.index) _st = { ..._st, index: li };
     }
-  } else if (_audio) { _audio.pause(); _loadedUrl = null; }
+  } else if (_audio) { _audio.pause(); _loadedUrl = null; _loadedId = null; }
   _emit();
 }
 export function play() { const a = el(); if (_loadedUrl == null && _tracks[0]) load(0); if (a) a.play().catch(() => {}); }

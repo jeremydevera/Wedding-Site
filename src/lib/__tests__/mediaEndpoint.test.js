@@ -339,6 +339,34 @@ describe("POST /api/upload", () => {
     expect(globalThis.fetch).toHaveBeenCalledTimes(2);
   });
 
+  // Regression (#47): an allowlisted host that 3xx-redirects must NOT be followed
+  // to an unvalidated address — fetch runs with redirect:"manual" and a redirect
+  // status fails CLOSED (502, no store), rather than egressing to the Location.
+  it("502 when an allowlisted sourceUrl responds with a redirect (SSRF via redirect blocked)", async () => {
+    const srcFetch = vi.fn().mockResolvedValue({
+      status: 302,
+      ok: false, // a 3xx is not ok; belt-and-suspenders with the explicit 3xx check
+      headers: new Headers({ location: "http://169.254.169.254/latest/meta-data/" }),
+      body: null,
+    });
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "u1" }) })           // auth
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ role: "superadmin" }] }) // profiles
+      .mockImplementationOnce((...args) => srcFetch(...args));                          // source fetch
+    const env = envMedia();
+    const res = await onRequestPost({
+      request: uploadReq({ sourceUrl: "https://media.celebrately.us/redirect-me", clientId: "c1" }),
+      env,
+    });
+    expect(res.status).toBe(502);
+    expect(env.MEDIA.put).not.toHaveBeenCalled(); // never followed the redirect / stored
+    // the source fetch was made with redirect:"manual" so the redirect is not auto-followed
+    expect(srcFetch).toHaveBeenCalledWith(
+      "https://media.celebrately.us/redirect-me",
+      expect.objectContaining({ redirect: "manual" }),
+    );
+  });
+
   it("allows sourceUrl on an allowlisted Supabase host", async () => {
     globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "u1" }) })          // auth

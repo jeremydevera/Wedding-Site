@@ -38,7 +38,10 @@ export function SetupWizard() {
     if (busy) return;
     setBusy(true);
     try {
-      const patch = skip ? { onboarded: true } : {
+      // Content patch WITHOUT onboarded — writing it must NOT unmount the wizard.
+      // The parent gate (onboarded===false) keeps us mounted through the save, so
+      // if it throws the typed values survive. onboarded flips only after success.
+      const patch = skip ? {} : {
         partnerA: f.partnerA.trim() || settings.partnerA,
         partnerB: f.partnerB.trim() || settings.partnerB,
         weddingDate: f.weddingDate,
@@ -50,17 +53,26 @@ export function SetupWizard() {
         themeAccent: "",
         displayFont: (THEME_FONTS[f.theme] || {}).display,
         bodyFont: (THEME_FONTS[f.theme] || {}).body,
-        onboarded: true,
       };
       const prevSettings = { ...Store.get().settings };
       Store.updateSettings(patch);
       try {
         await saveClientData();
-        toast(skip ? "You can finish setup anytime in Home & Settings" : "You're all set — welcome!", "success");
       } catch (saveErr) {
-        Store.updateSettings({ ...prevSettings, onboarded: false }); // full rollback
+        Store.updateSettings(prevSettings); // roll back content; onboarded stays false, wizard stays mounted
         throw saveErr;
       }
+      // Content saved — only now flip onboarded and persist it. If THIS save
+      // throws, roll onboarded back to false so the wizard stays mounted (the
+      // content is already persisted, so nothing typed is lost either way).
+      Store.updateSettings({ onboarded: true });
+      try {
+        await saveClientData();
+      } catch (saveErr) {
+        Store.updateSettings({ onboarded: false });
+        throw saveErr;
+      }
+      toast(skip ? "You can finish setup anytime in Home & Settings" : "You're all set — welcome!", "success");
     } catch (e) {
       toast("Couldn't save — please try again", "err");
     } finally {

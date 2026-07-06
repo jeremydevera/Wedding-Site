@@ -132,8 +132,14 @@ export async function onRequestPost(context) {
     if (parsed.protocol !== "https:" || !sourceHostAllowed(parsed.hostname)) {
       return json({ error: "source host not allowed" }, 403);
     }
+    // Fetch with redirect:"manual" so a 3xx is NOT auto-followed — an allowlisted
+    // host could redirect to an internal/arbitrary address, and the default
+    // follower would egress there WITHOUT re-checking the allowlist (SSRF). Treat
+    // any redirect as a failure; only a direct 2xx from an allowlisted host is
+    // stored (fail CLOSED).
     let src;
-    try { src = await fetch(sourceUrl); } catch { return json({ error: "source fetch failed" }, 502); }
+    try { src = await fetch(sourceUrl, { redirect: "manual" }); } catch { return json({ error: "source fetch failed" }, 502); }
+    if (src.status >= 300 && src.status < 400) return json({ error: "source redirect not allowed" }, 502);
     if (!src.ok) return json({ error: "source not reachable" }, 502);
     const len = Number(src.headers.get("content-length") || 0);
     if (len && len > MAX_BYTES) return json({ error: "source too large (max 25MB)" }, 413);

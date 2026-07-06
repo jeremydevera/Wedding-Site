@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { rootView } from "@/app/App.jsx";
+import { rootView, footerFine } from "@/app/App.jsx";
 
 describe("rootView", () => {
   it("loading wins over everything", () => {
@@ -23,5 +23,26 @@ describe("rootView", () => {
   });
   it("real client, public route -> public", () => {
     expect(rootView({ loading: false, notFound: false, subdomain: "janandirish", route: "home" })).toBe("public");
+  });
+});
+
+describe("footerFine", () => {
+  // The bug: the footer showed the date even when the "Show wedding date &
+  // countdown" master toggle was off. It must obey weddingDateOn like the hero.
+  it("hides the date when the master toggle is off (no dangling separator)", () => {
+    expect(footerFine({ weddingDateOn: false, weddingDateLabel: "June 4", venueName: "The Grand" }))
+      .toEqual({ date: "", venue: "The Grand", sep: false });
+  });
+  it("shows the date and separator when toggle on (default) and both values present", () => {
+    expect(footerFine({ weddingDateLabel: "June 4", venueName: "The Grand" }))
+      .toEqual({ date: "June 4", venue: "The Grand", sep: true });
+  });
+  it("no separator when the date is empty", () => {
+    expect(footerFine({ weddingDateOn: true, weddingDateLabel: "", venueName: "The Grand" }))
+      .toEqual({ date: "", venue: "The Grand", sep: false });
+  });
+  it("no separator when the venue is empty", () => {
+    expect(footerFine({ weddingDateLabel: "June 4", venueName: "" }))
+      .toEqual({ date: "June 4", venue: "", sep: false });
   });
 });

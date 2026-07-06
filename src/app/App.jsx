@@ -199,8 +199,20 @@ export function Nav({ route }) {
   );
 }
 
+// Footer fine-print line: the date obeys the "Show wedding date & countdown"
+// master toggle (weddingDateOn) and only shows when there's a value — matching
+// every other consumer (PublicPages hero/details). The separator dot only
+// renders when both a date and a venue are present.
+export function footerFine(settings) {
+  const showDate = settings.weddingDateOn !== false && !!settings.weddingDateLabel;
+  const date = showDate ? settings.weddingDateLabel : "";
+  const venue = settings.venueName || "";
+  return { date, venue, sep: !!(date && venue) };
+}
+
 export function Footer() {
   const { settings } = useStore();
+  const fine = footerFine(settings);
   return (
     <footer className="footer">
       <div className="container">
@@ -211,7 +223,7 @@ export function Footer() {
           {visibleNav(settings.eventType, settings.modules).map((l) => <button key={l.key} onClick={() => go(l.key)}>{l.label}</button>)}
           {moduleEnabled(settings.modules, "gallery") && <button onClick={() => go("upload")}>Upload</button>}
         </div>
-        <p className="footer__fine">{settings.weddingDateLabel} &middot; {settings.venueName}</p>
+        <p className="footer__fine">{fine.date}{fine.sep && " · "}{fine.venue}</p>
         <button className="footer__admin" onClick={() => go("admin")}>Admin sign in</button>
       </div>
     </footer>
