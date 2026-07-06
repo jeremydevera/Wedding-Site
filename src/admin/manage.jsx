@@ -112,7 +112,7 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
           {value && !busy && <Button variant="ghost" size="sm" onClick={() => setCropSrc(mediaUrl(value))}>{Icon.crop({})} Crop</Button>}
           {value && !busy && <Button variant="ghost" size="sm" onClick={() => commit("")}>Remove</Button>}
         </div>
-        <input ref={ref} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { setPickerOpen(false); pick(e.target.files[0]); }} />
+        <input ref={ref} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const file = e.target.files[0]; e.target.value = ""; setPickerOpen(false); pick(file); }} />
       </div>
       <MediaPickerModal
         open={pickerOpen}
@@ -145,6 +145,7 @@ export function TrackCoverField({ value, onChange }) {
   const [busy, setBusy] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false); // Upload new / Choose from library
   const isVid = VIDEO_RE.test(value || "");
+  const isGif = /\.gif(\?|$)/i.test(value || ""); // cropping a GIF flattens it to a static JPEG frame — hide Crop for GIFs too
   async function upload(file) {
     setBusy(true);
     try {
@@ -184,7 +185,7 @@ export function TrackCoverField({ value, onChange }) {
       </div>
       <div className="imgup__actions">
         <Button variant="ghost" size="sm" disabled={busy} onClick={() => setPickerOpen(true)}>{Icon.upload({})} {busy ? "Uploading…" : (value ? "Replace" : "Add cover")}</Button>
-        {value && !busy && !isVid && <Button variant="ghost" size="sm" onClick={() => setCropSrc(mediaUrl(value))}>{Icon.crop({})} Crop</Button>}
+        {value && !busy && !isVid && !isGif && <Button variant="ghost" size="sm" onClick={() => setCropSrc(mediaUrl(value))}>{Icon.crop({})} Crop</Button>}
         {value && !busy && <Button variant="ghost" size="sm" onClick={() => onChange("")}>Remove</Button>}
       </div>
       <input ref={ref} type="file" accept="image/*,image/gif,video/mp4,video/webm,.gif,.mp4,.webm,.mov" style={{ display: "none" }}
@@ -1559,19 +1560,13 @@ export function VenueAdmin({ section = "editor", headRight = null }) {
             <div style={{ fontWeight: 600, marginBottom: 6 }}>Map design</div>
             <p style={{ color: "var(--muted)", margin: "0 0 12px", fontSize: 14 }}>How the maps look across the whole site. A styled approximation, not Google's own tiles.</p>
             <div className="map-design">
-              <div className="tl-pick tl-pick--maps map-design__picks">
-                {MAP_STYLES.map((s) => {
-                  const on = mapStyleKey(settings) === s.key;
-                  return (
-                    <button key={s.key} type="button"
-                      className={"tl-pick__opt" + (on ? " is-active" : "")}
-                      onClick={() => Store.updateSettings({ mapStyle: s.key, mapNight: s.key === "night" })}>
-                      <span className="map-swatch" style={s.filter ? { filter: s.filter } : undefined} aria-hidden="true" />
-                      <span className="tl-pick__label">{s.label}</span>
-                      <span className="tl-pick__sub">{s.blurb}</span>
-                    </button>
-                  );
-                })}
+              <div className="map-design__picks">
+                <Field label="Design" id="map-style" hint="Applies to every map on the site.">
+                  <Select id="map-style" value={mapStyleKey(settings)}
+                    onChange={(e) => { const k = e.target.value; Store.updateSettings({ mapStyle: k, mapNight: k === "night" }); }}>
+                    {MAP_STYLES.map((s) => <option key={s.key} value={s.key}>{s.label} — {s.blurb}</option>)}
+                  </Select>
+                </Field>
               </div>
               {/* Live simulator: the real Google embed with the chosen filter. */}
               <div className="map-design__preview">
