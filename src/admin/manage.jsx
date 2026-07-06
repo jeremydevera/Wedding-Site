@@ -2234,15 +2234,17 @@ export function SettingsAdmin() {
 // date or a plain placeholder, and the actual native picker (hidden) is opened
 // via showPicker() on click. Users only ever see clean text.
 // A datetime-local input shows a greyed "mm/dd/yyyy, --:-- --" even when empty.
-// To keep an UNSET field visually blank, render a plain text box until it's
-// focused or has a value, then swap to the native datetime picker on click.
+// Keep it a real datetime-local ALWAYS (so a single click edits the date — no
+// swap that eats the first click), but hide the placeholder text while the
+// field is empty and unfocused by making its text transparent. On focus (click)
+// or once it has a value, the text shows normally.
 function DateTimeInput({ id, value, onChange }) {
   const [focused, setFocused] = useState(false);
-  const native = focused || !!value;
+  const hidePlaceholder = !value && !focused;
   return (
-    <Input id={id} type={native ? "datetime-local" : "text"} value={value || ""}
-      placeholder="" onChange={onChange}
-      onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} />
+    <Input id={id} type="datetime-local" value={value || ""} onChange={onChange}
+      onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+      style={hidePlaceholder ? { color: "transparent" } : undefined} />
   );
 }
 
