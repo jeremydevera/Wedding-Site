@@ -2233,6 +2233,19 @@ export function SettingsAdmin() {
 // the visible box is a read-only input that shows either a friendly formatted
 // date or a plain placeholder, and the actual native picker (hidden) is opened
 // via showPicker() on click. Users only ever see clean text.
+// A datetime-local input shows a greyed "mm/dd/yyyy, --:-- --" even when empty.
+// To keep an UNSET field visually blank, render a plain text box until it's
+// focused or has a value, then swap to the native datetime picker on click.
+function DateTimeInput({ id, value, onChange }) {
+  const [focused, setFocused] = useState(false);
+  const native = focused || !!value;
+  return (
+    <Input id={id} type={native ? "datetime-local" : "text"} value={value || ""}
+      placeholder="" onChange={onChange}
+      onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} />
+  );
+}
+
 function ClosesAtInput({ value, onChange }) {
   const ref = useRef(null);
   const fmt = (v) => {
@@ -2320,7 +2333,7 @@ export function HomeAdmin() {
               </div>
               {f.weddingDateOn !== false && (<>
                 <div className="field-row field-row--2">
-                  <Field label="Wedding date & time" hint="Drives the countdown. Leave blank to hide just the counter." id="s-date"><Input id="s-date" type="datetime-local" value={f.weddingDate} onChange={set("weddingDate")} /></Field>
+                  <Field label="Wedding date & time" hint="Drives the countdown. Leave blank to hide just the counter." id="s-date"><DateTimeInput id="s-date" value={f.weddingDate} onChange={set("weddingDate")} /></Field>
                   <Field label="Display date label" id="s-datel" hint="The date text shown on the site. Leave blank to hide it."><Input id="s-datel" value={f.weddingDateLabel} onChange={set("weddingDateLabel")} /></Field>
                 </div>
                 {/* narrow wrapper so the switch sits next to its label, not far across the wide panel */}
