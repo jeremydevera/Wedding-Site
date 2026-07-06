@@ -1542,6 +1542,13 @@ export function VenueAdmin({ section = "editor", headRight = null }) {
           <p style={{ color: "var(--muted)", margin: "0 0 14px", fontSize: 14 }}>
             Tick the locations to show on the home page. Under each ticked location, choose which info tiles appear beneath its map. Add or edit locations in the Venue &amp; Map tab.
           </p>
+          {/* Google's free embed can't take native night tiles (no API key,
+              cross-origin iframe), so "night mode" is a tuned dark CSS filter
+              on the map. Applies to every map on the site (home + Venue page).
+              Store-only — commits on this panel's Save button. */}
+          <div style={{ maxWidth: 480, marginBottom: 6 }}>
+            <AdminToggle noRule label="Dark (night) map" desc="Give the maps a dark, night-time look across the site. Turn off for the standard light map." checked={settings.mapNight === true} onChange={(v) => Store.updateSettings({ mapNight: v })} />
+          </div>
           <Field label={`Maps to show on home (${selCount} of ${list.length})`} id="home-venues">
             <div id="home-venues" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {list.map((v, i) => {
