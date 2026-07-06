@@ -740,7 +740,6 @@ export function ClientsAdmin() {
       <Modal open={!!reqEdit} onClose={() => setReqEdit(null)} label="Edit request" wide>
         {reqEdit && (
           <div>
-            <SectionHead eyebrow="Site request" title={`Edit ${reqEdit.subdomain || "request"}`} />
             <ApplyWizard
               initial={reqEdit}
               onCancel={() => setReqEdit(null)}
