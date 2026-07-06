@@ -55,16 +55,16 @@ export function SaveFooter() {
 // Reusable image uploader for admin (hero, story milestones)
 export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", framePreview, defaultPreview, tintStrength, tintGradient, purpose = "misc" }) {
   const { clientId } = useStore();
-  const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const ref = useRef(null);
   const [cropSrc, setCropSrc] = useState(null);
   const [busy, setBusy] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const aspect = (() => { const m = String(ratio).split("/").map((n) => parseFloat(n)); return (m.length === 2 && m[1]) ? m[0] / m[1] : 1; })();
-  // Apply the change AND persist to the DB immediately, so an uploaded/removed
-  // photo can't be lost by forgetting the separate "Save changes" step (the file
-  // is already in R2 — this saves the reference to it). Noop outside admin.
-  const commit = (v) => { onChange(v); if (persistChanges) Promise.resolve(persistChanges()).catch(() => {}); };
+  // Set the reference only (marks the panel dirty). The file is already uploaded
+  // to R2 by applyCrop; the reference goes live when the user clicks "Save
+  // changes" — same as every other field, so a single upload never silently
+  // commits the whole panel. The "You have unsaved changes" hint covers loss.
+  const commit = (v) => { onChange(v); };
   function pick(file) {
     if (!file) return;
     if (!file.type.startsWith("image/")) { toast("Please choose an image file.", "err"); return; }
@@ -2591,14 +2591,10 @@ export function TrackEditor({ open, track, onClose }) {
         onPick={(key) => setF((p) => ({ ...p, url: key }))}
       />
       <Field label="Cover image" id="trk-art" hint="Shown on the Retro Device player screen. Image, GIF, or MP4 — square works best. Optional; falls back to a themed gradient.">
-        <TrackCoverField value={f.art} onChange={(v) => {
-          const art = v || "";
-          setF((p) => ({ ...p, art }));
-          // Existing track: persist the cover to the DB right away (like the
-          // envelope frame) so it can't be lost by closing without "Save track".
-          // New/draft tracks (no id yet) still save atomically on "Save track".
-          if (track && track.id) { Store.updateTrack(track.id, { art }); Promise.resolve(persistChanges()).catch(() => {}); }
-        }} />
+        {/* Cover sets the form only; it persists to the DB on "Save track" (the
+            modal's own button, right below) — consistent with every other field,
+            and Cancel discards as a modal should. */}
+        <TrackCoverField value={f.art} onChange={(v) => setF((p) => ({ ...p, art: v || "" }))} />
       </Field>
       <div style={{ display: "flex", gap: 12, marginTop: 8, justifyContent: "flex-end" }}>
         <Button variant="ghost" onClick={onClose}>Cancel</Button>
