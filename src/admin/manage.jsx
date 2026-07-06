@@ -16,6 +16,7 @@ import { mediaUrl } from "@/lib/media.js";
 import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
 import { visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel, moduleEnabled } from "@/lib/roles.js";
+import { MAP_STYLES, mapStyleKey } from "@/lib/mapStyles.js";
 import { ClientsAdmin, R2LibraryAdmin, SuperOverview } from "@/admin/superadmin.jsx";
 import { LocationPicker } from "@/ui/location-picker.jsx";
 import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
@@ -1542,12 +1543,27 @@ export function VenueAdmin({ section = "editor", headRight = null }) {
           <p style={{ color: "var(--muted)", margin: "0 0 14px", fontSize: 14 }}>
             Tick the locations to show on the home page. Under each ticked location, choose which info tiles appear beneath its map. Add or edit locations in the Venue &amp; Map tab.
           </p>
-          {/* Google's free embed can't take native night tiles (no API key,
-              cross-origin iframe), so "night mode" is a tuned dark CSS filter
-              on the map. Applies to every map on the site (home + Venue page).
-              Store-only — commits on this panel's Save button. */}
-          <div style={{ maxWidth: 480, marginBottom: 6 }}>
-            <AdminToggle noRule label="Dark (night) map" desc="Give the maps a dark, night-time look across the site. Turn off for the standard light map." checked={settings.mapNight === true} onChange={(v) => Store.updateSettings({ mapNight: v })} />
+          {/* Map design: tuned CSS-filter presets (the free embed can't take
+              Google's native styled tiles). Applies to every map on the site
+              (home + Venue page). Store-only — commits on this panel's Save
+              button; writes mapStyle (mapNight kept in sync for back-compat). */}
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>Map design</div>
+            <p style={{ color: "var(--muted)", margin: "0 0 12px", fontSize: 14 }}>How the maps look across the whole site. A styled approximation, not Google's own tiles.</p>
+            <div className="tl-pick tl-pick--maps">
+              {MAP_STYLES.map((s) => {
+                const on = mapStyleKey(settings) === s.key;
+                return (
+                  <button key={s.key} type="button"
+                    className={"tl-pick__opt" + (on ? " is-active" : "")}
+                    onClick={() => Store.updateSettings({ mapStyle: s.key, mapNight: s.key === "night" })}>
+                    <span className="map-swatch" style={s.filter ? { filter: s.filter } : undefined} aria-hidden="true" />
+                    <span className="tl-pick__label">{s.label}</span>
+                    <span className="tl-pick__sub">{s.blurb}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <Field label={`Maps to show on home (${selCount} of ${list.length})`} id="home-venues">
             <div id="home-venues" style={{ display: "flex", flexDirection: "column", gap: 10 }}>

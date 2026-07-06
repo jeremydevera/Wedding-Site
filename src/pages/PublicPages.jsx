@@ -3,6 +3,7 @@ import { go } from "@/lib/nav.js";
 import { onSiteScroll, scrollOffset, siteScrollEl } from "@/lib/scroll.js";
 import { mediaUrl } from "@/lib/media.js";
 import { useStore } from "@/lib/store.jsx";
+import { mapStyleFilter } from "@/lib/mapStyles.js";
 import { moduleEnabled } from "@/lib/roles.js";
 import { egTintGradientFor, envColorFilterFor } from "@/themes";
 import { Button, Countdown, FloatingDecor, Icon, Placeholder, SectionHead, mapCoordStr, mapDirUrl, mapEmbedUrl, mapResolveQuery } from "@/ui/components.jsx";
@@ -293,11 +294,11 @@ export function EnvelopeInvite() {
 // single-map layout and each carousel slide.
 function HomeMapBlock({ m }) {
   const { settings } = useStore();
-  const night = settings.mapNight === true;
+  const mapFilter = mapStyleFilter(settings);
   return (
     <>
       <div className="home-map">
-        <iframe className={"home-map__frame" + (night ? " map--night" : "")} title={m.addr ? `Map — ${m.addr}` : "Venue map"} src={m.url} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
+        <iframe className="home-map__frame" style={mapFilter ? { filter: mapFilter } : undefined} title={m.addr ? `Map — ${m.addr}` : "Venue map"} src={m.url} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
         <div className="home-map__bar home-map__bar--actions">
           <div className="home-map__actions">
             <Button variant="ghost" size="sm" onClick={() => go("venue")}>See full details</Button>
@@ -875,7 +876,7 @@ export function VenuePage() {
               {target && (
                 <>
                   <div className="card" style={{ padding: 0, overflow: "hidden", marginBottom: 30 }}>
-                    <iframe className={settings.mapNight === true ? "map--night" : undefined} title={"Venue map" + (multi ? " " + (vi + 1) : "")} src={mapUrl} style={{ width: "100%", height: 420, border: 0, display: "block" }} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
+                    <iframe title={"Venue map" + (multi ? " " + (vi + 1) : "")} src={mapUrl} style={{ width: "100%", height: 420, border: 0, display: "block", filter: mapStyleFilter(settings) || undefined }} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
                   </div>
                   <div style={{ display: "flex", justifyContent: "center", marginBottom: 44 }}>
                     <Button variant="primary" size="lg" onClick={() => window.open(dirUrl, "_blank", "noopener,noreferrer")}>{Icon.pin({})} Get Directions</Button>
