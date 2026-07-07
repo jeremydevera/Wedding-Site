@@ -100,8 +100,8 @@ const DECOR_OPTS = [
 export function Nav({ route }) {
   const { settings, auth, clientId } = useStore();
   const [drawer, setDrawer] = useState(false);
-  // Demo try-bar visibility: shown at rest and while scrolling DOWN, hidden
-  // while scrolling UP (owner request). The sealed envelope locks scrolling,
+  // Demo try-bar visibility: hidden while scrolling DOWN (reading content),
+  // shown when scrolling UP or at rest. The sealed envelope locks scrolling,
   // so no events fire there and the bar stays visible.
   const [barHidden, setBarHidden] = useState(false);
   useEffect(() => {
@@ -110,7 +110,7 @@ export function Nav({ route }) {
       const y = scrollOffset();
       const dy = y - last;
       if (Math.abs(dy) < 6) return; // ignore jitter
-      setBarHidden(dy < 0 && y > 40); // up = hide (but never near the very top)
+      setBarHidden(dy > 0 && y > 40); // down = hide (never near the very top)
       last = y;
     };
     return onSiteScroll(onScroll);
