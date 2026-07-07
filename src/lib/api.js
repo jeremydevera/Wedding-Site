@@ -528,6 +528,10 @@ export async function approveSiteRequest(reqRow) {
     ...(Array.isArray(c.schedule) && c.schedule.length ? { schedule: c.schedule } : {}),
     ...(Array.isArray(c.entourage) && c.entourage.length ? { entourage: c.entourage } : {}),
     strictRsvp: c.strictRsvp === true,
+    // New registered sites open with falling petals (Classic Ivory is the wizard's
+    // default theme). Owner can change decor/theme anytime in admin.
+    decorOn: true,
+    decorStyle: "petals",
     onboarded: true, // they already provided setup via the wizard
   };
   // A prior approval may have created the client but failed to flip the status;
