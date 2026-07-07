@@ -46,6 +46,7 @@ export const DEFAULT_SETTINGS = {
   autoApproveGuestbook: true,
   heroImage: "",
   frameImage: "",
+  frameImageCrop: null, // {z,dx,dy} pan/zoom for a VIDEO frameImage (see cropTransform)
   envBgImage: "",
   envTintOn: true,
   envTint: 55,

@@ -1,6 +1,6 @@
 import React from "react";
 import { useStore } from "@/lib/store.jsx";
-import { mediaUrl } from "@/lib/media.js";
+import { cropTransform, mediaUrl } from "@/lib/media.js";
 const { useState, useEffect, useRef } = React;
 
 // ============================================================================
@@ -267,7 +267,7 @@ function DevicePlayer({ tracks }) {
           <div className="dp-body">
             <div className={"dp-screen" + (artUrl ? " dp-screen--art" : "")}>
               {artUrl && (artIsVideo
-                ? <video className="dp-media" src={artUrl} muted loop autoPlay playsInline aria-hidden="true" />
+                ? <video className="dp-media" src={artUrl} muted loop autoPlay playsInline aria-hidden="true" style={cropTransform(cur.artCrop)} />
                 : <img className="dp-media" src={artUrl} alt="" aria-hidden="true" />)}
               <div className="dp-reflection" aria-hidden="true" />
               <div className="dp-screen__text">

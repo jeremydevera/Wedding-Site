@@ -379,7 +379,12 @@ export function confirmDialog(opts) {
 }
 
 // --- Crop modal (pan + zoom within an aspect frame) -------------------------
-export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc }) {
+// Images export cropped pixels via onApply(dataUrl). Videos can't be re-encoded
+// client-side, so the SAME pan/zoom UI returns non-destructive params instead:
+// onApply(null, { z, dx, dy }) — fractions of the crop box that renderers apply
+// as a CSS transform (see cropTransform in lib/media.js). `initialParams` seeds
+// the view so re-cropping a video starts from the saved position.
+export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, initialParams }) {
   const [zoom, setZoom] = useState(1);
   const [off, setOff] = useState({ x: 0, y: 0 });
   const [nat, setNat] = useState({ w: 0, h: 0 });
@@ -387,10 +392,12 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc }
   const imgRef = useRef(null);
   const W = 340;
   const H = Math.round(W / (aspect || 1));
+  const isVideo = /\.(mp4|webm|mov|m4v)(\?|$)/i.test(String(src || ""));
 
   useEffect(() => {
     if (!open || !src) return;
     setZoom(1); setNat({ w: 0, h: 0 });
+    if (isVideo) return; // the rendered <video> reports its size via onLoadedMetadata
     const im = new Image();
     im.onload = () => setNat({ w: im.naturalWidth, h: im.naturalHeight });
     im.src = src;
@@ -401,8 +408,29 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc }
   const dispW = nat.w * scale, dispH = nat.h * scale;
   const clamp = (o) => ({ x: Math.min(0, Math.max(W - dispW, o.x)), y: Math.min(0, Math.max(H - dispH, o.y)) });
 
+  const seededRef = useRef(false);
+  const skipCenterRef = useRef(false);
+  useEffect(() => { if (open) { seededRef.current = false; skipCenterRef.current = false; } }, [open, src]);
   useEffect(() => {
-    if (nat.w) setOff(clamp({ x: (W - dispW) / 2, y: (H - dispH) / 2 }));
+    if (!nat.w) return;
+    // Seed once from saved video params when the natural size is known, so
+    // re-cropping starts from the stored position. Seeding sets zoom, which
+    // re-fires this effect — skipCenterRef swallows that one recenter so the
+    // seeded offset survives. After that, zoom changes recenter as usual
+    // (matching the image flow).
+    if (isVideo && initialParams && !seededRef.current) {
+      seededRef.current = true;
+      const z0 = Math.max(1, +initialParams.z || 1);
+      const sc = Math.max(W / nat.w, H / nat.h) * z0;
+      const dw = nat.w * sc, dh = nat.h * sc;
+      skipCenterRef.current = z0 !== 1;
+      setZoom(z0);
+      setOff({ x: (W - dw) / 2 + (+initialParams.dx || 0) * W, y: (H - dh) / 2 + (+initialParams.dy || 0) * H });
+      return;
+    }
+    seededRef.current = true;
+    if (skipCenterRef.current) { skipCenterRef.current = false; return; }
+    setOff(clamp({ x: (W - dispW) / 2, y: (H - dispH) / 2 }));
   }, [nat.w, nat.h, zoom, aspect]);
 
   function onDown(e) {
@@ -448,6 +476,10 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc }
   }, [off.x, off.y, scale, nat.w, frameSrc, open]);
 
   function apply() {
+    if (isVideo) {
+      onApply(null, { z: zoom, dx: (off.x - (W - dispW) / 2) / W, dy: (off.y - (H - dispH) / 2) / H });
+      return;
+    }
     const c = drawCrop();
     if (!c) { onCancel && onCancel(); return; }
     onApply(hasTransparency(c) ? c.toDataURL("image/png") : c.toDataURL("image/jpeg", 0.86));
@@ -461,7 +493,9 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc }
       <div className="crop">
         <div style={{ display: "flex", gap: 22, alignItems: "flex-start", flexWrap: "wrap", justifyContent: "center", width: "100%" }}>
           <div className="crop__view" style={{ width: W, height: H }} onPointerDown={onDown}>
-            {src && <img ref={imgRef} src={src} alt="" draggable="false" style={{ position: "absolute", left: off.x, top: off.y, width: dispW, height: dispH, maxWidth: "none" }} />}
+            {src && (isVideo
+              ? <video ref={imgRef} src={src} muted loop autoPlay playsInline draggable="false" onLoadedMetadata={(e) => setNat({ w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })} style={{ position: "absolute", left: off.x, top: off.y, width: dispW, height: dispH, maxWidth: "none" }} />
+              : <img ref={imgRef} src={src} alt="" draggable="false" style={{ position: "absolute", left: off.x, top: off.y, width: dispW, height: dispH, maxWidth: "none" }} />)}
             <div className="crop__frame" />
           </div>
           {frameSrc && (

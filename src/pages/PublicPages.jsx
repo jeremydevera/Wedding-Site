@@ -1,7 +1,7 @@
 import React from "react";
 import { go } from "@/lib/nav.js";
 import { onSiteScroll, scrollOffset, siteScrollEl } from "@/lib/scroll.js";
-import { mediaUrl } from "@/lib/media.js";
+import { cropTransform, mediaUrl } from "@/lib/media.js";
 import { useStore } from "@/lib/store.jsx";
 import { mapStyleFilter } from "@/lib/mapStyles.js";
 import { moduleEnabled } from "@/lib/roles.js";
@@ -244,7 +244,7 @@ export function EnvelopeHero() {
 function FrameMedia({ s }) {
   const src = mediaUrl(s.frameImage) || "/assets/invite/frame-video.gif";
   return /\.(mp4|webm|mov|m4v)(\?|$)/i.test(src)
-    ? <video src={src} muted loop autoPlay playsInline />
+    ? <video src={src} muted loop autoPlay playsInline style={cropTransform(s.frameImageCrop)} />
     : <img src={src} alt="" />;
 }
 

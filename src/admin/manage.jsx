@@ -12,7 +12,7 @@ import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStat
 import { DIET_OPTIONS } from "@/features/rsvp.jsx";
 import { reconcileGuests, guestFromRsvp, findDuplicateGuest } from "@/lib/guests.js";
 import { headsOf } from "@/lib/rsvp.js";
-import { mediaUrl } from "@/lib/media.js";
+import { cropTransform, mediaUrl } from "@/lib/media.js";
 import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
 import { visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel, moduleEnabled, OWNER_EDIT_HOME, OWNER_EDIT_TABS } from "@/lib/roles.js";
@@ -55,7 +55,7 @@ export function SaveFooter() {
 // ============================================================================
 
 // Reusable image uploader for admin (hero, story milestones)
-export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", framePreview, defaultPreview, tintStrength, tintGradient, purpose = "misc", allowVideo = false }) {
+export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", framePreview, defaultPreview, tintStrength, tintGradient, purpose = "misc", allowVideo = false, cropValue = null, onCropChange = null }) {
   const { clientId } = useStore();
   const ref = useRef(null);
   const [cropSrc, setCropSrc] = useState(null);
@@ -66,7 +66,7 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
   // to R2 by applyCrop; the reference goes live when the user clicks "Save
   // changes" — same as every other field, so a single upload never silently
   // commits the whole panel. The "You have unsaved changes" hint covers loss.
-  const commit = (v) => { onChange(v); };
+  const commit = (v) => { onChange(v); if (onCropChange) onCropChange(null); }; // new media invalidates a stored video crop
   const isVid = allowVideo && VIDEO_RE.test(value || "");
   // Direct upload (no crop) — used for videos and GIFs so animation survives.
   async function uploadRaw(file) {
@@ -74,6 +74,8 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
     try {
       const { key } = await uploadToR2(file, { scope: "owner", purpose }, clientId);
       commit(key);
+      // Videos go straight into the pan/zoom crop (params, non-destructive).
+      if (onCropChange && VIDEO_RE.test(key)) setCropSrc(mediaUrl(key));
     } catch (e) { toast("Upload failed: " + (e && e.message || "error"), "err"); }
     finally { setBusy(false); }
   }
@@ -88,9 +90,10 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
   // Cropped image -> R2 (via /api/upload). Store the returned "/r2/<key>" URL,
   // not base64, so the client content row stays lean. Existing base64 values
   // still render fine (an <img src> takes either).
-  async function applyCrop(dataUrl) {
+  async function applyCrop(dataUrl, params) {
     setPickerOpen(false);
     setCropSrc(null);
+    if (params) { if (onCropChange) onCropChange(params); return; } // video: store params, keep the same file
     setBusy(true);
     try {
       const blob = await (await fetch(dataUrl)).blob();
@@ -110,7 +113,7 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
         <div className="imgup__thumb" style={{ aspectRatio: ratio }}>
           {value
             ? (isVid
-              ? <video src={mediaUrl(value)} muted loop autoPlay playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ? <video src={mediaUrl(value)} muted loop autoPlay playsInline style={{ width: "100%", height: "100%", objectFit: "cover", ...(cropTransform(cropValue) || {}) }} />
               : <img src={mediaUrl(value)} alt="" />)
             : defaultPreview
               ? <img src={defaultPreview} alt="" />
@@ -124,7 +127,7 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
         </div>
         <div className="imgup__actions">
           <Button variant="ghost" size="sm" disabled={busy} onClick={() => setPickerOpen(true)}>{Icon.upload({})} {busy ? "Uploading…" : (value ? "Replace" : "Add photo")}</Button>
-          {value && !busy && !isVid && <Button variant="ghost" size="sm" onClick={() => setCropSrc(mediaUrl(value))}>{Icon.crop({})} Crop</Button>}
+          {value && !busy && (!isVid || onCropChange) && <Button variant="ghost" size="sm" onClick={() => setCropSrc(mediaUrl(value))}>{Icon.crop({})} Crop</Button>}
           {value && !busy && <Button variant="ghost" size="sm" onClick={() => commit("")}>Remove</Button>}
         </div>
         <input ref={ref} type="file" accept={allowVideo ? "image/*,image/gif,video/mp4,video/webm,.gif,.mp4,.webm,.mov" : "image/*"} style={{ display: "none" }} onChange={(e) => { const file = e.target.files[0]; e.target.value = ""; setPickerOpen(false); pick(file); }} />
@@ -136,9 +139,9 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
         clientId={clientId}
         uploadLabel={value ? "Replace photo" : "Choose a photo"}
         onUploadNew={() => ref.current && ref.current.click()}
-        onPick={(key) => commit(key)}
+        onPick={(key) => { commit(key); if (onCropChange && VIDEO_RE.test(key)) setCropSrc(mediaUrl(key)); }}
       />
-      <CropModal open={!!cropSrc} src={cropSrc} aspect={aspect} frameSrc={framePreview} onCancel={() => setCropSrc(null)} onApply={applyCrop} />
+      <CropModal open={!!cropSrc} src={cropSrc} aspect={aspect} frameSrc={framePreview} initialParams={cropValue} onCancel={() => setCropSrc(null)} onApply={applyCrop} />
     </div>
   );
 }
@@ -153,7 +156,7 @@ const IMG_EXT_RE = /\.(png|jpe?g|webp|gif|avif|bmp)$/i;
 // extension before sending — otherwise the server 415s and R2 can't serve it as
 // an animatable gif/playable video.
 const EXT_MIME = { gif: "image/gif", mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime", m4v: "video/x-m4v", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", avif: "image/avif" };
-export function TrackCoverField({ value, onChange }) {
+export function TrackCoverField({ value, onChange, cropValue = null, onCropChange = null }) {
   const { clientId } = useStore();
   const ref = useRef(null);
   const [cropSrc, setCropSrc] = useState(null);
@@ -169,6 +172,9 @@ export function TrackCoverField({ value, onChange }) {
       const f = (mime && file.type !== mime) ? new File([file], file.name, { type: mime }) : file;
       const { key } = await uploadToR2(f, { scope: "owner", purpose: "trackart" }, clientId);
       onChange(key);
+      if (onCropChange) onCropChange(null);
+      // Fresh videos go straight into the pan/zoom crop (params, non-destructive).
+      if (onCropChange && VIDEO_RE.test(key)) setCropSrc(mediaUrl(key));
     } catch (e) { toast("Upload failed: " + (e && e.message || "error"), "err"); }
     finally { setBusy(false); }
   }
@@ -182,8 +188,10 @@ export function TrackCoverField({ value, onChange }) {
     if (t.startsWith("image/") || IMG_EXT_RE.test(name)) { setCropSrc(URL.createObjectURL(file)); return; } // crop static images to square
     toast("Please choose an image, GIF, or MP4.", "err");
   }
-  async function applyCrop(dataUrl) {
-    setCropSrc(null); setBusy(true);
+  async function applyCrop(dataUrl, params) {
+    setCropSrc(null);
+    if (params) { if (onCropChange) onCropChange(params); return; } // video: store params, keep the same file
+    setBusy(true);
     try {
       const blob = await (await fetch(dataUrl)).blob();
       await upload(new File([blob], `cover-${Date.now()}.jpg`, { type: blob.type || "image/jpeg" }));
@@ -194,14 +202,14 @@ export function TrackCoverField({ value, onChange }) {
       <div className="imgup__thumb" style={{ aspectRatio: "1 / 1" }}>
         {value
           ? (isVid
-            ? <video src={mediaUrl(value)} muted loop autoPlay playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ? <video src={mediaUrl(value)} muted loop autoPlay playsInline style={{ width: "100%", height: "100%", objectFit: "cover", ...(cropTransform(cropValue) || {}) }} />
             : <img src={mediaUrl(value)} alt="" />)
           : <Placeholder label="no cover" ratio="1 / 1" />}
       </div>
       <div className="imgup__actions">
         <Button variant="ghost" size="sm" disabled={busy} onClick={() => setPickerOpen(true)}>{Icon.upload({})} {busy ? "Uploading…" : (value ? "Replace" : "Add cover")}</Button>
-        {value && !busy && !isVid && <Button variant="ghost" size="sm" onClick={() => setCropSrc(mediaUrl(value))}>{Icon.crop({})} Crop</Button>}
-        {value && !busy && <Button variant="ghost" size="sm" onClick={() => onChange("")}>Remove</Button>}
+        {value && !busy && (!isVid || onCropChange) && <Button variant="ghost" size="sm" onClick={() => setCropSrc(mediaUrl(value))}>{Icon.crop({})} Crop</Button>}
+        {value && !busy && <Button variant="ghost" size="sm" onClick={() => { onChange(""); if (onCropChange) onCropChange(null); }}>Remove</Button>}
       </div>
       <input ref={ref} type="file" accept="image/*,image/gif,video/mp4,video/webm,.gif,.mp4,.webm,.mov" style={{ display: "none" }}
         onChange={(e) => { const file = e.target.files[0]; e.target.value = ""; setPickerOpen(false); pick(file); }} />
@@ -216,13 +224,15 @@ export function TrackCoverField({ value, onChange }) {
         onUploadNew={() => ref.current && ref.current.click()}
         onPick={(key) => {
           onChange(key);
-          // Static images from the library get the same crop step as fresh
-          // uploads (Cancel keeps the pick as-is). GIFs/videos skip it so the
-          // animation survives.
-          if (!VIDEO_RE.test(key) && !/\.gif(\?|$)/i.test(key)) setCropSrc(mediaUrl(key));
+          if (onCropChange) onCropChange(null);
+          // Static images get the pixel crop; videos get the non-destructive
+          // param crop. GIFs skip auto-crop so the animation survives (the
+          // manual Crop button still flattens them on request).
+          if (VIDEO_RE.test(key)) { if (onCropChange) setCropSrc(mediaUrl(key)); }
+          else if (!/\.gif(\?|$)/i.test(key)) setCropSrc(mediaUrl(key));
         }}
       />
-      <CropModal open={!!cropSrc} src={cropSrc} aspect={1} onCancel={() => setCropSrc(null)} onApply={applyCrop} />
+      <CropModal open={!!cropSrc} src={cropSrc} aspect={1} initialParams={cropValue} onCancel={() => setCropSrc(null)} onApply={applyCrop} />
     </div>
   );
 }
@@ -2024,7 +2034,8 @@ export function SettingsAdmin() {
         <div className="panel__head"><div className="panel__title">Envelope Frame Photo</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Shows inside the oval frame on the opened envelope</span></div>
         <div className="panel__body" style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
           <ImageUploadField purpose="frame" label="Photo inside the oval frame" ratio="1 / 1" allowVideo framePreview="/assets/invite/p2-frame.png" defaultPreview="/assets/invite/frame-video.gif"
-            value={f.frameImage} onChange={(v) => setKey("frameImage", v)} />
+            value={f.frameImage} onChange={(v) => setKey("frameImage", v)}
+            cropValue={f.frameImageCrop || null} onCropChange={(c) => setKey("frameImageCrop", c)} />
           <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 10, maxWidth: 360 }}>A square photo of the two of you works best. Leave empty to keep the default animated frame.</p>
           <div style={{ width: "100%", maxWidth: 360, marginTop: 18, textAlign: "left" }}>
             <Field label="Heart text" id="s-heart" hint="Shown inside the heart on the envelope. Leave blank to show no text.">
@@ -2759,11 +2770,11 @@ const AUDIO_ACCEPT = "audio/*,.mp3,.m4a,.aac,.wav,.ogg,.oga,.opus,.flac";
 export function TrackEditor({ open, track, onClose }) {
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const { clientId } = useStore();
-  const [f, setF] = useState({ title: "", artist: "", url: "", art: "" });
+  const [f, setF] = useState({ title: "", artist: "", url: "", art: "", artCrop: null });
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  useEffect(() => { if (track) setF({ title: track.title || "", artist: track.artist || "", url: track.url || "", art: track.art || "" }); }, [track, open]);
+  useEffect(() => { if (track) setF({ title: track.title || "", artist: track.artist || "", url: track.url || "", art: track.art || "", artCrop: track.artCrop || null }); }, [track, open]);
   async function onReplace(files) {
     const file = [...(files || [])].find(isAudioFile);
     if (!file) { toast("Please choose an audio file.", "err"); if (fileRef.current) fileRef.current.value = ""; return; }
@@ -2779,7 +2790,7 @@ export function TrackEditor({ open, track, onClose }) {
   async function save() {
     if (!track) return;
     if (!f.title.trim()) { toast("Please enter a title.", "err"); return; }
-    const patch = { title: f.title.trim(), artist: f.artist.trim(), url: f.url, art: f.art || "" };
+    const patch = { title: f.title.trim(), artist: f.artist.trim(), url: f.url, art: f.art || "", artCrop: (f.art && f.artCrop) || null };
     if (track.id) Store.updateTrack(track.id, patch); else Store.addTrack(patch);
     await persistChanges();
     onClose();
@@ -2810,7 +2821,8 @@ export function TrackEditor({ open, track, onClose }) {
         {/* Cover sets the form only; it persists to the DB on "Save track" (the
             modal's own button, right below) — consistent with every other field,
             and Cancel discards as a modal should. */}
-        <TrackCoverField value={f.art} onChange={(v) => setF((p) => ({ ...p, art: v || "" }))} />
+        <TrackCoverField value={f.art} onChange={(v) => setF((p) => ({ ...p, art: v || "" }))}
+          cropValue={f.artCrop || null} onCropChange={(c) => setF((p) => ({ ...p, artCrop: c }))} />
       </Field>
       <div style={{ display: "flex", gap: 12, marginTop: 8, justifyContent: "flex-end" }}>
         <Button variant="ghost" onClick={onClose}>Cancel</Button>

@@ -1592,7 +1592,7 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
 .inv-l-card  { left: 40.01%; top: -17.5%; width: 47%;   z-index: 2; }
 .inv-l-framegroup { left: 7.18%; top: -17.02%; width: 47%; }
 .inv-l-framegroup > img.inv-frame-img { display: block; width: 100%; height: auto; position: relative; z-index: 3; }
-.inv-l-video { position: absolute; left: 20.6%; top: 14.9%; width: 78%; height: 75%; z-index: 1; }
+.inv-l-video { position: absolute; left: 20.6%; top: 14.9%; width: 78%; height: 75%; z-index: 1; overflow: hidden; }
 .inv-l-heart { left: 28.7%;   top: 50%;   width: 42%;   z-index: 5; }
 .inv-l-front { left: 6%;    top: 30%;   width: 84%;   z-index: 6; }
 .inv-l-flower{ left: 65.8%; top: 28.4%;  width: 26%;   z-index: 7; }

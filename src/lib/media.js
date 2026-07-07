@@ -18,3 +18,14 @@ export function mediaUrl(stored) {
   if (stored.startsWith("/")) return stored;                  // same-origin path (legacy /r2/, /assets/)
   return MEDIA_PROXY + stored.replace(/^\/+/, "");            // bare R2 key -> same-origin proxy
 }
+
+// CSS style for a stored non-destructive video crop — pan/zoom params saved by
+// the crop modal ({ z, dx, dy } as fractions of the clipping box) applied to a
+// cover-fitted <video> inside an overflow:hidden box. Returns undefined when
+// there's nothing to apply, so spreading into style={} is always safe.
+export function cropTransform(crop) {
+  if (!crop || typeof crop !== "object") return undefined;
+  const z = +crop.z || 1, dx = +crop.dx || 0, dy = +crop.dy || 0;
+  if (z === 1 && !dx && !dy) return undefined;
+  return { transform: `translate(${(dx * 100).toFixed(3)}%, ${(dy * 100).toFixed(3)}%) scale(${z})`, transformOrigin: "50% 50%" };
+}
