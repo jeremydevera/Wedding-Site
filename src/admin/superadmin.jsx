@@ -14,7 +14,6 @@ import { ApplyWizard } from "@/admin/apply.jsx";
 import { AdminToggle } from "@/admin/manage.jsx";
 import { fileNameFromKey } from "@/lib/mediaLibrary.js";
 import { mediaUrl } from "@/lib/media.js";
-import { CloudflareHealth } from "@/admin/CloudflareHealth.jsx";
 const { useState, useEffect, useRef } = React;
 
 const MODULES = ["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"];
@@ -527,10 +526,7 @@ export function ClientsAdmin() {
         <button className={"folder" + (view === "offline" ? " folder--active" : "")} onClick={() => setView("offline")}>
           Offline{clients.filter((c) => !c.is_active).length > 0 ? ` (${clients.filter((c) => !c.is_active).length})` : ""}
         </button>
-        <button className={"folder" + (view === "health" ? " folder--active" : "")} onClick={() => setView("health")}>Health</button>
       </div>
-
-      {view === "health" && <CloudflareHealth />}
 
       {view === "requests" && (
         <div className="panel">

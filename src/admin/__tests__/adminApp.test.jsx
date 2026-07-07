@@ -32,6 +32,7 @@ describe("AdminApp rendered tab gating", () => {
     expect(labels).toContain("Overview");
     expect(labels).toContain("Clients");
     expect(labels).toContain("Media");
+    expect(labels).toContain("Health");
     expect(labels).not.toContain("Dashboard");
     expect(labels).not.toContain("Guestbook");
   });
