@@ -470,8 +470,8 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 /* Dot is inside the (indented) row, so pull it left by the indent (row starts
    at the timeline's 44px padding; rail center is at x=16) → left:-28 lands it
    on the rail. */
-.story-dot { position: absolute; top: 4px; left: -28px; z-index: 2; width: 15px; height: 15px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 16%, transparent); transform: translateX(-50%) scale(0); transition: transform .5s cubic-bezier(.2, 1.6, .4, 1); }
-.story-row.dot-on .story-dot { transform: translateX(-50%) scale(1); }
+.story-dot { position: absolute; top: 50%; left: -28px; z-index: 2; width: 15px; height: 15px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 16%, transparent); transform: translate(-50%, -50%) scale(0); transition: transform .5s cubic-bezier(.2, 1.6, .4, 1); }
+.story-row.dot-on .story-dot { transform: translate(-50%, -50%) scale(1); }
 @media (prefers-reduced-motion: reduce) {
   .story-dot { transition: none; }
   .story-rail__fill { transition: none; }
