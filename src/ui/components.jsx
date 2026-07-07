@@ -470,7 +470,7 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
   // live oval-frame preview — recompute as the user drags / zooms
   useEffect(() => {
     if (!frameSrc || !open || !nat.w) return;
-    const raf = requestAnimationFrame(() => { const c = drawCrop(); if (c) setLive(c.toDataURL("image/jpeg", 0.85)); });
+    const raf = requestAnimationFrame(() => { const c = drawCrop(); if (!c) return; try { setLive(c.toDataURL("image/jpeg", 0.85)); } catch (e) { /* tainted canvas (cross-origin, no CORS) — skip live preview */ } });
     return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line
   }, [off.x, off.y, scale, nat.w, frameSrc, open]);
@@ -482,7 +482,10 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
     }
     const c = drawCrop();
     if (!c) { onCancel && onCancel(); return; }
-    onApply(hasTransparency(c) ? c.toDataURL("image/png") : c.toDataURL("image/jpeg", 0.86));
+    let out;
+    try { out = hasTransparency(c) ? c.toDataURL("image/png") : c.toDataURL("image/jpeg", 0.86); }
+    catch (e) { onCancel && onCancel(); return; } // tainted canvas — abort rather than crash
+    onApply(out);
   }
 
   if (!open) return null;
@@ -495,7 +498,7 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
           <div className="crop__view" style={{ width: W, height: H }} onPointerDown={onDown}>
             {src && (isVideo
               ? <video ref={imgRef} src={src} muted loop autoPlay playsInline draggable="false" onLoadedMetadata={(e) => setNat({ w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })} style={{ position: "absolute", left: off.x, top: off.y, width: dispW, height: dispH, maxWidth: "none" }} />
-              : <img ref={imgRef} src={src} alt="" draggable="false" style={{ position: "absolute", left: off.x, top: off.y, width: dispW, height: dispH, maxWidth: "none" }} />)}
+              : <img ref={imgRef} src={src} alt="" draggable="false" crossOrigin="anonymous" style={{ position: "absolute", left: off.x, top: off.y, width: dispW, height: dispH, maxWidth: "none" }} />)}
             <div className="crop__frame" />
           </div>
           {frameSrc && (
