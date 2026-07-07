@@ -648,6 +648,7 @@ export function StoryPage() {
         <div className="container" style={{ maxWidth: 920 }}>
           {(Array.isArray(story) ? story : []).map((row, i) => (
             <div className="story-row" key={i}>
+              <span className="story-dot" aria-hidden="true" />
               <div className="story-row__media"><StoryImg row={row} /></div>
               <div>
                 <div className="story-row__year">{row.year}</div>
