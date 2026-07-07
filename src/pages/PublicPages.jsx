@@ -685,12 +685,14 @@ export function StoryPage() {
             <span className="story-rail__fill" ref={fillRef} aria-hidden="true" />
             {rows.map((row, i) => (
               <div className="story-row" key={i}>
-                <div className="story-row__media"><StoryImg row={row} /></div>
-                <div className="story-row__text">
-                  <span className="story-dot" aria-hidden="true" />
-                  <div className="story-row__year">{row.year}</div>
-                  <h3 className="story-row__title">{row.title}</h3>
-                  <p className="story-row__desc">{row.desc}</p>
+                <div className="story-row__card">
+                  <div className="story-row__media"><StoryImg row={row} /></div>
+                  <div className="story-row__text">
+                    <span className="story-dot" aria-hidden="true" />
+                    <div className="story-row__year">{row.year}</div>
+                    <h3 className="story-row__title">{row.title}</h3>
+                    <p className="story-row__desc">{row.desc}</p>
+                  </div>
                 </div>
               </div>
             ))}
