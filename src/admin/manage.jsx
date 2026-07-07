@@ -145,7 +145,7 @@ export function TrackCoverField({ value, onChange }) {
   const [busy, setBusy] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false); // Upload new / Choose from library
   const isVid = VIDEO_RE.test(value || "");
-  const isGif = /\.gif(\?|$)/i.test(value || ""); // cropping a GIF flattens it to a static JPEG frame — hide Crop for GIFs too
+  const isGif = /\.gif(\?|$)/i.test(value || ""); // GIFs skip the AUTO-crop on upload/pick (keeps animation) but still get the manual Crop button — applying it flattens to a static frame
   async function upload(file) {
     setBusy(true);
     try {
@@ -185,7 +185,7 @@ export function TrackCoverField({ value, onChange }) {
       </div>
       <div className="imgup__actions">
         <Button variant="ghost" size="sm" disabled={busy} onClick={() => setPickerOpen(true)}>{Icon.upload({})} {busy ? "Uploading…" : (value ? "Replace" : "Add cover")}</Button>
-        {value && !busy && !isVid && !isGif && <Button variant="ghost" size="sm" onClick={() => setCropSrc(mediaUrl(value))}>{Icon.crop({})} Crop</Button>}
+        {value && !busy && !isVid && <Button variant="ghost" size="sm" onClick={() => setCropSrc(mediaUrl(value))}>{Icon.crop({})} Crop</Button>}
         {value && !busy && <Button variant="ghost" size="sm" onClick={() => onChange("")}>Remove</Button>}
       </div>
       <input ref={ref} type="file" accept="image/*,image/gif,video/mp4,video/webm,.gif,.mp4,.webm,.mov" style={{ display: "none" }}
