@@ -1,14 +1,14 @@
-// Superadmin Health — limited-resource usage as ONE Chart.js horizontal bar
-// chart: a bar per capped metric (Router / Builds / R2 / Supabase DB) on a
-// 0–100% axis, colored green→amber→red as it approaches the cap. Two-line
-// category labels carry the real numbers; tooltips repeat them.
+// Superadmin Health — limited-resource usage as full Chart.js rings ("design A"):
+// one full-circle donut per capped metric (Router / Builds / R2 / Supabase DB),
+// colored used-arc over a grey track, % centered, real numbers under a dashed
+// rule. Same visual family as the RSVP donuts.
 // Lazy-loaded (like rsvp-charts.jsx) so Chart.js stays out of the main bundle.
 import React from "react";
-import { Chart as ChartJS, BarController, BarElement, CategoryScale, LinearScale, Tooltip } from "chart.js";
+import { Chart as ChartJS, DoughnutController, ArcElement } from "chart.js";
 
 const { useRef, useEffect } = React;
 
-ChartJS.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip);
+ChartJS.register(DoughnutController, ArcElement);
 
 const trackColor = "#eef1f5";
 const usageColor = (pct) => (pct > 85 ? "#c0392b" : pct > 60 ? "#c98a1a" : "#2e7d51");
@@ -24,87 +24,60 @@ function useChart(ref, getConfig, deps) {
   }, deps); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
-function chartConfig(items) {
-  const rows = items.map((it) => {
-    const has = it.used != null && it.limit > 0;
-    const pct = has ? Math.round((it.used / it.limit) * 1000) / 10 : 0;
-    const sub = it.note ? it.note : has ? `${it.fmt(it.used)} / ${it.fmt(it.limit)} · ${it.suffix}` : "no data";
-    return { pct, has, label: [it.label + (it.detail ? ` · ${it.detail}` : ""), sub] };
-  });
+function ringConfig(pct, has) {
+  // Floor tiny-but-nonzero usage to a visible sliver; unknown -> empty track.
+  const used = has ? Math.max(Math.min(pct, 100), pct > 0 ? 1 : 0) : 0;
   return {
-    type: "bar",
+    type: "doughnut",
     data: {
-      labels: rows.map((r) => r.label),
       datasets: [{
-        data: rows.map((r) => (r.has ? Math.max(r.pct, 0.6) : 0)), // floor: a sliver stays visible at <1%
-        backgroundColor: rows.map((r) => (r.has ? usageColor(r.pct) : trackColor)),
-        borderRadius: 6,
-        barThickness: 16,
+        data: [used, 100 - used],
+        backgroundColor: [usageColor(pct), trackColor],
+        borderWidth: 0,
+        borderRadius: used > 0 && used < 100 ? 8 : 0, // rounded arc ends
       }],
     },
     options: {
-      indexAxis: "y",
+      cutout: "76%",
       responsive: true,
       maintainAspectRatio: false,
-      layout: { padding: { right: 46 } }, // room for the % labels after the bars
-      scales: {
-        x: {
-          min: 0, max: 100,
-          ticks: { callback: (v) => `${v}%`, color: "#94a3b8", font: { size: 11 } },
-          grid: { color: "#f1f4f8" },
-          border: { display: false },
-        },
-        y: {
-          grid: { display: false },
-          border: { display: false },
-          ticks: { color: "#334155", font: { size: 12 } },
-        },
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: "rgba(15, 23, 42, 0.92)",
-          titleColor: "#fff",
-          bodyColor: "rgba(255,255,255,0.85)",
-          cornerRadius: 8,
-          displayColors: false,
-          callbacks: {
-            title: (c) => { const l = c[0]?.label || ""; return String(l).split(",")[0]; },
-            label: (c) => ` ${rows[c.dataIndex]?.pct ?? 0}% used · ${rows[c.dataIndex]?.label?.[1] || ""}`,
-          },
-        },
-      },
-      animation: { duration: 700, easing: "easeInOutQuart" },
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      animation: { duration: 800, easing: "easeInOutQuart" },
     },
-    // Draw the % just past the end of each bar (small custom plugin, no dep).
-    plugins: [{
-      id: "pctLabels",
-      afterDatasetsDraw(chart) {
-        const { ctx } = chart;
-        const meta = chart.getDatasetMeta(0);
-        ctx.save();
-        ctx.font = "600 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-        ctx.textBaseline = "middle";
-        meta.data.forEach((bar, i) => {
-          const r = rows[i];
-          ctx.fillStyle = r.has ? "#334155" : "#94a3b8";
-          ctx.fillText(r.has ? `${r.pct}%` : "—", bar.x + 8, bar.y);
-        });
-        ctx.restore();
-      },
-    }],
   };
 }
 
-export default function HealthGauges({ items }) {
+function Ring({ label, used, limit, fmt, suffix, detail, note }) {
   const ref = useRef(null);
-  const list = items || [];
-  useChart(ref, () => chartConfig(list), [JSON.stringify(list.map((i) => [i.label, i.used, i.limit, i.note]))]);
+  const has = used != null && limit > 0;
+  const pct = has ? Math.round((used / limit) * 1000) / 10 : 0;
+  useChart(ref, () => ringConfig(pct, has), [used, limit, has]);
   return (
-    <div style={{ background: "#fff", border: "1px solid #e4e8ef", borderRadius: 14, padding: "14px 16px" }}>
-      <div style={{ position: "relative", height: list.length * 56 + 34 }}>
-        <canvas ref={ref} aria-label="Usage against limits" role="img" />
+    <div style={{ background: "#fff", border: "1px solid #e4e8ef", borderRadius: 14, padding: "14px 14px 12px", textAlign: "center", minWidth: 0 }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: "#334155", marginBottom: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        {label}
+        {detail && <span style={{ color: "#94a3b8", fontWeight: 500 }}> · {detail}</span>}
       </div>
+      <div style={{ position: "relative", height: 118 }}>
+        <canvas ref={ref} aria-label={`${label} usage`} role="img" />
+        <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", pointerEvents: "none" }}>
+          <div style={{ fontWeight: 800, fontSize: 19, color: has ? "#1e293b" : "#94a3b8", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em", lineHeight: 1.15 }}>
+            {has ? `${pct}%` : "—"}
+            <div style={{ fontSize: 9.5, color: "#94a3b8", fontWeight: 600, letterSpacing: ".08em" }}>USED</div>
+          </div>
+        </div>
+      </div>
+      <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 10, borderTop: "1px dashed #eef1f5", paddingTop: 8 }}>
+        {note ? note : has ? <>{fmt(used)} / {fmt(limit)} · {suffix}</> : "no data"}
+      </div>
+    </div>
+  );
+}
+
+export default function HealthGauges({ items }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(185px, 1fr))", gap: 14 }}>
+      {(items || []).map((it) => <Ring key={it.label} {...it} />)}
     </div>
   );
 }
