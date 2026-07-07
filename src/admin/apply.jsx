@@ -190,7 +190,8 @@ export function ApplyWizard({ initial = null, onSave, onCancel }) {
     return () => clearTimeout(t.current);
   }, [f.subdomain]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const themes = themesForEvent(DEFAULT_EVENT_TYPE).filter((k) => THEMES[k] && !isPremiumTheme(k));
+  // Include every wedding theme in the picker, incl. the premium Olive Envelope.
+  const themes = themesForEvent(DEFAULT_EVENT_TYPE).filter((k) => THEMES[k]);
 
   // --- schedule editing ---
   const schedSet = (i, k) => (e) => setF((p) => ({ ...p, schedule: p.schedule.map((r, j) => (j === i ? { ...r, [k]: e.target.value } : r)) }));
@@ -264,22 +265,27 @@ export function ApplyWizard({ initial = null, onSave, onCancel }) {
     ) },
     { title: "Pick your look", short: "Theme", sub: "Choose a starting theme — you can change it anytime.", body: (
       <>
-        <div className="wizard__themes">
-          {themes.map((key) => {
-            const v = THEMES[key].vars;
-            const on = f.theme === key;
-            return (
-              <button key={key} type="button" className={"theme-sw" + (on ? " theme-sw--on" : "")} onClick={() => setF((p) => ({ ...p, theme: key }))}>
-                <span className="theme-sw__prev" style={{ background: v["--bg"] }}>
-                  <i style={{ background: v["--accent"] }} />
-                  <i style={{ background: v["--gold"] }} />
-                  <i style={{ background: v["--ink"] }} />
-                </span>
-                <span className="theme-sw__name">{THEMES[key].label}{on ? " ✓" : ""}</span>
-              </button>
-            );
-          })}
-        </div>
+        <Field label="Theme" id="ap-theme" hint="Pick a starting look — you can change it anytime in your admin.">
+          <Select id="ap-theme" value={f.theme} onChange={(e) => setF((p) => ({ ...p, theme: e.target.value }))}>
+            {themes.map((key) => <option key={key} value={key}>{THEMES[key].label}</option>)}
+          </Select>
+        </Field>
+        {(() => {
+          const t = THEMES[f.theme] || THEMES.classic;
+          const v = t.vars;
+          return (
+            <div style={{ marginTop: 14, borderRadius: 12, overflow: "hidden", border: "1px solid var(--line)", background: v["--bg"] }}>
+              <div style={{ padding: "30px 20px", textAlign: "center" }}>
+                <div style={{ letterSpacing: ".2em", textTransform: "uppercase", fontSize: 11.5, color: v["--muted"] }}>{t.label} — preview</div>
+                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 36, lineHeight: 1.1, color: v["--ink"], margin: "8px 0 2px" }}>
+                  {(f.partnerA || "Romeo")} <span style={{ color: v["--accent"] }}>&amp;</span> {(f.partnerB || "Juliet")}
+                </div>
+                <div style={{ width: 46, height: 2, background: v["--accent"], margin: "12px auto" }} />
+                <span style={{ display: "inline-block", padding: "9px 20px", borderRadius: 6, background: v["--accent"], color: v["--accent-ink"], fontSize: 13, letterSpacing: ".02em" }}>Respond now</span>
+              </div>
+            </div>
+          );
+        })()}
       </>
     ) },
     { title: "Where's the celebration?", short: "Venue", sub: "Pin the venue — guests get one-tap directions from your site.", body: (
