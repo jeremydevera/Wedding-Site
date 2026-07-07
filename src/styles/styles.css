@@ -160,7 +160,7 @@ body.env-sealed main { padding-top: 0; }
   -webkit-backface-visibility: hidden; backface-visibility: hidden;
 }
 .demo-trybar .nav__themepick { display: flex; flex: 1; min-width: 0; }
-.demo-trybar .nav__themepick-label { margin-bottom: 4px; }
+.demo-trybar .nav__themepick-label { margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .demo-trybar .nav__themepick select { width: 100%; max-width: none; }
 @media (min-width: 940px) { .demo-trybar { display: none; } }
 /* The fixed try-bar would cover the footer (incl. "Admin sign in") on mobile.

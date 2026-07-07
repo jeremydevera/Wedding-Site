@@ -119,7 +119,7 @@ export function Nav({ route }) {
   };
   const ThemePicker = ({ block }) => (
     <label className={"nav__themepick" + (block ? " nav__themepick--block" : "")}>
-      <span className="nav__themepick-label">{block ? "Preview a theme" : "Theme"}</span>
+      <span className="nav__themepick-label">Theme</span>
       <select value={settings.theme} aria-label="Preview a theme" onChange={(e) => pickTheme(e.target.value)}>
         <optgroup label="Themes">
           {Object.keys(THEMES).filter((k) => !isPremiumTheme(k)).map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
@@ -137,7 +137,7 @@ export function Nav({ route }) {
   };
   const DecorPicker = ({ block }) => (
     <label className={"nav__themepick" + (block ? " nav__themepick--block" : "")}>
-      <span className="nav__themepick-label">{block ? "Preview decorations" : "Decoration"}</span>
+      <span className="nav__themepick-label">Decoration</span>
       <select value={settings.decorOn ? settings.decorStyle : "none"} aria-label="Preview a decoration" onChange={(e) => pickDecor(e.target.value)}>
         <option value="none">None</option>
         {DECOR_OPTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
