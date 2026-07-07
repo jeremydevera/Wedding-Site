@@ -454,8 +454,10 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
    draws as you scroll (height set by JS in StoryPage). Milestones sit along it;
    a dot per row pops when it scrolls into view (rides the global .is-in toggle).
    Extra top padding gives the rail room to start above the first milestone. */
-.story-timeline { position: relative; padding-top: 40px; }
-.story-rail, .story-rail__fill { position: absolute; top: 0; left: 50%; width: 2px; transform: translateX(-50%); border-radius: 2px; }
+.story-timeline { position: relative; padding-top: 40px; padding-left: 44px; }
+/* Left rail (not centered): the line + dots sit at x=16px; each milestone's
+   content is indented past it (padding-left above). */
+.story-rail, .story-rail__fill { position: absolute; top: 0; left: 16px; width: 2px; transform: translateX(-50%); border-radius: 2px; }
 .story-rail { height: 100%; background: color-mix(in srgb, var(--accent) 15%, transparent); }
 .story-rail__fill { height: 0; background: var(--accent); box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 55%, transparent); transition: height .12s linear; }
 
@@ -465,7 +467,7 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
    the overshoot easing) the instant the drawn line's playhead reaches it — the
    row gets .dot-on from StoryPage's scroll handler. Un-pops when scrolled back
    above, so dots track the line both ways. */
-.story-dot { position: absolute; top: -46px; left: 50%; z-index: 2; width: 15px; height: 15px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 16%, transparent); transform: translateX(-50%) scale(0); transition: transform .5s cubic-bezier(.2, 1.6, .4, 1); }
+.story-dot { position: absolute; top: 4px; left: 16px; z-index: 2; width: 15px; height: 15px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 16%, transparent); transform: translateX(-50%) scale(0); transition: transform .5s cubic-bezier(.2, 1.6, .4, 1); }
 .story-row.dot-on .story-dot { transform: translateX(-50%) scale(1); }
 @media (prefers-reduced-motion: reduce) {
   .story-dot { transition: none; }
@@ -485,9 +487,12 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
   }
 }
 @media (min-width: 760px) {
-  .story-row { grid-template-columns: 1fr 1fr; gap: 50px; }
-  .story-row:nth-child(even) .story-row__media { order: 2; }
+  /* Left-rail timeline: media (shrunk) beside text, same side every row — no
+     alternating, so everything stays clear of the line on the left. */
+  .story-row { grid-template-columns: 300px 1fr; gap: 36px; }
 }
+/* Shrink the photo/video so there's room for the rail and the layout stays airy. */
+.story-row__media { max-width: 440px; }
 /* Year uses the readable accent, not --accent-soft (a pale background tint that
    rendered near-invisible on light themes). Title pinned to --ink so it never
    inherits a low-contrast color. */
