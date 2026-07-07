@@ -8,6 +8,15 @@ import { Button, Icon } from "@/ui/components.jsx";
 const { useState, useEffect, useCallback } = React;
 
 const nf = (n) => (+n || 0).toLocaleString("en-US");
+// Compact tile value — the KPI card can be as narrow as ~158px and its value is
+// 44px, so 6-7 digit counts clip. 144772 -> "144.8k", 1200000 -> "1.2M".
+const nfc = (n) => {
+  n = +n || 0;
+  const t = (x, u) => `${(Math.round(x * 10) / 10).toString().replace(/\.0$/, "")}${u}`;
+  if (n >= 1e6) return t(n / 1e6, "M");
+  if (n >= 1e4) return t(n / 1e3, "k");
+  return nf(n);
+};
 function fmtBytes(n) {
   n = +n || 0;
   const u = ["B", "KB", "MB", "GB", "TB"];
@@ -33,7 +42,9 @@ function Stat({ label, value, sub, icon = "grid", accent = "info" }) {
         <span className="kpi__chip" aria-hidden="true">{Icon[icon] ? Icon[icon]({}) : null}</span>
         <span className="kpi__label">{label}</span>
       </div>
-      <div className="kpi__value">{value}</div>
+      {/* Slightly smaller + nowrap than the stock 44px — health values ("144.8k",
+          "43.9 MB") are wider than Overview's tiny counts and a tile can be ~158px. */}
+      <div className="kpi__value" style={{ fontSize: 32, whiteSpace: "nowrap" }}>{value}</div>
       <div className="kpi__foot"><span className="kpi__tick" aria-hidden="true" />{sub || " "}</div>
     </div>
   );
@@ -133,12 +144,12 @@ export function CloudflareHealth() {
 
         {/* Today's split — same KPI tile grid as the Overview tab */}
         <div className="sa-stats" style={{ marginBottom: 0 }}>
-          <Stat label="Router today" value={nf(data.router?.today)} sub={`${nf(data.router?.month)} this month`} icon="grid" accent="info" />
-          <Stat label="Functions today" value={nf(data.functions?.today)} sub={`${nf(data.functions?.month)} this month`} icon="gear" accent="success" />
+          <Stat label="Router" value={nfc(data.router?.today)} sub={`today · ${nfc(data.router?.month)} this month`} icon="grid" accent="info" />
+          <Stat label="Functions" value={nfc(data.functions?.today)} sub={`today · ${nfc(data.functions?.month)} this month`} icon="gear" accent="success" />
           <Stat label="R2 storage" value={fmtBytes(data.r2?.storageBytes)} sub={`${nf(data.r2?.objects)} objects`} icon="upload" accent="purple" />
-          <Stat label="R2 ops today" value={nf(data.r2?.opsToday)} sub="reads + writes" icon="download" accent="amber" />
-          <Stat label="Cache hit" value={`${data.zone?.cacheHitPct ?? 0}%`} sub={`${nf(data.zone?.reqToday)} edge req today`} icon="check" accent="success" />
-          <Stat label="5xx today" value={nf(data.zone?.err5xx)} sub="server errors" icon="bell" accent="amber" />
+          <Stat label="R2 ops" value={nfc(data.r2?.opsToday)} sub="reads + writes today" icon="download" accent="amber" />
+          <Stat label="Cache hit" value={`${data.zone?.cacheHitPct ?? 0}%`} sub={`${nfc(data.zone?.reqToday)} edge req today`} icon="check" accent="success" />
+          <Stat label="5xx errors" value={nf(data.zone?.err5xx)} sub="server errors today" icon="bell" accent="amber" />
         </div>
 
         {/* 7-day trend */}
