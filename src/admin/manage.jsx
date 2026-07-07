@@ -1888,57 +1888,94 @@ function ClientPasswordReset() {
   );
 }
 
-// Our Story editor — milestones the guest sees on the Our Story page. Each
-// row = title + description + photo (year/date optional). Store-only writes
-// (Store.updateStory) so the panel's Save changes button commits them
-// (DEV-RULES R1). Add / remove / reorder inline.
+// Our Story editor — a table of milestones (like Details); "+ Add milestone"
+// and the row pencil open StoryEditor. Each action saves immediately via
+// persistChanges (same pattern as DetailsAdmin — no separate Save button).
 export function StoryAdmin() {
   const { story } = useStore();
+  const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const list = Array.isArray(story) ? story : [];
-  const set = (next) => Store.updateStory(next);
-  const patch = (i, p) => set(list.map((r, j) => (j === i ? { ...r, ...p } : r)));
-  const add = () => set([...list, { id: uid(), year: "", title: "", desc: "", img: "" }]);
-  const move = (i, d) => { const j = i + d; if (j < 0 || j >= list.length) return; const a = [...list]; [a[i], a[j]] = [a[j], a[i]]; set(a); };
+  const [open, setOpen] = useState(false);
+  const [index, setIndex] = useState(null);
+  const openRow = (i) => { setIndex(i); setOpen(true); };
+  const move = async (i, d) => {
+    const j = i + d; if (j < 0 || j >= list.length) return;
+    const a = [...list]; [a[i], a[j]] = [a[j], a[i]]; Store.updateStory(a); await persistChanges();
+  };
   const remove = async (i) => {
     const ok = await confirmDialog({ title: "Delete milestone?", message: `Remove "${list[i].title || "this milestone"}" from Our Story?`, confirmLabel: "Delete", danger: true });
-    if (ok) set(list.filter((_, j) => j !== i));
+    if (ok) { Store.updateStory(list.filter((_, j) => j !== i)); await persistChanges(); }
   };
   return (
     <div className="panel">
       <div className="panel__head">
         <div className="panel__title">Our Story <span style={{ color: "var(--muted)", fontSize: 15 }}>({list.length})</span></div>
-        <Button variant="primary" size="sm" onClick={add}>+ Add milestone</Button>
+        <Button variant="primary" size="sm" onClick={() => openRow(null)}>+ Add milestone</Button>
       </div>
-      <div className="panel__body">
-        <p style={{ color: "var(--muted)", margin: "0 0 16px", fontSize: 14 }}>
-          Each milestone shows on your Our Story page — a photo, a title, and a short description (year or date is optional). Changes save when you click Save changes.
-        </p>
-        {list.length === 0 && <div style={{ color: "var(--muted)", fontSize: 14, padding: "8px 0 16px" }}>No milestones yet — add your first.</div>}
-        <div style={{ display: "grid", gap: 18 }}>
-          {list.map((row, i) => (
-            <div key={row.id || i} className="ent-edit-group">
-              <div className="ent-edit-group__head">
-                <span className="ent-edit-group__title">{row.title || `Milestone ${i + 1}`}</span>
-                <div className="row-actions">
-                  <button className="icon-btn" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Move up" title="Move up">↑</button>
-                  <button className="icon-btn" onClick={() => move(i, 1)} disabled={i === list.length - 1} aria-label="Move down" title="Move down">↓</button>
-                  <button className="icon-btn icon-btn--danger" onClick={() => remove(i)} aria-label="Delete milestone" title="Delete">{Icon.trash({})}</button>
-                </div>
-              </div>
-              <div style={{ padding: 16 }}>
-                <div className="field-row field-row--2">
-                  <Field label="Title" id={`story-t-${i}`}><Input id={`story-t-${i}`} value={row.title || ""} onChange={(e) => patch(i, { title: e.target.value })} placeholder="How we met" /></Field>
-                  <Field label="Year or date" id={`story-y-${i}`} hint="Optional"><Input id={`story-y-${i}`} value={row.year || ""} onChange={(e) => patch(i, { year: e.target.value })} placeholder="2018" /></Field>
-                </div>
-                <Field label="Description" id={`story-d-${i}`}><Textarea id={`story-d-${i}`} rows={3} value={row.desc || ""} onChange={(e) => patch(i, { desc: e.target.value })} placeholder="A rainy bookshop in Brooklyn and one shared umbrella." /></Field>
-                <ImageUploadField purpose="story" ratio="4 / 3" label="Photo" value={row.img} onChange={(v) => patch(i, { img: v })} />
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="panel__body--flush table-wrap">
+        <table className="tbl">
+          <thead><tr><th>#</th><th>Photo</th><th>Title</th><th>Description</th><th></th></tr></thead>
+          <tbody>
+            {list.map((row, i) => (
+              <tr key={row.id || i}>
+                <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--muted)" }}>{i + 1}</td>
+                <td>{row.img
+                  ? <img src={mediaUrl(row.img)} alt="" style={{ width: 56, height: 42, objectFit: "cover", borderRadius: 6, display: "block" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                  : <span style={{ color: "var(--muted)" }}>—</span>}</td>
+                <td><strong>{row.title || "—"}</strong>{row.year ? <div style={{ color: "var(--muted)", fontSize: 13 }}>{row.year}</div> : null}</td>
+                <td style={{ maxWidth: 420, color: "var(--ink-soft)" }}>{row.desc}</td>
+                <td>
+                  <div className="row-actions">
+                    <MoveArrows i={i} count={list.length} onMove={(dir) => move(i, dir)} />
+                    <button className="icon-btn" title="Edit milestone" onClick={() => openRow(i)}>{Icon.edit({})}</button>
+                    <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => remove(i)}>{Icon.trash({})}</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {list.length === 0 && <tr><td colSpan={5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No milestones yet. Add one to get started.</td></tr>}
+          </tbody>
+        </table>
       </div>
-      <SaveFooter />
+      <StoryEditor open={open} index={index} item={index != null ? list[index] : null} onClose={() => setOpen(false)} />
     </div>
+  );
+}
+
+// Add/edit one Our Story milestone. Commits on Save via persistChanges
+// (matches TileEditor). Title required; year/date optional.
+export function StoryEditor({ open, index, item, onClose }) {
+  const { story } = useStore();
+  const { save: persistChanges } = React.useContext(AdminSaveCtx);
+  const blank = { year: "", title: "", desc: "", img: "" };
+  const [f, setF] = useState(blank);
+  useEffect(() => {
+    if (item) setF({ year: item.year || "", title: item.title || "", desc: item.desc || "", img: item.img || "" });
+    else setF(blank);
+  }, [item, open]);
+  const isEdit = index != null && index >= 0;
+  async function save() {
+    if (!f.title.trim()) { toast("Please enter a title.", "err"); return; }
+    const payload = { id: (item && item.id) || uid(), year: f.year.trim(), title: f.title.trim(), desc: f.desc.trim(), img: f.img };
+    const list = Array.isArray(story) ? story : [];
+    Store.updateStory(isEdit ? list.map((r, i) => (i === index ? payload : r)) : [...list, payload]);
+    await persistChanges();
+    onClose();
+  }
+  return (
+    <Modal open={open} onClose={onClose} label="Story milestone">
+      <SectionHead eyebrow="Our Story" title={isEdit ? "Edit milestone" : "New milestone"} />
+      <div className="field-row field-row--2">
+        <Field label="Title" id="se-title"><Input id="se-title" value={f.title} onChange={(e) => setF((p) => ({ ...p, title: e.target.value }))} placeholder="How we met" /></Field>
+        <Field label="Year or date" id="se-year" hint="Optional"><Input id="se-year" value={f.year} onChange={(e) => setF((p) => ({ ...p, year: e.target.value }))} placeholder="2018" /></Field>
+      </div>
+      <Field label="Description" id="se-desc"><Textarea id="se-desc" rows={3} value={f.desc} onChange={(e) => setF((p) => ({ ...p, desc: e.target.value }))} placeholder="A rainy bookshop in Brooklyn and one shared umbrella." /></Field>
+      <Field label="Photo" id="se-img"><ImageUploadField purpose="story" ratio="4 / 3" label="Photo" value={f.img} onChange={(v) => setF((p) => ({ ...p, img: v }))} /></Field>
+      <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+        <Button variant="primary" block onClick={save}>{isEdit ? "Save milestone" : "Add milestone"}</Button>
+        <Button variant="ghost" onClick={onClose}>Cancel</Button>
+      </div>
+    </Modal>
   );
 }
 
