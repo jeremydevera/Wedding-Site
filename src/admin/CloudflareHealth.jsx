@@ -5,7 +5,10 @@
 import React from "react";
 import { supabase } from "@/lib/supabase.js";
 import { Button, Icon } from "@/ui/components.jsx";
-const { useState, useEffect, useCallback } = React;
+const { useState, useEffect, useCallback, Suspense } = React;
+
+// Chart.js gauges load lazily (same pattern as rsvp-charts) to keep the main bundle lean.
+const HealthGauges = React.lazy(() => import("@/admin/health-gauges.jsx"));
 
 const nf = (n) => (+n || 0).toLocaleString("en-US");
 // Compact tile value — the KPI card can be as narrow as ~158px and its value is
@@ -31,34 +34,9 @@ function ago(iso) {
   const m = Math.floor(s / 60);
   return m < 60 ? `${m}m ago` : `${Math.floor(m / 60)}h ago`;
 }
-const barColor = (pct) => (pct > 85 ? "#c0392b" : pct > 60 ? "#c98a1a" : "#2e7d51");
-// R2 free tier includes 10 GB-month of storage (then $0.015/GB-mo) — the tile
-// shows how much of that free allowance is left.
+// R2 free tier includes 10 GB-month of storage (then $0.015/GB-mo) — the gauge
+// shows usage against that free allowance.
 const R2_FREE_BYTES = 10 * 1024 ** 3;
-
-// Usage bar for any metric with a hard or free-tier limit: label + numbers on
-// top, colored fill (green→amber→red as it approaches the cap) underneath.
-// `used == null` renders an empty track with a note (e.g. missing permission).
-function LimitBar({ label, used, limit, fmt, suffix, detail, note }) {
-  const has = used != null && limit > 0;
-  const pct = has ? Math.round((used / limit) * 1000) / 10 : 0;
-  return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, fontSize: 13, marginBottom: 6, flexWrap: "wrap" }}>
-        <span style={{ fontWeight: 600 }}>
-          {label}
-          {detail && <span style={{ color: "var(--muted)", fontWeight: 500 }}> · {detail}</span>}
-        </span>
-        <span style={{ color: "var(--muted)" }}>
-          {note ? note : has ? <>{fmt(used)} / {fmt(limit)} <span style={{ opacity: .8 }}>({pct}% of {suffix})</span></> : "—"}
-        </span>
-      </div>
-      <div style={{ height: 12, borderRadius: 6, background: "var(--line, #eee)", overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${has ? Math.min(100, pct) : 0}%`, background: barColor(pct), transition: "width .3s" }} />
-      </div>
-    </div>
-  );
-}
 
 // Same KPI card design as SuperOverview / the client dashboard tiles
 // (chip icon, bold value, dashed footer) so Health matches the console look.
@@ -157,13 +135,15 @@ export function CloudflareHealth() {
       <div className="panel__body" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
         {upstream && <div style={{ background: "#fdf3e7", border: "1px solid #eecfa1", borderRadius: 8, padding: "8px 12px", fontSize: 13 }}>Cloudflare returned an error — showing what we have. Try Refresh.</div>}
 
-        {/* Everything with a hard/free-tier limit renders as a usage bar. */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <LimitBar label="Router requests" detail={`${nfc(data.router?.today)} today`} used={data.router?.month} limit={data.limitMonth} fmt={nf} suffix="this month" />
-          <LimitBar label="Pages builds" used={data.builds?.month} limit={data.builds?.limit || 500} fmt={nf} suffix="this month" note={data.builds?.month == null ? "token needs Pages: Read" : null} />
-          <LimitBar label="R2 storage" detail={`${nf(data.r2?.objects)} objects`} used={data.r2?.storageBytes} limit={R2_FREE_BYTES} fmt={fmtBytes} suffix="free tier" />
-          <LimitBar label="Supabase database" used={data.supa?.dbBytes} limit={data.supa?.dbLimitBytes || 524288000} fmt={fmtBytes} suffix="free tier" note={data.supa?.dbBytes == null ? "unavailable" : null} />
-        </div>
+        {/* Everything with a hard/free-tier limit renders as a gauge. */}
+        <Suspense fallback={<div style={{ color: "var(--muted)", fontSize: 13, padding: "18px 0" }}>Loading gauges…</div>}>
+          <HealthGauges items={[
+            { label: "Router requests", detail: `${nfc(data.router?.today)} today`, used: data.router?.month, limit: data.limitMonth, fmt: nf, suffix: "this month" },
+            { label: "Pages builds", used: data.builds?.month, limit: data.builds?.limit || 500, fmt: nf, suffix: "this month", note: data.builds?.month == null ? "token needs Pages: Read" : null },
+            { label: "R2 storage", detail: `${nf(data.r2?.objects)} objects`, used: data.r2?.storageBytes, limit: R2_FREE_BYTES, fmt: fmtBytes, suffix: "free tier" },
+            { label: "Supabase database", used: data.supa?.dbBytes, limit: data.supa?.dbLimitBytes || 524288000, fmt: fmtBytes, suffix: "free tier", note: data.supa?.dbBytes == null ? "unavailable" : null },
+          ]} />
+        </Suspense>
 
         {/* No-limit metrics stay KPI tiles (same design as the Overview tab). */}
         <div className="sa-stats" style={{ marginBottom: 0 }}>
