@@ -30,6 +30,7 @@ export function visibleAdminTabs(role, allTabs, ownerEdit) {
       ...(homeGranted ? ["home"] : []),
       ...(g.schedule === true ? ["schedule"] : []),
       ...(g.venue === true ? ["venue"] : []),
+      ...(g.details === true ? ["details"] : []),
     ]);
     return allTabs.filter((t) => (!SUPERADMIN_ONLY.has(t.key) || granted.has(t.key)) && t.key !== "clients");
   }

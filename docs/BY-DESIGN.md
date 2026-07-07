@@ -23,7 +23,7 @@ when a behavior is confirmed intentional.
 
 ---
 
-## Settings / Media / Details tabs are superadmin-only, never grantable
-- **Where:** `src/lib/roles.js` `SUPERADMIN_ONLY`.
-- **Behavior:** No owner-edit grant can open Settings, the R2 Media library, or Details to an owner.
+## Settings / Media tabs are superadmin-only, never grantable
+- **Where:** `src/lib/roles.js` `SUPERADMIN_ONLY` + `visibleAdminTabs`.
+- **Behavior:** No owner-edit grant can open Settings or the R2 Media library to an owner. (Details, Schedule, Venue, and the Home folders ARE grantable via Settings → Access → Owner editing.)
 - **Do NOT flag as:** "grant doesn't expose Settings/Media". Intended hard boundary.

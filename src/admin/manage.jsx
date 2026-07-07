@@ -2216,6 +2216,7 @@ export function SettingsAdmin() {
         const TAB_GRANTS = [
           { k: "schedule", label: "Schedule", desc: "The Schedule tab (wedding-day timeline guests see)." },
           { k: "venue", label: "Venue & Map", desc: "The Venue & Map tab (venue cards, map, directions)." },
+          { k: "details", label: "Details", desc: "The Details tab (info cards + FAQ guests see)." },
         ];
         const allHomeOn = HOME_GRANTS.every((g) => oe[g.k] === true);
         const toggleAllHome = (v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), ...Object.fromEntries(HOME_GRANTS.map((g) => [g.k, v])) });
