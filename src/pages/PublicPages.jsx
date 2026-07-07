@@ -660,11 +660,11 @@ export function StoryPage() {
       const p = rect.height ? (line - rect.top) / rect.height : 0;
       const pct = Math.max(0, Math.min(1, p)) * 100;
       if (fillRef.current) fillRef.current.style.height = pct + "%";
-      // Pop each dot the moment the drawn line reaches its milestone (and
-      // un-pop when scrolled back above it) — dots track the line, not a
-      // one-shot reveal. So it works on desktop (all rows on screen) too.
+      // Pop each dot exactly when the drawn line's playhead reaches the dot
+      // (the dot sits at the row's vertical center) — un-pop scrolling back up.
       wrap.querySelectorAll(".story-row").forEach((row) => {
-        row.classList.toggle("dot-on", row.getBoundingClientRect().top <= line + 8);
+        const r = row.getBoundingClientRect();
+        row.classList.toggle("dot-on", r.top + r.height / 2 <= line);
       });
     };
     const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };

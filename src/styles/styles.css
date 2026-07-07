@@ -490,8 +490,11 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
   }
 }
 @media (min-width: 760px) {
-  /* Desktop: photos alternate left/right (content sits right of the left rail).
-     Media is shrunk (max-width below) so the layout stays airy beside the line. */
+  /* Desktop: CENTERED rail with photos alternating left/right around it (mobile
+     keeps the left rail from the base rules above). */
+  .story-timeline { padding-left: 0; }
+  .story-rail, .story-rail__fill { left: 50%; }
+  .story-dot { left: 50%; }
   .story-row { grid-template-columns: 1fr 1fr; gap: 44px; }
   .story-row:nth-child(even) .story-row__media { order: 2; }
 }
