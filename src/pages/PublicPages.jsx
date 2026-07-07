@@ -641,22 +641,53 @@ export function PageHero({ eyebrow, title, lead }) {
 
 export function StoryPage() {
   const { story } = useStore();
+  const railRef = useRef(null);   // the timeline container
+  const fillRef = useRef(null);   // the accent line that draws with scroll
+  const rows = Array.isArray(story) ? story : [];
+
+  // Draw the rail as you scroll: the fill height tracks how far a line at ~55%
+  // of the viewport has travelled through the timeline. Scroll-linked (not a
+  // one-shot) so it grows/shrinks both ways, like the reference site.
+  useEffect(() => {
+    const wrap = railRef.current;
+    if (!wrap) return;
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const rect = wrap.getBoundingClientRect();
+      const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+      const line = vh * 0.55;                       // the "playhead" down the screen
+      const p = rect.height ? (line - rect.top) / rect.height : 0;
+      const pct = Math.max(0, Math.min(1, p)) * 100;
+      if (fillRef.current) fillRef.current.style.height = pct + "%";
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+    update();
+    const off = onSiteScroll(onScroll);
+    window.addEventListener("resize", onScroll);
+    return () => { off(); window.removeEventListener("resize", onScroll); if (raf) cancelAnimationFrame(raf); };
+  }, [rows.length]);
+
   return (
     <div className="fade-up story-snap">
       <PageHero eyebrow="Our Story" title="How we got here" lead="Every love story is beautiful, but this one is ours." />
       <section className="block" style={{ paddingTop: 30 }}>
         <div className="container" style={{ maxWidth: 920 }}>
-          {(Array.isArray(story) ? story : []).map((row, i) => (
-            <div className="story-row" key={i}>
-              <span className="story-dot" aria-hidden="true" />
-              <div className="story-row__media"><StoryImg row={row} /></div>
-              <div>
-                <div className="story-row__year">{row.year}</div>
-                <h3 className="story-row__title">{row.title}</h3>
-                <p className="story-row__desc">{row.desc}</p>
+          <div className="story-timeline" ref={railRef}>
+            <span className="story-rail" aria-hidden="true" />
+            <span className="story-rail__fill" ref={fillRef} aria-hidden="true" />
+            {rows.map((row, i) => (
+              <div className="story-row" key={i}>
+                <span className="story-dot" aria-hidden="true" />
+                <div className="story-row__media"><StoryImg row={row} /></div>
+                <div>
+                  <div className="story-row__year">{row.year}</div>
+                  <h3 className="story-row__title">{row.title}</h3>
+                  <p className="story-row__desc">{row.desc}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
     </div>

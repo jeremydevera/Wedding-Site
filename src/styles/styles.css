@@ -450,16 +450,20 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 }
 
 /* --- Story -----------------------------------------------------------------*/
-.story-row { display: grid; grid-template-columns: 1fr; gap: 26px; align-items: center; margin-bottom: 96px; position: relative; }
+/* Timeline: one continuous centered rail (faint) with an accent FILL line that
+   draws as you scroll (height set by JS in StoryPage). Milestones sit along it;
+   a dot per row pops when it scrolls into view (rides the global .is-in toggle).
+   Extra top padding gives the rail room to start above the first milestone. */
+.story-timeline { position: relative; padding-top: 40px; }
+.story-rail, .story-rail__fill { position: absolute; top: 0; left: 50%; width: 2px; transform: translateX(-50%); border-radius: 2px; }
+.story-rail { height: 100%; background: color-mix(in srgb, var(--accent) 15%, transparent); }
+.story-rail__fill { height: 0; background: var(--accent); box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 55%, transparent); transition: height .12s linear; }
+
+.story-row { display: grid; grid-template-columns: 1fr; gap: 26px; align-items: center; margin-bottom: 72px; position: relative; }
 .story-row:last-child { margin-bottom: 0; }
-/* Timeline dot per milestone, on a centered rail. The dot "pops" (scale-bounce)
-   when the row scrolls into view — it rides the global .is-in reveal toggle
-   (App.jsx IntersectionObserver), so no extra JS. */
-.story-dot { position: absolute; top: -72px; left: 50%; z-index: 1; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 16%, transparent); transform: translateX(-50%) scale(0); }
-.story-row::before { content: ""; position: absolute; top: -72px; left: 50%; width: 2px; height: 72px; transform: translateX(-50%); background: color-mix(in srgb, var(--accent) 22%, transparent); opacity: 0; transition: opacity .4s ease; }
-.story-row:first-child::before { display: none; }
+/* Dot on the rail at each milestone; pops (scale-bounce) as the row enters view. */
+.story-dot { position: absolute; top: -46px; left: 50%; z-index: 1; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 16%, transparent); transform: translateX(-50%) scale(0); }
 .story-row.is-in .story-dot { animation: story-dot-pop .55s cubic-bezier(.2, 1.5, .45, 1) .08s forwards; }
-.story-row.is-in::before { opacity: 1; }
 @keyframes story-dot-pop {
   0% { transform: translateX(-50%) scale(0); }
   70% { transform: translateX(-50%) scale(1.25); }
@@ -468,6 +472,7 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 @media (prefers-reduced-motion: reduce) {
   .story-dot { transform: translateX(-50%) scale(1); }
   .story-row.is-in .story-dot { animation: none; }
+  .story-rail__fill { transition: none; }
 }
 /* Mobile: Our Story scrolls like a vertical carousel — each milestone fills
    the screen and snaps into place as you scroll. Scoped to the story page via
