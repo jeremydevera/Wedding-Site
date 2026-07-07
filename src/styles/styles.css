@@ -452,6 +452,19 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 /* --- Story -----------------------------------------------------------------*/
 .story-row { display: grid; grid-template-columns: 1fr; gap: 26px; align-items: center; margin-bottom: 60px; }
 .story-row:last-child { margin-bottom: 0; }
+/* Mobile: Our Story scrolls like a vertical carousel — each milestone fills
+   the screen and snaps into place as you scroll. Scoped to the story page via
+   :has(.story-snap) on the mobile scroller (#site-scroll), so no other page is
+   affected. proximity (not mandatory) so a tall milestone never traps scroll. */
+@media (max-width: 860px) {
+  .site-scroll:has(.story-snap) { scroll-snap-type: y proximity; scroll-padding-top: 12px; }
+  .story-snap .story-row {
+    min-height: 80svh;
+    align-content: center;
+    scroll-snap-align: center;
+    margin-bottom: 28px;
+  }
+}
 @media (min-width: 760px) {
   .story-row { grid-template-columns: 1fr 1fr; gap: 50px; }
   .story-row:nth-child(even) .story-row__media { order: 2; }

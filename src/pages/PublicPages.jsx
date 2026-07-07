@@ -642,7 +642,7 @@ export function PageHero({ eyebrow, title, lead }) {
 export function StoryPage() {
   const { story } = useStore();
   return (
-    <div className="fade-up">
+    <div className="fade-up story-snap">
       <PageHero eyebrow="Our Story" title="How we got here" lead="Every love story is beautiful, but this one is ours." />
       <section className="block" style={{ paddingTop: 30 }}>
         <div className="container" style={{ maxWidth: 920 }}>
