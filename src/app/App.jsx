@@ -138,10 +138,10 @@ export function Nav({ route }) {
       <span className="nav__themepick-label">Theme</span>
       <select value={settings.theme} aria-label="Preview a theme" onChange={(e) => pickTheme(e.target.value)}>
         <optgroup label="Themes">
-          {Object.keys(THEMES).filter((k) => !isPremiumTheme(k)).map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
+          {Object.keys(THEMES).filter((k) => !isPremiumTheme(k) && k !== "roadtoforever").map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
         </optgroup>
         <optgroup label="✦ Premium">
-          {Object.keys(THEMES).filter((k) => isPremiumTheme(k)).map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
+          {Object.keys(THEMES).filter((k) => isPremiumTheme(k) && k !== "roadtoforever").map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
         </optgroup>
       </select>
     </label>

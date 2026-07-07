@@ -81,14 +81,6 @@ const ABOUT_FALLBACK = [
 export function RoadToForeverSite() {
   const { settings: s, story, schedule, faq, detailCards } = useStore();
   useReveal();
-  useEffect(() => {
-    // script face for the hero eyebrow — self-contained, loads once
-    if (document.getElementById("rtf-font")) return;
-    const l = document.createElement("link");
-    l.id = "rtf-font"; l.rel = "stylesheet";
-    l.href = "https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap";
-    document.head.appendChild(l);
-  }, []);
 
   const about = (Array.isArray(detailCards) && detailCards.length
     ? detailCards.map((c) => ({ title: c.title, body: c.body })) : ABOUT_FALLBACK).slice(0, 3);
@@ -191,18 +183,21 @@ export function RoadToForeverSite() {
 }
 
 const RTF_CSS = `
-.rtf{font-family:var(--font-body,'Jost',sans-serif);color:var(--ink,#3b1e14);background:#48100e;overflow-x:hidden}
+@font-face{font-family:'rtf-display';src:url('/themes/roadtoforever/fonts/f765c7954ae9dc36ed1db84285297996.woff') format('woff');font-weight:300 900;font-display:swap}
+@font-face{font-family:'rtf-script';src:url('/themes/roadtoforever/fonts/003e82bf2f68067801da6a72d24cdf78.woff') format('woff');font-display:swap}
+@font-face{font-family:'rtf-body';src:url('/themes/roadtoforever/fonts/341b81c278176b71907964872c948c77.woff') format('woff');font-weight:300 900;font-display:swap}
+.rtf{font-family:'rtf-body','Jost',sans-serif;color:var(--ink,#3b1e14);background:#48100e;overflow-x:hidden}
 .rtf *{box-sizing:border-box}
 .rtf .rtf-wrap{max-width:1080px;margin:0 auto;padding:0 24px}
-.rtf .rtf-h{font-family:var(--font-display,'Cormorant Garamond',serif);font-weight:500;font-size:clamp(38px,6vw,64px);line-height:1.04}
+.rtf .rtf-h{font-family:'rtf-display',serif;font-weight:500;font-size:clamp(38px,6vw,64px);line-height:1.04}
 .rtf .rtf-rv{opacity:0;transform:translateY(38px);transition:opacity .9s cubic-bezier(.22,.61,.36,1),transform 1s cubic-bezier(.22,.61,.36,1)}
 .rtf .rtf-rv.in{opacity:1;transform:none}
 @media(prefers-reduced-motion:reduce){.rtf .rtf-rv{opacity:1;transform:none;transition:none}}
 
 /* HERO */
 .rtf-hero{min-height:100svh;display:grid;place-items:center;text-align:center;color:#f4ead4;background-size:cover;background-position:center 30%;padding:40px 24px}
-.rtf-eyebrow{font-family:'Pinyon Script',cursive;font-size:clamp(28px,5vw,54px);margin-bottom:-2px;color:#f6ecd8}
-.rtf-names{font-family:var(--font-display,'Cormorant Garamond',serif);font-weight:500;font-size:clamp(52px,12vw,140px);line-height:1;letter-spacing:.01em}
+.rtf-eyebrow{font-family:'rtf-script',cursive;font-size:clamp(28px,5vw,54px);margin-bottom:-2px;color:#f6ecd8}
+.rtf-names{font-family:'rtf-display',serif;font-weight:500;font-size:clamp(52px,12vw,140px);line-height:1;letter-spacing:.01em}
 .rtf-names span{font-style:italic;font-weight:400;padding:0 .1em}
 
 /* LOVE STORY */
@@ -212,7 +207,7 @@ const RTF_CSS = `
 .rtf-love-swipe{display:grid;grid-template-columns:minmax(0,360px) 1fr;gap:clamp(28px,5vw,64px);align-items:center;touch-action:pan-y}
 .rtf-instax{background:#f4ead4;padding:14px 14px 54px;box-shadow:0 18px 40px -18px rgba(0,0,0,.5);transform:rotate(-2deg)}
 .rtf-instax img{width:100%;height:340px;object-fit:cover;display:block}
-.rtf-love-text h3{font-family:var(--font-display,serif);font-style:italic;font-size:28px;margin-bottom:12px}
+.rtf-love-text h3{font-family:'rtf-display',serif;font-style:italic;font-size:28px;margin-bottom:12px}
 .rtf-love-text p{color:#f3e3d3;font-weight:300;max-width:46ch;font-size:17px}
 .rtf-swipe-ctrl{display:flex;align-items:center;justify-content:center;gap:20px;margin-top:34px}
 .rtf-swipe-ctrl button{background:none;border:1px solid rgba(246,236,216,.5);color:#f6ecd8;width:42px;height:42px;border-radius:50%;cursor:pointer;font-size:18px}
@@ -227,7 +222,7 @@ const RTF_CSS = `
 .rtf-about .rtf-sub{color:var(--ink-soft,#6a4a38);margin-bottom:clamp(36px,5vw,58px);font-weight:300}
 .rtf-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(24px,4vw,52px)}
 .rtf-tile svg{width:52px;height:52px;color:var(--accent,#b0472c);margin:0 auto 16px;display:block}
-.rtf-tile h3{font-family:var(--font-display,serif);font-style:italic;font-weight:600;font-size:25px;margin-bottom:9px}
+.rtf-tile h3{font-family:'rtf-display',serif;font-style:italic;font-weight:600;font-size:25px;margin-bottom:9px}
 .rtf-tile p{color:var(--ink-soft,#6a4a38);font-size:15px;font-weight:300}
 
 /* SCHEDULE */
@@ -237,14 +232,14 @@ const RTF_CSS = `
 .rtf-date{letter-spacing:.26em;text-transform:uppercase;font-size:13px;color:var(--muted,#8a6f57);margin:8px 0 28px}
 .rtf-row{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:baseline;padding:15px 0;border-bottom:1px solid var(--line,#d8c6aa)}
 .rtf-row:last-child{border-bottom:0}
-.rtf-t{font-family:var(--font-display,serif);font-size:22px;white-space:nowrap}
-.rtf-ev{font-family:var(--font-display,serif);font-style:italic;font-size:22px;text-align:right;color:var(--accent,#b0472c)}
+.rtf-t{font-family:'rtf-display',serif;font-size:22px;white-space:nowrap}
+.rtf-ev{font-family:'rtf-display',serif;font-style:italic;font-size:22px;text-align:right;color:var(--accent,#b0472c)}
 
 /* MORE INFO */
 .rtf-info{background:#380c0a;color:#f4ead4;padding:clamp(66px,9vw,116px) 0}
 .rtf-info .rtf-h{margin-bottom:clamp(34px,5vw,54px)}
 .rtf-faq{max-width:720px;margin:0 auto;text-align:center;display:flex;flex-direction:column;gap:30px}
-.rtf-faq h3{font-family:var(--font-display,serif);font-style:italic;font-size:26px;color:#f6ecd8;margin-bottom:8px}
+.rtf-faq h3{font-family:'rtf-display',serif;font-style:italic;font-size:26px;color:#f6ecd8;margin-bottom:8px}
 .rtf-faq p{color:#e7cdbf;font-weight:300;max-width:56ch;margin:0 auto}
 
 /* CONTACT */
@@ -254,7 +249,7 @@ const RTF_CSS = `
 .rtf-contact .rtf-h{color:#4a120e;margin-bottom:30px}
 .rtf-cards{display:grid;grid-template-columns:1fr 1fr;gap:clamp(24px,4vw,48px)}
 .rtf-card{border-top:1px solid rgba(74,18,14,.3);padding-top:20px}
-.rtf-name{font-family:var(--font-display,serif);font-style:italic;font-size:27px;color:#4a120e;margin-bottom:12px}
+.rtf-name{font-family:'rtf-display',serif;font-style:italic;font-size:27px;color:#4a120e;margin-bottom:12px}
 .rtf-card address{font-style:normal;color:#5a3a2a;font-weight:300;font-size:14.5px;line-height:1.85}
 .rtf-foot{text-align:center;color:#d9c4a8;font-size:11px;letter-spacing:.2em;text-transform:uppercase;padding:30px 0;background:#380c0a}
 
