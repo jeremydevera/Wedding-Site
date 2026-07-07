@@ -189,7 +189,7 @@ const RTF_CSS = `
 .rtf{font-family:'rtf-body','Jost',sans-serif;color:var(--ink,#3b1e14);background:#48100e;overflow-x:hidden}
 .rtf *{box-sizing:border-box}
 .rtf .rtf-wrap{max-width:1080px;margin:0 auto;padding:0 24px}
-.rtf .rtf-h{font-family:'rtf-display',serif;font-weight:500;font-size:clamp(38px,6vw,64px);line-height:1.04}
+.rtf .rtf-h{font-family:'rtf-display',serif;font-weight:400;font-size:clamp(40px,6vw,66px);line-height:1.04;letter-spacing:normal}
 .rtf .rtf-rv{opacity:0;transform:translateY(38px);transition:opacity .9s cubic-bezier(.22,.61,.36,1),transform 1s cubic-bezier(.22,.61,.36,1)}
 .rtf .rtf-rv.in{opacity:1;transform:none}
 @media(prefers-reduced-motion:reduce){.rtf .rtf-rv{opacity:1;transform:none;transition:none}}
@@ -197,8 +197,8 @@ const RTF_CSS = `
 /* HERO */
 .rtf-hero{min-height:100svh;display:grid;place-items:center;text-align:center;color:#f4ead4;background-size:cover;background-position:center 30%;padding:40px 24px}
 .rtf-eyebrow{font-family:'rtf-script',cursive;font-size:clamp(28px,5vw,54px);margin-bottom:-2px;color:#f6ecd8}
-.rtf-names{font-family:'rtf-display',serif;font-weight:500;font-size:clamp(52px,12vw,140px);line-height:1;letter-spacing:.01em}
-.rtf-names span{font-style:italic;font-weight:400;padding:0 .1em}
+.rtf-names{font-family:'rtf-display',serif;font-weight:400;font-size:clamp(58px,13vw,162px);line-height:1;letter-spacing:normal}
+.rtf-names span{font-style:normal;font-weight:400;padding:0 .05em}
 
 /* LOVE STORY */
 .rtf-love{position:relative;background:var(--accent,#b0472c);color:#f4ead4;padding:clamp(64px,9vw,110px) 0}
