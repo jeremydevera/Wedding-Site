@@ -18,12 +18,6 @@ Claude test run. Done items stay here as the permanent history.
 
 ## Pending
 
-### Enhancement ID: 0013 — Crop for MP4 (video) media — envelope frame + track covers
-- **Severity:** P3 · **Status:** Done — commit `e5eaa32`, 2026-07-07 · **Added:** 2026-07-07 (requested by Jeremy)
-- **Where:** Admin → Settings → Theme → Envelope Frame Photo · Home → Music playlist → Edit track → Cover image
-- **Action:** MP4s upload as-is with no crop step (canvas CropModal can't re-encode video). Jeremy wants to crop videos too — position/zoom the MP4 inside the oval frame / square cover like images.
-- **Plan:** No re-encode needed: reuse the CropModal pan/zoom UI over a paused `<video>` frame, but store crop PARAMS (`{x, y, zoom}`) in settings (e.g. `frameImageCrop`, track `artCrop`) instead of exporting pixels. Renderers apply the params as a CSS transform on the `<video>` inside its clipping box. GIFs keep the current behavior (crop flattens); videos get non-destructive param crop.
-
 ### Enhancement ID: 0012 — Unify all Access settings into one shared source
 - **Severity:** P3 · **Status:** Pending · **Added:** 2026-07-07 (requested by Jeremy)
 - **Where:** Admin → Settings → Access · Superadmin → Edit client → Access
@@ -45,6 +39,13 @@ Claude test run. Done items stay here as the permanent history.
 ---
 
 ## Done / History
+
+### Enhancement ID: 0013 — Crop for MP4 (video) media — envelope frame + track covers
+- **Severity:** P3 · **Status:** Done — commit `e5eaa32`, 2026-07-07 · **Added:** 2026-07-07 (requested by Jeremy)
+- **Where:** Admin → Settings → Theme → Envelope Frame Photo · Home → Music playlist → Edit track → Cover image
+- **Action:** MP4s upload as-is with no crop step (canvas CropModal can't re-encode video). Jeremy wants to crop videos too — position/zoom the MP4 inside the oval frame / square cover like images.
+- **Resolution:** Shipped as planned — CropModal pans/zooms the playing `<video>` and stores `{z,dx,dy}`; `cropTransform()` applies it as a CSS transform on the envelope oval frame (cover + letter), the Retro Device screen, and both admin thumbs. Fresh video uploads/library picks open the crop immediately; re-crop seeds from the saved position. 205 tests pass.
+- **Original plan:** No re-encode needed: reuse the CropModal pan/zoom UI over a paused `<video>` frame, but store crop PARAMS (`{x, y, zoom}`) in settings (e.g. `frameImageCrop`, track `artCrop`) instead of exporting pixels. Renderers apply the params as a CSS transform on the `<video>` inside its clipping box. GIFs keep the current behavior (crop flattens); videos get non-destructive param crop.
 
 ### Enhancement ID: 0011 — Olive Envelope: more background tint colors + custom tint
 - **Severity:** P2 · **Status:** Done — commit `637c225`, 2026-07-03 (requested by Jeremy)
