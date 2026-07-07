@@ -1667,6 +1667,9 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
    position:fixed is the only reliable scroll lock on iOS Safari (overflow:hidden
    alone doesn't hold). The envelope is the first screen, so pinning at top:0 is fine. */
 body.env-sealed .nav { display: none; }
+/* Sealed Olive Envelope cover: hide the demo try-bar too — the cover is a
+   full-screen moment; the bar reappears once the invitation is opened. */
+body.env-sealed .demo-trybar { display: none; }
 body.env-sealed { position: fixed; inset: 0; width: 100%; overflow: hidden; overscroll-behavior: none; touch-action: none; }
 /* block the drag gesture itself on the sealed cover so iOS can't rubber-band */
 body.env-sealed .eg-hero { touch-action: none; }
