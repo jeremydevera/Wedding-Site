@@ -456,8 +456,11 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
   .story-row { grid-template-columns: 1fr 1fr; gap: 50px; }
   .story-row:nth-child(even) .story-row__media { order: 2; }
 }
-.story-row__year { font-family: var(--font-display); font-size: 60px; color: var(--accent-soft); line-height: 1; }
-.story-row__title { font-size: 32px; margin: 6px 0 12px; }
+/* Year uses the readable accent, not --accent-soft (a pale background tint that
+   rendered near-invisible on light themes). Title pinned to --ink so it never
+   inherits a low-contrast color. */
+.story-row__year { font-family: var(--font-display); font-size: 60px; color: var(--accent); line-height: 1; }
+.story-row__title { font-size: 32px; margin: 6px 0 12px; color: var(--ink); }
 .story-row__desc { color: var(--ink-soft); font-size: 18px; }
 
 /* --- Info grid (details/venue) ---------------------------------------------*/
