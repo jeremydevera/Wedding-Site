@@ -138,7 +138,7 @@ const TIME_OPTIONS = (() => {
 export function blankApplyState() {
   return {
     partnerA: "", partnerB: "", email: "", subdomain: "", weddingDate: "",
-    theme: "classic",
+    theme: "", // unchosen until the user picks; falls back to Classic Ivory on submit
     venueName: "", venueAddress: "", mapQuery: "", mapLat: "", mapLng: "",
     schedule: [
       { time: "3:00 PM", title: "Ceremony", loc: "" },
@@ -154,7 +154,7 @@ export function blankApplyState() {
 export function requestPayload(f) {
   return {
     email: f.email.trim(), partnerA: f.partnerA.trim(), partnerB: f.partnerB.trim(),
-    subdomain: f.subdomain.trim().toLowerCase(), templateKey: f.theme,
+    subdomain: f.subdomain.trim().toLowerCase(), templateKey: f.theme || "classic",
     content: {
       ...(f.weddingDate ? { weddingDate: f.weddingDate, weddingDateLabel: dateLabelOf(f.weddingDate) } : {}),
       venueName: f.venueName.trim(), venueAddress: f.venueAddress.trim(),
@@ -304,10 +304,11 @@ export function ApplyWizard({ initial = null, onSave, onCancel }) {
       <>
         <Field label="Theme" id="ap-theme" hint="Pick a starting look — you can change it anytime in your admin.">
           <Select id="ap-theme" value={f.theme} onChange={(e) => setF((p) => ({ ...p, theme: e.target.value }))}>
+            <option value="">Choose a theme…</option>
             {themes.map((key) => <option key={key} value={key}>{THEMES[key].label}</option>)}
           </Select>
         </Field>
-        <ApplyThemePreview theme={f.theme} />
+        {f.theme && <ApplyThemePreview theme={f.theme} />}
       </>
     ) },
     { title: "Where's the celebration?", short: "Venue", sub: "Pin the venue — guests get one-tap directions from your site.", body: (
@@ -384,7 +385,7 @@ export function ApplyWizard({ initial = null, onSave, onCancel }) {
           ["Email", f.email],
           ["Site address", `${f.subdomain}.celebrately.us`],
           ["Date", f.weddingDate ? dateLabelOf(f.weddingDate) : "Not set yet"],
-          ["Theme", (THEMES[f.theme] || {}).label || f.theme],
+          ["Theme", (THEMES[f.theme] || THEMES.classic).label],
           ["Venue", f.venueName || f.mapQuery || "Not set yet"],
           ["Schedule", `${f.schedule.filter((r) => r.title.trim()).length} item(s)`],
           ["Entourage", f.entourage.length ? `${f.entourage.length} group(s)` : "Skipped"],

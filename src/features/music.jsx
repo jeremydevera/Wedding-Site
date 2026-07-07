@@ -79,7 +79,10 @@ export function MusicMount() {
   const n = (playlist || []).length;
   // Autoplay is opt-out (default on). When off, the engine still has the tracks
   // loaded so the home player works — it just won't start on its own.
-  const autoplay = (settings && settings.musicAutoplay) !== false;
+  // Never autoplay inside a preview iframe (the /apply theme simulator, the admin
+  // theme picker) — a muted, still preview, not a concert.
+  const isPreview = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("preview");
+  const autoplay = !isPreview && (settings && settings.musicAutoplay) !== false;
   const playlistKey = JSON.stringify(playlist);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { setTracks(playlist || []); }, [playlistKey]);
