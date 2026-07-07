@@ -709,7 +709,7 @@ export function ClientsAdmin() {
                   <th style={{ width: 34 }}><input type="checkbox" aria-label="Select all on this page"
                     checked={pg.pageItems.length > 0 && pg.pageItems.every((c) => sel.has(c.id))}
                     onChange={(e) => setSel((p) => { const n = new Set(p); pg.pageItems.forEach((c) => e.target.checked ? n.add(c.id) : n.delete(c.id)); return n; })} /></th>
-                  <th>Client</th><th>Theme</th><th>Notes</th><th></th></tr></thead>
+                  <th>Client</th><th>Email</th><th>Password</th><th>Notes</th><th></th></tr></thead>
                 <tbody>
                   {pg.pageItems.map((c) => (
                     <tr key={c.id}>
@@ -723,7 +723,16 @@ export function ClientsAdmin() {
                           </div>
                         </div>
                       </td>
-                      <td className="theme-cell"><Select value={c.template_key} onChange={(e) => assignTheme(c.id, e.target.value)}>{themesForEvent(c.event_type).filter((k) => THEMES[k]).map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}</Select></td>
+                      <td style={{ maxWidth: 200 }}>{c.owner_email
+                        ? <span className="client-domain" title={c.owner_email} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{c.owner_email}</span>
+                        : <span style={{ color: "var(--muted)", fontSize: 13 }}>no login</span>}</td>
+                      {/* Auth passwords are hashed and can't be shown — offer a
+                          set/reset that opens the edit modal's Access tab. */}
+                      <td>
+                        <Button variant="ghost" size="sm" onClick={() => { openEdit(c); setEditTab("access"); }}>
+                          {c.owner_email ? "Reset" : "Set login"}
+                        </Button>
+                      </td>
                       <td style={{ maxWidth: 180 }}>{notes[c.id]
                         ? <span title={notes[c.id]} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{notes[c.id]}</span>
                         : <span style={{ color: "var(--muted)" }}>—</span>}</td>
@@ -740,7 +749,7 @@ export function ClientsAdmin() {
                       </td>
                     </tr>
                   ))}
-                  {filtered.length === 0 && <tr><td colSpan={5} style={{ textAlign: "center", padding: 40, color: "var(--muted)" }}>{clients.length ? "No matches." : "No clients yet — use “Add client”."}</td></tr>}
+                  {filtered.length === 0 && <tr><td colSpan={6} style={{ textAlign: "center", padding: 40, color: "var(--muted)" }}>{clients.length ? "No matches." : "No clients yet — use “Add client”."}</td></tr>}
                 </tbody>
               </table>
             </div>
