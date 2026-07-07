@@ -511,6 +511,9 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
      cards to their right edge. */
   .story-row:nth-child(odd) .story-dot { left: -22px; }
   .story-row:nth-child(even) .story-dot { left: calc(100% + 22px); }
+  /* Give each milestone real vertical room so the line visibly DRAWS and dots
+     pop one-by-one as you scroll (mobile gets this from the 80svh snap rows). */
+  .story-row { min-height: 66vh; align-content: center; margin-bottom: 40px; }
 }
 /* Shrink the photo/video so there's room for the rail and the layout stays airy. */
 .story-row__media { max-width: 440px; }
