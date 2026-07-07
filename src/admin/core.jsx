@@ -130,7 +130,9 @@ export function AdminLogin({ onAuthed }) {
         ) : (
           <div className="signin__brand"><Logo size={30} /><span className="signin__word">Celebrately</span></div>
         )}
-        <button className="signin__back" onClick={() => go("home")}>← Back to website</button>
+        {isClient
+          ? <button className="signin__back" onClick={() => go("home")}>← Back to website</button>
+          : <a className="signin__back" style={{ display: "inline-block", textDecoration: "none" }} href="https://demo.celebrately.us/">View demo site →</a>}
       </header>
       <div className="signin__center">
         <form className="signin__form" onSubmit={submit} noValidate>
