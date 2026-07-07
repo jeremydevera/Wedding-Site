@@ -32,9 +32,12 @@ export function HeroBg() {
 }
 
 export function StoryImg({ row }) {
-  return row && row.img
-    ? <img src={mediaUrl(row.img)} alt={row.title} style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", borderRadius: "var(--radius)", display: "block" }} />
-    : <Placeholder label="story photo" ratio="4 / 3" />;
+  if (!row || !row.img) return <Placeholder label="story photo" ratio="4 / 3" />;
+  const base = { width: "100%", aspectRatio: "4 / 3", objectFit: "cover", borderRadius: "var(--radius)", display: "block" };
+  if (/\.(mp4|webm|mov|m4v)(\?|$)/i.test(row.img)) {
+    return <video src={mediaUrl(row.img)} muted loop autoPlay playsInline style={{ ...base, ...(cropTransform(row.imgCrop) || {}) }} />;
+  }
+  return <img src={mediaUrl(row.img)} alt={row.title} style={base} />;
 }
 
 // Olive-green tint strength → CSS vars for the envelope background overlay.

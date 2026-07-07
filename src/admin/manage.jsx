@@ -1920,7 +1920,9 @@ export function StoryAdmin() {
               <tr key={row.id || i}>
                 <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--muted)" }}>{i + 1}</td>
                 <td>{row.img
-                  ? <img src={mediaUrl(row.img)} alt="" style={{ width: 56, height: 42, objectFit: "cover", borderRadius: 6, display: "block" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                  ? (VIDEO_RE.test(row.img)
+                    ? <video src={mediaUrl(row.img)} muted loop autoPlay playsInline style={{ width: 56, height: 42, objectFit: "cover", borderRadius: 6, display: "block" }} />
+                    : <img src={mediaUrl(row.img)} alt="" style={{ width: 56, height: 42, objectFit: "cover", borderRadius: 6, display: "block" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />)
                   : <span style={{ color: "var(--muted)" }}>—</span>}</td>
                 <td><strong>{row.title || "—"}</strong>{row.year ? <div style={{ color: "var(--muted)", fontSize: 13 }}>{row.year}</div> : null}</td>
                 <td style={{ maxWidth: 420, color: "var(--ink-soft)" }}>{row.desc}</td>
@@ -1947,16 +1949,16 @@ export function StoryAdmin() {
 export function StoryEditor({ open, index, item, onClose }) {
   const { story } = useStore();
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
-  const blank = { year: "", title: "", desc: "", img: "" };
+  const blank = { year: "", title: "", desc: "", img: "", imgCrop: null };
   const [f, setF] = useState(blank);
   useEffect(() => {
-    if (item) setF({ year: item.year || "", title: item.title || "", desc: item.desc || "", img: item.img || "" });
+    if (item) setF({ year: item.year || "", title: item.title || "", desc: item.desc || "", img: item.img || "", imgCrop: item.imgCrop || null });
     else setF(blank);
   }, [item, open]);
   const isEdit = index != null && index >= 0;
   async function save() {
     if (!f.title.trim()) { toast("Please enter a title.", "err"); return; }
-    const payload = { id: (item && item.id) || uid(), year: f.year.trim(), title: f.title.trim(), desc: f.desc.trim(), img: f.img };
+    const payload = { id: (item && item.id) || uid(), year: f.year.trim(), title: f.title.trim(), desc: f.desc.trim(), img: f.img, imgCrop: f.imgCrop || null };
     const list = Array.isArray(story) ? story : [];
     Store.updateStory(isEdit ? list.map((r, i) => (i === index ? payload : r)) : [...list, payload]);
     await persistChanges();
@@ -1970,7 +1972,7 @@ export function StoryEditor({ open, index, item, onClose }) {
         <Field label="Year or date" id="se-year" hint="Optional"><Input id="se-year" value={f.year} onChange={(e) => setF((p) => ({ ...p, year: e.target.value }))} placeholder="2018" /></Field>
       </div>
       <Field label="Description" id="se-desc"><Textarea id="se-desc" rows={3} value={f.desc} onChange={(e) => setF((p) => ({ ...p, desc: e.target.value }))} placeholder="A rainy bookshop in Brooklyn and one shared umbrella." /></Field>
-      <Field label="Photo" id="se-img"><ImageUploadField purpose="story" ratio="4 / 3" label="Photo" value={f.img} onChange={(v) => setF((p) => ({ ...p, img: v }))} /></Field>
+      <ImageUploadField purpose="story" ratio="4 / 3" label="Photo or video" allowVideo value={f.img} cropValue={f.imgCrop} onCropChange={(c) => setF((p) => ({ ...p, imgCrop: c }))} onChange={(v) => setF((p) => ({ ...p, img: v, imgCrop: null }))} />
       <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
         <Button variant="primary" block onClick={save}>{isEdit ? "Save milestone" : "Add milestone"}</Button>
         <Button variant="ghost" onClick={onClose}>Cancel</Button>
