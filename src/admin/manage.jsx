@@ -199,7 +199,13 @@ export function TrackCoverField({ value, onChange }) {
         clientId={clientId}
         uploadLabel={value ? "Replace cover" : "Choose a file"}
         onUploadNew={() => ref.current && ref.current.click()}
-        onPick={(key) => onChange(key)}
+        onPick={(key) => {
+          onChange(key);
+          // Static images from the library get the same crop step as fresh
+          // uploads (Cancel keeps the pick as-is). GIFs/videos skip it so the
+          // animation survives.
+          if (!VIDEO_RE.test(key) && !/\.gif(\?|$)/i.test(key)) setCropSrc(mediaUrl(key));
+        }}
       />
       <CropModal open={!!cropSrc} src={cropSrc} aspect={1} onCancel={() => setCropSrc(null)} onApply={applyCrop} />
     </div>
