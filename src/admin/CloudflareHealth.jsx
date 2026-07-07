@@ -24,12 +24,17 @@ function ago(iso) {
 }
 const barColor = (pct) => (pct > 85 ? "#c0392b" : pct > 60 ? "#c98a1a" : "#2e7d51");
 
-function Stat({ label, value, sub }) {
+// Same KPI card design as SuperOverview / the client dashboard tiles
+// (chip icon, bold value, dashed footer) so Health matches the console look.
+function Stat({ label, value, sub, icon = "grid", accent = "info" }) {
   return (
-    <div style={{ flex: "1 1 140px", minWidth: 140, background: "var(--card, #fff)", border: "1px solid var(--line, #eee)", borderRadius: 10, padding: "12px 14px" }}>
-      <div style={{ fontSize: 12, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--muted)", fontWeight: 600 }}>{label}</div>
-      <div style={{ fontSize: 24, fontWeight: 700, marginTop: 2, color: "var(--ink)" }}>{value}</div>
-      {sub != null && <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>{sub}</div>}
+    <div className={"kpi kpi--" + accent}>
+      <div className="kpi__top">
+        <span className="kpi__chip" aria-hidden="true">{Icon[icon] ? Icon[icon]({}) : null}</span>
+        <span className="kpi__label">{label}</span>
+      </div>
+      <div className="kpi__value">{value}</div>
+      <div className="kpi__foot"><span className="kpi__tick" aria-hidden="true" />{sub || " "}</div>
     </div>
   );
 }
@@ -126,14 +131,14 @@ export function CloudflareHealth() {
           </div>
         </div>
 
-        {/* Today's split */}
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <Stat label="Router today" value={nf(data.router?.today)} sub={`${nf(data.router?.month)} this month`} />
-          <Stat label="Functions today" value={nf(data.functions?.today)} sub={`${nf(data.functions?.month)} this month`} />
-          <Stat label="R2 storage" value={fmtBytes(data.r2?.storageBytes)} sub={`${nf(data.r2?.objects)} objects`} />
-          <Stat label="R2 ops today" value={nf(data.r2?.opsToday)} />
-          <Stat label="Cache hit" value={`${data.zone?.cacheHitPct ?? 0}%`} sub={`${nf(data.zone?.reqToday)} edge req today`} />
-          <Stat label="5xx today" value={nf(data.zone?.err5xx)} />
+        {/* Today's split — same KPI tile grid as the Overview tab */}
+        <div className="sa-stats" style={{ marginBottom: 0 }}>
+          <Stat label="Router today" value={nf(data.router?.today)} sub={`${nf(data.router?.month)} this month`} icon="grid" accent="info" />
+          <Stat label="Functions today" value={nf(data.functions?.today)} sub={`${nf(data.functions?.month)} this month`} icon="gear" accent="success" />
+          <Stat label="R2 storage" value={fmtBytes(data.r2?.storageBytes)} sub={`${nf(data.r2?.objects)} objects`} icon="upload" accent="purple" />
+          <Stat label="R2 ops today" value={nf(data.r2?.opsToday)} sub="reads + writes" icon="download" accent="amber" />
+          <Stat label="Cache hit" value={`${data.zone?.cacheHitPct ?? 0}%`} sub={`${nf(data.zone?.reqToday)} edge req today`} icon="check" accent="success" />
+          <Stat label="5xx today" value={nf(data.zone?.err5xx)} sub="server errors" icon="bell" accent="amber" />
         </div>
 
         {/* 7-day trend */}
