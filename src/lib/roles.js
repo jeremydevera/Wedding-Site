@@ -7,7 +7,7 @@
 // gated to superadmin there (see HomeAdmin).
 // Home is superadmin-only too (the superadmin builds the home page); owners
 // don't get it. Superadmin-on-a-client uses a different path and still sees it.
-const SUPERADMIN_ONLY = new Set(["settings", "media", "schedule", "details", "venue", "home"]);
+const SUPERADMIN_ONLY = new Set(["settings", "media", "schedule", "details", "venue", "home", "story"]);
 
 export function visibleAdminTabs(role, allTabs, ownerEdit) {
   if (role === "superadmin") {
@@ -57,6 +57,7 @@ export const OWNER_EDIT_TABS = [
   { k: "schedule", label: "Schedule", desc: "The Schedule tab (wedding-day timeline guests see)." },
   { k: "venue", label: "Venue & Map", desc: "The Venue & Map tab (venue cards, map, directions)." },
   { k: "details", label: "Details", desc: "The Details tab (info cards + FAQ guests see)." },
+  { k: "story", label: "Our Story", desc: "The Our Story tab (milestones — title, description, photo)." },
 ];
 // Any Home-folder grant exposes the Home tab (derived, never hand-maintained).
 export const HOME_EDIT_KEYS = OWNER_EDIT_HOME.map((g) => g.k);
@@ -98,7 +99,7 @@ export function moduleEnabled(modules, key) {
 }
 
 // Admin tabs that correspond to a toggleable module (others — dashboard/qr — always show).
-const TAB_MODULE = { rsvps: "rsvp", guestbook: "guestbook", quiz: "quiz", schedule: "schedule", details: "details" };
+const TAB_MODULE = { rsvps: "rsvp", guestbook: "guestbook", quiz: "quiz", schedule: "schedule", details: "details", story: "story" };
 
 // Filter already-role-gated tabs by the client's module flags (owners only; superadmin keeps all).
 export function tabsForClient(tabs, role, modules) {

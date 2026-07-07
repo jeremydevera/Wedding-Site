@@ -25,7 +25,7 @@ describe("visibleAdminTabs", () => {
     expect(keys).toContain("guestbook");
   });
   it("ownerEdit grants open individual content tabs to the owner", () => {
-    const ALL = [...TABS, { key: "home" }, { key: "schedule" }, { key: "venue" }, { key: "details" }];
+    const ALL = [...TABS, { key: "home" }, { key: "schedule" }, { key: "venue" }, { key: "details" }, { key: "story" }];
     const keys = (g) => visibleAdminTabs("owner", ALL, g).map((t) => t.key);
     expect(keys(undefined)).not.toContain("home");
     expect(keys(undefined)).not.toContain("details");
@@ -35,6 +35,8 @@ describe("visibleAdminTabs", () => {
     expect(keys({ venue: true })).toContain("venue");
     expect(keys({ details: true })).toContain("details");
     expect(keys({ details: true })).not.toContain("home");
+    expect(keys({ story: true })).toContain("story");
+    expect(keys(undefined)).not.toContain("story");
     // any Home-folder grant (entourage/maps/timeline/attire/music) exposes Home
     expect(keys({ entourage: true })).toContain("home");
     expect(keys({ maps: true })).toContain("home");

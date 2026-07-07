@@ -1888,6 +1888,60 @@ function ClientPasswordReset() {
   );
 }
 
+// Our Story editor — milestones the guest sees on the Our Story page. Each
+// row = title + description + photo (year/date optional). Store-only writes
+// (Store.updateStory) so the panel's Save changes button commits them
+// (DEV-RULES R1). Add / remove / reorder inline.
+export function StoryAdmin() {
+  const { story } = useStore();
+  const list = Array.isArray(story) ? story : [];
+  const set = (next) => Store.updateStory(next);
+  const patch = (i, p) => set(list.map((r, j) => (j === i ? { ...r, ...p } : r)));
+  const add = () => set([...list, { id: uid(), year: "", title: "", desc: "", img: "" }]);
+  const move = (i, d) => { const j = i + d; if (j < 0 || j >= list.length) return; const a = [...list]; [a[i], a[j]] = [a[j], a[i]]; set(a); };
+  const remove = async (i) => {
+    const ok = await confirmDialog({ title: "Delete milestone?", message: `Remove "${list[i].title || "this milestone"}" from Our Story?`, confirmLabel: "Delete", danger: true });
+    if (ok) set(list.filter((_, j) => j !== i));
+  };
+  return (
+    <div className="panel">
+      <div className="panel__head">
+        <div className="panel__title">Our Story <span style={{ color: "var(--muted)", fontSize: 15 }}>({list.length})</span></div>
+        <Button variant="primary" size="sm" onClick={add}>+ Add milestone</Button>
+      </div>
+      <div className="panel__body">
+        <p style={{ color: "var(--muted)", margin: "0 0 16px", fontSize: 14 }}>
+          Each milestone shows on your Our Story page — a photo, a title, and a short description (year or date is optional). Changes save when you click Save changes.
+        </p>
+        {list.length === 0 && <div style={{ color: "var(--muted)", fontSize: 14, padding: "8px 0 16px" }}>No milestones yet — add your first.</div>}
+        <div style={{ display: "grid", gap: 18 }}>
+          {list.map((row, i) => (
+            <div key={row.id || i} className="ent-edit-group">
+              <div className="ent-edit-group__head">
+                <span className="ent-edit-group__title">{row.title || `Milestone ${i + 1}`}</span>
+                <div className="row-actions">
+                  <button className="icon-btn" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Move up" title="Move up">↑</button>
+                  <button className="icon-btn" onClick={() => move(i, 1)} disabled={i === list.length - 1} aria-label="Move down" title="Move down">↓</button>
+                  <button className="icon-btn icon-btn--danger" onClick={() => remove(i)} aria-label="Delete milestone" title="Delete">{Icon.trash({})}</button>
+                </div>
+              </div>
+              <div style={{ padding: 16 }}>
+                <div className="field-row field-row--2">
+                  <Field label="Title" id={`story-t-${i}`}><Input id={`story-t-${i}`} value={row.title || ""} onChange={(e) => patch(i, { title: e.target.value })} placeholder="How we met" /></Field>
+                  <Field label="Year or date" id={`story-y-${i}`} hint="Optional"><Input id={`story-y-${i}`} value={row.year || ""} onChange={(e) => patch(i, { year: e.target.value })} placeholder="2018" /></Field>
+                </div>
+                <Field label="Description" id={`story-d-${i}`}><Textarea id={`story-d-${i}`} rows={3} value={row.desc || ""} onChange={(e) => patch(i, { desc: e.target.value })} placeholder="A rainy bookshop in Brooklyn and one shared umbrella." /></Field>
+                <ImageUploadField purpose="story" ratio="4 / 3" label="Photo" value={row.img} onChange={(v) => patch(i, { img: v })} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <SaveFooter />
+    </div>
+  );
+}
+
 export function SettingsAdmin() {
   const { settings, story } = useStore();
   const f = settings;
@@ -2964,6 +3018,7 @@ export function MusicAdmin() {
 export const ADMIN_TABS = [
   { key: "dashboard", label: "Dashboard", icon: "grid" },
   { key: "home", label: "Home", icon: "home" },
+  { key: "story", label: "Our Story", icon: "heart" },
   { key: "rsvps", label: "RSVPs", icon: "mail" },
   // Media/Gallery shelved for now — re-add when gallery ships (see DISABLED_MODULES).
   // { key: "media", label: "Media", icon: "camera" },
@@ -3361,6 +3416,7 @@ export function AdminApp() {
           {activeTab === "schedule" && <ScheduleAdmin />}
           {activeTab === "quiz" && <QuizAdmin />}
           {activeTab === "details" && <DetailsAdmin />}
+          {activeTab === "story" && <StoryAdmin />}
           {activeTab === "venue" && <VenueAdmin />}
           {activeTab === "qr" && <QrAdmin />}
           {activeTab === "settings" && <SettingsAdmin />}
