@@ -88,6 +88,16 @@ export async function onRequestGet(context) {
   const acct = env.CF_ACCOUNT_ID || "4acf69efbeed54838dc0d5f004769933";
   const zone = env.CF_ZONE_ID || "3de2f4733d9e76517db51bf1a44314a2";
 
+  // Plan limits — CF/Supabase expose no "your plan's quota" API, so these are
+  // dashboard-adjustable Pages vars with the current plans as defaults
+  // (Workers Paid 10M req/mo, Pages 500 builds/mo, R2 free 10 GB, Supabase free
+  // 500 MB). Change a var after a plan upgrade; applies on the next deploy.
+  const envNum = (v, dflt) => (Number.isFinite(+v) && +v > 0 ? +v : dflt);
+  const LIMIT_REQ_MONTH = envNum(env.CF_LIMIT_REQ_MONTH, 10_000_000);
+  const LIMIT_BUILDS_MONTH = envNum(env.CF_LIMIT_BUILDS_MONTH, 500);
+  const LIMIT_R2_GB = envNum(env.CF_LIMIT_R2_GB, 10);
+  const LIMIT_SUPA_DB_MB = envNum(env.CF_LIMIT_SUPA_DB_MB, 500);
+
   // Serve the 5-min edge cache unless ?refresh=1 forces a fresh pull.
   const url = new URL(request.url);
   const force = url.searchParams.get("refresh") === "1";
@@ -167,11 +177,12 @@ export async function onRequestGet(context) {
   const payload = shapeHealth(data, {
     today: todayDate,
     monthStart,
-    limitMonth: 10_000_000,
+    limitMonth: LIMIT_REQ_MONTH,
     updatedAt: now.toISOString(),
   });
-  payload.builds = { month: buildsMonth, limit: 500 };            // null month => token lacks Pages:Read
-  payload.supa = { dbBytes, dbLimitBytes: 500 * 1024 * 1024 };    // free-tier 500 MB reference
+  payload.builds = { month: buildsMonth, limit: LIMIT_BUILDS_MONTH }; // null month => token lacks Pages:Read
+  payload.r2.limitBytes = LIMIT_R2_GB * 1024 ** 3;
+  payload.supa = { dbBytes, dbLimitBytes: LIMIT_SUPA_DB_MB * 1024 * 1024 };
 
   const res = json(payload);
   res.headers.set("cache-control", "max-age=300");
