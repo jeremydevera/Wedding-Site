@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { shapeHealth } from "../../../functions/api/_cf-health-shape.js";
+import { shapeHealth, countBuildsThisMonth } from "../../../functions/api/_cf-health-shape.js";
 
 // Fixture mirrors the REAL Cloudflare GraphQL response shape (aliased fields),
 // captured live from the account during design. Values trimmed for clarity.
@@ -105,5 +105,22 @@ describe("shapeHealth", () => {
     expect(empty.zone.reqToday).toBe(0);
     expect(empty.r2.objects).toBe(0);
     expect(empty.series).toHaveLength(7);
+  });
+});
+
+describe("countBuildsThisMonth", () => {
+  const deps = [
+    { created_on: "2026-07-07T21:09:43.985616Z" },
+    { created_on: "2026-07-07T09:00:00Z" },
+    { created_on: "2026-07-01T00:00:00Z" },   // first instant of the month counts
+    { created_on: "2026-06-30T23:59:59Z" },   // previous month — excluded
+    { created_on: "2026-05-12T10:00:00Z" },   // older — excluded
+  ];
+  it("counts only deployments created in the given month", () => {
+    expect(countBuildsThisMonth(deps, "2026-07-01")).toBe(3);
+  });
+  it("returns 0 for empty/missing lists", () => {
+    expect(countBuildsThisMonth([], "2026-07-01")).toBe(0);
+    expect(countBuildsThisMonth(undefined, "2026-07-01")).toBe(0);
   });
 });

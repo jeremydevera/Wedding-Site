@@ -6,7 +6,7 @@
 // /api/* via _routes.json. Result is edge-cached 5 min so CF's API is hit at most
 // ~once per 5 min no matter how many superadmins refresh.
 
-import { shapeHealth } from "./_cf-health-shape.js";
+import { shapeHealth, countBuildsThisMonth } from "./_cf-health-shape.js";
 
 const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json" } });
@@ -105,13 +105,56 @@ export async function onRequestGet(context) {
   const sinceDT = `${sinceDate}T00:00:00Z`;
   const ydayDate = ymd(now, -1);
 
-  let data;
+  // Pages builds this month — newest-first pages; stop at the first deployment
+  // older than the month start (or a 20-page safety cap ≈ the 500/mo allowance).
+  // Requires "Cloudflare Pages: Read" on the analytics token; returns null (tile
+  // shows a hint) until that permission exists. Soft-fail by design.
+  const fetchBuildsMonth = async () => {
+    try {
+      let count = 0;
+      for (let page = 1; page <= 20; page++) {
+        const r = await fetch(
+          `https://api.cloudflare.com/client/v4/accounts/${acct}/pages/projects/wedding-site/deployments?per_page=25&page=${page}`,
+          { headers: { authorization: `Bearer ${CF_TOKEN}` } },
+        );
+        if (!r.ok) return null; // 403 until token gets Pages:Read
+        const jr = await r.json();
+        const list = jr.result || [];
+        if (!list.length) break;
+        count += countBuildsThisMonth(list, monthStart);
+        if ((list[list.length - 1]?.created_on || "") < monthStart) break; // paged past the month
+      }
+      return count;
+    } catch { return null; }
+  };
+
+  // Supabase DB size — superadmin-only RPC (0025), called with the CALLER's JWT
+  // so the DB re-verifies the role itself. NULL/failure -> null (tile shows "—").
+  const fetchDbSize = async () => {
+    try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/db_size_bytes`, {
+        method: "POST",
+        headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}`, "content-type": "application/json" },
+        body: "{}",
+      });
+      if (!r.ok) return null;
+      const v = await r.json();
+      return Number.isFinite(+v) ? +v : null;
+    } catch { return null; }
+  };
+
+  let data, buildsMonth, dbBytes;
   try {
-    const resp = await fetch("https://api.cloudflare.com/client/v4/graphql", {
-      method: "POST",
-      headers: { authorization: `Bearer ${CF_TOKEN}`, "content-type": "application/json" },
-      body: JSON.stringify({ query: buildQuery({ acct, zone, sinceDT, sinceDate, ydayDate, todayDate }) }),
-    });
+    const [resp, builds, db] = await Promise.all([
+      fetch("https://api.cloudflare.com/client/v4/graphql", {
+        method: "POST",
+        headers: { authorization: `Bearer ${CF_TOKEN}`, "content-type": "application/json" },
+        body: JSON.stringify({ query: buildQuery({ acct, zone, sinceDT, sinceDate, ydayDate, todayDate }) }),
+      }),
+      fetchBuildsMonth(),
+      fetchDbSize(),
+    ]);
+    buildsMonth = builds; dbBytes = db;
     const jr = await resp.json();
     if (!resp.ok || (jr.errors && jr.errors.length) || !jr.data) {
       return json({ configured: true, error: "upstream" }); // soft — do not cache, do not leak details
@@ -127,6 +170,8 @@ export async function onRequestGet(context) {
     limitMonth: 10_000_000,
     updatedAt: now.toISOString(),
   });
+  payload.builds = { month: buildsMonth, limit: 500 };            // null month => token lacks Pages:Read
+  payload.supa = { dbBytes, dbLimitBytes: 500 * 1024 * 1024 };    // free-tier 500 MB reference
 
   const res = json(payload);
   res.headers.set("cache-control", "max-age=300");

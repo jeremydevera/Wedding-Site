@@ -153,6 +153,8 @@ export function CloudflareHealth() {
           <Stat label="R2 ops" value={nfc(data.r2?.opsToday)} sub="reads + writes today" icon="download" accent="amber" />
           <Stat label="Cache hit" value={`${data.zone?.cacheHitPct ?? 0}%`} sub={`${nfc(data.zone?.reqToday)} edge req today`} icon="check" accent="success" />
           <Stat label="5xx errors" value={nf(data.zone?.err5xx)} sub="server errors today" icon="bell" accent="amber" />
+          <Stat label="Builds" value={data.builds?.month == null ? "—" : nfc(data.builds.month)} sub={data.builds?.month == null ? "token needs Pages: Read" : `of ${nf(data.builds?.limit || 500)} this month`} icon="calendar" accent="purple" />
+          <Stat label="Supabase DB" value={data.supa?.dbBytes == null ? "—" : fmtBytes(data.supa.dbBytes)} sub={`of ${fmtBytes(data.supa?.dbLimitBytes || 524288000)} free tier`} icon="book" accent="info" />
         </div>
 
         {/* 7-day trend */}

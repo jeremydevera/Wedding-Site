@@ -34,6 +34,15 @@ function dateSeries(today, days) {
   return out;
 }
 
+// Count Pages deployments created on/after the month start (YYYY-MM-01). Both
+// production and preview builds count toward the 500-builds/month allowance.
+// ISO created_on timestamps compare correctly against "YYYY-MM-01" lexicographically.
+export function countBuildsThisMonth(deployments, monthStart) {
+  let n = 0;
+  for (const d of deployments || []) if ((d?.created_on || "") >= monthStart) n++;
+  return n;
+}
+
 export function shapeHealth(result, opts = {}) {
   const {
     today,
