@@ -461,17 +461,14 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 
 .story-row { display: grid; grid-template-columns: 1fr; gap: 26px; align-items: center; margin-bottom: 72px; position: relative; }
 .story-row:last-child { margin-bottom: 0; }
-/* Dot on the rail at each milestone; pops (scale-bounce) as the row enters view. */
-.story-dot { position: absolute; top: -46px; left: 50%; z-index: 1; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 16%, transparent); transform: translateX(-50%) scale(0); }
-.story-row.is-in .story-dot { animation: story-dot-pop .55s cubic-bezier(.2, 1.5, .45, 1) .08s forwards; }
-@keyframes story-dot-pop {
-  0% { transform: translateX(-50%) scale(0); }
-  70% { transform: translateX(-50%) scale(1.25); }
-  100% { transform: translateX(-50%) scale(1); }
-}
+/* Dot on the rail at each milestone. Starts collapsed; POPS (scale bounce via
+   the overshoot easing) the instant the drawn line's playhead reaches it — the
+   row gets .dot-on from StoryPage's scroll handler. Un-pops when scrolled back
+   above, so dots track the line both ways. */
+.story-dot { position: absolute; top: -46px; left: 50%; z-index: 2; width: 15px; height: 15px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 16%, transparent); transform: translateX(-50%) scale(0); transition: transform .5s cubic-bezier(.2, 1.6, .4, 1); }
+.story-row.dot-on .story-dot { transform: translateX(-50%) scale(1); }
 @media (prefers-reduced-motion: reduce) {
-  .story-dot { transform: translateX(-50%) scale(1); }
-  .story-row.is-in .story-dot { animation: none; }
+  .story-dot { transition: none; }
   .story-rail__fill { transition: none; }
 }
 /* Mobile: Our Story scrolls like a vertical carousel — each milestone fills
