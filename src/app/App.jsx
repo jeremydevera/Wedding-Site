@@ -16,6 +16,7 @@ import { GuestbookPage, QuizPage } from "@/features/social.jsx";
 import { MusicMount } from "@/features/music.jsx";
 import { AdminApp, ImageUploadField } from "@/admin/manage.jsx";
 import { ApplyWizard } from "@/admin/apply.jsx";
+import { RoadToForeverSite } from "@/features/roadtoforever.jsx";
 import { hasSection } from "@/config/eventTypes.js";
 import { moduleEnabled, moduleLabel } from "@/lib/roles.js";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
@@ -458,6 +459,11 @@ export function App() {
   // direct /story link): a nav-section route that the active event type doesn't
   // list is blocked too, matching visibleNav. Auxiliary routes (upload,
   // video-message) aren't event-type sections, so they only check the module flag.
+  // Bespoke single-page theme: render the whole custom template, no site nav.
+  if (!isAdmin && settings.theme === "roadtoforever") {
+    return (<><RoadToForeverSite /><ToastHost /><ConfirmHost /></>);
+  }
+
   const isNavSection = NAV_LINKS.some((l) => l.key === route && l.key !== "home");
   const routeBlocked = route !== "home" && route !== "admin" &&
     (!moduleEnabled(settings.modules, route) || (isNavSection && !hasSection(settings.eventType, route)));

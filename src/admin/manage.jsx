@@ -18,6 +18,7 @@ import { BRAND_NAME } from "@/config/site.js";
 import { visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel, moduleEnabled, OWNER_EDIT_HOME, OWNER_EDIT_TABS } from "@/lib/roles.js";
 import { MAP_STYLES, mapStyleKey, mapStyleFilter } from "@/lib/mapStyles.js";
 import { ClientsAdmin, R2LibraryAdmin, SuperOverview } from "@/admin/superadmin.jsx";
+import { CloudflareHealth } from "@/admin/CloudflareHealth.jsx";
 import { LocationPicker } from "@/ui/location-picker.jsx";
 import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
 import { MediaPickerModal } from "@/admin/MediaPicker.jsx";
@@ -2513,6 +2514,11 @@ export function HomeAdmin() {
                 <Field label="Partner A" id="s-a"><Input id="s-a" value={f.partnerA} onChange={set("partnerA")} /></Field>
                 <Field label="Partner B" id="s-b"><Input id="s-b" value={f.partnerB} onChange={set("partnerB")} /></Field>
               </div>
+              {f.theme === "roadtoforever" && (
+                <Field label="Hero eyebrow (script line)" id="s-eyebrow" hint="The script line above your names on the “Road to Forever” theme — e.g. “Road to Forever with”.">
+                  <Input id="s-eyebrow" value={f.heroEyebrow} onChange={set("heroEyebrow")} />
+                </Field>
+              )}
               <div className="field-row field-row--2">
                 <Field label="Wedding date & time" hint="Drives the countdown. Leave blank to hide the countdown." id="s-date"><DateTimeInput id="s-date" value={f.weddingDate} onChange={(e) => { const v = e.target.value; const patch = { weddingDate: v }; if (!f.weddingDateLabel || f.weddingDateLabel === fmtWeddingLabel(f.weddingDate)) patch.weddingDateLabel = fmtWeddingLabel(v); Store.updateSettings(patch); }} /></Field>
                 <Field label="Display date label" id="s-datel" hint="The date text shown on the site. Leave blank to hide it."><Input id="s-datel" value={f.weddingDateLabel} onChange={set("weddingDateLabel")} /></Field>
@@ -3462,6 +3468,7 @@ export function AdminApp() {
           {activeTab === "overview" && <SuperOverview />}
           {activeTab === "clients" && <ClientsAdmin />}
           {activeTab === "r2media" && !clientId && <R2LibraryAdmin />}
+          {activeTab === "health" && !clientId && <CloudflareHealth />}
           </AdminSaveCtx.Provider>
           {/* Footer: a clear end-of-content marker at the bottom of the scroll. */}
           <footer className="admin__footer">

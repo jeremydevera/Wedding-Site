@@ -300,6 +300,30 @@ export const THEMES = {
       "--hero-tint": "oklch(0.3 0.06 126 / 0.46)",
     },
   },
+  // Hidden design-only theme (NOT listed in eventTypes.themes, so it never
+  // appears in the /apply wizard or the demo dropdown). Bespoke full-page
+  // template rendered by theme === "roadtoforever". Applied to sandbox.
+  roadtoforever: {
+    label: "Road to Forever",
+    blurb: "Burgundy, rust and warm cream. Editorial wedding with full-bleed photography.",
+    vars: {
+      "--bg": "#f1e8d7",
+      "--surface": "#f6efe0",
+      "--surface-2": "#e9dcc4",
+      "--ink": "#3b1e14",
+      "--ink-soft": "#6a4a38",
+      "--muted": "#8a6f57",
+      "--line": "#d8c6aa",
+      "--accent": "#b0472c",
+      "--accent-soft": "#e7c9ba",
+      "--accent-ink": "#f6efe0",
+      "--gold": "#b98a4b",
+      "--font-display": "'Cormorant Garamond', serif",
+      "--font-body": "'Jost', sans-serif",
+      "--radius": "4px",
+      "--hero-tint": "rgba(66,5,8,0.5)",
+    },
+  },
 };
 
 export const FONT_OPTIONS = {
@@ -338,11 +362,13 @@ export const THEME_FONTS = {
   champagne:  { display: "Italiana",            body: "Jost" },
   envelope:   { display: "Cormorant Garamond", body: "EB Garamond" },
   glass:      { display: "Jost",                body: "Nunito Sans" },
+  roadtoforever: { display: "Cormorant Garamond", body: "Jost" },
 };
 // Per-theme button shape
 export const THEME_BTN = {
   classic: "4px", classic2: "0px", classic3: "2px", noir: "0px", garden: "999px", blush: "999px", dusk: "6px",
   burgundy: "0px", lavender: "999px", emerald: "2px", terracotta: "12px", champagne: "0px", envelope: "2px", glass: "999px",
+  roadtoforever: "2px",
 };
 
 // Apply a theme + optional tweak overrides ({accent, gold, displayFont, bodyFont,
