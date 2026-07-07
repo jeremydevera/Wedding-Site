@@ -12,11 +12,17 @@ Claude test run. Done items stay here as the permanent history.
 
 ## Next IDs
 - Next Bug ID: **0008**
-- Next Enhancement ID: **0013**
+- Next Enhancement ID: **0014**
 
 ---
 
 ## Pending
+
+### Enhancement ID: 0013 — Crop for MP4 (video) media — envelope frame + track covers
+- **Severity:** P3 · **Status:** Pending · **Added:** 2026-07-07 (requested by Jeremy)
+- **Where:** Admin → Settings → Theme → Envelope Frame Photo · Home → Music playlist → Edit track → Cover image
+- **Action:** MP4s upload as-is with no crop step (canvas CropModal can't re-encode video). Jeremy wants to crop videos too — position/zoom the MP4 inside the oval frame / square cover like images.
+- **Plan:** No re-encode needed: reuse the CropModal pan/zoom UI over a paused `<video>` frame, but store crop PARAMS (`{x, y, zoom}`) in settings (e.g. `frameImageCrop`, track `artCrop`) instead of exporting pixels. Renderers apply the params as a CSS transform on the `<video>` inside its clipping box. GIFs keep the current behavior (crop flattens); videos get non-destructive param crop.
 
 ### Enhancement ID: 0012 — Unify all Access settings into one shared source
 - **Severity:** P3 · **Status:** Pending · **Added:** 2026-07-07 (requested by Jeremy)
