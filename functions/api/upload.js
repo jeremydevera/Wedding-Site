@@ -5,7 +5,13 @@
 // served back by functions/r2/[[path]].js — no public bucket / custom domain
 // needed. Scoped to /api/* via public/_routes.json so the SPA is untouched.
 
-const MAX_BYTES = 25 * 1024 * 1024; // 25 MB per file
+// Per-file caps by media kind: images stay small (downloaded by every guest);
+// audio/video get room for real songs and clips. Both are far under the
+// platform's ~100MB request ceiling.
+const CAP_IMAGE = 25 * 1024 * 1024;   // 25 MB
+const CAP_AV = 100 * 1024 * 1024;     // 100 MB (audio + video)
+const capFor = (t) => (/^(audio|video)\//.test(String(t || "")) ? CAP_AV : CAP_IMAGE);
+const capLabel = (cap) => `${Math.round(cap / 1048576)}MB`;
 const TYPE_OK = /^(audio\/|image\/|video\/)/;
 const SCOPES = new Set(["owner", "guest"]);
 const PURPOSES = new Set(["hero", "attire", "story", "frame", "envbg", "playlist", "trackart", "gallery", "message", "misc"]);
@@ -67,7 +73,7 @@ function capStream(stream, max) {
     transform(chunk, controller) {
       total += chunk.byteLength;
       if (total > max) {
-        controller.error(new Error("source too large (max 25MB)"));
+        controller.error(new Error(`source too large (max ${capLabel(max)})`));
         return;
       }
       controller.enqueue(chunk);
@@ -120,7 +126,8 @@ export async function onRequestPost(context) {
   const file = form.get("file");
   const sourceUrl = form.get("sourceUrl");
   if (file && typeof file !== "string") {
-    if (file.size > MAX_BYTES) return json({ error: "file too large (max 25MB)" }, 413);
+    const cap = capFor(file.type);
+    if (file.size > cap) return json({ error: `file too large (max ${capLabel(cap)})` }, 413);
     type = file.type || "application/octet-stream";
     name = file.name || "file";
     body = file.stream();
@@ -141,14 +148,15 @@ export async function onRequestPost(context) {
     try { src = await fetch(sourceUrl, { redirect: "manual" }); } catch { return json({ error: "source fetch failed" }, 502); }
     if (src.status >= 300 && src.status < 400) return json({ error: "source redirect not allowed" }, 502);
     if (!src.ok) return json({ error: "source not reachable" }, 502);
-    const len = Number(src.headers.get("content-length") || 0);
-    if (len && len > MAX_BYTES) return json({ error: "source too large (max 25MB)" }, 413);
     type = src.headers.get("content-type") || "application/octet-stream";
+    const cap = capFor(type);
+    const len = Number(src.headers.get("content-length") || 0);
+    if (len && len > cap) return json({ error: `source too large (max ${capLabel(cap)})` }, 413);
     name = (sourceUrl.split("/").pop() || "file").split("?")[0];
     // Enforce the byte cap on the stream itself — a source that omits
     // Content-Length (len === 0) would otherwise bypass the check above and
-    // stream unbounded into R2. capStream errors the put past MAX_BYTES.
-    body = src.body ? capStream(src.body, MAX_BYTES) : src.body;
+    // stream unbounded into R2. capStream errors the put past the cap.
+    body = src.body ? capStream(src.body, cap) : src.body;
   } else {
     return json({ error: "no file or sourceUrl" }, 400);
   }
@@ -166,9 +174,9 @@ export async function onRequestPost(context) {
     await env.MEDIA.put(key, body, { httpMetadata: { contentType: type } });
   } catch (e) {
     const msg = String((e && e.message) || e);
-    // capStream aborts the put once the source exceeds MAX_BYTES; surface that
+    // capStream aborts the put once the source exceeds its cap; surface that
     // as 413 (payload too large) rather than a generic 500.
-    if (/too large/i.test(msg)) return json({ error: "source too large (max 25MB)" }, 413);
+    if (/too large/i.test(msg)) return json({ error: msg }, 413);
     return json({ error: "upload failed", detail: msg }, 500);
   }
 
