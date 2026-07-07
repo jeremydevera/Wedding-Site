@@ -161,7 +161,10 @@ export function Nav({ route }) {
           {/* RSVP button shows on every site. Demo's only extra is the theme +
               decoration pickers beside it. */}
           <Button className="nav__cta" variant="primary" size="sm" onClick={() => go("rsvp")}>RSVP</Button>
-          {isDemo && <><ThemePicker />{!isPremiumTheme(settings.theme) && <DecorPicker />}</>}
+          {isDemo && <>
+            <Button className="nav__cta" variant="ghost" size="sm" onClick={() => { window.location.href = "https://celebrately.us/apply"; }}>Register</Button>
+            <ThemePicker />{!isPremiumTheme(settings.theme) && <DecorPicker />}
+          </>}
           <button className="nav__burger" onClick={() => setDrawer(true)} aria-label="Menu">{Icon.menu({})}</button>
         </div>
       </div>
@@ -183,6 +186,11 @@ export function Nav({ route }) {
             <div style={{ marginTop: 20 }}>
               <Button variant="primary" block onClick={() => { go("rsvp"); setDrawer(false); }}>RSVP Now</Button>
             </div>
+            {isDemo && (
+              <div style={{ marginTop: 10 }}>
+                <Button variant="ghost" block onClick={() => { window.location.href = "https://celebrately.us/apply"; }}>Register — get your own site</Button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -193,6 +201,7 @@ export function Nav({ route }) {
         <div className="demo-trybar">
           <ThemePicker block />
           {!isPremiumTheme(settings.theme) && <DecorPicker block />}
+          <Button variant="primary" size="sm" onClick={() => { window.location.href = "https://celebrately.us/apply"; }}>Register</Button>
         </div>
       )}
     </>
