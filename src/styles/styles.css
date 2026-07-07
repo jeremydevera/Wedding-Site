@@ -505,22 +505,24 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
   }
 }
 @media (min-width: 760px) {
-  /* Desktop: CENTERED rail; each milestone's photo + text stay together as one
-     card that alternates sides (mobile keeps the left rail above). The photo and
-     text share the SAME column so they're never split across the line. */
+  /* Desktop: CENTERED rail; text on one side, picture on the other, alternating
+     each row (mobile keeps the left rail above). */
   .story-timeline { padding-left: 0; }
   .story-rail, .story-rail__fill { left: 50%; }
-  .story-row { grid-template-columns: 1fr 1fr; column-gap: 44px; row-gap: 14px; }
-  .story-row__media, .story-row__text { grid-column: 2; }                                   /* odd → right side */
-  .story-row:nth-child(even) .story-row__media, .story-row:nth-child(even) .story-row__text { grid-column: 1; } /* even → left side */
-  /* Dot back on the centered rail: reach the center from the card's inner edge
-     (half the 44px column gap = 22px). Right-side cards nudge left, left-side
-     cards to their right edge. */
-  .story-row:nth-child(odd) .story-dot { left: -22px; }
-  .story-row:nth-child(even) .story-dot { left: calc(100% + 22px); }
-  /* Give each milestone real vertical room so the line visibly DRAWS and dots
-     pop one-by-one as you scroll (mobile gets this from the 80svh snap rows). */
-  .story-row { min-height: 66vh; align-content: center; margin-bottom: 40px; }
+  .story-row { grid-template-columns: 1fr 1fr; column-gap: 56px; align-items: center; min-height: 66vh; margin-bottom: 40px; }
+  /* odd: text left, picture right */
+  .story-row__text  { grid-column: 1; }
+  .story-row__media { grid-column: 2; }
+  /* even: picture left, text right */
+  .story-row:nth-child(even) .story-row__text  { grid-column: 2; }
+  .story-row:nth-child(even) .story-row__media { grid-column: 1; }
+  /* Dot on the centered rail, reached from the text block's inner edge (half the
+     56px gap = 28px): text-left rows go off its right edge, text-right off left. */
+  .story-row:nth-child(odd) .story-dot  { left: calc(100% + 28px); }
+  .story-row:nth-child(even) .story-dot { left: -28px; }
+  /* Media sits toward the rail so it's not marooned at the far edge. */
+  .story-row__media { justify-self: end; }
+  .story-row:nth-child(even) .story-row__media { justify-self: start; }
 }
 /* Shrink the photo/video so there's room for the rail and the layout stays airy. */
 .story-row__media { max-width: 440px; }
