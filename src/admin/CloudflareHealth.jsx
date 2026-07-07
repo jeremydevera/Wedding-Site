@@ -36,6 +36,30 @@ const barColor = (pct) => (pct > 85 ? "#c0392b" : pct > 60 ? "#c98a1a" : "#2e7d5
 // shows how much of that free allowance is left.
 const R2_FREE_BYTES = 10 * 1024 ** 3;
 
+// Usage bar for any metric with a hard or free-tier limit: label + numbers on
+// top, colored fill (green→amber→red as it approaches the cap) underneath.
+// `used == null` renders an empty track with a note (e.g. missing permission).
+function LimitBar({ label, used, limit, fmt, suffix, detail, note }) {
+  const has = used != null && limit > 0;
+  const pct = has ? Math.round((used / limit) * 1000) / 10 : 0;
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, fontSize: 13, marginBottom: 6, flexWrap: "wrap" }}>
+        <span style={{ fontWeight: 600 }}>
+          {label}
+          {detail && <span style={{ color: "var(--muted)", fontWeight: 500 }}> · {detail}</span>}
+        </span>
+        <span style={{ color: "var(--muted)" }}>
+          {note ? note : has ? <>{fmt(used)} / {fmt(limit)} <span style={{ opacity: .8 }}>({pct}% of {suffix})</span></> : "—"}
+        </span>
+      </div>
+      <div style={{ height: 12, borderRadius: 6, background: "var(--line, #eee)", overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${has ? Math.min(100, pct) : 0}%`, background: barColor(pct), transition: "width .3s" }} />
+      </div>
+    </div>
+  );
+}
+
 // Same KPI card design as SuperOverview / the client dashboard tiles
 // (chip icon, bold value, dashed footer) so Health matches the console look.
 function Stat({ label, value, sub, icon = "grid", accent = "info" }) {
@@ -128,33 +152,25 @@ export function CloudflareHealth() {
       </div>
     );
   } else if (data) {
-    const pct = data.pctMonth || 0;
     const upstream = data.error === "upstream";
     body = (
       <div className="panel__body" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
         {upstream && <div style={{ background: "#fdf3e7", border: "1px solid #eecfa1", borderRadius: 8, padding: "8px 12px", fontSize: 13 }}>Cloudflare returned an error — showing what we have. Try Refresh.</div>}
 
-        {/* Month usage vs Workers limit */}
-        <div>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 6 }}>
-            <span style={{ fontWeight: 600 }}>Router requests — month to date</span>
-            <span style={{ color: "var(--muted)" }}>{nf(data.router?.month)} / {nf(data.limitMonth)} ({pct}%)</span>
-          </div>
-          <div style={{ height: 12, borderRadius: 6, background: "var(--line, #eee)", overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${Math.min(100, pct)}%`, background: barColor(pct), transition: "width .3s" }} />
-          </div>
+        {/* Everything with a hard/free-tier limit renders as a usage bar. */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <LimitBar label="Router requests" detail={`${nfc(data.router?.today)} today`} used={data.router?.month} limit={data.limitMonth} fmt={nf} suffix="this month" />
+          <LimitBar label="Pages builds" used={data.builds?.month} limit={data.builds?.limit || 500} fmt={nf} suffix="this month" note={data.builds?.month == null ? "token needs Pages: Read" : null} />
+          <LimitBar label="R2 storage" detail={`${nf(data.r2?.objects)} objects`} used={data.r2?.storageBytes} limit={R2_FREE_BYTES} fmt={fmtBytes} suffix="free tier" />
+          <LimitBar label="Supabase database" used={data.supa?.dbBytes} limit={data.supa?.dbLimitBytes || 524288000} fmt={fmtBytes} suffix="free tier" note={data.supa?.dbBytes == null ? "unavailable" : null} />
         </div>
 
-        {/* Today's split — same KPI tile grid as the Overview tab */}
+        {/* No-limit metrics stay KPI tiles (same design as the Overview tab). */}
         <div className="sa-stats" style={{ marginBottom: 0 }}>
-          <Stat label="Router" value={nfc(data.router?.today)} sub={`today · ${nfc(data.router?.month)} this month`} icon="grid" accent="info" />
           <Stat label="Functions" value={nfc(data.functions?.today)} sub={`today · ${nfc(data.functions?.month)} this month`} icon="gear" accent="success" />
-          <Stat label="R2 storage" value={fmtBytes(data.r2?.storageBytes)} sub={`${nf(data.r2?.objects)} objects · ${fmtBytes(Math.max(0, R2_FREE_BYTES - (data.r2?.storageBytes || 0)))} free`} icon="upload" accent="purple" />
           <Stat label="R2 ops" value={nfc(data.r2?.opsToday)} sub="reads + writes today" icon="download" accent="amber" />
           <Stat label="Cache hit" value={`${data.zone?.cacheHitPct ?? 0}%`} sub={`${nfc(data.zone?.reqToday)} edge req today`} icon="check" accent="success" />
           <Stat label="5xx errors" value={nf(data.zone?.err5xx)} sub="server errors today" icon="bell" accent="amber" />
-          <Stat label="Builds" value={data.builds?.month == null ? "—" : nfc(data.builds.month)} sub={data.builds?.month == null ? "token needs Pages: Read" : `of ${nf(data.builds?.limit || 500)} this month`} icon="calendar" accent="purple" />
-          <Stat label="Supabase DB" value={data.supa?.dbBytes == null ? "—" : fmtBytes(data.supa.dbBytes)} sub={`of ${fmtBytes(data.supa?.dbLimitBytes || 524288000)} free tier`} icon="book" accent="info" />
         </div>
 
         {/* 7-day trend */}
