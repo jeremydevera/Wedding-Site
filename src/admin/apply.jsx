@@ -6,7 +6,44 @@ import { themesForEvent, DEFAULT_EVENT_TYPE } from "@/config/eventTypes.js";
 import { Button, Field, FloatingDecor, Icon, Input, Select } from "@/ui/components.jsx";
 import { LocationPicker } from "@/ui/location-picker.jsx";
 import { Logo } from "@/admin/core.jsx";
-const { useState, useEffect, useRef } = React;
+const { useState, useEffect, useRef, useCallback } = React;
+
+// Live theme simulator for the register wizard: embeds the real DEMO site
+// (same-origin via ?client=demo so the postMessage preview bridge is allowed)
+// and pushes the picked theme + falling petals — the exact look a new site
+// opens with. Scaled down to fit; pointer-events off (preview only).
+function ApplyThemePreview({ theme }) {
+  const ref = useRef(null);
+  const wrapRef = useRef(null);
+  const [scale, setScale] = useState(0.4);
+  const baseW = 1280, baseH = 800, MAX_H = 440;
+  useEffect(() => {
+    const el = wrapRef.current; if (!el) return;
+    const measure = () => { const w = el.clientWidth || baseW; setScale(Math.min(w / baseW, MAX_H / baseH, 1)); };
+    measure();
+    const ro = new ResizeObserver(measure); ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const post = useCallback(() => {
+    const w = ref.current && ref.current.contentWindow;
+    if (w) w.postMessage({ type: "evermore:preview", theme, decorOn: true, decorStyle: "petals" }, window.location.origin);
+  }, [theme]);
+  useEffect(() => { post(); }, [post]);
+  useEffect(() => {
+    const onReady = (e) => { if (e.origin === window.location.origin && e.data && e.data.type === "evermore:preview-ready") post(); };
+    window.addEventListener("message", onReady);
+    return () => window.removeEventListener("message", onReady);
+  }, [post]);
+  return (
+    <div ref={wrapRef} style={{ width: "100%", marginTop: 14 }}>
+      <div style={{ width: Math.round(baseW * scale), height: Math.round(baseH * scale), margin: "0 auto", overflow: "hidden", borderRadius: 12, border: "1px solid var(--line)", boxShadow: "0 8px 28px -14px rgba(0,0,0,.35)", background: "#fff" }}>
+        <iframe ref={ref} title="Live theme preview" src="/?preview=1&client=demo" loading="lazy" onLoad={post}
+          style={{ width: baseW, height: baseH, border: 0, transform: `scale(${scale})`, transformOrigin: "top left", pointerEvents: "none" }} />
+      </div>
+      <p style={{ textAlign: "center", color: "var(--muted)", fontSize: 12, margin: "8px 0 0" }}>Live sample site · updates as you pick a theme</p>
+    </div>
+  );
+}
 
 // ============================================================================
 // apply.jsx — public prospect intake wizard (/apply on the apex hub).
@@ -270,22 +307,7 @@ export function ApplyWizard({ initial = null, onSave, onCancel }) {
             {themes.map((key) => <option key={key} value={key}>{THEMES[key].label}</option>)}
           </Select>
         </Field>
-        {(() => {
-          const t = THEMES[f.theme] || THEMES.classic;
-          const v = t.vars;
-          return (
-            <div style={{ marginTop: 14, borderRadius: 12, overflow: "hidden", border: "1px solid var(--line)", background: v["--bg"] }}>
-              <div style={{ padding: "30px 20px", textAlign: "center" }}>
-                <div style={{ letterSpacing: ".2em", textTransform: "uppercase", fontSize: 11.5, color: v["--muted"] }}>{t.label} — preview</div>
-                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 36, lineHeight: 1.1, color: v["--ink"], margin: "8px 0 2px" }}>
-                  {(f.partnerA || "Romeo")} <span style={{ color: v["--accent"] }}>&amp;</span> {(f.partnerB || "Juliet")}
-                </div>
-                <div style={{ width: 46, height: 2, background: v["--accent"], margin: "12px auto" }} />
-                <span style={{ display: "inline-block", padding: "9px 20px", borderRadius: 6, background: v["--accent"], color: v["--accent-ink"], fontSize: 13, letterSpacing: ".02em" }}>Respond now</span>
-              </div>
-            </div>
-          );
-        })()}
+        <ApplyThemePreview theme={f.theme} />
       </>
     ) },
     { title: "Where's the celebration?", short: "Venue", sub: "Pin the venue — guests get one-tap directions from your site.", body: (
