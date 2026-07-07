@@ -12,11 +12,17 @@ Claude test run. Done items stay here as the permanent history.
 
 ## Next IDs
 - Next Bug ID: **0008**
-- Next Enhancement ID: **0012**
+- Next Enhancement ID: **0013**
 
 ---
 
 ## Pending
+
+### Enhancement ID: 0012 — Unify all Access settings into one shared source
+- **Severity:** P3 · **Status:** Pending · **Added:** 2026-07-07 (requested by Jeremy)
+- **Where:** Admin → Settings → Access · Superadmin → Edit client → Access
+- **Action:** Only owner-edit grants are single-sourced. Other Access settings (modules, moderation toggles, site-wide switches) are duplicated between `SettingsAdmin` (manage.jsx) and `AccessFields` (superadmin.jsx) — a new one must be added in both.
+- **Plan:** See [enhancements/0012-unify-access-settings-one-source.md](enhancements/0012-unify-access-settings-one-source.md). Make `AccessFields` the single shared Access UI (client Settings renders it too), or extract the field list to roles.js like the grants.
 
 ### Enhancement ID: 0008 — Server-side notification read/cleared state (multi-device sync)
 - **Severity:** P3 · **Status:** Pending · **Added:** 2026-07-03 (requested by Jeremy)
