@@ -130,9 +130,7 @@ export function AdminLogin({ onAuthed }) {
         ) : (
           <div className="signin__brand"><Logo size={30} /><span className="signin__word">Celebrately</span></div>
         )}
-        {isClient
-          ? <button className="signin__back" onClick={() => go("home")}>← Back to website</button>
-          : <a className="signin__back" style={{ display: "inline-block", textDecoration: "none" }} href="https://demo.celebrately.us/">View demo site →</a>}
+        {isClient && <button className="signin__back" onClick={() => go("home")}>← Back to website</button>}
       </header>
       <div className="signin__center">
         <form className="signin__form" onSubmit={submit} noValidate>
@@ -156,9 +154,14 @@ export function AdminLogin({ onAuthed }) {
           <button type="submit" className="signin__btn" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
           {/* New-site requests go through the /apply approval flow */}
           {!isClient && (
-            <p style={{ textAlign: "center", fontSize: 13, color: "var(--sg-sub)", marginTop: 18 }}>
-              New here? <a href="/apply" style={{ color: "#1E5BD6", fontWeight: 600, textDecoration: "none" }}>Request your wedding site →</a>
-            </p>
+            <>
+              <p style={{ textAlign: "center", fontSize: 13, color: "var(--sg-sub)", marginTop: 18 }}>
+                New here? <a href="/apply" style={{ color: "#1E5BD6", fontWeight: 600, textDecoration: "none" }}>Request your wedding site →</a>
+              </p>
+              <p style={{ textAlign: "center", fontSize: 13, color: "var(--sg-sub)", marginTop: 6 }}>
+                Want a look first? <a href="https://demo.celebrately.us/" style={{ color: "#1E5BD6", fontWeight: 600, textDecoration: "none" }}>View the demo site →</a>
+              </p>
+            </>
           )}
         </form>
       </div>
