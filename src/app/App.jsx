@@ -1,7 +1,7 @@
 import React from "react";
 
 import { go } from "@/lib/nav.js";
-import { scrollToTop } from "@/lib/scroll.js";
+import { onSiteScroll, scrollOffset, scrollToTop } from "@/lib/scroll.js";
 import { Store, useStore } from "@/lib/store.jsx";
 import { loadClientData } from "@/lib/api.js";
 import { resolveSubdomain } from "@/lib/tenant.js";
@@ -100,6 +100,21 @@ const DECOR_OPTS = [
 export function Nav({ route }) {
   const { settings, auth, clientId } = useStore();
   const [drawer, setDrawer] = useState(false);
+  // Demo try-bar visibility: shown at rest and while scrolling DOWN, hidden
+  // while scrolling UP (owner request). The sealed envelope locks scrolling,
+  // so no events fire there and the bar stays visible.
+  const [barHidden, setBarHidden] = useState(false);
+  useEffect(() => {
+    let last = scrollOffset();
+    const onScroll = () => {
+      const y = scrollOffset();
+      const dy = y - last;
+      if (Math.abs(dy) < 6) return; // ignore jitter
+      setBarHidden(dy < 0 && y > 40); // up = hide (but never near the very top)
+      last = y;
+    };
+    return onSiteScroll(onScroll);
+  }, []);
   // Demo site (demo.<platform> / apex) is a theme showcase: swap the RSVP CTA for
   // a live theme picker so prospective clients can preview every design.
   // In the admin Theme picker the home page is embedded via /?preview — hide the
@@ -198,7 +213,7 @@ export function Nav({ route }) {
       {/* Demo showcase: a fixed bar so visitors can preview a theme + decoration
           immediately on mobile — even on the sealed envelope where the nav is hidden. */}
       {isDemo && (
-        <div className="demo-trybar">
+        <div className={"demo-trybar" + (barHidden ? " demo-trybar--hide" : "")}>
           <ThemePicker block />
           {!isPremiumTheme(settings.theme) && <DecorPicker block />}
           <Button className="demo-trybar__reg" variant="primary" size="sm" onClick={() => { window.location.href = "https://celebrately.us/apply"; }}>Register — get your own site</Button>

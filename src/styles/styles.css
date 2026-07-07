@@ -159,7 +159,9 @@ body.env-sealed main { padding-top: 0; }
   -webkit-transform: translateZ(0); transform: translateZ(0);
   -webkit-backface-visibility: hidden; backface-visibility: hidden;
 }
-.demo-trybar { flex-wrap: wrap; }
+.demo-trybar { flex-wrap: wrap; transition: transform .28s ease; }
+.demo-trybar--hide { transform: translateY(calc(100% + 24px)) translateZ(0); }
+@media (prefers-reduced-motion: reduce) { .demo-trybar { transition: none; } }
 .demo-trybar .nav__themepick { display: flex; flex: 1; min-width: 0; }
 /* Register CTA gets its own full-width row so the selects above keep enough
    width to show their value without clipping. */
