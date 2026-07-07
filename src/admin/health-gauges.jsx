@@ -33,8 +33,7 @@ function ringConfig(pct, has) {
       datasets: [{
         data: [used, 100 - used],
         backgroundColor: [usageColor(pct), trackColor],
-        borderWidth: 0,
-        borderRadius: used > 0 && used < 100 ? 8 : 0, // rounded arc ends
+        borderWidth: 0, // square arc ends — rounded caps turn a tiny % into a blob
       }],
     },
     options: {
