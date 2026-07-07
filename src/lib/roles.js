@@ -28,19 +28,38 @@ export function visibleAdminTabs(role, allTabs, ownerEdit) {
     const homeGranted = HOME_EDIT_KEYS.some((k) => g[k] === true);
     const granted = new Set([
       ...(homeGranted ? ["home"] : []),
-      ...(g.schedule === true ? ["schedule"] : []),
-      ...(g.venue === true ? ["venue"] : []),
-      ...(g.details === true ? ["details"] : []),
+      // Standalone tab grants, straight from the one list — add to OWNER_EDIT_TABS
+      // and it's exposed here automatically (each key matches an ADMIN_TABS key).
+      ...OWNER_EDIT_TABS.filter((t) => g[t.k] === true).map((t) => t.k),
     ]);
     return allTabs.filter((t) => (!SUPERADMIN_ONLY.has(t.key) || granted.has(t.key)) && t.key !== "clients");
   }
   return [];
 }
 
-// Grant keys for the folders that live inside the Home tab — any one exposes
-// the Home tab to the owner (see visibleAdminTabs + HomeAdmin). Keep in sync
-// with the "Owner editing" toggles in Settings → Access.
-export const HOME_EDIT_KEYS = ["home", "maps", "timeline", "attire", "music", "entourage"];
+// ── Owner-edit grants — ONE source of truth ────────────────────────────────
+// Both grant editors (the client's Settings → Access panel AND the superadmin
+// Edit-client / Edit-request modals' AccessFields) render from these lists, and
+// visibleAdminTabs decides tab visibility from them. Add a grant HERE and it
+// shows in every editor and gates the right tab automatically.
+//
+// OWNER_EDIT_HOME = folders that live INSIDE the Home tab (any one exposes Home).
+// OWNER_EDIT_TABS = standalone top-level tabs; each key MUST match an ADMIN_TABS key.
+export const OWNER_EDIT_HOME = [
+  { k: "home", label: "Couple & Event + Invitation", desc: "Couple & event details and the invitation section." },
+  { k: "maps", label: "Google Maps", desc: "The home-page map and its pin." },
+  { k: "timeline", label: "Timeline", desc: "The home-page schedule-glimpse layout." },
+  { k: "attire", label: "Attire", desc: "The dress-code guide." },
+  { k: "music", label: "Music playlist", desc: "The home-page player and its tracks." },
+  { k: "entourage", label: "Entourage", desc: "Wedding-party groups and names." },
+];
+export const OWNER_EDIT_TABS = [
+  { k: "schedule", label: "Schedule", desc: "The Schedule tab (wedding-day timeline guests see)." },
+  { k: "venue", label: "Venue & Map", desc: "The Venue & Map tab (venue cards, map, directions)." },
+  { k: "details", label: "Details", desc: "The Details tab (info cards + FAQ guests see)." },
+];
+// Any Home-folder grant exposes the Home tab (derived, never hand-maintained).
+export const HOME_EDIT_KEYS = OWNER_EDIT_HOME.map((g) => g.k);
 
 export function canEnterAdmin(profile, currentClientId) {
   if (!profile) return false;

@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase.js";
 import { createOwner, updateOwnerEmail, deleteOwner } from "@/lib/auth.js";
 import { THEMES } from "@/themes";
 import { themesForEvent } from "@/config/eventTypes.js";
-import { moduleLabel, DISABLED_MODULES } from "@/lib/roles.js";
+import { moduleLabel, DISABLED_MODULES, OWNER_EDIT_HOME, OWNER_EDIT_TABS } from "@/lib/roles.js";
 import { PLATFORM_DOMAIN, clientUrl, isValidSubdomain } from "@/config/site.js"; // platform config → src/config/site.js
 import { Button, confirmDialog, Field, Icon, Input, Modal, Pager, SectionHead, Select, Textarea, toast, usePaged } from "@/ui/components.jsx";
 import { listMedia, deleteFromR2, listSiteRequests, approveSiteRequest, setSiteRequestStatus, updateSiteRequest, deleteSiteRequest } from "@/lib/api.js";
@@ -18,12 +18,9 @@ const { useState, useEffect, useRef } = React;
 
 const MODULES = ["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"];
 
-// Per-section owner-edit grants, mirrored from the client admin's Settings → Access.
-const ACCESS_HOME_GRANTS = [
-  ["home", "Couple & Event + Invitation"], ["maps", "Google Maps"], ["timeline", "Timeline"],
-  ["attire", "Attire"], ["music", "Music playlist"], ["entourage", "Entourage"],
-];
-const ACCESS_TAB_GRANTS = [["schedule", "Schedule"], ["venue", "Venue & Map"]];
+// Owner-edit grant lists come from the ONE source in roles.js
+// (OWNER_EDIT_HOME / OWNER_EDIT_TABS), so adding a grant there shows here AND in
+// the client's own Settings → Access, and gates the tab, with no duplication.
 
 // Shared "Access" tab body — features + moderation + owner-edit grants + toggles.
 // Used by BOTH the Edit-client modal and the Edit-request (wizard) modal so the
@@ -75,12 +72,12 @@ function AccessFields({ v, set, omit = [], passwordEnabled = true }) {
         </div>
         <div className="form-row__fields">
           <div style={{ fontSize: 12, letterSpacing: ".1em", textTransform: "uppercase", fontWeight: 600, color: "var(--ink-soft)", margin: "2px 0 4px" }}>Home tab folders</div>
-          {ACCESS_HOME_GRANTS.map(([k, l]) => (
-            <AdminToggle key={k} label={l} checked={v.ownerEdit?.[k] === true} onChange={(x) => setGrant(k, x)} />
+          {OWNER_EDIT_HOME.map((g) => (
+            <AdminToggle key={g.k} label={g.label} desc={g.desc} checked={v.ownerEdit?.[g.k] === true} onChange={(x) => setGrant(g.k, x)} />
           ))}
           <div style={{ fontSize: 12, letterSpacing: ".1em", textTransform: "uppercase", fontWeight: 600, color: "var(--ink-soft)", margin: "14px 0 4px" }}>Other tabs</div>
-          {ACCESS_TAB_GRANTS.map(([k, l], i) => (
-            <AdminToggle key={k} label={l} checked={v.ownerEdit?.[k] === true} onChange={(x) => setGrant(k, x)} noRule={i === ACCESS_TAB_GRANTS.length - 1} />
+          {OWNER_EDIT_TABS.map((g, i) => (
+            <AdminToggle key={g.k} label={g.label} desc={g.desc} checked={v.ownerEdit?.[g.k] === true} onChange={(x) => setGrant(g.k, x)} noRule={i === OWNER_EDIT_TABS.length - 1} />
           ))}
         </div>
       </div>

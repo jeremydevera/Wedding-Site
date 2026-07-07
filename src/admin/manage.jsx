@@ -15,7 +15,7 @@ import { headsOf } from "@/lib/rsvp.js";
 import { mediaUrl } from "@/lib/media.js";
 import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
-import { visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel, moduleEnabled } from "@/lib/roles.js";
+import { visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel, moduleEnabled, OWNER_EDIT_HOME, OWNER_EDIT_TABS } from "@/lib/roles.js";
 import { MAP_STYLES, mapStyleKey, mapStyleFilter } from "@/lib/mapStyles.js";
 import { ClientsAdmin, R2LibraryAdmin, SuperOverview } from "@/admin/superadmin.jsx";
 import { LocationPicker } from "@/ui/location-picker.jsx";
@@ -2205,19 +2205,9 @@ export function SettingsAdmin() {
         // standalone tabs. HOME_GRANTS keys mirror HomeAdmin's folder tabs.
         const oe = f.ownerEdit || {};
         const setGrant = (k, v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), [k]: v });
-        const HOME_GRANTS = [
-          { k: "home", label: "Couple & Event + Invitation", desc: "Couple & event details and the invitation section." },
-          { k: "maps", label: "Google Maps", desc: "The home-page map and its pin." },
-          { k: "timeline", label: "Timeline", desc: "The home-page schedule-glimpse layout." },
-          { k: "attire", label: "Attire", desc: "The dress-code guide." },
-          { k: "music", label: "Music playlist", desc: "The home-page player and its tracks." },
-          { k: "entourage", label: "Entourage", desc: "Wedding-party groups and names." },
-        ];
-        const TAB_GRANTS = [
-          { k: "schedule", label: "Schedule", desc: "The Schedule tab (wedding-day timeline guests see)." },
-          { k: "venue", label: "Venue & Map", desc: "The Venue & Map tab (venue cards, map, directions)." },
-          { k: "details", label: "Details", desc: "The Details tab (info cards + FAQ guests see)." },
-        ];
+        // ONE source (roles.js) — same lists the superadmin AccessFields uses.
+        const HOME_GRANTS = OWNER_EDIT_HOME;
+        const TAB_GRANTS = OWNER_EDIT_TABS;
         const allHomeOn = HOME_GRANTS.every((g) => oe[g.k] === true);
         const toggleAllHome = (v) => setKey("ownerEdit", { ...(f.ownerEdit || {}), ...Object.fromEntries(HOME_GRANTS.map((g) => [g.k, v])) });
         return (
