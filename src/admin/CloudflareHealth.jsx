@@ -32,6 +32,9 @@ function ago(iso) {
   return m < 60 ? `${m}m ago` : `${Math.floor(m / 60)}h ago`;
 }
 const barColor = (pct) => (pct > 85 ? "#c0392b" : pct > 60 ? "#c98a1a" : "#2e7d51");
+// R2 free tier includes 10 GB-month of storage (then $0.015/GB-mo) — the tile
+// shows how much of that free allowance is left.
+const R2_FREE_BYTES = 10 * 1024 ** 3;
 
 // Same KPI card design as SuperOverview / the client dashboard tiles
 // (chip icon, bold value, dashed footer) so Health matches the console look.
@@ -146,7 +149,7 @@ export function CloudflareHealth() {
         <div className="sa-stats" style={{ marginBottom: 0 }}>
           <Stat label="Router" value={nfc(data.router?.today)} sub={`today · ${nfc(data.router?.month)} this month`} icon="grid" accent="info" />
           <Stat label="Functions" value={nfc(data.functions?.today)} sub={`today · ${nfc(data.functions?.month)} this month`} icon="gear" accent="success" />
-          <Stat label="R2 storage" value={fmtBytes(data.r2?.storageBytes)} sub={`${nf(data.r2?.objects)} objects`} icon="upload" accent="purple" />
+          <Stat label="R2 storage" value={fmtBytes(data.r2?.storageBytes)} sub={`${nf(data.r2?.objects)} objects · ${fmtBytes(Math.max(0, R2_FREE_BYTES - (data.r2?.storageBytes || 0)))} free`} icon="upload" accent="purple" />
           <Stat label="R2 ops" value={nfc(data.r2?.opsToday)} sub="reads + writes today" icon="download" accent="amber" />
           <Stat label="Cache hit" value={`${data.zone?.cacheHitPct ?? 0}%`} sub={`${nfc(data.zone?.reqToday)} edge req today`} icon="check" accent="success" />
           <Stat label="5xx errors" value={nf(data.zone?.err5xx)} sub="server errors today" icon="bell" accent="amber" />
