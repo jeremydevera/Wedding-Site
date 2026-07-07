@@ -3,7 +3,7 @@ import { submitSiteRequest, checkRequestSubdomainFree } from "@/lib/api.js";
 import { THEMES } from "@/themes";
 import { isPremiumTheme } from "@/themes";
 import { themesForEvent, DEFAULT_EVENT_TYPE } from "@/config/eventTypes.js";
-import { Button, Field, Icon, Input, Select } from "@/ui/components.jsx";
+import { Button, Field, FloatingDecor, Icon, Input, Select } from "@/ui/components.jsx";
 import { LocationPicker } from "@/ui/location-picker.jsx";
 import { Logo } from "@/admin/core.jsx";
 const { useState, useEffect, useRef } = React;
@@ -441,7 +441,10 @@ export function ApplyWizard({ initial = null, onSave, onCancel }) {
   if (editing) return body; // rendered inside the console's Modal — no page chrome
 
   return (
-    <div className="signin admin--sa apply-page">
+    <div className="signin signin--themed admin--sa apply-page" style={THEMES.classic.vars}>
+      {/* Classic Ivory palette (above) + falling petals, so the register page
+          previews the default look a new site opens with. */}
+      <FloatingDecor on style="petals" />
       <div className="signin__pane">
         <header className="signin__top"><div className="signin__brand"><Logo size={30} /><span className="signin__word">Celebrately</span></div></header>
         <div className="signin__center">{body}</div>

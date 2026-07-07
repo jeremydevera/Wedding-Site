@@ -2306,7 +2306,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 @media (max-width: 560px) { .apply-sched { grid-template-columns: 1fr 1fr; } .apply-ent__person { grid-template-columns: 1fr 1fr; } }
 
 /* apply wizard: each step's fields live inside an admin-style panel section */
-.apply-page { background: linear-gradient(180deg, #f6f8fb 0%, #fdfdfe 420px); }
+.apply-page { background: linear-gradient(180deg, var(--surface-2) 0%, var(--bg) 480px); }
 .apply-panel { margin-bottom: 0; box-shadow: 0 1px 2px rgba(15,23,42,.05), 0 12px 32px -18px rgba(15,23,42,.18); }
 .apply-panel__head { padding: 18px 24px 16px; background: linear-gradient(180deg, #fdfdfe, #fafbfc); }
 .apply-eyebrow { font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; font-weight: 700; color: #1E5BD6; margin-bottom: 5px; font-variant-numeric: tabular-nums; }
