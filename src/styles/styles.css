@@ -471,9 +471,18 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
    44px indent, rail center is x=16 → left:-28 lands the dot on the left rail. */
 .story-dot { position: absolute; top: 50%; left: -28px; z-index: 2; width: 15px; height: 15px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 16%, transparent); transform: translate(-50%, -50%) scale(0); transition: transform .5s cubic-bezier(.2, 1.6, .4, 1); }
 .story-row.dot-on .story-dot { transform: translate(-50%, -50%) scale(1); }
+/* Ripple ring that radiates out the moment the line hits the dot (plays on the
+   .dot-on class add; replays each time it re-enters). */
+.story-dot::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--accent); opacity: 0; pointer-events: none; }
+.story-row.dot-on .story-dot::after { animation: story-ripple .9s ease-out; }
+@keyframes story-ripple {
+  0% { opacity: .55; transform: scale(1); }
+  100% { opacity: 0; transform: scale(3.6); }
+}
 @media (prefers-reduced-motion: reduce) {
   .story-dot { transition: none; }
   .story-rail__fill { transition: none; }
+  .story-row.dot-on .story-dot::after { animation: none; }
 }
 /* Mobile: Our Story scrolls like a vertical carousel — each milestone fills
    the screen and snaps into place as you scroll. Scoped to the story page via
