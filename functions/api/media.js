@@ -145,7 +145,10 @@ export async function onRequestGet(context) {
     do {
       const page = await env.MEDIA.list({ cursor, prefix: listPrefix });
       for (const o of page.objects || []) {
-        if (o.key.split("/")[2] === type) objects.push(o);
+        // "image" listings include videos too (MP4/WebM covers + frame media
+        // are picked from the same visual grid as images).
+        const seg = o.key.split("/")[2];
+        if (seg === type || (type === "image" && seg === "video")) objects.push(o);
       }
       cursor = page.truncated ? page.cursor : undefined;
     } while (cursor);

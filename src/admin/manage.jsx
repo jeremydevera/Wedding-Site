@@ -55,7 +55,7 @@ export function SaveFooter() {
 // ============================================================================
 
 // Reusable image uploader for admin (hero, story milestones)
-export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", framePreview, defaultPreview, tintStrength, tintGradient, purpose = "misc" }) {
+export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", framePreview, defaultPreview, tintStrength, tintGradient, purpose = "misc", allowVideo = false }) {
   const { clientId } = useStore();
   const ref = useRef(null);
   const [cropSrc, setCropSrc] = useState(null);
@@ -67,9 +67,22 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
   // changes" — same as every other field, so a single upload never silently
   // commits the whole panel. The "You have unsaved changes" hint covers loss.
   const commit = (v) => { onChange(v); };
+  const isVid = allowVideo && VIDEO_RE.test(value || "");
+  // Direct upload (no crop) — used for videos and GIFs so animation survives.
+  async function uploadRaw(file) {
+    setPickerOpen(false); setBusy(true);
+    try {
+      const { key } = await uploadToR2(file, { scope: "owner", purpose }, clientId);
+      commit(key);
+    } catch (e) { toast("Upload failed: " + (e && e.message || "error"), "err"); }
+    finally { setBusy(false); }
+  }
   function pick(file) {
     if (!file) return;
-    if (!file.type.startsWith("image/")) { toast("Please choose an image file.", "err"); return; }
+    const t = file.type || "";
+    if (allowVideo && (t.startsWith("video/") || VIDEO_RE.test(file.name || ""))) return uploadRaw(file);
+    if (allowVideo && (t === "image/gif" || /\.gif$/i.test(file.name || ""))) return uploadRaw(file);
+    if (!t.startsWith("image/")) { toast(allowVideo ? "Please choose an image, GIF, or MP4." : "Please choose an image file.", "err"); return; }
     setCropSrc(URL.createObjectURL(file));
   }
   // Cropped image -> R2 (via /api/upload). Store the returned "/r2/<key>" URL,
@@ -96,7 +109,9 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
       <div className="imgup">
         <div className="imgup__thumb" style={{ aspectRatio: ratio }}>
           {value
-            ? <img src={mediaUrl(value)} alt="" />
+            ? (isVid
+              ? <video src={mediaUrl(value)} muted loop autoPlay playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              : <img src={mediaUrl(value)} alt="" />)
             : defaultPreview
               ? <img src={defaultPreview} alt="" />
               : <Placeholder label="no photo" ratio={ratio} />}
@@ -109,10 +124,10 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
         </div>
         <div className="imgup__actions">
           <Button variant="ghost" size="sm" disabled={busy} onClick={() => setPickerOpen(true)}>{Icon.upload({})} {busy ? "Uploading…" : (value ? "Replace" : "Add photo")}</Button>
-          {value && !busy && <Button variant="ghost" size="sm" onClick={() => setCropSrc(mediaUrl(value))}>{Icon.crop({})} Crop</Button>}
+          {value && !busy && !isVid && <Button variant="ghost" size="sm" onClick={() => setCropSrc(mediaUrl(value))}>{Icon.crop({})} Crop</Button>}
           {value && !busy && <Button variant="ghost" size="sm" onClick={() => commit("")}>Remove</Button>}
         </div>
-        <input ref={ref} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const file = e.target.files[0]; e.target.value = ""; setPickerOpen(false); pick(file); }} />
+        <input ref={ref} type="file" accept={allowVideo ? "image/*,image/gif,video/mp4,video/webm,.gif,.mp4,.webm,.mov" : "image/*"} style={{ display: "none" }} onChange={(e) => { const file = e.target.files[0]; e.target.value = ""; setPickerOpen(false); pick(file); }} />
       </div>
       <MediaPickerModal
         open={pickerOpen}
@@ -2008,7 +2023,7 @@ export function SettingsAdmin() {
       <div className="panel">
         <div className="panel__head"><div className="panel__title">Envelope Frame Photo</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Shows inside the oval frame on the opened envelope</span></div>
         <div className="panel__body" style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-          <ImageUploadField purpose="frame" label="Photo inside the oval frame" ratio="1 / 1" framePreview="/assets/invite/p2-frame.png" defaultPreview="/assets/invite/frame-video.gif"
+          <ImageUploadField purpose="frame" label="Photo inside the oval frame" ratio="1 / 1" allowVideo framePreview="/assets/invite/p2-frame.png" defaultPreview="/assets/invite/frame-video.gif"
             value={f.frameImage} onChange={(v) => setKey("frameImage", v)} />
           <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 10, maxWidth: 360 }}>A square photo of the two of you works best. Leave empty to keep the default animated frame.</p>
           <div style={{ width: "100%", maxWidth: 360, marginTop: 18, textAlign: "left" }}>

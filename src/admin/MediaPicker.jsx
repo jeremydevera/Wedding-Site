@@ -39,7 +39,9 @@ export function MediaLibrary({ type, clientId, onPick }) {
     <div className="medialib medialib--grid">
       {state.items.map((it) => (
         <button type="button" key={it.key} className="medialib__cell" onClick={() => onPick(it.key)} aria-label={it.name} title={it.name}>
-          <img src={mediaUrl(it.key)} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+          {/\.(mp4|webm|mov|m4v)(\?|$)/i.test(it.key)
+            ? <video src={mediaUrl(it.key)} muted loop autoPlay playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            : <img src={mediaUrl(it.key)} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = "none"; }} />}
           <span className="medialib__name">{it.name}</span>
         </button>
       ))}

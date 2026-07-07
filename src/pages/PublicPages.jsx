@@ -215,7 +215,7 @@ export function EnvelopeHero() {
             </div>
             <div className="inv-l-framegroup">
               <div className="inv-l-video" aria-hidden="true">
-                <img src={mediaUrl(s.frameImage) || "/assets/invite/frame-video.gif"} alt="" />
+                <FrameMedia s={s} />
               </div>
               <img className="inv-frame-img" src="/assets/invite/p2-frame.png" alt="Cream oval frame with embossed peony" />
             </div>
@@ -236,6 +236,16 @@ export function EnvelopeHero() {
       </button>
     </header>
   );
+}
+
+// Media inside the envelope's oval frame: the owner can set an image, GIF, or
+// MP4 (Settings -> Theme -> Envelope Frame Photo). Falls back to the default
+// animated GIF. CSS covers both tags (.inv-l-video video/img).
+function FrameMedia({ s }) {
+  const src = mediaUrl(s.frameImage) || "/assets/invite/frame-video.gif";
+  return /\.(mp4|webm|mov|m4v)(\?|$)/i.test(src)
+    ? <video src={src} muted loop autoPlay playsInline />
+    : <img src={src} alt="" />;
 }
 
 export function EnvelopeInvite() {
@@ -273,7 +283,7 @@ export function EnvelopeInvite() {
           </div>
           <div className="inv-l-framegroup">
             <div className="inv-l-video" aria-hidden="true">
-              <img src={mediaUrl(s.frameImage) || "/assets/invite/frame-video.gif"} alt="" />
+              <FrameMedia s={s} />
             </div>
             <img className="inv-frame-img" src="/assets/invite/p2-frame.png" alt="Cream oval frame with embossed peony" />
           </div>
