@@ -28,7 +28,8 @@ export const EVENT_TYPES = {
     terms: { host: "the celebrant", action: "Let's celebrate!", rsvp: "Can you make it?" },
     sections: ["details", "schedule", "venue", "gallery", "guestbook"],
     defaultTheme: "blush",
-    themes: ["blush", "lavender", "champagne", "garden", "dusk", "terracotta"],
+    // All designs EXCEPT "envelope" (Olive Envelope is wedding-only).
+    themes: ["classic", "classic2", "classic3", "glass", "noir", "garden", "blush", "dusk", "burgundy", "lavender", "emerald", "terracotta", "champagne"],
   },
 
   corporate: {
