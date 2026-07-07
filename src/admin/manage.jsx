@@ -1973,7 +1973,9 @@ export function StoryEditor({ open, index, item, onClose }) {
         <Field label="Year or date" id="se-year" hint="Optional"><Input id="se-year" value={f.year} onChange={(e) => setF((p) => ({ ...p, year: e.target.value }))} placeholder="2018" /></Field>
       </div>
       <Field label="Description" id="se-desc"><Textarea id="se-desc" rows={3} value={f.desc} onChange={(e) => setF((p) => ({ ...p, desc: e.target.value }))} placeholder="A rainy bookshop in Brooklyn and one shared umbrella." /></Field>
-      <ImageUploadField purpose="story" ratio="4 / 3" label="Photo or video" allowVideo value={f.img} cropValue={f.imgCrop} onCropChange={(c) => setF((p) => ({ ...p, imgCrop: c }))} onChange={(v) => setF((p) => ({ ...p, img: v, imgCrop: null }))} />
+      <div className="story-photo-field">
+        <ImageUploadField purpose="story" ratio="4 / 3" label="Photo or video" allowVideo value={f.img} cropValue={f.imgCrop} onCropChange={(c) => setF((p) => ({ ...p, imgCrop: c }))} onChange={(v) => setF((p) => ({ ...p, img: v, imgCrop: null }))} />
+      </div>
       <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
         <Button variant="primary" block onClick={save}>{isEdit ? "Save milestone" : "Add milestone"}</Button>
         <Button variant="ghost" onClick={onClose}>Cancel</Button>

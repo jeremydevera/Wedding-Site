@@ -1429,6 +1429,11 @@ body.env-sealed .decor { display: none; }
 .imgup__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .imgup__actions { display: flex; gap: 8px; flex-wrap: nowrap; width: max-content; max-width: none; align-self: center; }
 .imgup__actions .btn { white-space: nowrap; flex: none; }
+/* Story milestone modal: the photo field fills the modal column (matching the
+   Title/Description inputs) with left-aligned actions — the default 240px thumb
+   left-hugged with empty space beside it. Cap so it isn't oversized. */
+.story-photo-field .imgup { max-width: 420px; }
+.story-photo-field .imgup__actions { align-self: flex-start; }
 
 /* ── Media library picker (admin) ─────────────────────────────────────────── */
 .medialib__tabs { display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid var(--line); }
