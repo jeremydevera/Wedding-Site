@@ -350,7 +350,18 @@ export function App() {
   const { settings, notFound } = useStore();
   const loading = Store.get().loading; // re-run scroll-reveal once content hydrates
 
-  React.useEffect(() => { loadClientData().catch((e) => console.error("load failed", e)); }, []);
+  const previewPatchRef = useRef(null);
+  React.useEffect(() => {
+    loadClientData()
+      .catch((e) => console.error("load failed", e))
+      .finally(() => {
+        // Preview mode: the just-hydrated client theme (e.g. the demo's envelope)
+        // would clobber the parent's requested preview — re-apply it after load.
+        if (new URLSearchParams(window.location.search).has("preview") && previewPatchRef.current) {
+          Store.previewSettings(previewPatchRef.current);
+        }
+      });
+  }, []);
 
   // apply theme whenever theme/accent/fonts/envelope-color change
   useEffect(() => {
@@ -380,7 +391,7 @@ export function App() {
       }
       if (d.decorStyle !== undefined) patch.decorStyle = d.decorStyle;
       if (d.decorOn !== undefined) patch.decorOn = d.decorOn;
-      if (Object.keys(patch).length) Store.previewSettings(patch);
+      if (Object.keys(patch).length) { previewPatchRef.current = { ...(previewPatchRef.current || {}), ...patch }; Store.previewSettings(patch); }
     };
     window.addEventListener("message", onMsg);
     // Tell the parent we're mounted so it can push the initial theme (avoids a race).
