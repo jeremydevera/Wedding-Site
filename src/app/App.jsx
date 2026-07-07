@@ -201,7 +201,7 @@ export function Nav({ route }) {
         <div className="demo-trybar">
           <ThemePicker block />
           {!isPremiumTheme(settings.theme) && <DecorPicker block />}
-          <Button variant="primary" size="sm" onClick={() => { window.location.href = "https://celebrately.us/apply"; }}>Register</Button>
+          <Button className="demo-trybar__reg" variant="primary" size="sm" onClick={() => { window.location.href = "https://celebrately.us/apply"; }}>Register — get your own site</Button>
         </div>
       )}
     </>
