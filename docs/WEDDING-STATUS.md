@@ -11,12 +11,28 @@ Claude test run. Done items stay here as the permanent history.
 - **`[APPROVAL]`** in a title = Claude found this (testing / scheduled run); needs your review before work.
 
 ## Next IDs
-- Next Bug ID: **0010**
+- Next Bug ID: **0013**
 - Next Enhancement ID: **0014**
 
 ---
 
 ## Pending
+
+### Bug ID: 0010 — Client replies on open tickets were silent (no bell, no refresh)
+- **Severity:** P2 · **Status:** Done (2026-07-09) · **Added:** 2026-07-09 (Claude feature scan)
+- **Root cause:** `support_ticket_messages` wasn't in the realtime publication and had no subscribers; only ticket INSERTs/status flips pinged. Replies to resolved tickets pinged (reopen trigger touches the ticket) — replies to open tickets didn't.
+- **Fix:** migration 0028 (publication) + per-ticket live thread subscription (both sides) + bell lists client replies. Test: ticketsRealtime.test.js.
+
+### Bug ID: 0011 — Fixed realtime channel topic on site requests (Bug-0009 landmine)
+- **Severity:** P2 (preventive) · **Status:** Done (2026-07-09) · **Added:** 2026-07-09 (Claude feature scan)
+- **Root cause:** `sa-site-requests` fixed topic — safe with today's single subscriber, but a second subscriber would crash exactly like Bug 0009 (supabase-js channel cache).
+- **Fix:** unique topic per subscription; regression test asserts EVERY realtime subscriber mints distinct topics.
+
+### Bug ID: 0012 — Replying to a deleted ticket showed a raw FK database error
+- **Severity:** P3 · **Status:** Done (2026-07-09) · **Added:** 2026-07-09 (Claude feature scan)
+- **Root cause:** ticket deleted while a thread was open → insert hits the FK → raw "violates foreign key" toast, thread stayed open.
+- **Fix:** 23503 mapped to "This ticket was deleted." + the thread closes (onGone) on both sides.
+
 
 ### Bug ID: 0009 — Superadmin console STILL white after Bug 0008 fix — duplicate realtime channel topic
 - **Severity:** P1 · **Status:** Done (2026-07-09, fixed same day) · **Added:** 2026-07-09 (reported by Jeremy; reproduced via Playwright login on celebrately.us)
