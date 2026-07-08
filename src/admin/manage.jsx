@@ -2484,21 +2484,26 @@ function ClosesAtInput({ value, onChange }) {
 // shown as the placeholder, so new clients start with the stock copy and only
 // stored overrides change the site (settings.homeHeads = { [k]: {eyebrow,title} }).
 function HomeHeadFields({ k, defEyebrow, defTitle, withFooter }) {
-  const { settings } = useStore();
+  const { settings, auth } = useStore();
+  if (auth.role !== "superadmin") return null; // superadmin-only editor — owners never see it
   const cur = (settings.homeHeads || {})[k] || {};
   const put = (field) => (e) =>
     Store.updateSettings({ homeHeads: { ...(settings.homeHeads || {}), [k]: { ...cur, [field]: e.target.value } } });
+  // Show the EFFECTIVE current text (stored override, else the stock default)
+  // so the admin sees what the site displays right now; clearing a field falls
+  // back to the default on the public site.
+  const val = (field, dflt) => (cur[field] !== undefined ? cur[field] : dflt);
   return (
     <>
       <div className="panel">
         <div className="panel__head"><div className="panel__title">Section header</div></div>
         <div className="panel__body" style={{ maxWidth: 900, margin: "0 auto" }}>
           <p style={{ color: "var(--muted)", margin: "0 0 14px", fontSize: 14 }}>
-            The small line and heading shown above this section on the home page. Leave blank to keep the default.
+            The header above this section on the home page. Clear a field to go back to the default.
           </p>
           <div className="field-row field-row--2">
-            <Field label="Small line (eyebrow)" id={"hh-e-" + k}><Input id={"hh-e-" + k} value={cur.eyebrow || ""} onChange={put("eyebrow")} placeholder={defEyebrow} /></Field>
-            <Field label="Heading" id={"hh-t-" + k}><Input id={"hh-t-" + k} value={cur.title || ""} onChange={put("title")} placeholder={defTitle} /></Field>
+            <Field label="Small Header" id={"hh-e-" + k}><Input id={"hh-e-" + k} value={val("eyebrow", defEyebrow)} onChange={put("eyebrow")} placeholder={defEyebrow} /></Field>
+            <Field label="Big Header" id={"hh-t-" + k}><Input id={"hh-t-" + k} value={val("title", defTitle)} onChange={put("title")} placeholder={defTitle} /></Field>
           </div>
         </div>
       </div>
