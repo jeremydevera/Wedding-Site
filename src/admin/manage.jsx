@@ -2332,7 +2332,7 @@ export function SettingsAdmin() {
                   <span className="owner-edit__grouptitle">{Icon.home({ style: { width: 15, height: 15 } })} Home tab folders</span>
                   <button type="button" className="owner-edit__all" onClick={() => toggleAllHome(!allHomeOn)}>{allHomeOn ? "Turn all off" : "Enable all"}</button>
                 </div>
-                <div className="owner-edit__items" style={{ paddingLeft: 22 }}>
+                <div className="owner-edit__items" style={{ paddingLeft: 44 }}>
                   {HOME_GRANTS.map((g) => (
                     <AdminToggle key={g.k} label={g.label} desc={g.desc} checked={oe[g.k] === true} onChange={(v) => setGrant(g.k, v)} />
                   ))}
