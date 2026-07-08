@@ -450,9 +450,10 @@ export async function checkRequestSubdomainFree(subdomain) {
   return !!(data && data.available);
 }
 
-export async function submitSiteRequest({ email, partnerA, partnerB, subdomain, templateKey, content }) {
+export async function submitSiteRequest({ email, partnerA, partnerB, eventType, subdomain, templateKey, content }) {
   const { data, error } = await supabase.functions.invoke("site-request", {
-    body: { email, partnerA, partnerB, subdomain, templateKey, content },
+    // eventType is additive — the edge fn defaults missing/unknown values to "wedding".
+    body: { email, partnerA, partnerB, eventType, subdomain, templateKey, content },
   });
   if (error) {
     let msg = "Could not submit your request.";
@@ -514,10 +515,16 @@ export function subscribeSiteRequestsRealtime(onChange) {
 // approved.
 export async function approveSiteRequest(reqRow) {
   const c = reqRow.content || {};
+  // Event type comes from the request's content (wizard v2+); older rows have
+  // none and stay weddings. Birthdays store the event title in partner_a and
+  // get no couple hashtag.
+  const eventType = c.eventType === "birthday" ? "birthday" : "wedding";
   const content = {
     partnerA: reqRow.partner_a,
     partnerB: reqRow.partner_b,
-    hashtag: `#${((reqRow.partner_a || "") + "And" + (reqRow.partner_b || "")).replace(/[^A-Za-z0-9]/g, "")}`,
+    ...(eventType === "wedding"
+      ? { hashtag: `#${((reqRow.partner_a || "") + "And" + (reqRow.partner_b || "")).replace(/[^A-Za-z0-9]/g, "")}` }
+      : {}),
     ...(c.phone ? { phone: c.phone } : {}),
     ...(c.weddingDate ? { weddingDate: c.weddingDate } : {}),
     ...(c.weddingDateLabel ? { weddingDateLabel: c.weddingDateLabel } : {}),
@@ -542,7 +549,7 @@ export async function approveSiteRequest(reqRow) {
   let created = existing || null;
   if (!created) {
     const { data, error } = await supabase.from("clients")
-      .insert({ subdomain: reqRow.subdomain, event_type: "wedding", template_key: reqRow.template_key || "classic", owner_email: reqRow.email, content })
+      .insert({ subdomain: reqRow.subdomain, event_type: eventType, template_key: reqRow.template_key || "classic", owner_email: reqRow.email, content })
       .select("id").single();
     if (error) {
       // Unique-subdomain violation (Postgres 23505) = the client already exists

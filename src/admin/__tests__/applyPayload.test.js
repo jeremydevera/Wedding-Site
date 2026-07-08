@@ -56,6 +56,40 @@ describe("stateFromRequest -> requestPayload round-trip", () => {
   });
 });
 
+describe("event type — wedding vs birthday", () => {
+  it("defaults to wedding and stamps eventType into payload + content", () => {
+    const p = requestPayload(blankApplyState());
+    expect(p.eventType).toBe("wedding");
+    expect(p.content.eventType).toBe("wedding");
+  });
+
+  it("birthday: eventTitle becomes partnerA, partnerB is empty", () => {
+    const f = { ...blankApplyState(), eventType: "birthday", eventTitle: "Leo's 7th Birthday", email: "mom@x.com", subdomain: "leo-7" };
+    const p = requestPayload(f);
+    expect(p.eventType).toBe("birthday");
+    expect(p.partnerA).toBe("Leo's 7th Birthday");
+    expect(p.partnerB).toBe("");
+    expect(p.content.eventType).toBe("birthday");
+  });
+
+  it("round-trips a birthday request (title restored into eventTitle)", () => {
+    const row = { partner_a: "Leo's 7th Birthday", partner_b: "", email: "mom@x.com", subdomain: "leo-7", template_key: "blush", content: { eventType: "birthday" } };
+    const f = stateFromRequest(row);
+    expect(f.eventType).toBe("birthday");
+    expect(f.eventTitle).toBe("Leo's 7th Birthday");
+    const p = requestPayload(f);
+    expect(p.partnerA).toBe("Leo's 7th Birthday");
+    expect(p.partnerB).toBe("");
+    expect(p.eventType).toBe("birthday");
+  });
+
+  it("old rows without eventType stay weddings", () => {
+    const f = stateFromRequest(ROW);
+    expect(f.eventType).toBe("wedding");
+    expect(requestPayload(f).eventType).toBe("wedding");
+  });
+});
+
 describe("easy wedding-date dropdowns (compose/parse)", () => {
   it("composes month/day/year + 12h time into the pipeline's ISO shape", () => {
     expect(composeWeddingDate(2027, 5, 1, "3:00 PM")).toBe("2027-05-01T15:00");

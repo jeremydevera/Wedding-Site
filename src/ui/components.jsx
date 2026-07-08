@@ -20,11 +20,12 @@ export function Placeholder({ label = "photo", ratio = "4 / 3", className = "", 
 
 // --- Monogram (couple initials) ---------------------------------------------
 export function Monogram({ a, b, size = 40 }) {
+  // Birthday sites have a single title (no partner B) — render one initial, no "&".
   const ia = (a || "A").trim().charAt(0).toUpperCase();
-  const ib = (b || "B").trim().charAt(0).toUpperCase();
+  const ib = (b || "").trim().charAt(0).toUpperCase();
   return (
     <span className="monogram" style={{ width: size, height: size, fontSize: size * 0.42 }}>
-      {ia}<span className="monogram__amp">&</span>{ib}
+      {ia}{ib ? <><span className="monogram__amp">&</span>{ib}</> : null}
     </span>
   );
 }

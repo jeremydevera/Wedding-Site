@@ -137,6 +137,8 @@ const TIME_OPTIONS = (() => {
 // both the public /apply flow and the superadmin request editor pick it up.
 export function blankApplyState() {
   return {
+    eventType: DEFAULT_EVENT_TYPE, // "wedding" | "birthday" — drives the About-you fields
+    eventTitle: "",                // birthday-only: the event's display title (stored as partner_a)
     partnerA: "", partnerB: "", email: "", phone: "", subdomain: "", weddingDate: "",
     theme: "", // unchosen until the user picks; falls back to Classic Ivory on submit
     venueName: "", venueAddress: "", mapQuery: "", mapLat: "", mapLng: "",
@@ -152,10 +154,17 @@ export function blankApplyState() {
 // Serialize wizard state → the site_requests payload. The ONE serializer used
 // by both the public submit and the superadmin edit-save, so they can't drift.
 export function requestPayload(f) {
+  // Birthday reuses the partner_a column for the event title (site_requests has
+  // no title column and partner_b is NOT NULL — empty string by design).
+  const isBirthday = f.eventType === "birthday";
   return {
-    email: f.email.trim(), partnerA: f.partnerA.trim(), partnerB: f.partnerB.trim(),
+    email: f.email.trim(),
+    partnerA: (isBirthday ? f.eventTitle || "" : f.partnerA).trim(),
+    partnerB: isBirthday ? "" : f.partnerB.trim(),
+    eventType: isBirthday ? "birthday" : "wedding",
     subdomain: f.subdomain.trim().toLowerCase(), templateKey: f.theme || "classic",
     content: {
+      eventType: isBirthday ? "birthday" : "wedding",
       ...(f.phone && f.phone.trim() ? { phone: f.phone.trim() } : {}),
       ...(f.weddingDate ? { weddingDate: f.weddingDate, weddingDateLabel: dateLabelOf(f.weddingDate) } : {}),
       venueName: f.venueName.trim(), venueAddress: f.venueAddress.trim(),
@@ -175,9 +184,12 @@ export function requestPayload(f) {
 export function stateFromRequest(row) {
   const c = (row && row.content) || {};
   const base = blankApplyState();
+  const isBirthday = c.eventType === "birthday";
   return {
     ...base,
-    partnerA: row.partner_a || "", partnerB: row.partner_b || "",
+    eventType: isBirthday ? "birthday" : "wedding",
+    eventTitle: isBirthday ? (row.partner_a || "") : "",
+    partnerA: isBirthday ? "" : (row.partner_a || ""), partnerB: row.partner_b || "",
     email: row.email || "", phone: c.phone || "", subdomain: row.subdomain || "",
     theme: row.template_key || base.theme,
     weddingDate: c.weddingDate || "",
@@ -206,11 +218,15 @@ export function ApplyWizard({ initial = null, onSave, onCancel }) {
   const [f, setF] = useState(() => (editing ? stateFromRequest(initial) : blankApplyState()));
   const set = (k) => (e) => { setErr(""); setF((p) => ({ ...p, [k]: e && e.target ? e.target.value : e })); };
 
-  // suggest the address from the names until edited
+  // suggest the address from the names (wedding) or the event title (birthday) until edited
   useEffect(() => {
     if (touchedSub) return;
-    if (f.partnerA.trim() && f.partnerB.trim()) setF((p) => ({ ...p, subdomain: slug(p.partnerA, p.partnerB) }));
-  }, [f.partnerA, f.partnerB, touchedSub]);
+    if (f.eventType === "birthday") {
+      if (f.eventTitle.trim()) setF((p) => ({ ...p, subdomain: slug(p.eventTitle, "").replace(/-+$/, "") }));
+    } else if (f.partnerA.trim() && f.partnerB.trim()) {
+      setF((p) => ({ ...p, subdomain: slug(p.partnerA, p.partnerB) }));
+    }
+  }, [f.partnerA, f.partnerB, f.eventTitle, f.eventType, touchedSub]);
 
   // debounced availability — when editing, the request's own subdomain is
   // "taken" by itself, so an unchanged value always counts as fine.
@@ -228,8 +244,9 @@ export function ApplyWizard({ initial = null, onSave, onCancel }) {
     return () => clearTimeout(t.current);
   }, [f.subdomain]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Include every wedding theme in the picker, incl. the premium Olive Envelope.
-  const themes = themesForEvent(DEFAULT_EVENT_TYPE).filter((k) => THEMES[k]);
+  // Themes follow the chosen event type (birthday excludes the wedding-only
+  // Olive Envelope; weddings include it, incl. premium).
+  const themes = themesForEvent(f.eventType).filter((k) => THEMES[k]);
 
   // --- schedule editing ---
   const schedSet = (i, k) => (e) => setF((p) => ({ ...p, schedule: p.schedule.map((r, j) => (j === i ? { ...r, [k]: e.target.value } : r)) }));
@@ -244,9 +261,17 @@ export function ApplyWizard({ initial = null, onSave, onCancel }) {
   const entSetPerson = (gi, pi, k) => (e) => setF((p) => ({ ...p, entourage: p.entourage.map((g, j) => (j === gi ? { ...g, people: g.people.map((x, q) => (q === pi ? { ...x, [k]: e.target.value } : x)) } : g)) }));
   const entDelPerson = (gi, pi) => setF((p) => ({ ...p, entourage: p.entourage.map((g, j) => (j === gi ? { ...g, people: g.people.filter((_, q) => q !== pi) } : g)) }));
 
+  // Switching event type invalidates a theme the new type doesn't offer
+  // (e.g. Olive Envelope picked, then switched to Birthday) — reset to unchosen.
+  useEffect(() => {
+    if (f.theme && !themesForEvent(f.eventType).includes(f.theme)) setF((p) => ({ ...p, theme: "" }));
+  }, [f.eventType]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const validateStep = (s) => {
     if (s === 0) {
-      if (!f.partnerA.trim() || !f.partnerB.trim()) return "Please enter both names.";
+      if (f.eventType === "birthday") {
+        if (!f.eventTitle.trim()) return "Please enter the event title.";
+      } else if (!f.partnerA.trim() || !f.partnerB.trim()) return "Please enter both names.";
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email.trim())) return "Please enter a valid email.";
       if (!f.subdomain.trim()) return "Please choose a site address.";
       if (subState === "checking") return "Checking availability…";
@@ -279,10 +304,22 @@ export function ApplyWizard({ initial = null, onSave, onCancel }) {
   const steps = [
     { title: "Tell us about you", short: "About you", sub: "The basics we need to reserve your site address.", body: (
       <>
-        <div className="field-row field-row--2">
-          <Field label="Partner A — first name" id="a-pa"><Input id="a-pa" value={f.partnerA} onChange={set("partnerA")} placeholder="Romeo" /></Field>
-          <Field label="Partner B — first name" id="a-pb"><Input id="a-pb" value={f.partnerB} onChange={set("partnerB")} placeholder="Juliet" /></Field>
-        </div>
+        <Field label="Event type" id="a-etype">
+          <Select id="a-etype" value={f.eventType} onChange={set("eventType")}>
+            <option value="wedding">Wedding</option>
+            <option value="birthday">Birthday</option>
+          </Select>
+        </Field>
+        {f.eventType === "birthday" ? (
+          <Field label="Event title" id="a-title" hint="What the site should celebrate — shown as the headline.">
+            <Input id="a-title" value={f.eventTitle} onChange={set("eventTitle")} placeholder="Leo's 7th Birthday" />
+          </Field>
+        ) : (
+          <div className="field-row field-row--2">
+            <Field label="Partner A — first name" id="a-pa"><Input id="a-pa" value={f.partnerA} onChange={set("partnerA")} placeholder="Romeo" /></Field>
+            <Field label="Partner B — first name" id="a-pb"><Input id="a-pb" value={f.partnerB} onChange={set("partnerB")} placeholder="Juliet" /></Field>
+          </div>
+        )}
         <Field label="Your email" id="a-email" hint="We'll reach you here once your site is approved."><Input id="a-email" type="email" value={f.email} onChange={set("email")} placeholder="you@example.com" /></Field>
         <Field label="Mobile number" id="a-phone" hint="So we can reach you about your site."><Input id="a-phone" type="tel" value={f.phone} onChange={set("phone")} placeholder="(555) 123-4567" /></Field>
         <Field label="Event date" id="a-date" hint="Optional — skip it if you haven't picked a date yet.">
@@ -383,7 +420,7 @@ export function ApplyWizard({ initial = null, onSave, onCancel }) {
     { title: "Review & submit", short: "Review", sub: "Double-check everything before sending it our way.", body: (
       <div className="apply-review">
         {[
-          ["Couple", `${f.partnerA} & ${f.partnerB}`],
+          f.eventType === "birthday" ? ["Event", f.eventTitle] : ["Couple", `${f.partnerA} & ${f.partnerB}`],
           ["Email", f.email],
           ["Site address", `${f.subdomain}.celebrately.us`],
           ["Date", f.weddingDate ? dateLabelOf(f.weddingDate) : "Not set yet"],

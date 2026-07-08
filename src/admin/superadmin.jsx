@@ -539,7 +539,7 @@ export function ClientsAdmin() {
                 {requests.filter((r) => r.status === "pending").map((r) => (
                   <React.Fragment key={r.id}>
                     <tr>
-                      <td><strong>{r.partner_a} & {r.partner_b}</strong></td>
+                      <td><strong>{r.partner_a}{r.partner_b ? ` & ${r.partner_b}` : ""}</strong></td>
                       <td className="client-domain">{r.subdomain}.celebrately.us</td>
                       <td>{r.email}</td>
                       <td>{r.template_key}</td>
@@ -551,7 +551,7 @@ export function ClientsAdmin() {
                             <>
                               <button className="icon-btn" title="Edit request" onClick={() => openReqEdit(r)}>{Icon.edit({})}</button>
                               <Button variant="primary" size="sm" disabled={busy} onClick={async () => {
-                                const ok = await confirmDialog({ title: "Approve this site?", message: `Create ${r.subdomain}.celebrately.us for ${r.partner_a} & ${r.partner_b}? You can set the owner's login afterwards via the pencil (Edit) on the client.`, confirmLabel: "Approve & create" });
+                                const ok = await confirmDialog({ title: "Approve this site?", message: `Create ${r.subdomain}.celebrately.us for ${r.partner_a}${r.partner_b ? ` & ${r.partner_b}` : ""}? You can set the owner's login afterwards via the pencil (Edit) on the client.`, confirmLabel: "Approve & create" });
                                 if (!ok) return;
                                 setBusy(true);
                                 try { await approveSiteRequest(r); toast("Site created — set the owner's login next", "success"); await load(); }
@@ -588,7 +588,7 @@ export function ClientsAdmin() {
               <tbody>
                 {requests.filter((r) => r.status === "approved").map((r) => (
                   <tr key={r.id}>
-                    <td><strong>{r.partner_a} & {r.partner_b}</strong></td>
+                    <td><strong>{r.partner_a}{r.partner_b ? ` & ${r.partner_b}` : ""}</strong></td>
                     <td className="client-domain">{r.subdomain}.celebrately.us</td>
                     <td>{r.email}</td>
                     <td>{r.template_key}</td>
@@ -621,7 +621,7 @@ export function ClientsAdmin() {
               <tbody>
                 {requests.filter((r) => r.status === "rejected").map((r) => (
                   <tr key={r.id}>
-                    <td><strong>{r.partner_a} & {r.partner_b}</strong></td>
+                    <td><strong>{r.partner_a}{r.partner_b ? ` & ${r.partner_b}` : ""}</strong></td>
                     <td className="client-domain">{r.subdomain}.celebrately.us</td>
                     <td>{r.email}</td>
                     <td>{r.template_key}</td>
@@ -889,7 +889,7 @@ export function ClientsAdmin() {
           const ent = Array.isArray(c.entourage) ? c.entourage : [];
           return (
             <div>
-              <SectionHead eyebrow="Site request" title={`${r.partner_a} & ${r.partner_b}`} />
+              <SectionHead eyebrow="Site request" title={`${r.partner_a}${r.partner_b ? ` & ${r.partner_b}` : ""}`} />
               <div style={{ marginTop: -6 }}>
                 <div style={row}><span style={lab}>Status</span><span className={"tag " + (r.status === "pending" ? "tag--maybe" : r.status === "approved" ? "tag--attending" : "tag--not_attending")}>{r.status}</span></div>
                 <div style={row}><span style={lab}>Site address</span><span className="client-domain">{r.subdomain}.{PLATFORM_DOMAIN}</span></div>
@@ -993,7 +993,7 @@ export function ClientsAdmin() {
             <div>
               <SectionHead eyebrow="Danger zone" title="Delete this request?" />
               <p style={{ color: "var(--ink-soft)", fontSize: 14, marginTop: -6 }}>
-                This permanently removes the request from <strong>{r.partner_a} & {r.partner_b}</strong>
+                This permanently removes the request from <strong>{r.partner_a}{r.partner_b ? ` & ${r.partner_b}` : ""}</strong>
                 {" "}({r.subdomain}.{PLATFORM_DOMAIN}). It can't be undone.
                 {r.status === "approved" ? " The live site created from it is NOT affected — manage that in Clients." : ""}
               </p>

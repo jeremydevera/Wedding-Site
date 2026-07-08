@@ -470,7 +470,7 @@ export function Home() {
         <div className="hero__inner">
           <div className="eyebrow hero__eyebrow eyebrow--solo">{s.tagline}</div>
           <h1 className="hero__names">
-            {s.partnerA}<span className="amp">&amp;</span>{s.partnerB}
+            {s.partnerA}{s.partnerB ? <><span className="amp">&amp;</span>{s.partnerB}</> : null}
           </h1>
           {s.weddingDateLabel && <div className="hero__date">{s.weddingDateLabel}</div>}
           {s.showCountdown !== false && <Countdown targetIso={s.weddingDate} />}
