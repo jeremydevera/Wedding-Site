@@ -2035,6 +2035,11 @@ export function SettingsAdmin() {
             })}
           </div>
 
+          <div style={{ marginTop: 22, paddingTop: 18, borderTop: "1px solid var(--line)" }}>
+            <AdminToggle label="Auto-approve guestbook messages" desc="When on, messages post immediately. When off, they stay hidden until you approve them in the Guestbook tab." checked={f.autoApproveGuestbook} onChange={(v) => setKey("autoApproveGuestbook", v)} />
+            <AdminToggle label="Enable Strict RSVP" desc="Track an invited-guest list with seat allocations, and see who hasn't replied. Adds a Guests tab. Only guests on the list can RSVP, and party size is capped at their seat allocation." checked={f.strictRsvp === true} onChange={(v) => setKey("strictRsvp", v)} />
+          </div>
+
           <div style={{ marginTop: 26, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
             <div className="field__label" style={{ margin: "0 0 4px" }}>Rename tabs</div>
             <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>Change how each section is labeled in your site menu — handy when a default name doesn't fit your event (e.g. rename <em>Guestbook</em> to <em>Well Wishes</em>). Leave a field blank to keep the default. Click <strong>Save changes</strong> to apply.</p>
@@ -2301,17 +2306,15 @@ export function SettingsAdmin() {
         <SaveFooter />
       </div>)}
 
-      {tab === "access" && (<><div className="panel">
+      {tab === "access" && (<>
+      {/* Moderation panel only has the gallery toggle left (guestbook auto-approve
+          moved to Features) — hide the whole panel while the gallery is shelved. */}
+      {!DISABLED_MODULES.has("gallery") && (<div className="panel">
         <div className="panel__head"><div className="panel__title">Moderation</div></div>
         <div className="panel__body" style={{ maxWidth: 760, margin: "0 auto" }}>
-          {/* Gallery/uploads are globally shelved (roles.js DISABLED_MODULES) — hide the
-              dead moderation toggle so it can't mislead. Reappears when the gallery ships. */}
-          {!DISABLED_MODULES.has("gallery") && (
-            <AdminToggle label="Auto-approve photos &amp; videos" desc="When on, guest uploads appear in the gallery instantly. When off, they wait in the Media queue for your approval." checked={f.autoApproveMedia} onChange={(v) => setKey("autoApproveMedia", v)} />
-          )}
-          <AdminToggle label="Auto-approve guestbook messages" desc="When on, messages post immediately. When off, they stay hidden until you approve them in the Guestbook tab." checked={f.autoApproveGuestbook} onChange={(v) => setKey("autoApproveGuestbook", v)} />
+          <AdminToggle label="Auto-approve photos &amp; videos" desc="When on, guest uploads appear in the gallery instantly. When off, they wait in the Media queue for your approval." checked={f.autoApproveMedia} onChange={(v) => setKey("autoApproveMedia", v)} />
         </div>
-      </div>
+      </div>)}
 
       {(() => {
         // Per-section grants: each opens that content area to the owner account
@@ -2362,7 +2365,6 @@ export function SettingsAdmin() {
             <AdminToggle label="Allow guest uploads" desc="Master switch for the photo/video upload pages." checked={f.uploadsEnabled} onChange={(v) => setKey("uploadsEnabled", v)} />
             <AdminToggle label="Show public gallery" desc="Hide the gallery from guests entirely if you prefer." checked={f.galleryEnabled} onChange={(v) => setKey("galleryEnabled", v)} />
           </>)}
-          <AdminToggle label="Enable Strict RSVP" desc="Track an invited-guest list with seat allocations, and see who hasn't replied. Adds a Guests tab. Only guests on the list can RSVP, and party size is capped at their seat allocation." checked={f.strictRsvp === true} onChange={(v) => setKey("strictRsvp", v)} />
         </div>
         <SaveFooter />
       </div>
