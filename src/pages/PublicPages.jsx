@@ -646,16 +646,19 @@ export function StoryPage() {
       <PageHero eyebrow="Our Story" title="How we got here" lead="Every love story is beautiful, but this one is ours." />
       <section className="block" style={{ paddingTop: 30 }}>
         <div className="container" style={{ maxWidth: 920 }}>
-          {(Array.isArray(story) ? story : []).map((row, i) => (
-            <div className="story-row" key={i}>
-              <div className="story-row__media"><StoryImg row={row} /></div>
-              <div>
-                <div className="story-row__year">{row.year}</div>
-                <h3 className="story-row__title">{row.title}</h3>
-                <p className="story-row__desc">{row.desc}</p>
+          <div className="story-list">
+            {(Array.isArray(story) ? story : []).map((row, i) => (
+              <div className="story-row" key={i}>
+                <span className="story-dot" aria-hidden="true" />
+                <div className="story-row__media"><StoryImg row={row} /></div>
+                <div>
+                  <div className="story-row__year">{row.year}</div>
+                  <h3 className="story-row__title">{row.title}</h3>
+                  <p className="story-row__desc">{row.desc}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
     </div>

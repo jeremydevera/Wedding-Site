@@ -450,9 +450,18 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 }
 
 /* --- Story -----------------------------------------------------------------*/
-.story-row { display: grid; grid-template-columns: 1fr; gap: 26px; align-items: center; margin-bottom: 60px; }
+/* A simple static timeline: one vertical line down the list + a dot per
+   milestone. Mobile: line on the left, rows indented past it. Desktop: line
+   centered, dot centered on each alternating row. */
+.story-list { position: relative; padding-left: 40px; }
+.story-list::before { content: ""; position: absolute; top: 8px; bottom: 8px; left: 7px; width: 2px; background: color-mix(in srgb, var(--accent) 20%, transparent); border-radius: 2px; }
+.story-row { display: grid; grid-template-columns: 1fr; gap: 26px; align-items: center; margin-bottom: 60px; position: relative; }
 .story-row:last-child { margin-bottom: 0; }
+.story-dot { position: absolute; top: 50%; left: -33px; z-index: 1; width: 13px; height: 13px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px var(--surface), 0 0 0 7px color-mix(in srgb, var(--accent) 20%, transparent); transform: translate(-50%, -50%); }
 @media (min-width: 760px) {
+  .story-list { padding-left: 0; }
+  .story-list::before { left: 50%; transform: translateX(-50%); }
+  .story-dot { left: 50%; }
   .story-row { grid-template-columns: 1fr 1fr; gap: 50px; }
   .story-row:nth-child(even) .story-row__media { order: 2; }
 }
