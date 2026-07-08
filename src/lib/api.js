@@ -518,6 +518,7 @@ export async function approveSiteRequest(reqRow) {
     partnerA: reqRow.partner_a,
     partnerB: reqRow.partner_b,
     hashtag: `#${((reqRow.partner_a || "") + "And" + (reqRow.partner_b || "")).replace(/[^A-Za-z0-9]/g, "")}`,
+    ...(c.phone ? { phone: c.phone } : {}),
     ...(c.weddingDate ? { weddingDate: c.weddingDate } : {}),
     ...(c.weddingDateLabel ? { weddingDateLabel: c.weddingDateLabel } : {}),
     ...(c.venueName ? { venueName: c.venueName } : {}),

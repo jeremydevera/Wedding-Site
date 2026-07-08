@@ -137,7 +137,7 @@ const TIME_OPTIONS = (() => {
 // both the public /apply flow and the superadmin request editor pick it up.
 export function blankApplyState() {
   return {
-    partnerA: "", partnerB: "", email: "", subdomain: "", weddingDate: "",
+    partnerA: "", partnerB: "", email: "", phone: "", subdomain: "", weddingDate: "",
     theme: "", // unchosen until the user picks; falls back to Classic Ivory on submit
     venueName: "", venueAddress: "", mapQuery: "", mapLat: "", mapLng: "",
     schedule: [
@@ -156,6 +156,7 @@ export function requestPayload(f) {
     email: f.email.trim(), partnerA: f.partnerA.trim(), partnerB: f.partnerB.trim(),
     subdomain: f.subdomain.trim().toLowerCase(), templateKey: f.theme || "classic",
     content: {
+      ...(f.phone && f.phone.trim() ? { phone: f.phone.trim() } : {}),
       ...(f.weddingDate ? { weddingDate: f.weddingDate, weddingDateLabel: dateLabelOf(f.weddingDate) } : {}),
       venueName: f.venueName.trim(), venueAddress: f.venueAddress.trim(),
       mapQuery: f.mapQuery, mapLat: f.mapLat, mapLng: f.mapLng,
@@ -177,7 +178,7 @@ export function stateFromRequest(row) {
   return {
     ...base,
     partnerA: row.partner_a || "", partnerB: row.partner_b || "",
-    email: row.email || "", subdomain: row.subdomain || "",
+    email: row.email || "", phone: c.phone || "", subdomain: row.subdomain || "",
     theme: row.template_key || base.theme,
     weddingDate: c.weddingDate || "",
     venueName: c.venueName || "", venueAddress: c.venueAddress || "",
@@ -283,6 +284,7 @@ export function ApplyWizard({ initial = null, onSave, onCancel }) {
           <Field label="Partner B — first name" id="a-pb"><Input id="a-pb" value={f.partnerB} onChange={set("partnerB")} placeholder="Juliet" /></Field>
         </div>
         <Field label="Your email" id="a-email" hint="We'll reach you here once your site is approved."><Input id="a-email" type="email" value={f.email} onChange={set("email")} placeholder="you@example.com" /></Field>
+        <Field label="Mobile number" id="a-phone" hint="So we can reach you about your site."><Input id="a-phone" type="tel" value={f.phone} onChange={set("phone")} placeholder="(555) 123-4567" /></Field>
         <Field label="Event date" id="a-date" hint="Optional — skip it if you haven't picked a date yet.">
           <EasyDateInput value={f.weddingDate} onChange={set("weddingDate")} />
         </Field>

@@ -119,7 +119,7 @@ export function SuperOverview() {
   useEffect(() => {
     (async () => {
       const cnt = async (t) => { const { count } = await supabase.from(t).select("*", { count: "exact", head: true }); return count || 0; };
-      const { data } = await supabase.from("clients").select("id,subdomain,event_type,is_active,owner_email,created_at").order("created_at", { ascending: false });
+      const { data } = await supabase.from("clients").select("id,subdomain,event_type,is_active,owner_email,content,created_at").order("created_at", { ascending: false });
       const list = data || [];
       const bt = {}; list.forEach((c) => { bt[c.event_type] = (bt[c.event_type] || 0) + 1; });
       const [rsvps, guestbook, quiz] = await Promise.all([cnt("rsvps"), cnt("guestbook"), cnt("quiz_answers")]);
@@ -173,17 +173,18 @@ export function SuperOverview() {
           <div className="panel__head"><div className="panel__title">Recent clients</div></div>
           <div className="panel__body--flush table-wrap">
             <table className="tbl">
-              <thead><tr><th>Client</th><th>Type</th><th>Owner login</th><th></th></tr></thead>
+              <thead><tr><th>Client</th><th>Type</th><th>Owner login</th><th>Contact</th><th></th></tr></thead>
               <tbody>
                 {recent.map((c) => (
                   <tr key={c.id}>
                     <td><strong>{c.subdomain}</strong></td>
                     <td><span className="tag tag--hidden">{c.event_type}</span></td>
                     <td>{c.owner_email ? <span className="client-domain">{c.owner_email}</span> : <span style={{ color: "var(--muted)", fontSize: 13 }}>—</span>}</td>
+                    <td>{c.content && c.content.phone ? <span className="client-domain">{c.content.phone}</span> : <span style={{ color: "var(--muted)", fontSize: 13 }}>—</span>}</td>
                     <td><a className="icon-btn" href={`/admin?client=${c.subdomain}`} title="Open admin">{Icon.grid({})}</a></td>
                   </tr>
                 ))}
-                {recent.length === 0 && <tr><td colSpan={4} style={{ textAlign: "center", padding: 32, color: "var(--muted)" }}>No clients yet.</td></tr>}
+                {recent.length === 0 && <tr><td colSpan={5} style={{ textAlign: "center", padding: 32, color: "var(--muted)" }}>No clients yet.</td></tr>}
               </tbody>
             </table>
           </div>
