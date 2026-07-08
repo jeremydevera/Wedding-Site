@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase.js";
 import { Store } from "@/lib/store.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
-import { clientToState, stateToClientRow, rowToGuestbook, rowToRsvp, rowToQuizSub, rsvpToRow, guestbookToRow, quizToRow, guestToRow, rowToGuest } from "@/lib/mappers.js";
+import { clientToState, stateToClientRow, rowToGuestbook, rowToRsvp, rowToQuizSub, rsvpToRow, guestbookToRow, quizToRow, guestToRow, rowToGuest, ticketToRow } from "@/lib/mappers.js";
 import { loadSession } from "@/lib/auth.js";
 
 // Boot: load the active client + approved guestbook, hydrate the store cache.
@@ -462,6 +462,51 @@ export async function submitSiteRequest({ email, partnerA, partnerB, eventType, 
   }
   if (data && data.error) throw new Error(data.error);
   return data; // { ok, id }
+}
+
+// --- Support tickets (owner sticky widget + superadmin console) --------------
+// Owner files a ticket from their admin; RLS scopes insert/select to their own
+// client. `tab` is the admin tab they were on (context for the superadmin).
+export async function submitTicket(form, tab) {
+  const st = Store.get();
+  const ctx = {
+    email: st.auth?.email || st.settings?.ownerEmail || "",
+    partnerA: st.settings?.partnerA, partnerB: st.settings?.partnerB,
+    subdomain: resolveSubdomain() || "", tab: tab || "",
+  };
+  const { error } = await supabase.from("support_tickets").insert(ticketToRow(form, st.clientId, ctx));
+  if (error) throw error;
+}
+
+// Superadmin: list all tickets (RLS returns all for superadmin).
+export async function listTickets() {
+  const { data, error } = await supabase.from("support_tickets").select("*").order("created_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+// Superadmin: flip status; stamp resolved_at on resolve, clear it on reopen.
+export async function setTicketStatus(id, status) {
+  const { error } = await supabase.from("support_tickets")
+    .update({ status, resolved_at: status === "resolved" ? new Date().toISOString() : null }).eq("id", id);
+  if (error) throw error;
+}
+
+// Superadmin: save the internal reply note (or any partial patch).
+export async function updateTicket(id, patch) {
+  const { error } = await supabase.from("support_tickets").update(patch).eq("id", id);
+  if (error) throw error;
+}
+
+// Realtime for the console bell — same debounce pattern as site requests.
+export function subscribeTicketsRealtime(onChange) {
+  let t = null;
+  const ping = () => { clearTimeout(t); t = setTimeout(onChange, 400); };
+  const ch = supabase
+    .channel("sa-support")
+    .on("postgres_changes", { event: "*", schema: "public", table: "support_tickets" }, ping)
+    .subscribe();
+  return () => { clearTimeout(t); supabase.removeChannel(ch); };
 }
 
 // Superadmin: list + resolve intake requests (RLS-gated to superadmin).

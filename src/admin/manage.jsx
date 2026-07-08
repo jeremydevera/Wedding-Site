@@ -6,6 +6,8 @@ import { Button, CropModal, DecorPreview, FallingFx, Field, Icon, Input, Modal, 
 import { FX_LIST } from "@/lib/falling-fx.js";
 import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
+import { SupportWidget } from "@/admin/SupportWidget.jsx";
+import { resolveSubdomain } from "@/lib/tenant.js";
 import { signOut, createOwner } from "@/lib/auth.js";
 import { supabase } from "@/lib/supabase.js";
 import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb, updateRsvpDietDb, listSiteRequests, subscribeSiteRequestsRealtime } from "@/lib/api.js";
@@ -3535,6 +3537,8 @@ export function AdminApp() {
           </footer>
         </div>
       </main>
+      {/* Support widget — owner console, demo client only for now. */}
+      {clientId && resolveSubdomain() === "demo" && <SupportWidget tab={activeTab} />}
     </div>
   );
 }

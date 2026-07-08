@@ -90,6 +90,25 @@ export function stateToClientRow(state) {
   };
 }
 
+// Support ticket form → support_tickets row. Snapshots the submitter (email +
+// couple names) and the admin context (subdomain / tab) so the superadmin has
+// what they need without a join. Defaults: category Question, urgency Normal,
+// status open. Single-name events (birthday) produce no dangling "&".
+export function ticketToRow(form, clientId, ctx = {}) {
+  const name = [ctx.partnerA, ctx.partnerB].map((x) => (x || "").trim()).filter(Boolean).join(" & ");
+  return {
+    client_id: clientId,
+    submitter_email: ctx.email || null,
+    submitter_name: name || null,
+    subject: (form.subject || "").trim(),
+    category: form.category || "Question",
+    urgency: form.urgency || "Normal",
+    message: (form.message || "").trim(),
+    context_url: [ctx.subdomain, ctx.tab].filter(Boolean).join(" / ") || null,
+    status: "open",
+  };
+}
+
 export function rsvpToRow(r, clientId) {
   return {
     client_id: clientId,
