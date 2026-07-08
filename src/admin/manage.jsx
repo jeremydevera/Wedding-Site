@@ -2055,7 +2055,6 @@ export function SettingsAdmin() {
         <div className="panel__body" style={{ maxWidth: 760, margin: "0 auto" }}>
           <span className="field__label" style={{ display: "block", margin: "0 0 8px" }}>Live preview</span>
           <ThemePreviewFrame theme={f.theme} decorStyle={f.decorStyle} decorOn={f.decorOn} />
-          <span className="field__label" style={{ display: "block", margin: "20px 0 10px" }}>Choose a theme</span>
 
           <Field label="Choose a theme" id="s-theme-dd" hint="Preview above updates instantly; Save changes to publish.">
             <Select id="s-theme-dd" value={f.theme}
@@ -2068,6 +2067,23 @@ export function SettingsAdmin() {
                   {premiumThemes.map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
                 </optgroup>
               )}
+            </Select>
+          </Field>
+
+          <AdminToggle label="Show floating decorations" desc="A gentle animated layer over your page — the preview above shows it live." checked={f.decorOn} onChange={(v) => setKey("decorOn", v)} />
+          <Field label="Decoration style" id="s-decor" hint="Pick the motif that floats across your page — watch it in the preview above.">
+            <Select id="s-decor" value={f.decorStyle} onChange={set("decorStyle")} disabled={!f.decorOn}>
+              <option value="petals">Falling petals</option>
+              <option value="hearts">Hearts</option>
+              <option value="fireflies">Fireflies</option>
+              <option value="leaves">Drifting leaves</option>
+              <option value="confetti">Confetti</option>
+              <option value="snow">Falling snow</option>
+              <option value="bubbles">Rising bubbles</option>
+              <option value="sparkles">Sparkles</option>
+              <option value="orbs">Bokeh orbs</option>
+              <option value="balloons">Floating balloons</option>
+              {FX_LIST.map((e) => (<option key={e.id} value={"fx-" + e.id}>{e.title}</option>))}
             </Select>
           </Field>
 
@@ -2090,39 +2106,10 @@ export function SettingsAdmin() {
         <SaveFooter />
       </div>
 
-      <div className="panel">
-        <div className="panel__head"><div className="panel__title">Floating Decorations</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Animated motif that drifts over your page</span></div>
-        <div className="panel__body">
-          <AdminToggle label="Show floating decorations" desc="A gentle animated layer over your page." checked={f.decorOn} onChange={(v) => setKey("decorOn", v)} />
-          <Field label="Decoration style" id="s-decor" hint="Pick the motif that floats across your page">
-            <Select id="s-decor" value={f.decorStyle} onChange={set("decorStyle")} disabled={!f.decorOn}>
-              <option value="petals">Falling petals</option>
-              <option value="hearts">Hearts</option>
-              <option value="fireflies">Fireflies</option>
-              <option value="leaves">Drifting leaves</option>
-              <option value="confetti">Confetti</option>
-              <option value="snow">Falling snow</option>
-              <option value="bubbles">Rising bubbles</option>
-              <option value="sparkles">Sparkles</option>
-              <option value="orbs">Bokeh orbs</option>
-              <option value="balloons">Floating balloons</option>
-              {FX_LIST.map((e) => (<option key={e.id} value={"fx-" + e.id}>{e.title}</option>))}
-            </Select>
-          </Field>
-          <div style={{ marginTop: 4 }}>
-            <span className="field__label" style={{ display: "block", marginBottom: 7 }}>Preview</span>
-            {String(f.decorStyle).startsWith("fx-")
-              ? <FallingFx id={f.decorStyle.slice(3)} preview />
-              : <DecorPreview style={f.decorStyle} />}
-          </div>
-        </div>
-        <SaveFooter />
-      </div>
-
       {f.theme === "envelope" && (
       <div className="panel">
         <div className="panel__head"><div className="panel__title">Envelope Frame Photo</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Shows inside the oval frame on the opened envelope</span></div>
-        <div className="panel__body" style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+        <div className="panel__body" style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", maxWidth: 760, margin: "0 auto" }}>
           <ImageUploadField purpose="frame" label="Photo inside the oval frame" ratio="1 / 1" allowVideo framePreview="/assets/invite/p2-frame.png" defaultPreview="/assets/invite/frame-video.gif"
             value={f.frameImage} onChange={(v) => setKey("frameImage", v)}
             cropValue={f.frameImageCrop || null} onCropChange={(c) => setKey("frameImageCrop", c)} />
@@ -2140,7 +2127,7 @@ export function SettingsAdmin() {
       {f.theme === "envelope" && (
       <div className="panel">
         <div className="panel__head"><div className="panel__title">Envelope Color</div><span style={{ color: "var(--muted)", fontSize: 14 }}>The paper color of the envelope itself</span></div>
-        <div className="panel__body">
+        <div className="panel__body" style={{ maxWidth: 760, margin: "0 auto" }}>
           <div style={{ display: "flex", gap: 28, alignItems: "flex-start", flexWrap: "wrap" }}>
             <div style={{ flex: "1 1 280px", minWidth: 260 }}>
               <Field label="Paper color" id="s-envcolor" hint="Recolors the envelope paper and lace — the wax seal stays cream. The falling leaves and everything inside the envelope are unchanged.">
@@ -2209,7 +2196,7 @@ export function SettingsAdmin() {
       {f.theme === "envelope" && (
       <div className="panel">
         <div className="panel__head"><div className="panel__title">Title Size</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Size of &ldquo;A Love Letter From&rdquo; + your names on the cover</span></div>
-        <div className="panel__body">
+        <div className="panel__body" style={{ maxWidth: 760, margin: "0 auto" }}>
           {(() => {
             const sc = (f.envTitleSize != null && f.envTitleSize >= 1 && f.envTitleSize <= 10) ? f.envTitleSize : 5;
             const px = Math.round(9 + (sc - 1) / 9 * 30); // indicative preview only — real size scales with the envelope
