@@ -562,11 +562,12 @@ export function Home() {
             <SectionHead center eyebrow={sectionLabel("details", s.moduleLabels, "Details")} title="The details" />
             <div className={s.homeDetailsLayout === "horizontal" ? "home-details-row" : "home-details-stack"}>
               {detailCards.filter((c) => (c.title || "").trim() || (c.body || "").trim()).map((c, i) => (
-                <div className="card card--pad-lg info-card" key={i}>
-                  <div className="info-card__icon">{(Icon[c.icon] || Icon.rings)({})}</div>
-                  <h3>{c.title}</h3>
-                  <p>{c.body}</p>
-                </div>
+                <article className="home-dcard" key={i}>
+                  <span className="home-dcard__no" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+                  <div className="home-dcard__eyebrow">{(Icon[c.icon] || Icon.rings)({})}<i className="home-dcard__tick" aria-hidden="true" /></div>
+                  <h3 className="home-dcard__title">{c.title}</h3>
+                  <p className="home-dcard__body">{c.body}</p>
+                </article>
               ))}
             </div>
             <div style={{ textAlign: "center", marginTop: 22 }}>
