@@ -27,3 +27,11 @@ when a behavior is confirmed intentional.
 - **Where:** `src/lib/roles.js` `SUPERADMIN_ONLY` + `visibleAdminTabs`.
 - **Behavior:** No owner-edit grant can open Settings or the R2 Media library to an owner. (Details, Schedule, Venue, and the Home folders ARE grantable via Settings → Access → Owner editing.)
 - **Do NOT flag as:** "grant doesn't expose Settings/Media". Intended hard boundary.
+
+---
+
+## Home "Section header" editor is superadmin-only
+- **Where:** `src/admin/manage.jsx` → `HomeHeadFields` (returns null unless `auth.role === "superadmin"`).
+- **Behavior:** The per-section home header editor (Small Header / Big Header in each Home folder) renders only for the superadmin. Owners with Home-folder grants still edit the folder's content but never see this panel.
+- **Why:** Header copy is curated by the platform owner; clients shouldn't rewrite section headers themselves.
+- **Do NOT flag as:** "owner missing header fields", "grant doesn't expose header editor". Intended.
