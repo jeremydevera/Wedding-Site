@@ -63,14 +63,23 @@ export function TicketThread({ ticket, onChanged, leftAction, rightAction, varia
         <div ref={endRef} />
       </div>
       <div className="tk-reply">
-        <Textarea rows={3} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Write a reply…" />
-        <div className="tk-reply__actions">
-          <div className="tk-reply__left">{leftAction}</div>
-          <div className="tk-reply__right">
-            {rightAction}
-            <Button variant="primary" onClick={send} disabled={busy || !reply.trim()}>{busy ? "Sending…" : "Send reply"}</Button>
-          </div>
+        {/* iMessage-style composer: textarea + circular send (arrow-up) button.
+            Cmd/Ctrl+Enter also sends. */}
+        <div className="tk-composer">
+          <Textarea rows={2} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Write a reply…"
+            onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") send(); }} />
+          <button type="button" className="tk-send" onClick={send} disabled={busy || !reply.trim()} aria-label="Send reply">
+            {busy
+              ? <span className="tk-send__dot" aria-hidden="true" />
+              : <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5" /><path d="M5 12l7-7 7 7" /></svg>}
+          </button>
         </div>
+        {(leftAction || rightAction) && (
+          <div className="tk-reply__actions">
+            <div className="tk-reply__left">{leftAction}</div>
+            <div className="tk-reply__right">{rightAction}</div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -216,7 +225,7 @@ export function SupportPanel({ tab }) {
                 <tr key={t.id}>
                   <td><strong>{t.subject}</strong></td>
                   <td><span className="tag tag--hidden">{t.category}</span></td>
-                  <td><span className="tag" style={{ background: t.status === "open" ? "#fdecc8" : "#d6f0e0", color: t.status === "open" ? "#7a5b12" : "#1e6b45" }}>{t.status}</span></td>
+                  <td><span className={"tk-chip " + (t.status === "open" ? "tk-chip--open" : "tk-chip--resolved")}>{t.status}</span></td>
                   <td style={{ whiteSpace: "nowrap", color: "var(--muted)", fontSize: 13 }}>{fmtDate(t.created_at)}</td>
                   <td><Button variant="ghost" size="sm" onClick={() => setViewing(t)}>{Icon.mail ? Icon.mail({}) : null} View &amp; reply</Button></td>
                 </tr>
@@ -230,7 +239,7 @@ export function SupportPanel({ tab }) {
         {viewing && (
           <>
             <h3 style={{ margin: "0 0 2px" }}>{viewing.subject}</h3>
-            <p style={{ margin: "0 0 12px", color: "var(--muted)", fontSize: 13 }}>{viewing.category} · {viewing.urgency} · <span className="tag" style={{ background: viewing.status === "open" ? "#fdecc8" : "#d6f0e0", color: viewing.status === "open" ? "#7a5b12" : "#1e6b45" }}>{viewing.status}</span></p>
+            <p style={{ margin: "0 0 12px", color: "var(--muted)", fontSize: 13 }}>{viewing.category} · {viewing.urgency} · <span className={"tk-chip " + (viewing.status === "open" ? "tk-chip--open" : "tk-chip--resolved")}>{viewing.status}</span></p>
             <TicketThread ticket={viewing} onChanged={refresh} />
           </>
         )}

@@ -1037,6 +1037,46 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
    message list scrolls — header, meta, and the reply box stay pinned. */
 .ticket-thread--modal { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
 .ticket-thread--modal .tk-msgs { flex: 1 1 auto; min-height: 0; max-height: none; }
+
+/* Status chip — uppercase ops-style pill (table columns + ticket detail). */
+.tk-chip {
+  display: inline-block; padding: 3px 10px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+}
+.tk-chip--open { background: #fdecc8; color: #7a5b12; border: 1px solid #ecd39a; }
+.tk-chip--resolved { background: #d6f0e0; color: #1e6b45; border: 1px solid #b5e0c8; }
+
+/* Ticket detail — ops-rail layout: meta rail left, conversation right. */
+.tk-detail { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 22px; max-height: 74vh; min-height: 380px; }
+.tk-detail__side { border-right: 1px solid #eef1f5; padding-right: 20px; overflow-y: auto; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.tk-detail__eyebrow { font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: #94a3b8; font-weight: 700; }
+.tk-detail__subject { margin: 0; font-size: 20px; line-height: 1.25; }
+.tk-meta { width: 100%; margin-top: 6px; border-top: 1px dashed #eef1f5; }
+.tk-meta__row { display: flex; flex-direction: column; gap: 1px; padding: 8px 0; border-bottom: 1px dashed #eef1f5; }
+.tk-meta__label { font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: #94a3b8; font-weight: 700; }
+.tk-meta__value { font-size: 13.5px; color: var(--ink, #1e293b); overflow-wrap: anywhere; }
+.tk-detail__controls { width: 100%; margin-top: auto; display: grid; gap: 8px; padding-top: 12px; }
+.tk-detail__main { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+@media (max-width: 720px) {
+  .tk-detail { grid-template-columns: 1fr; max-height: none; }
+  .tk-detail__side { border-right: none; border-bottom: 1px solid #eef1f5; padding-right: 0; padding-bottom: 14px; }
+}
+
+/* iMessage-style composer: textarea with a circular send button inside. */
+.tk-composer { position: relative; }
+.tk-composer .input { padding-right: 52px; }
+.tk-send {
+  position: absolute; right: 9px; bottom: 9px;
+  width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer;
+  display: grid; place-items: center; color: #fff;
+  background: linear-gradient(180deg, #4f7fd6, #3a5fb0);
+  box-shadow: 0 4px 12px -4px rgba(58, 95, 176, .55);
+  transition: transform .15s ease, opacity .15s ease;
+}
+.tk-send:hover:not(:disabled) { transform: scale(1.06); }
+.tk-send:disabled { background: #cbd5e1; box-shadow: none; cursor: default; }
+.tk-send__dot { width: 6px; height: 6px; border-radius: 50%; background: #fff; animation: tk-pulse 0.9s ease infinite; }
+@keyframes tk-pulse { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
 .tk-msg { border: 1px solid var(--line); border-radius: 12px; padding: 10px 13px; max-width: 88%; }
 .tk-msg--client { align-self: flex-start; background: var(--surface); border-bottom-left-radius: 4px; }
 .tk-msg--support { align-self: flex-end; background: #eef4ff; border-color: #d6e2fb; border-bottom-right-radius: 4px; }

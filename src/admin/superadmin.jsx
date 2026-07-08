@@ -204,52 +204,60 @@ export function SuperOverview() {
 // select saves immediately. onRefresh re-pulls the list so the badge/table
 // stay in sync without closing the modal.
 function TicketModal({ ticket, onClose, onRefresh }) {
+  // Status is STAGED — changing the dropdown does nothing until Save is pressed.
   const [status, setStatus] = useState(ticket.status || "open");
+  const [saved, setSaved] = useState(ticket.status || "open");
   const [busy, setBusy] = useState(false);
-  const saveStatus = async (next) => {
-    if (next === status) return;
-    setStatus(next);
-    if (next === ticket.status) return;
+  const dirty = status !== saved;
+  const save = async () => {
+    if (busy || !dirty) return;
     setBusy(true);
     try {
-      await setTicketStatus(ticket.id, next);
-      toast(next === "resolved" ? "Marked resolved" : "Reopened", "success");
+      await setTicketStatus(ticket.id, status);
+      setSaved(status);
+      toast(status === "resolved" ? "Marked resolved" : "Reopened", "success");
       onRefresh && onRefresh();
     } catch (e) {
       toast(e.message || "Couldn't update status", "error");
-      setStatus(ticket.status || "open");
     } finally { setBusy(false); }
   };
-  const meta = (label, val) => val ? <div style={{ fontSize: 13, color: "var(--muted)" }}><strong style={{ color: "var(--ink)" }}>{label}:</strong> {val}</div> : null;
+  const meta = (label, val) => val ? (
+    <div className="tk-meta__row">
+      <span className="tk-meta__label">{label}</span>
+      <span className="tk-meta__value">{val}</span>
+    </div>
+  ) : null;
   return (
-    <Modal open onClose={() => !busy && onClose()} label="Support ticket">
-      {/* Fixed-height column: header + meta + reply stay pinned; ONLY the
-          message list scrolls (ticket-thread--modal flexes .tk-msgs). */}
-      <div style={{ display: "flex", flexDirection: "column", maxHeight: "72vh", minHeight: 0 }}>
-      <SectionHead eyebrow="Support ticket" title={ticket.subject} />
-      <div style={{ display: "grid", gap: 4, margin: "0 0 12px", flex: "none" }}>
-        {meta("From", ticket.submitter_name || ticket.submitter_email)}
-        {meta("Email", ticket.submitter_email)}
-        {meta("Where", ticket.context_url)}
-        {meta("Category", ticket.category)}
-        {meta("Urgency", ticket.urgency)}
-        {meta("Submitted", fmtDate(ticket.created_at))}
-      </div>
-      <TicketThread
-        ticket={ticket}
-        variant="modal"
-        onChanged={onRefresh}
-        leftAction={
-          <label className="tk-status">
-            <span>Status</span>
-            <Select id="tk-status" value={status} disabled={busy} onChange={(e) => saveStatus(e.target.value)}>
-              <option value="open">Open</option>
-              <option value="resolved">Resolved</option>
-            </Select>
-          </label>
-        }
-        rightAction={<Button variant="ghost" onClick={() => !busy && onClose()} disabled={busy}>Close</Button>}
-      />
+    <Modal open onClose={() => !busy && onClose()} label="Support ticket" wide>
+      {/* Ops-rail layout: pinned meta rail on the LEFT, conversation on the
+          RIGHT (only the message list scrolls — ticket-thread--modal). */}
+      <div className="tk-detail">
+        <aside className="tk-detail__side">
+          <div className="tk-detail__eyebrow">Support ticket</div>
+          <h3 className="tk-detail__subject">{ticket.subject}</h3>
+          <span className={"tk-chip " + (saved === "open" ? "tk-chip--open" : "tk-chip--resolved")}>{saved}</span>
+          <div className="tk-meta">
+            {meta("From", ticket.submitter_name || ticket.submitter_email)}
+            {meta("Email", ticket.submitter_email)}
+            {meta("Where", ticket.context_url)}
+            {meta("Category", ticket.category)}
+            {meta("Urgency", ticket.urgency)}
+            {meta("Submitted", fmtDate(ticket.created_at))}
+          </div>
+          <div className="tk-detail__controls">
+            <Field label="Status" id="tk-status">
+              <Select id="tk-status" value={status} disabled={busy} onChange={(e) => setStatus(e.target.value)}>
+                <option value="open">Open</option>
+                <option value="resolved">Resolved</option>
+              </Select>
+            </Field>
+            <Button variant="primary" block onClick={save} disabled={busy || !dirty}>{busy ? "Saving…" : "Save"}</Button>
+            <Button variant="ghost" block onClick={() => !busy && onClose()} disabled={busy}>Close</Button>
+          </div>
+        </aside>
+        <section className="tk-detail__main">
+          <TicketThread ticket={ticket} variant="modal" onChanged={onRefresh} />
+        </section>
       </div>
     </Modal>
   );
@@ -294,7 +302,7 @@ export function SupportAdmin() {
                   <td>{t.subject}</td>
                   <td><span className="tag tag--hidden">{t.category}</span></td>
                   <td>{t.urgency}</td>
-                  <td><span className="tag" style={{ background: t.status === "open" ? "#fdecc8" : "#d6f0e0", color: t.status === "open" ? "#7a5b12" : "#1e6b45" }}>{t.status}</span></td>
+                  <td><span className={"tk-chip " + (t.status === "open" ? "tk-chip--open" : "tk-chip--resolved")}>{t.status}</span></td>
                   <td style={{ whiteSpace: "nowrap", color: "var(--muted)", fontSize: 13 }}>{fmtDate(t.created_at)}</td>
                   <td><Button variant="ghost" size="sm" onClick={() => setTicket(t)}>{Icon.eye({})} Open</Button></td>
                 </tr>
