@@ -859,7 +859,11 @@ export function ClientsAdmin() {
                 <div style={row}><span style={lab}>Status</span><span className={"tag " + (c.is_active ? "tag--attending" : "tag--hidden")}>{c.is_active ? "Active" : "Disabled"}</span></div>
                 <div style={row}><span style={lab}>Event type</span><span style={{ textTransform: "capitalize" }}>{c.event_type}</span></div>
                 <div style={row}><span style={lab}>Theme</span><span>{THEMES[c.template_key]?.label || c.template_key}</span></div>
+                <div style={row}><span style={lab}>Couple</span><span>{[c.content?.partnerA, c.content?.partnerB].filter(Boolean).join(" & ") || <span style={{ color: "var(--muted)" }}>—</span>}</span></div>
                 <div style={row}><span style={lab}>Owner login</span><span>{c.owner_email || <span style={{ color: "var(--muted)" }}>none yet</span>}</span></div>
+                <div style={row}><span style={lab}>Contact</span><span>{c.content?.phone || <span style={{ color: "var(--muted)" }}>—</span>}</span></div>
+                <div style={row}><span style={lab}>Wedding date</span><span>{c.content?.weddingDateLabel || c.content?.weddingDate || <span style={{ color: "var(--muted)" }}>—</span>}</span></div>
+                <div style={row}><span style={lab}>Venue</span><span>{[c.content?.venueName, c.content?.venueAddress].filter(Boolean).join(", ") || <span style={{ color: "var(--muted)" }}>—</span>}</span></div>
                 <div style={row}><span style={lab}>Created</span><span>{c.created_at ? new Date(c.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "—"}</span></div>
                 <div style={row}><span style={lab}>Modules</span><span>{modsOn.length ? modsOn.join(", ") : "none"}</span></div>
                 {notes[c.id] && <div style={row}><span style={lab}>Note</span><span>{notes[c.id]}</span></div>}
@@ -890,6 +894,7 @@ export function ClientsAdmin() {
                 <div style={row}><span style={lab}>Status</span><span className={"tag " + (r.status === "pending" ? "tag--maybe" : r.status === "approved" ? "tag--attending" : "tag--not_attending")}>{r.status}</span></div>
                 <div style={row}><span style={lab}>Site address</span><span className="client-domain">{r.subdomain}.{PLATFORM_DOMAIN}</span></div>
                 <div style={row}><span style={lab}>Email</span><span>{r.email || "—"}</span></div>
+                <div style={row}><span style={lab}>Contact</span><span>{c.phone || "—"}</span></div>
                 <div style={row}><span style={lab}>Date</span><span>{c.weddingDateLabel || c.weddingDate || "Not set"}</span></div>
                 <div style={row}><span style={lab}>Theme</span><span>{THEMES[r.template_key]?.label || r.template_key}</span></div>
                 <div style={row}><span style={lab}>Venue</span><span>{[c.venueName, c.venueAddress].filter(Boolean).join(" — ") || "Not set"}</span></div>
