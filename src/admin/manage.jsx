@@ -2070,9 +2070,12 @@ export function SettingsAdmin() {
             </Select>
           </Field>
 
-          <AdminToggle noRule label="Show floating decorations" checked={f.decorOn} onChange={(v) => setKey("decorOn", v)} />
+          {/* "None" replaces the old show/hide toggle: picking None turns the
+              decor layer off (decorOn:false) without losing the last style. */}
           <Field label="Decoration style" id="s-decor">
-            <Select id="s-decor" value={f.decorStyle} onChange={set("decorStyle")} disabled={!f.decorOn}>
+            <Select id="s-decor" value={f.decorOn ? f.decorStyle : ""}
+              onChange={(e) => { const v = e.target.value; if (!v) setKey("decorOn", false); else Store.updateSettings({ decorOn: true, decorStyle: v }); }}>
+              <option value="">None</option>
               <option value="petals">Falling petals</option>
               <option value="hearts">Hearts</option>
               <option value="fireflies">Fireflies</option>
