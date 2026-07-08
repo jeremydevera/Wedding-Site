@@ -5,10 +5,72 @@
 // manage.jsx. Clicking the launcher's × hides it entirely for the session —
 // the Support tab remains the way back in.
 import React from "react";
-import { submitTicket, listTickets } from "@/lib/api.js";
+import { submitTicket, listTickets, listTicketMessages, postTicketMessage } from "@/lib/api.js";
 import { Button, Field, Icon, Input, Modal, Select, Textarea, toast } from "@/ui/components.jsx";
 import { fmtDate } from "@/admin/core.jsx";
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
+
+// Shared conversation view for a ticket: the original request, the message
+// thread (owner ⇄ support), and a reply box. Used by both the owner's Support
+// tab and the superadmin ticket modal. postTicketMessage pins sender_role to the
+// caller's actual role; an owner reply reopens a resolved ticket (DB trigger).
+export function TicketThread({ ticket, onChanged }) {
+  const [msgs, setMsgs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [reply, setReply] = useState("");
+  const [busy, setBusy] = useState(false);
+  const endRef = useRef(null);
+  const load = () => listTicketMessages(ticket.id)
+    .then((rows) => setMsgs(rows || []))
+    .catch(() => {})
+    .finally(() => setLoading(false));
+  useEffect(() => { setLoading(true); load(); }, [ticket.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (endRef.current && endRef.current.scrollIntoView) endRef.current.scrollIntoView({ block: "nearest" }); }, [msgs.length]);
+
+  async function send() {
+    if (busy || !reply.trim()) return;
+    setBusy(true);
+    try {
+      await postTicketMessage(ticket.id, reply);
+      setReply("");
+      await load();
+      onChanged && onChanged();
+    } catch (e) {
+      toast(e.message || "Couldn't send your reply — try again.", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="ticket-thread">
+      <div className="tk-msgs">
+        {/* Original request */}
+        <div className="tk-msg tk-msg--client">
+          <div className="tk-msg__who">{ticket.submitter_name || ticket.submitter_email || "Client"} · original request</div>
+          <div className="tk-msg__body">{ticket.message}</div>
+          <div className="tk-msg__at">{fmtDate(ticket.created_at)}</div>
+        </div>
+        {/* Replies */}
+        {loading && <div style={{ color: "var(--muted)", fontSize: 13, padding: "6px 2px" }}>Loading replies…</div>}
+        {!loading && msgs.map((m) => (
+          <div key={m.id} className={"tk-msg " + (m.sender_role === "superadmin" ? "tk-msg--support" : "tk-msg--client")}>
+            <div className="tk-msg__who">{m.sender_role === "superadmin" ? (m.sender_name || "Support") : (m.sender_name || "Client")}</div>
+            <div className="tk-msg__body">{m.body}</div>
+            <div className="tk-msg__at">{fmtDate(m.created_at)}</div>
+          </div>
+        ))}
+        <div ref={endRef} />
+      </div>
+      <div className="tk-reply">
+        <Textarea rows={3} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Write a reply…" />
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+          <Button variant="primary" onClick={send} disabled={busy || !reply.trim()}>{busy ? "Sending…" : "Send reply"}</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Friendly headset "agent" avatar — self-contained SVG, console-neutral colors.
 function AgentAvatar({ size = 40 }) {
@@ -121,6 +183,7 @@ export function SupportPanel({ tab }) {
   const [mine, setMine] = useState([]);
   const [loading, setLoading] = useState(true);
   const [compose, setCompose] = useState(false);
+  const [viewing, setViewing] = useState(null); // ticket open in the thread modal
   const refresh = () => listTickets().then((rows) => setMine(rows || [])).catch(() => {}).finally(() => setLoading(false));
   useEffect(() => { refresh(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const openCount = mine.filter((t) => t.status === "open").length;
@@ -141,7 +204,7 @@ export function SupportPanel({ tab }) {
         </div>
         <div className="panel__body--flush table-wrap">
           <table className="tbl">
-            <thead><tr><th>Subject</th><th>Category</th><th>Status</th><th>Our reply</th><th>When</th></tr></thead>
+            <thead><tr><th>Subject</th><th>Category</th><th>Status</th><th>When</th><th></th></tr></thead>
             <tbody>
               {loading && <tr><td colSpan={5} style={{ color: "var(--muted)", padding: 18 }}>Loading…</td></tr>}
               {!loading && mine.length === 0 && <tr><td colSpan={5} style={{ color: "var(--muted)", padding: 18 }}>No tickets yet — send one above if you need a hand.</td></tr>}
@@ -150,14 +213,24 @@ export function SupportPanel({ tab }) {
                   <td><strong>{t.subject}</strong></td>
                   <td><span className="tag tag--hidden">{t.category}</span></td>
                   <td><span className="tag" style={{ background: t.status === "open" ? "#fdecc8" : "#d6f0e0", color: t.status === "open" ? "#7a5b12" : "#1e6b45" }}>{t.status}</span></td>
-                  <td style={{ maxWidth: 320, whiteSpace: "pre-wrap" }}>{t.admin_note || <span style={{ color: "var(--muted)" }}>—</span>}</td>
                   <td style={{ whiteSpace: "nowrap", color: "var(--muted)", fontSize: 13 }}>{fmtDate(t.created_at)}</td>
+                  <td><Button variant="ghost" size="sm" onClick={() => setViewing(t)}>{Icon.mail ? Icon.mail({}) : null} View &amp; reply</Button></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+
+      <Modal open={!!viewing} onClose={() => setViewing(null)} label="Support ticket">
+        {viewing && (
+          <>
+            <h3 style={{ margin: "0 0 2px" }}>{viewing.subject}</h3>
+            <p style={{ margin: "0 0 12px", color: "var(--muted)", fontSize: 13 }}>{viewing.category} · {viewing.urgency} · <span className="tag" style={{ background: viewing.status === "open" ? "#fdecc8" : "#d6f0e0", color: viewing.status === "open" ? "#7a5b12" : "#1e6b45" }}>{viewing.status}</span></p>
+            <TicketThread ticket={viewing} onChanged={refresh} />
+          </>
+        )}
+      </Modal>
 
       <Modal open={compose} onClose={() => setCompose(false)} label="New support ticket">
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>

@@ -9,6 +9,7 @@ import { PLATFORM_DOMAIN, clientUrl, isValidSubdomain } from "@/config/site.js";
 import { Button, confirmDialog, Field, Icon, Input, Modal, Pager, SectionHead, Select, Textarea, toast, usePaged } from "@/ui/components.jsx";
 import { listMedia, deleteFromR2, listSiteRequests, approveSiteRequest, setSiteRequestStatus, updateSiteRequest, deleteSiteRequest, listTickets, setTicketStatus, updateTicket, subscribeTicketsRealtime } from "@/lib/api.js";
 import { ApplyWizard } from "@/admin/apply.jsx";
+import { TicketThread } from "@/admin/SupportWidget.jsx";
 // fmtDate: DEFECT-2026-07-09-A — the Support view/TicketModal used fmtDate
 // without this import; the render-time ReferenceError unmounted the whole
 // console (white screen). Guarded by superadminSupport.test.jsx.
@@ -198,28 +199,32 @@ export function SuperOverview() {
   );
 }
 
-// Superadmin ticket detail: full message + internal reply note + Open/Resolved.
-function TicketModal({ ticket, onClose, onSaved }) {
-  const [note, setNote] = useState(ticket.admin_note || "");
+// Superadmin ticket detail: request meta + Open/Resolved status + the reply
+// thread (owner ⇄ support). Replies post through TicketThread; the status
+// select saves immediately. onRefresh re-pulls the list so the badge/table
+// stay in sync without closing the modal.
+function TicketModal({ ticket, onClose, onRefresh }) {
   const [status, setStatus] = useState(ticket.status || "open");
   const [busy, setBusy] = useState(false);
-  const save = async () => {
-    if (busy) return;
+  const saveStatus = async (next) => {
+    if (next === status) return;
+    setStatus(next);
+    if (next === ticket.status) return;
     setBusy(true);
     try {
-      await updateTicket(ticket.id, { admin_note: note });
-      if (status !== ticket.status) await setTicketStatus(ticket.id, status);
-      toast("Ticket saved", "success");
-      onSaved && onSaved();
+      await setTicketStatus(ticket.id, next);
+      toast(next === "resolved" ? "Marked resolved" : "Reopened", "success");
+      onRefresh && onRefresh();
     } catch (e) {
-      toast(e.message || "Save failed", "error");
+      toast(e.message || "Couldn't update status", "error");
+      setStatus(ticket.status || "open");
     } finally { setBusy(false); }
   };
   const meta = (label, val) => val ? <div style={{ fontSize: 13, color: "var(--muted)" }}><strong style={{ color: "var(--ink)" }}>{label}:</strong> {val}</div> : null;
   return (
     <Modal open onClose={() => !busy && onClose()} label="Support ticket">
       <SectionHead eyebrow="Support ticket" title={ticket.subject} />
-      <div style={{ display: "grid", gap: 4, margin: "0 0 14px" }}>
+      <div style={{ display: "grid", gap: 4, margin: "0 0 12px" }}>
         {meta("From", ticket.submitter_name || ticket.submitter_email)}
         {meta("Email", ticket.submitter_email)}
         {meta("Where", ticket.context_url)}
@@ -227,14 +232,12 @@ function TicketModal({ ticket, onClose, onSaved }) {
         {meta("Urgency", ticket.urgency)}
         {meta("Submitted", fmtDate(ticket.created_at))}
       </div>
-      <div style={{ background: "var(--surface-2, #f7f8fa)", border: "1px solid var(--line)", borderRadius: 8, padding: "12px 14px", whiteSpace: "pre-wrap", marginBottom: 14 }}>{ticket.message}</div>
-      <Field label="Reply / internal note" id="tk-note"><Textarea id="tk-note" rows={4} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Notes or the reply you'll send…" /></Field>
-      <div className="field-row field-row--2" style={{ alignItems: "end" }}>
-        <Field label="Status" id="tk-status"><Select id="tk-status" value={status} onChange={(e) => setStatus(e.target.value)}><option value="open">Open</option><option value="resolved">Resolved</option></Select></Field>
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingBottom: 2 }}>
-          <Button variant="ghost" onClick={() => !busy && onClose()} disabled={busy}>Close</Button>
-          <Button variant="primary" onClick={save} disabled={busy}>{busy ? "Saving…" : "Save"}</Button>
-        </div>
+      <div style={{ maxWidth: 240, margin: "0 0 14px" }}>
+        <Field label="Status" id="tk-status"><Select id="tk-status" value={status} disabled={busy} onChange={(e) => saveStatus(e.target.value)}><option value="open">Open</option><option value="resolved">Resolved</option></Select></Field>
+      </div>
+      <TicketThread ticket={ticket} onChanged={onRefresh} />
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 14 }}>
+        <Button variant="ghost" onClick={() => !busy && onClose()} disabled={busy}>Close</Button>
       </div>
     </Modal>
   );
@@ -271,6 +274,7 @@ export function ClientsAdmin() {
   const [requests, setRequests] = useState([]);     // prospect intake (/apply) awaiting approval
   const [tickets, setTickets] = useState([]);        // support tickets (owner widget)
   const [ticket, setTicket] = useState(null);        // ticket open in the detail modal
+  const [ticketFilter, setTicketFilter] = useState("open"); // support view: open | resolved
   const [reqInfo, setReqInfo] = useState(null);      // request shown in the details modal (eye)
   const [info, setInfo] = useState(null);            // client shown in the info modal (eye icon)
   const [reqEdit, setReqEdit] = useState(null);      // request being edited in a modal (pencil)
@@ -586,15 +590,25 @@ export function ClientsAdmin() {
         </button>
       </div>
 
-      {view === "support" && (
+      {view === "support" && (() => {
+        const openN = tickets.filter((t) => t.status === "open").length;
+        const resolvedN = tickets.filter((t) => t.status === "resolved").length;
+        const shown = tickets.filter((t) => (ticketFilter === "resolved" ? t.status === "resolved" : t.status === "open"));
+        return (
         <div className="panel">
           <div className="panel__head"><div className="panel__title">Support tickets</div><span style={{ color: "var(--muted)", fontSize: 13 }}>Help requests from client admins</span></div>
+          <div className="admin-toolbar" style={{ padding: "12px 16px" }}>
+            <div className="seg">
+              <button type="button" className={ticketFilter === "open" ? "on" : ""} onClick={() => setTicketFilter("open")}>Open ({openN})</button>
+              <button type="button" className={ticketFilter === "resolved" ? "on" : ""} onClick={() => setTicketFilter("resolved")}>Resolved ({resolvedN})</button>
+            </div>
+          </div>
           <div className="panel__body--flush table-wrap">
             <table className="tbl">
               <thead><tr><th>Client</th><th>Subject</th><th>Category</th><th>Urgency</th><th>Status</th><th>When</th><th></th></tr></thead>
               <tbody>
-                {tickets.length === 0 && <tr><td colSpan={7} style={{ color: "var(--muted)", padding: 18 }}>No tickets yet.</td></tr>}
-                {tickets.map((t) => (
+                {shown.length === 0 && <tr><td colSpan={7} style={{ color: "var(--muted)", padding: 18 }}>No {ticketFilter} tickets.</td></tr>}
+                {shown.map((t) => (
                   <tr key={t.id}>
                     <td><strong>{t.submitter_name || t.submitter_email || "—"}</strong><div style={{ color: "var(--muted)", fontSize: 12 }}>{t.context_url || ""}</div></td>
                     <td>{t.subject}</td>
@@ -609,9 +623,10 @@ export function ClientsAdmin() {
             </table>
           </div>
         </div>
-      )}
+        );
+      })()}
 
-      {ticket && <TicketModal ticket={ticket} onClose={() => setTicket(null)} onSaved={async () => { setTicket(null); try { setTickets(await listTickets()); } catch (_) {} }} />}
+      {ticket && <TicketModal ticket={ticket} onClose={() => setTicket(null)} onRefresh={async () => { try { setTickets(await listTickets()); } catch (_) {} }} />}
 
       {view === "requests" && (
         <div className="panel">

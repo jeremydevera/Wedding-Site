@@ -498,6 +498,30 @@ export async function updateTicket(id, patch) {
   if (error) throw error;
 }
 
+// --- Support ticket thread (owner ⇄ superadmin replies) ---------------------
+// Messages on a ticket, oldest-first. RLS returns only rows the caller may see
+// (own-client owner, or any for superadmin).
+export async function listTicketMessages(ticketId) {
+  const { data, error } = await supabase.from("support_ticket_messages")
+    .select("*").eq("ticket_id", ticketId).order("created_at", { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+// Append a reply to a ticket. senderRole ('owner'|'superadmin') is pinned to the
+// caller's actual role (RLS also enforces this). An owner reply reopens the
+// ticket via the support_reopen_after_owner_msg trigger.
+export async function postTicketMessage(ticketId, body) {
+  const st = Store.get();
+  const role = st.auth?.role === "superadmin" ? "superadmin" : "owner";
+  const senderName = role === "superadmin"
+    ? "Support"
+    : ([st.settings?.partnerA, st.settings?.partnerB].filter(Boolean).join(" & ") || st.auth?.email || "Client");
+  const { error } = await supabase.from("support_ticket_messages")
+    .insert({ ticket_id: ticketId, sender_role: role, sender_name: senderName, body: (body || "").trim() });
+  if (error) throw error;
+}
+
 // Realtime for the console bell — same debounce pattern as site requests.
 // DEFECT-2026-07-09-B: the channel topic MUST be unique per subscriber.
 // supabase-js caches channels by topic; with a fixed "sa-support" name the
