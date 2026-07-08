@@ -1047,7 +1047,14 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .tk-chip--resolved { background: #d6f0e0; color: #1e6b45; border: 1px solid #b5e0c8; }
 
 /* Ticket detail — ops-rail layout: meta rail left, conversation right. */
-.tk-detail { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 22px; max-height: 74vh; min-height: 380px; }
+.tk-detail {
+  display: grid; grid-template-columns: 240px minmax(0, 1fr);
+  /* height (not max-height) + minmax(0,1fr) row: a grid's tracks ignore
+     max-height, so a long message used to blow past the modal — this clamps
+     the conversation pane and .tk-msgs does ALL the scrolling. */
+  grid-template-rows: minmax(0, 1fr);
+  gap: 22px; height: min(74vh, 640px); min-height: 380px; overflow: hidden;
+}
 .tk-detail__side { border-right: 1px solid #eef1f5; padding-right: 20px; overflow-y: auto; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
 .tk-detail__eyebrow { font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: #94a3b8; font-weight: 700; }
 .tk-detail__subject { margin: 0; font-size: 20px; line-height: 1.25; }
@@ -1058,7 +1065,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .tk-detail__controls { width: 100%; margin-top: auto; display: grid; gap: 8px; padding-top: 12px; }
 .tk-detail__main { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
 @media (max-width: 720px) {
-  .tk-detail { grid-template-columns: 1fr; max-height: none; }
+  .tk-detail { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); height: 78vh; }
   .tk-detail__side { border-right: none; border-bottom: 1px solid #eef1f5; padding-right: 0; padding-bottom: 14px; }
 }
 

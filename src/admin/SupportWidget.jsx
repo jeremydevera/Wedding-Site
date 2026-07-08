@@ -237,11 +237,11 @@ export function SupportPanel({ tab }) {
 
       <Modal open={!!viewing} onClose={() => setViewing(null)} label="Support ticket">
         {viewing && (
-          <>
-            <h3 style={{ margin: "0 0 2px" }}>{viewing.subject}</h3>
-            <p style={{ margin: "0 0 12px", color: "var(--muted)", fontSize: 13 }}>{viewing.category} · {viewing.urgency} · <span className={"tk-chip " + (viewing.status === "open" ? "tk-chip--open" : "tk-chip--resolved")}>{viewing.status}</span></p>
-            <TicketThread ticket={viewing} onChanged={refresh} />
-          </>
+          <div style={{ display: "flex", flexDirection: "column", height: "min(70vh, 560px)", minHeight: 0 }}>
+            <h3 style={{ margin: "0 0 2px", flex: "none" }}>{viewing.subject}</h3>
+            <p style={{ margin: "0 0 12px", color: "var(--muted)", fontSize: 13, flex: "none" }}>{viewing.category} · {viewing.urgency} · <span className={"tk-chip " + (viewing.status === "open" ? "tk-chip--open" : "tk-chip--resolved")}>{viewing.status}</span></p>
+            <TicketThread ticket={viewing} variant="modal" onChanged={refresh} />
+          </div>
         )}
       </Modal>
 
