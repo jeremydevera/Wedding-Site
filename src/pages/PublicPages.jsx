@@ -401,6 +401,12 @@ function HomeMapsCarousel({ maps }) {
 
 export function Home() {
   const { settings, story, schedule: scheduleRaw, entourage, attire, playlist, venues, detailCards } = useStore();
+  // Per-section home header overrides (Home → each folder → "Section header").
+  // Blank/absent falls back to the stock copy, so new clients look unchanged.
+  const hh = (k, defEyebrow, defTitle) => {
+    const h = (settings.homeHeads || {})[k] || {};
+    return { e: (h.eyebrow || "").trim() || defEyebrow, t: (h.title || "").trim() || defTitle };
+  };
   // Guard against a non-array truthy schedule in tenant content (bad import /
   // manual DB edit): clientToState only falls back to seeds on falsiness, so an
   // object/string would reach .slice/.length below and white-screen the home.
@@ -529,7 +535,7 @@ export function Home() {
       {moduleEnabled(s.modules, "venue") && s.showMap !== false && homeMaps.length > 0 && (
         <section className="block" id="home-map">
           <div className="container">
-            <SectionHead center eyebrow="The Venue" title="Where we'll celebrate" />
+            <SectionHead center eyebrow={hh("maps", "The Venue", "Where we'll celebrate").e} title={hh("maps", "The Venue", "Where we'll celebrate").t} />
             {homeMaps.length > 1
               ? <HomeMapsCarousel maps={homeMaps} />
               : <HomeMapBlock m={homeMaps[0]} />}
@@ -542,7 +548,7 @@ export function Home() {
       {s.showTimeline !== false && moduleEnabled(s.modules, "schedule") && (
       <section className="block block--tint" id="home-schedule">
         <div className="container">
-          <SectionHead center eyebrow="The Day" title="A glimpse of the schedule" />
+          <SectionHead center eyebrow={hh("schedule", "The Day", "A glimpse of the schedule").e} title={hh("schedule", "The Day", "A glimpse of the schedule").t} />
           <ScheduleView items={s.homeTimelineLayout === "horizontal" ? schedule : schedule.slice(0, 3)} style={s.homeTimelineLayout === "horizontal" ? "horizontal" : "alt"} />
           {s.homeTimelineLayout !== "horizontal" && schedule.length > 0 && (
             <div style={{ textAlign: "center", marginTop: 20 }}>
@@ -559,7 +565,7 @@ export function Home() {
       {s.showHomeDetails === true && moduleEnabled(s.modules, "details") && detailCards.filter((c) => (c.title || "").trim() || (c.body || "").trim()).length > 0 && (
         <section className="block" id="home-details">
           <div className="container">
-            <SectionHead center eyebrow={sectionLabel("details", s.moduleLabels, "Details")} title="The details" />
+            <SectionHead center eyebrow={hh("details", sectionLabel("details", s.moduleLabels, "Details"), "").e} title={hh("details", "", "The details").t} />
             {s.homeDetailsLayout === "horizontal"
               ? <HomeDetailsCarousel cards={detailCards.filter((c) => (c.title || "").trim() || (c.body || "").trim())} />
               : (
@@ -596,12 +602,14 @@ export function Home() {
 // Public attire-guide section: each group has an example image and a colour
 // palette. Renders nothing when there are no groups with any content.
 export function AttireView({ groups }) {
+  const { settings } = useStore();
+  const h = (settings.homeHeads || {}).attire || {};
   const list = (groups || []).filter((g) => g && ((g.name || "").trim() || g.image || (g.desc || "").trim() || (g.palette || []).length));
   if (!list.length) return null;
   return (
     <section className="block" id="home-attire">
       <div className="container">
-        <SectionHead center eyebrow="What to wear" title="Attire guide" />
+        <SectionHead center eyebrow={(h.eyebrow || "").trim() || "What to wear"} title={(h.title || "").trim() || "Attire guide"} />
         <div className="attire-grid">
           {list.map((g) => {
             const pal = g.palette || [];
@@ -633,12 +641,14 @@ export function AttireView({ groups }) {
 // Public entourage section: each group titled, people listed as "Name — Role".
 // Renders nothing when there are no groups with people.
 export function EntourageView({ groups }) {
+  const { settings } = useStore();
+  const h = (settings.homeHeads || {}).entourage || {};
   const list = (groups || []).filter((g) => g && (g.people || []).length);
   if (!list.length) return null;
   return (
     <section className="block" id="home-entourage">
       <div className="container">
-        <SectionHead center eyebrow="With Us" title="The Entourage" />
+        <SectionHead center eyebrow={(h.eyebrow || "").trim() || "With Us"} title={(h.title || "").trim() || "The Entourage"} />
         <div className="ent-grid">
           {list.map((g) => (
             <div className="ent-group" key={g.id}>

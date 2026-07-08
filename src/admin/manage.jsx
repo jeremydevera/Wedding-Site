@@ -2480,6 +2480,33 @@ function ClosesAtInput({ value, onChange }) {
   );
 }
 
+// Per-section home-page header editor (eyebrow + title). Blank = the default
+// shown as the placeholder, so new clients start with the stock copy and only
+// stored overrides change the site (settings.homeHeads = { [k]: {eyebrow,title} }).
+function HomeHeadFields({ k, defEyebrow, defTitle, withFooter }) {
+  const { settings } = useStore();
+  const cur = (settings.homeHeads || {})[k] || {};
+  const put = (field) => (e) =>
+    Store.updateSettings({ homeHeads: { ...(settings.homeHeads || {}), [k]: { ...cur, [field]: e.target.value } } });
+  return (
+    <>
+      <div className="panel">
+        <div className="panel__head"><div className="panel__title">Section header</div></div>
+        <div className="panel__body" style={{ maxWidth: 900, margin: "0 auto" }}>
+          <p style={{ color: "var(--muted)", margin: "0 0 14px", fontSize: 14 }}>
+            The small line and heading shown above this section on the home page. Leave blank to keep the default.
+          </p>
+          <div className="field-row field-row--2">
+            <Field label="Small line (eyebrow)" id={"hh-e-" + k}><Input id={"hh-e-" + k} value={cur.eyebrow || ""} onChange={put("eyebrow")} placeholder={defEyebrow} /></Field>
+            <Field label="Heading" id={"hh-t-" + k}><Input id={"hh-t-" + k} value={cur.title || ""} onChange={put("title")} placeholder={defTitle} /></Field>
+          </div>
+        </div>
+      </div>
+      {withFooter ? <SaveFooter /> : null}
+    </>
+  );
+}
+
 export function HomeAdmin() {
   const { settings, auth } = useStore();
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
@@ -2584,6 +2611,7 @@ export function HomeAdmin() {
       )}
 
       {can("timeline") && active === "timeline" && (
+        <>
         <div className="panel">
           <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Home timeline</div><HeadSwitch label="Show timeline on the home page" checked={f.showTimeline !== false} onChange={(v) => toggleShow("showTimeline", v)} /></div>
           <div className="panel__body">
@@ -2608,9 +2636,12 @@ export function HomeAdmin() {
             </div>
           </div>
         </div>
+        <HomeHeadFields k="schedule" defEyebrow="The Day" defTitle="A glimpse of the schedule" withFooter />
+        </>
       )}
 
       {can("homeDetails") && active === "details" && (
+        <>
         <div className="panel">
           <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Home details</div><HeadSwitch label="Show details on the home page" checked={f.showHomeDetails === true} onChange={(v) => toggleShow("showHomeDetails", v)} /></div>
           <div className="panel__body">
@@ -2635,6 +2666,8 @@ export function HomeAdmin() {
             </div>
           </div>
         </div>
+        <HomeHeadFields k="details" defEyebrow="Details" defTitle="The details" withFooter />
+        </>
       )}
 
       {can("music") && active === "music" && (
@@ -2674,16 +2707,19 @@ export function HomeAdmin() {
       {canEntourage && active === "entourage" && (
         <>
           <EntourageAdmin headRight={<HeadSwitch label="Show entourage on the home page" checked={f.showEntourage !== false} onChange={(v) => toggleShow("showEntourage", v)} />} />
+          <HomeHeadFields k="entourage" defEyebrow="With Us" defTitle="The Entourage" withFooter />
         </>
       )}
       {can("attire") && active === "attire" && (
         <>
           <AttireAdmin headRight={<HeadSwitch label="Show attire guide on the home page" checked={f.showAttire !== false} onChange={(v) => toggleShow("showAttire", v)} />} />
+          <HomeHeadFields k="attire" defEyebrow="What to wear" defTitle="Attire guide" withFooter />
         </>
       )}
       {can("maps") && active === "maps" && (
         <>
           <VenueAdmin section="home" headRight={<HeadSwitch label="Show map on the home page" checked={f.showMap !== false} onChange={(v) => toggleShow("showMap", v)} />} />
+          <HomeHeadFields k="maps" defEyebrow="The Venue" defTitle="Where we'll celebrate" />
         </>
       )}
     </div>

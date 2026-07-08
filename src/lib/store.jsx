@@ -43,6 +43,7 @@ export const DEFAULT_SETTINGS = {
   // the default labels; a per-key value (e.g. { guestbook: "Well Wishes" }) renames
   // that tab everywhere it shows (nav, drawer, footer). Set in Settings → Features.
   moduleLabels: {},
+  homeHeads: {},   // per-home-section header overrides { [k]: { eyebrow, title } }
   hashtag: "#JeremyAndIrish2026",
   adminPassword: "wedding",
   uploadsEnabled: true,
