@@ -19,7 +19,7 @@ import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
 import { visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel, moduleEnabled, OWNER_EDIT_HOME, OWNER_EDIT_TABS } from "@/lib/roles.js";
 import { MAP_STYLES, mapStyleKey, mapStyleFilter } from "@/lib/mapStyles.js";
-import { ClientsAdmin, R2LibraryAdmin, SuperOverview } from "@/admin/superadmin.jsx";
+import { ClientsAdmin, R2LibraryAdmin, SuperOverview, SupportAdmin } from "@/admin/superadmin.jsx";
 import { CloudflareHealth } from "@/admin/CloudflareHealth.jsx";
 import { LocationPicker } from "@/ui/location-picker.jsx";
 import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
@@ -3448,7 +3448,7 @@ export function AdminApp() {
   }
   const activeTab = tabs.some((t) => t.key === tab) ? tab : (tabs[0]?.key || "dashboard");
   const title = (tabs.find((t) => t.key === activeTab) || { label: "Admin" }).label;
-  const onPlatformTab = activeTab === "overview" || activeTab === "clients";
+  const onPlatformTab = activeTab === "overview" || activeTab === "clients" || (activeTab === "support" && !clientId);
 
   const canArrange = settings.arrangeEnabled && isPremiumTheme(settings.theme);
   const startArrange = () => { try { sessionStorage.setItem("arrangeStart", "1"); } catch (e) {} go("home"); };
@@ -3539,7 +3539,7 @@ export function AdminApp() {
           {activeTab === "clients" && <ClientsAdmin />}
           {activeTab === "r2media" && !clientId && <R2LibraryAdmin />}
           {activeTab === "health" && !clientId && <CloudflareHealth />}
-          {activeTab === "support" && clientId && <SupportPanel tab={activeTab} />}
+          {activeTab === "support" && (clientId ? <SupportPanel tab={activeTab} /> : <SupportAdmin />)}
           </AdminSaveCtx.Provider>
           {/* Footer: a clear end-of-content marker at the bottom of the scroll. */}
           <footer className="admin__footer">

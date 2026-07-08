@@ -243,6 +243,59 @@ function TicketModal({ ticket, onClose, onRefresh }) {
   );
 }
 
+// Superadmin top-level "Support" tab: every client's tickets, split Open /
+// Resolved, each opening the reply thread (TicketModal). Live-refreshes on new
+// owner submissions.
+export function SupportAdmin() {
+  const [tickets, setTickets] = useState([]);
+  const [ticket, setTicket] = useState(null);        // ticket open in the detail modal
+  const [ticketFilter, setTicketFilter] = useState("open"); // open | resolved
+  const [loading, setLoading] = useState(true);
+  const load = () => listTickets().then((rows) => setTickets(rows || [])).catch(() => {}).finally(() => setLoading(false));
+  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const off = subscribeTicketsRealtime(() => { listTickets().then((r) => setTickets(r || [])).catch(() => {}); });
+    return off;
+  }, []);
+  const openN = tickets.filter((t) => t.status === "open").length;
+  const resolvedN = tickets.filter((t) => t.status === "resolved").length;
+  const shown = tickets.filter((t) => (ticketFilter === "resolved" ? t.status === "resolved" : t.status === "open"));
+  return (
+    <div>
+      <div className="panel">
+        <div className="panel__head"><div className="panel__title">Support tickets</div><span style={{ color: "var(--muted)", fontSize: 13 }}>Help requests from client admins</span></div>
+        <div className="admin-toolbar" style={{ padding: "12px 16px" }}>
+          <div className="seg">
+            <button type="button" className={ticketFilter === "open" ? "on" : ""} onClick={() => setTicketFilter("open")}>Open ({openN})</button>
+            <button type="button" className={ticketFilter === "resolved" ? "on" : ""} onClick={() => setTicketFilter("resolved")}>Resolved ({resolvedN})</button>
+          </div>
+        </div>
+        <div className="panel__body--flush table-wrap">
+          <table className="tbl">
+            <thead><tr><th>Client</th><th>Subject</th><th>Category</th><th>Urgency</th><th>Status</th><th>When</th><th></th></tr></thead>
+            <tbody>
+              {loading && <tr><td colSpan={7} style={{ color: "var(--muted)", padding: 18 }}>Loading…</td></tr>}
+              {!loading && shown.length === 0 && <tr><td colSpan={7} style={{ color: "var(--muted)", padding: 18 }}>No {ticketFilter} tickets.</td></tr>}
+              {shown.map((t) => (
+                <tr key={t.id}>
+                  <td><strong>{t.submitter_name || t.submitter_email || "—"}</strong><div style={{ color: "var(--muted)", fontSize: 12 }}>{t.context_url || ""}</div></td>
+                  <td>{t.subject}</td>
+                  <td><span className="tag tag--hidden">{t.category}</span></td>
+                  <td>{t.urgency}</td>
+                  <td><span className="tag" style={{ background: t.status === "open" ? "#fdecc8" : "#d6f0e0", color: t.status === "open" ? "#7a5b12" : "#1e6b45" }}>{t.status}</span></td>
+                  <td style={{ whiteSpace: "nowrap", color: "var(--muted)", fontSize: 13 }}>{fmtDate(t.created_at)}</td>
+                  <td><Button variant="ghost" size="sm" onClick={() => setTicket(t)}>{Icon.eye({})} Open</Button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {ticket && <TicketModal ticket={ticket} onClose={() => setTicket(null)} onRefresh={load} />}
+    </div>
+  );
+}
+
 export function ClientsAdmin() {
   // list | add | edit | requests | approved | rejected | offline. The console
   // bell deep-links to Requests via a one-shot sessionStorage flag.
@@ -272,9 +325,6 @@ export function ClientsAdmin() {
   }
   const [q, setQ] = useState("");
   const [requests, setRequests] = useState([]);     // prospect intake (/apply) awaiting approval
-  const [tickets, setTickets] = useState([]);        // support tickets (owner widget)
-  const [ticket, setTicket] = useState(null);        // ticket open in the detail modal
-  const [ticketFilter, setTicketFilter] = useState("open"); // support view: open | resolved
   const [reqInfo, setReqInfo] = useState(null);      // request shown in the details modal (eye)
   const [info, setInfo] = useState(null);            // client shown in the info modal (eye icon)
   const [reqEdit, setReqEdit] = useState(null);      // request being edited in a modal (pencil)
@@ -288,17 +338,11 @@ export function ClientsAdmin() {
     setClients(data || []);
     setSel(new Set()); // rows changed — stale checks would be dangerous on delete
     try { setRequests(await listSiteRequests()); } catch (_) { /* non-superadmin or table missing */ }
-    try { setTickets(await listTickets()); } catch (_) { /* non-superadmin or table missing */ }
     // Notes live in a superadmin-only table (never exposed to anon/owners).
     const { data: nd } = await supabase.from("client_notes").select("client_id,note");
     setNotes(Object.fromEntries((nd || []).map((r) => [r.client_id, r.note || ""])));
   }
   useEffect(() => { load(); }, []);
-  // Live-refresh tickets so a new owner submission appears without a reload.
-  useEffect(() => {
-    const off = subscribeTicketsRealtime(() => { listTickets().then(setTickets).catch(() => {}); });
-    return off;
-  }, []);
   // Selection is per-tab: clear checks when switching views so a bulk delete can
   // never target off-screen rows selected in another tab (e.g. list → offline).
   useEffect(() => { setSel(new Set()); }, [view]);
@@ -585,48 +629,7 @@ export function ClientsAdmin() {
         <button className={"folder" + (view === "offline" ? " folder--active" : "")} onClick={() => setView("offline")}>
           Offline{clients.filter((c) => !c.is_active).length > 0 ? ` (${clients.filter((c) => !c.is_active).length})` : ""}
         </button>
-        <button className={"folder" + (view === "support" ? " folder--active" : "")} onClick={() => setView("support")}>
-          Support{tickets.filter((t) => t.status === "open").length > 0 ? ` (${tickets.filter((t) => t.status === "open").length})` : ""}
-        </button>
       </div>
-
-      {view === "support" && (() => {
-        const openN = tickets.filter((t) => t.status === "open").length;
-        const resolvedN = tickets.filter((t) => t.status === "resolved").length;
-        const shown = tickets.filter((t) => (ticketFilter === "resolved" ? t.status === "resolved" : t.status === "open"));
-        return (
-        <div className="panel">
-          <div className="panel__head"><div className="panel__title">Support tickets</div><span style={{ color: "var(--muted)", fontSize: 13 }}>Help requests from client admins</span></div>
-          <div className="admin-toolbar" style={{ padding: "12px 16px" }}>
-            <div className="seg">
-              <button type="button" className={ticketFilter === "open" ? "on" : ""} onClick={() => setTicketFilter("open")}>Open ({openN})</button>
-              <button type="button" className={ticketFilter === "resolved" ? "on" : ""} onClick={() => setTicketFilter("resolved")}>Resolved ({resolvedN})</button>
-            </div>
-          </div>
-          <div className="panel__body--flush table-wrap">
-            <table className="tbl">
-              <thead><tr><th>Client</th><th>Subject</th><th>Category</th><th>Urgency</th><th>Status</th><th>When</th><th></th></tr></thead>
-              <tbody>
-                {shown.length === 0 && <tr><td colSpan={7} style={{ color: "var(--muted)", padding: 18 }}>No {ticketFilter} tickets.</td></tr>}
-                {shown.map((t) => (
-                  <tr key={t.id}>
-                    <td><strong>{t.submitter_name || t.submitter_email || "—"}</strong><div style={{ color: "var(--muted)", fontSize: 12 }}>{t.context_url || ""}</div></td>
-                    <td>{t.subject}</td>
-                    <td><span className="tag tag--hidden">{t.category}</span></td>
-                    <td>{t.urgency}</td>
-                    <td><span className="tag" style={{ background: t.status === "open" ? "#fdecc8" : "#d6f0e0", color: t.status === "open" ? "#7a5b12" : "#1e6b45" }}>{t.status}</span></td>
-                    <td style={{ whiteSpace: "nowrap", color: "var(--muted)", fontSize: 13 }}>{fmtDate(t.created_at)}</td>
-                    <td><Button variant="ghost" size="sm" onClick={() => setTicket(t)}>{Icon.eye({})} Open</Button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        );
-      })()}
-
-      {ticket && <TicketModal ticket={ticket} onClose={() => setTicket(null)} onRefresh={async () => { try { setTickets(await listTickets()); } catch (_) {} }} />}
 
       {view === "requests" && (
         <div className="panel">

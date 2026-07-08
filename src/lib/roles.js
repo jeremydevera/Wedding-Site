@@ -16,6 +16,7 @@ export function visibleAdminTabs(role, allTabs, ownerEdit) {
       { key: "overview", label: "Overview", icon: "grid" },
       { key: "clients", label: "Clients", icon: "user" },
       { key: "r2media", label: "Media", icon: "camera" },
+      { key: "support", label: "Support", icon: "mail" },
       { key: "health", label: "Health", icon: "eye" },
     ];
   }
