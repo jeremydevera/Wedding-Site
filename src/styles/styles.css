@@ -449,130 +449,76 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
   .sched-cards__item { grid-template-columns: 1fr; gap: 8px; }
 }
 
-/* --- Story -----------------------------------------------------------------*/
-/* Timeline: one continuous centered rail (faint) with an accent FILL line that
-   draws as you scroll (height set by JS in StoryPage). Milestones sit along it;
-   a dot per row pops when it scrolls into view (rides the global .is-in toggle).
-   Extra top padding gives the rail room to start above the first milestone. */
-.story-timeline { position: relative; padding-top: 40px; padding-left: 44px; }
-/* Left rail (not centered): the line + dots sit at x=16px; each milestone's
-   content is indented past it (padding-left above). */
-.story-rail, .story-rail__fill { position: absolute; top: 0; left: 16px; width: 2px; transform: translateX(-50%); border-radius: 2px; }
-.story-rail { height: 100%; background: color-mix(in srgb, var(--accent) 15%, transparent); }
-.story-rail__fill { height: 0; background: var(--accent); box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 60%, transparent); transition: height .12s linear; }
-/* Glowing point that leads the drawn line as it travels (sits at the fill's tip). */
-.story-rail__fill::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); transform: translate(-50%, 50%); box-shadow: 0 0 12px 1px color-mix(in srgb, var(--accent) 75%, transparent); }
+/* --- Story timeline ("Chapters of us") ------------------------------------*/
+/* A vertical spine that DRAWS as you scroll (fill height set by JS in
+   StoryPage); each milestone is a chapter card with a node on the spine that
+   blooms + ripples as the line reaches it, a big faint year watermark behind,
+   a framed photo, and an editorial title/description. Mobile: left spine,
+   single column, snap carousel. Desktop: centered spine, alternating cards. */
+.tl { position: relative; padding-left: 52px; }
+.tl__spine, .tl__spine-fill { position: absolute; top: 0; left: 20px; width: 2px; transform: translateX(-50%); border-radius: 2px; }
+.tl__spine { height: 100%; background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.tl__spine-fill { height: 0; background: linear-gradient(var(--accent), color-mix(in srgb, var(--accent) 65%, transparent)); box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 55%, transparent); transition: height .12s linear; }
+.tl__spine-fill::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); transform: translate(-50%, 50%); box-shadow: 0 0 14px 1px color-mix(in srgb, var(--accent) 70%, transparent); }
 
-.story-row { display: grid; grid-template-columns: 1fr; gap: 26px; align-items: center; margin-bottom: 72px; position: relative; }
-.story-row:last-child { margin-bottom: 0; }
-/* Card = the picture + text pair. Mobile: stacked (picture over text). */
-.story-row__card { display: flex; flex-direction: column; gap: 20px; }
-.story-row__text { position: relative; }
-/* Dot lives inside the text block and sits at its vertical center — so it's
-   level with the milestone's text/header. POPS (overshoot easing) when the
-   drawn line's playhead reaches that center (row gets .dot-on from StoryPage's
-   scroll handler); un-pops scrolling back. Mobile: text starts at the row's
-   44px indent, rail center is x=16 → left:-28 lands the dot on the left rail. */
-.story-dot { position: absolute; top: 50%; left: -28px; z-index: 2; width: 15px; height: 15px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px var(--surface), 0 0 0 7px color-mix(in srgb, var(--accent) 22%, transparent); transform: translate(-50%, -50%) scale(0); transition: transform .3s ease; }
-/* Gentle pop on activation — small overshoot, ends at scale(1). Scroll-up
-   removal falls back to the .3s shrink transition above. */
-.story-row.dot-on .story-dot { transform: translate(-50%, -50%) scale(1); animation: story-dot-pop .5s cubic-bezier(.2, 1.3, .4, 1) both; }
-@keyframes story-dot-pop {
-  0% { transform: translate(-50%, -50%) scale(0); }
-  60% { transform: translate(-50%, -50%) scale(1.18); }
-  100% { transform: translate(-50%, -50%) scale(1); }
-}
-/* Subtle ripple the moment the line hits the dot. */
-.story-dot::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--accent); opacity: 0; pointer-events: none; }
-.story-row.dot-on .story-dot::after { animation: story-ripple .85s ease-out; }
-@keyframes story-ripple {
-  0% { opacity: .45; transform: scale(1); }
-  100% { opacity: 0; transform: scale(2.8); }
-}
+.tl__item { position: relative; margin-bottom: 40px; }
+.tl__item:last-child { margin-bottom: 0; }
+
+/* node on the spine */
+.tl__node { position: absolute; top: 30px; left: 20px; z-index: 3; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); box-shadow: 0 0 0 5px var(--surface); transform: translate(-50%, -50%) scale(.5); transition: transform .35s ease, background .35s ease; }
+.tl__item.is-on .tl__node { background: var(--accent); animation: tl-bloom .6s cubic-bezier(.2, 1.45, .35, 1) forwards; }
+@keyframes tl-bloom { 0% { transform: translate(-50%, -50%) scale(.5); } 55% { transform: translate(-50%, -50%) scale(1.22); } 100% { transform: translate(-50%, -50%) scale(1); } }
+.tl__node::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid var(--accent); opacity: 0; pointer-events: none; }
+.tl__item.is-on .tl__node::after { animation: tl-ripple .9s ease-out; }
+@keyframes tl-ripple { 0% { opacity: .5; transform: scale(1); } 100% { opacity: 0; transform: scale(2.9); } }
+
+/* connector spine → card */
+.tl__item::before { content: ""; position: absolute; top: 30px; left: 20px; width: 32px; height: 2px; background: color-mix(in srgb, var(--accent) 22%, transparent); opacity: 0; transition: opacity .4s ease .12s; }
+.tl__item.is-on::before { opacity: 1; }
+
+/* card + entrance (slides up as the line reaches it) */
+.tl__card { position: relative; opacity: 0; transform: translateY(26px); transition: opacity .7s ease, transform .8s cubic-bezier(.2, .7, .2, 1); }
+.tl__item.is-on .tl__card { opacity: 1; transform: none; }
+
+.tl__year { position: absolute; z-index: 0; top: -26px; right: 0; font-family: var(--font-display); font-weight: 600; font-size: clamp(66px, 15vw, 140px); line-height: .8; letter-spacing: -.02em; color: color-mix(in srgb, var(--accent) 11%, transparent); pointer-events: none; user-select: none; }
+.tl__photo { position: relative; z-index: 1; max-width: 460px; border-radius: 16px; overflow: hidden; margin-bottom: 18px; box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent), 0 28px 52px -30px color-mix(in srgb, var(--ink) 60%, transparent); transition: transform .55s cubic-bezier(.2, .7, .2, 1); }
+.tl__photo > img { transition: transform .8s cubic-bezier(.2, .7, .2, 1); }
+.tl__photo:hover { transform: translateY(-5px); }
+.tl__photo:hover > img { transform: scale(1.05); }
+.tl__body { position: relative; z-index: 1; }
+.tl__yeartag { display: flex; align-items: center; gap: 10px; font-size: 12px; letter-spacing: .24em; text-transform: uppercase; font-weight: 700; color: var(--accent); margin-bottom: 9px; }
+.tl__yeartag::before { content: ""; width: 22px; height: 2px; background: currentColor; opacity: .6; }
+.tl__title { font-family: var(--font-display); font-size: clamp(26px, 3.6vw, 38px); line-height: 1.12; color: var(--ink); margin: 0 0 10px; }
+.tl__desc { color: var(--ink-soft); font-size: 17px; line-height: 1.7; max-width: 52ch; margin: 0; }
+
 @media (prefers-reduced-motion: reduce) {
-  .story-dot { transition: none; }
-  .story-rail__fill { transition: none; }
-  .story-row.dot-on .story-dot { animation: none; }
-  .story-row.dot-on .story-dot::after { animation: none; }
+  .tl__spine-fill, .tl__node, .tl__photo, .tl__photo > img, .tl__card { transition: none; }
+  .tl__item.is-on .tl__node { animation: none; transform: translate(-50%, -50%) scale(1); }
+  .tl__item.is-on .tl__node::after { animation: none; }
+  .tl__card { opacity: 1; transform: none; }
 }
-/* Mobile: Our Story scrolls like a vertical carousel — each milestone fills
-   the screen and snaps into place as you scroll. Scoped to the story page via
-   :has(.story-snap) on the mobile scroller (#site-scroll), so no other page is
-   affected. proximity (not mandatory) so a tall milestone never traps scroll. */
+
+/* mobile: left spine, single column, snap carousel (scoped via .story-snap) */
 @media (max-width: 860px) {
   .site-scroll:has(.story-snap) { scroll-snap-type: y proximity; scroll-padding-top: 12px; }
-  .story-snap .story-row {
-    min-height: 80svh;
-    align-content: center;
-    scroll-snap-align: center;
-    margin-bottom: 28px;
-  }
+  .story-snap .tl__item { min-height: 80svh; display: flex; flex-direction: column; justify-content: center; scroll-snap-align: center; margin-bottom: 0; }
+  .story-snap .tl__node, .story-snap .tl__item::before { top: 50%; }
 }
-@media (min-width: 760px) {
-  /* Desktop: CENTERED rail; each milestone's picture + text sit TOGETHER as one
-     pair, and the pair alternates sides of the rail. Text is always the inner
-     item (nearest the rail), so the dot lands on the rail off the text's edge. */
-  .story-timeline { padding-left: 0; }
-  .story-rail, .story-rail__fill { left: 50%; }
-  .story-row { grid-template-columns: 1fr 1fr; column-gap: 56px; align-items: center; min-height: 66vh; margin-bottom: 40px; }
-  /* Text is the INNER item (nearest the rail) so the dot off its inner edge
-     lands on the centered rail; picture sits on the outer side. */
-  .story-row__card { flex-direction: row-reverse; align-items: center; gap: 28px; grid-column: 2; }  /* odd → right half: [text | picture] */
-  .story-row:nth-child(even) .story-row__card { grid-column: 1; flex-direction: row; }               /* even → left half: [picture | text] */
-  .story-row__media { flex: 0 0 46%; max-width: 46%; }
-  .story-row__text { flex: 1; }
-  /* Dot on the centered rail, off the text block's inner edge (half the 56px
-     column gap = 28px). */
-  .story-row:nth-child(odd) .story-dot  { left: -28px; }
-  .story-row:nth-child(even) .story-dot { left: calc(100% + 28px); }
-}
-/* Framed photo: soft layered shadow + a hairline accent ring, gently lifts on
-   hover (the whole frame moves so a video's crop transform is never clobbered;
-   only still images get the inner zoom). Shrunk so the layout stays airy. */
-.story-row__media {
-  max-width: 440px;
-  border-radius: 18px;
-  overflow: hidden;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent),
-              0 30px 55px -30px color-mix(in srgb, var(--ink) 60%, transparent);
-  transition: transform .55s cubic-bezier(.2, .7, .2, 1), box-shadow .55s ease;
-}
-.story-row__media > img { transition: transform .8s cubic-bezier(.2, .7, .2, 1); }
-.story-row__media:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent),
-              0 40px 70px -28px color-mix(in srgb, var(--ink) 62%, transparent);
-}
-.story-row__media:hover > img { transform: scale(1.055); }
 
-/* Editorial type: the year as an accent display numeral led by a short rule,
-   a display title, and a measured description. */
-.story-row__year {
-  font-family: var(--font-display);
-  font-size: clamp(30px, 4.4vw, 46px);
-  color: var(--accent);
-  line-height: 1;
-  letter-spacing: .01em;
-  display: inline-flex;
-  align-items: center;
-  gap: 13px;
-}
-.story-row__year::before { content: ""; width: 28px; height: 2px; background: currentColor; opacity: .5; border-radius: 2px; }
-.story-row__title { font-family: var(--font-display); font-size: clamp(23px, 3vw, 31px); margin: 13px 0 12px; color: var(--ink); line-height: 1.16; }
-.story-row__desc { color: var(--ink-soft); font-size: 17px; line-height: 1.68; max-width: 46ch; margin: 0; }
-
-/* Text rises in as the line reaches the milestone (rides .dot-on), staggered
-   after the dot pop for a two-beat reveal. */
-.story-row__year, .story-row__title, .story-row__desc {
-  opacity: 0; transform: translateY(12px);
-  transition: opacity .6s ease, transform .6s cubic-bezier(.2, .7, .2, 1);
-}
-.story-row.dot-on .story-row__year { opacity: 1; transform: none; transition-delay: .06s; }
-.story-row.dot-on .story-row__title { opacity: 1; transform: none; transition-delay: .14s; }
-.story-row.dot-on .story-row__desc { opacity: 1; transform: none; transition-delay: .22s; }
-@media (prefers-reduced-motion: reduce) {
-  .story-row__year, .story-row__title, .story-row__desc { opacity: 1; transform: none; transition: none; }
-  .story-row__media, .story-row__media > img { transition: none; }
+/* desktop: centered spine, cards alternate sides */
+@media (min-width: 820px) {
+  .tl { padding-left: 0; }
+  .tl__spine, .tl__spine-fill { left: 50%; }
+  .tl__item { width: calc(50% - 48px); min-height: 60vh; display: flex; flex-direction: column; justify-content: center; margin-bottom: 24px; }
+  .tl__item:nth-child(odd) { margin-left: auto; }
+  .tl__item:nth-child(even) { margin-right: auto; }
+  .tl__node, .tl__item::before { top: 50%; }
+  .tl__item:nth-child(odd) .tl__node { left: -48px; }
+  .tl__item:nth-child(odd)::before { left: -48px; width: 48px; }
+  .tl__item:nth-child(even) .tl__node { left: auto; right: -48px; }
+  .tl__item:nth-child(even)::before { left: auto; right: -48px; width: 48px; }
+  .tl__year { top: -34px; }
+  .tl__item:nth-child(even) .tl__year { left: 0; right: auto; }
 }
 
 /* --- Info grid (details/venue) ---------------------------------------------*/

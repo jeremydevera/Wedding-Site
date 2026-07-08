@@ -641,31 +641,28 @@ export function PageHero({ eyebrow, title, lead }) {
 
 export function StoryPage() {
   const { story } = useStore();
-  const railRef = useRef(null);   // the timeline container
-  const fillRef = useRef(null);   // the accent line that draws with scroll
+  const tlRef = useRef(null);     // the timeline container
+  const fillRef = useRef(null);   // the spine fill that draws with scroll
   const rows = Array.isArray(story) ? story : [];
 
-  // Draw the rail as you scroll: the fill height tracks how far a line at ~55%
-  // of the viewport has travelled through the timeline. Scroll-linked (not a
-  // one-shot) so it grows/shrinks both ways, like the reference site.
+  // Draw the spine as you scroll: fill height tracks a "playhead" at ~55% of the
+  // viewport travelling through the timeline; each chapter turns .is-on when the
+  // playhead reaches its centre (node blooms, card slides in). Scroll-linked
+  // both ways. Works with the mobile shell scroller and the desktop document.
   useEffect(() => {
-    const wrap = railRef.current;
+    const wrap = tlRef.current;
     if (!wrap) return;
     let raf = 0;
     const update = () => {
       raf = 0;
       const rect = wrap.getBoundingClientRect();
       const vh = window.innerHeight || document.documentElement.clientHeight || 0;
-      const line = vh * 0.55;                       // the "playhead" down the screen
+      const line = vh * 0.55;
       const p = rect.height ? (line - rect.top) / rect.height : 0;
-      const pct = Math.max(0, Math.min(1, p)) * 100;
-      if (fillRef.current) fillRef.current.style.height = pct + "%";
-      // Pop each dot exactly when the drawn line's playhead reaches the dot
-      // (the dot sits at the row's vertical center) — un-pop scrolling back up.
-      wrap.querySelectorAll(".story-row").forEach((row) => {
-        const t = row.querySelector(".story-row__text") || row;   // dot sits at the text's center
-        const r = t.getBoundingClientRect();
-        row.classList.toggle("dot-on", r.top + r.height / 2 <= line);
+      if (fillRef.current) fillRef.current.style.height = Math.max(0, Math.min(1, p)) * 100 + "%";
+      wrap.querySelectorAll(".tl__item").forEach((it) => {
+        const r = it.getBoundingClientRect();
+        it.classList.toggle("is-on", r.top + r.height / 2 <= line);
       });
     };
     const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
@@ -678,23 +675,24 @@ export function StoryPage() {
   return (
     <div className="fade-up story-snap">
       <PageHero eyebrow="Our Story" title="How we got here" lead="Every love story is beautiful, but this one is ours." />
-      <section className="block" style={{ paddingTop: 30 }}>
-        <div className="container" style={{ maxWidth: 920 }}>
-          <div className="story-timeline" ref={railRef}>
-            <span className="story-rail" aria-hidden="true" />
-            <span className="story-rail__fill" ref={fillRef} aria-hidden="true" />
+      <section className="block" style={{ paddingTop: 24 }}>
+        <div className="container" style={{ maxWidth: 1040 }}>
+          <div className="tl" ref={tlRef}>
+            <span className="tl__spine" aria-hidden="true" />
+            <span className="tl__spine-fill" ref={fillRef} aria-hidden="true" />
             {rows.map((row, i) => (
-              <div className="story-row" key={i}>
-                <div className="story-row__card">
-                  <div className="story-row__media"><StoryImg row={row} /></div>
-                  <div className="story-row__text">
-                    <span className="story-dot" aria-hidden="true" />
-                    <div className="story-row__year">{row.year}</div>
-                    <h3 className="story-row__title">{row.title}</h3>
-                    <p className="story-row__desc">{row.desc}</p>
+              <article className="tl__item" key={i}>
+                <span className="tl__node" aria-hidden="true" />
+                <div className="tl__card">
+                  {row.year ? <span className="tl__year" aria-hidden="true">{row.year}</span> : null}
+                  <div className="tl__photo"><StoryImg row={row} /></div>
+                  <div className="tl__body">
+                    {row.year ? <div className="tl__yeartag">{row.year}</div> : null}
+                    <h3 className="tl__title">{row.title}</h3>
+                    <p className="tl__desc">{row.desc}</p>
                   </div>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         </div>
