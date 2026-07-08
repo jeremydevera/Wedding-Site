@@ -1040,6 +1040,12 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .tk-msg__body { white-space: pre-wrap; font-size: 14px; line-height: 1.5; color: var(--ink); }
 .tk-msg__at { font-size: 11px; color: var(--muted); margin-top: 4px; }
 .tk-reply { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 4px; }
+.tk-reply__actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
+.tk-reply__left { display: flex; align-items: center; }
+.tk-reply__right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.tk-status { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.tk-status span { text-transform: uppercase; letter-spacing: .05em; font-size: 11px; }
+.tk-status select { min-width: 120px; }
 
 /* Superadmin Clients dashboard */
 .clients-form { padding: 20px 22px; display: grid; grid-template-columns: 1fr; gap: 14px 18px; align-items: end; }

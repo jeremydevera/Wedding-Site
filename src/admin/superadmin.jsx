@@ -232,13 +232,20 @@ function TicketModal({ ticket, onClose, onRefresh }) {
         {meta("Urgency", ticket.urgency)}
         {meta("Submitted", fmtDate(ticket.created_at))}
       </div>
-      <div style={{ maxWidth: 240, margin: "0 0 14px" }}>
-        <Field label="Status" id="tk-status"><Select id="tk-status" value={status} disabled={busy} onChange={(e) => saveStatus(e.target.value)}><option value="open">Open</option><option value="resolved">Resolved</option></Select></Field>
-      </div>
-      <TicketThread ticket={ticket} onChanged={onRefresh} />
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 14 }}>
-        <Button variant="ghost" onClick={() => !busy && onClose()} disabled={busy}>Close</Button>
-      </div>
+      <TicketThread
+        ticket={ticket}
+        onChanged={onRefresh}
+        leftAction={
+          <label className="tk-status">
+            <span>Status</span>
+            <Select id="tk-status" value={status} disabled={busy} onChange={(e) => saveStatus(e.target.value)}>
+              <option value="open">Open</option>
+              <option value="resolved">Resolved</option>
+            </Select>
+          </label>
+        }
+        rightAction={<Button variant="ghost" onClick={() => !busy && onClose()} disabled={busy}>Close</Button>}
+      />
     </Modal>
   );
 }

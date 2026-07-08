@@ -14,7 +14,7 @@ const { useState, useEffect, useRef } = React;
 // thread (owner ⇄ support), and a reply box. Used by both the owner's Support
 // tab and the superadmin ticket modal. postTicketMessage pins sender_role to the
 // caller's actual role; an owner reply reopens a resolved ticket (DB trigger).
-export function TicketThread({ ticket, onChanged }) {
+export function TicketThread({ ticket, onChanged, leftAction, rightAction }) {
   const [msgs, setMsgs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reply, setReply] = useState("");
@@ -64,8 +64,12 @@ export function TicketThread({ ticket, onChanged }) {
       </div>
       <div className="tk-reply">
         <Textarea rows={3} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Write a reply…" />
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
-          <Button variant="primary" onClick={send} disabled={busy || !reply.trim()}>{busy ? "Sending…" : "Send reply"}</Button>
+        <div className="tk-reply__actions">
+          <div className="tk-reply__left">{leftAction}</div>
+          <div className="tk-reply__right">
+            {rightAction}
+            <Button variant="primary" onClick={send} disabled={busy || !reply.trim()}>{busy ? "Sending…" : "Send reply"}</Button>
+          </div>
         </div>
       </div>
     </div>
