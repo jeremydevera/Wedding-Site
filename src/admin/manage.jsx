@@ -2070,8 +2070,12 @@ export function SettingsAdmin() {
             </Select>
           </Field>
 
-          <AdminToggle label="Show floating decorations" desc="A gentle animated layer over your page — the preview above shows it live." checked={f.decorOn} onChange={(v) => setKey("decorOn", v)} />
-          <Field label="Decoration style" id="s-decor" hint="Pick the motif that floats across your page — watch it in the preview above.">
+          {/* one row on desktop: toggle | style dropdown (stacks on mobile) */}
+          <div className="field-row field-row--2" style={{ alignItems: "end" }}>
+            <div style={{ paddingBottom: 6 }}>
+              <AdminToggle noRule label="Show floating decorations" checked={f.decorOn} onChange={(v) => setKey("decorOn", v)} />
+            </div>
+            <Field label="Decoration style" id="s-decor">
             <Select id="s-decor" value={f.decorStyle} onChange={set("decorStyle")} disabled={!f.decorOn}>
               <option value="petals">Falling petals</option>
               <option value="hearts">Hearts</option>
@@ -2085,7 +2089,8 @@ export function SettingsAdmin() {
               <option value="balloons">Floating balloons</option>
               {FX_LIST.map((e) => (<option key={e.id} value={"fx-" + e.id}>{e.title}</option>))}
             </Select>
-          </Field>
+            </Field>
+          </div>
 
           {isPremiumTheme(f.theme) && (
             <div style={{ marginTop: 24, padding: 18, border: "1px solid #d8b65e", borderRadius: "var(--radius)", background: "linear-gradient(180deg, color-mix(in oklch, #f6e6b8 22%, var(--surface)), var(--surface))" }}>
