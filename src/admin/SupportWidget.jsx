@@ -71,7 +71,7 @@ export function TicketThread({ ticket, onChanged, leftAction, rightAction, varia
           <button type="button" className="tk-send" onClick={send} disabled={busy || !reply.trim()} aria-label="Send reply">
             {busy
               ? <span className="tk-send__dot" aria-hidden="true" />
-              : <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5" /><path d="M5 12l7-7 7 7" /></svg>}
+              : <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20V5.5" /><path d="M5.5 11.5 12 5l6.5 6.5" /></svg>}
           </button>
         </div>
         {(leftAction || rightAction) && (
