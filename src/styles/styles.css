@@ -1079,11 +1079,15 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
   transition: border-color .15s ease, box-shadow .15s ease;
 }
 .tk-composer:focus-within { border-color: #9db8e8; box-shadow: 0 0 0 3px rgba(79, 127, 214, .12); }
-.tk-composer .input {
+/* .admin--sa variant included: the console skin re-borders .input later in
+   this file (line ~1214: border + 34px height + focus outline) and was winning
+   by source order — these 0-3-0 selectors beat it. */
+.tk-composer .input, .admin--sa .tk-composer .input {
   flex: 1 1 auto; border: none; outline: none; box-shadow: none; background: transparent;
-  resize: none; padding: 8px 0; min-height: 38px; max-height: 130px; border-radius: 0;
+  resize: none; padding: 8px 0; height: auto; min-height: 38px; max-height: 130px; border-radius: 0;
+  font-size: 14px; line-height: 1.5;
 }
-.tk-composer .input:focus { border: none; box-shadow: none; }
+.tk-composer .input:focus, .admin--sa .tk-composer .input:focus { border: none; box-shadow: none; outline: none; }
 .tk-send {
   flex: none; margin: 0 0 2px;
   width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer;
