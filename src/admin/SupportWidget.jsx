@@ -114,13 +114,16 @@ export function SupportWidget({ tab }) {
   );
 }
 
-// "Support" admin tab: submit a ticket + the client's own tickets with status
-// and our reply (RLS returns only their client's rows).
+// "Support" admin tab: the client's own tickets with status + our reply
+// (RLS returns only their client's rows), and a "+ New ticket" action that
+// opens the shared form in a modal.
 export function SupportPanel({ tab }) {
   const [mine, setMine] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [compose, setCompose] = useState(false);
   const refresh = () => listTickets().then((rows) => setMine(rows || [])).catch(() => {}).finally(() => setLoading(false));
   useEffect(() => { refresh(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const openCount = mine.filter((t) => t.status === "open").length;
 
   return (
     <div>
@@ -128,16 +131,14 @@ export function SupportPanel({ tab }) {
         <div className="panel__head">
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <AgentAvatar size={30} />
-            <div className="panel__title">Submit a ticket</div>
+            <div className="panel__title">Your tickets {openCount > 0 && <span style={{ color: "var(--muted)", fontSize: 15 }}>({openCount} open)</span>}</div>
           </div>
         </div>
-        <div className="panel__body" style={{ maxWidth: 760, margin: "0 auto" }}>
-          <TicketForm tab={tab} onDone={refresh} />
+        <div className="admin-toolbar" style={{ padding: "14px 16px" }}>
+          <div className="admin-toolbar__end">
+            <Button variant="primary" className="admin-toolbar__action" onClick={() => setCompose(true)}>+ New ticket</Button>
+          </div>
         </div>
-      </div>
-
-      <div className="panel">
-        <div className="panel__head"><div className="panel__title">Your tickets</div></div>
         <div className="panel__body--flush table-wrap">
           <table className="tbl">
             <thead><tr><th>Subject</th><th>Category</th><th>Status</th><th>Our reply</th><th>When</th></tr></thead>
@@ -157,6 +158,17 @@ export function SupportPanel({ tab }) {
           </table>
         </div>
       </div>
+
+      <Modal open={compose} onClose={() => setCompose(false)} label="New support ticket">
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
+          <AgentAvatar size={40} />
+          <div>
+            <h3 style={{ margin: 0 }}>How can we help?</h3>
+            <p style={{ margin: "2px 0 0", color: "var(--muted)", fontSize: 13 }}>Send us a ticket and we'll get back to you.</p>
+          </div>
+        </div>
+        <TicketForm tab={tab} onDone={() => { setCompose(false); refresh(); }} onCancel={() => setCompose(false)} />
+      </Modal>
     </div>
   );
 }
