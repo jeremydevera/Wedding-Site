@@ -9,6 +9,10 @@ import { PLATFORM_DOMAIN, clientUrl, isValidSubdomain } from "@/config/site.js";
 import { Button, confirmDialog, Field, Icon, Input, Modal, Pager, SectionHead, Select, Textarea, toast, usePaged } from "@/ui/components.jsx";
 import { listMedia, deleteFromR2, listSiteRequests, approveSiteRequest, setSiteRequestStatus, updateSiteRequest, deleteSiteRequest, listTickets, setTicketStatus, updateTicket, subscribeTicketsRealtime } from "@/lib/api.js";
 import { ApplyWizard } from "@/admin/apply.jsx";
+// fmtDate: DEFECT-2026-07-09-A — the Support view/TicketModal used fmtDate
+// without this import; the render-time ReferenceError unmounted the whole
+// console (white screen). Guarded by superadminSupport.test.jsx.
+import { fmtDate } from "@/admin/core.jsx";
 // AdminToggle is a hoisted export; manage.jsx already imports from here, so this
 // completes a function-only import cycle that ESM resolves safely (used at render).
 import { AdminToggle } from "@/admin/manage.jsx";

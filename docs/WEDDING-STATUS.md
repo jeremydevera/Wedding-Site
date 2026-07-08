@@ -11,12 +11,21 @@ Claude test run. Done items stay here as the permanent history.
 - **`[APPROVAL]`** in a title = Claude found this (testing / scheduled run); needs your review before work.
 
 ## Next IDs
-- Next Bug ID: **0008**
+- Next Bug ID: **0009**
 - Next Enhancement ID: **0014**
 
 ---
 
 ## Pending
+
+### Bug ID: 0008 — Superadmin console white screen (Clients/Support) — missing fmtDate import
+- **Severity:** P1 · **Status:** Done (2026-07-09, fixed same day) · **Added:** 2026-07-09 (reported by Jeremy)
+- **Where:** Superadmin console → any folder once the Support view/ticket modal rendered a row
+- **Root cause:** The new Support tickets view + `TicketModal` (superadmin.jsx) called `fmtDate(...)` without importing it from `core.jsx`. A render-time `ReferenceError` unmounts React's whole tree → blank white console. An empty ticket table masked it in the first smoke test — the crash only fired once a real ticket row rendered.
+- **Fix:** `import { fmtDate } from "@/admin/core.jsx"` (commit tagged DEFECT-2026-07-09-A in a code comment at the import site).
+- **Regression guard:** `src/admin/__tests__/superadminSupport.test.jsx` mounts the console with a seeded ticket row, opens the Support folder AND the detail modal — any render crash there fails CI.
+- **Lesson:** smoke tests must render rows with data, not just empty lists — empty tables hide per-row crashes.
+
 
 ### Enhancement ID: 0012 — Unify all Access settings into one shared source
 - **Severity:** P3 · **Status:** Pending · **Added:** 2026-07-07 (requested by Jeremy)
