@@ -10,7 +10,7 @@ import { SupportWidget } from "@/admin/SupportWidget.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { signOut, createOwner } from "@/lib/auth.js";
 import { supabase } from "@/lib/supabase.js";
-import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb, updateRsvpDietDb, listSiteRequests, subscribeSiteRequestsRealtime } from "@/lib/api.js";
+import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb, updateRsvpDietDb, listSiteRequests, subscribeSiteRequestsRealtime, listTickets, subscribeTicketsRealtime } from "@/lib/api.js";
 import { DIET_OPTIONS } from "@/features/rsvp.jsx";
 import { reconcileGuests, guestFromRsvp, findDuplicateGuest } from "@/lib/guests.js";
 import { headsOf } from "@/lib/rsvp.js";
@@ -3236,6 +3236,7 @@ function NotificationBell({ goTab }) {
 function SuperNotificationBell({ goTab }) {
   const [open, setOpen] = useState(false);
   const [reqs, setReqs] = useState([]);
+  const [tix, setTix] = useState([]);
   const key = "evermore_notif_seen_sa";
   const clearKey = "evermore_notif_cleared_sa";
   const [seen, setSeen] = useState(() => { try { return Number(localStorage.getItem(key) || 0); } catch (_) { return 0; } });
@@ -3244,15 +3245,19 @@ function SuperNotificationBell({ goTab }) {
   useEffect(() => {
     let dead = false;
     const refresh = () => listSiteRequests().then((rows) => { if (!dead) setReqs(rows || []); }).catch(() => {});
-    refresh();
+    const refreshT = () => listTickets().then((rows) => { if (!dead) setTix(rows || []); }).catch(() => {});
+    refresh(); refreshT();
     const off = subscribeSiteRequestsRealtime(refresh);
-    return () => { dead = true; off(); };
+    const offT = subscribeTicketsRealtime(refreshT);
+    return () => { dead = true; off(); offT(); };
   }, []);
 
-  const items = useMemo(() => (reqs || [])
-    .map((r) => ({ id: r.id, who: `${r.partner_a || "?"} & ${r.partner_b || "?"}`, text: `requested ${r.subdomain}.celebrately.us`, at: new Date(r.created_at).getTime() || 0, status: r.status }))
+  const items = useMemo(() => [
+    ...(reqs || []).map((r) => ({ id: "r:" + r.id, who: `${r.partner_a || "?"} & ${r.partner_b || "?"}`, text: `requested ${r.subdomain}.celebrately.us`, at: new Date(r.created_at).getTime() || 0, status: r.status, kind: "request" })),
+    ...(tix || []).map((t) => ({ id: "t:" + t.id, who: t.submitter_name || t.submitter_email || "A client", text: `support: ${t.subject}`, at: new Date(t.created_at).getTime() || 0, status: t.status, kind: "ticket" })),
+  ]
     .filter((x) => x.at > clearedAt)
-    .sort((x, y) => y.at - x.at), [reqs, clearedAt]);
+    .sort((x, y) => y.at - x.at), [reqs, tix, clearedAt]);
 
   const clearAll = () => {
     const now = Date.now();
