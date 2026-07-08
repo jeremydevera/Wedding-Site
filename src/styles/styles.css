@@ -468,9 +468,9 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 /* Year uses the readable accent, not --accent-soft (a pale background tint that
    rendered near-invisible on light themes). Title pinned to --ink so it never
    inherits a low-contrast color. */
-.story-row__year { font-family: var(--font-display); font-size: 60px; color: var(--accent); line-height: 1; }
-.story-row__title { font-size: 32px; margin: 6px 0 12px; color: var(--ink); }
-.story-row__desc { color: var(--ink-soft); font-size: 18px; }
+.story-row__year { font-family: var(--font-display); font-size: 38px; color: var(--accent); line-height: 1; }
+.story-row__title { font-size: 23px; margin: 6px 0 10px; color: var(--ink); }
+.story-row__desc { color: var(--ink-soft); font-size: 16px; line-height: 1.6; }
 
 /* --- Info grid (details/venue) ---------------------------------------------*/
 .info-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
