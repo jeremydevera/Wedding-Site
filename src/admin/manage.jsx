@@ -1534,7 +1534,7 @@ export function DetailsAdmin() {
 // Venue & Map admin: manage a LIST of venues (each its own map + tiles), plus
 // choose which venue's map + tiles show on the home page. Back-compat: existing
 // single-map clients arrive as one venue (see mappers.venuesFrom).
-export function VenueAdmin({ section = "editor", headRight = null }) {
+export function VenueAdmin({ section = "editor", headRight = null, extraTop = null }) {
   const { settings, venues } = useStore();
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const list = venues || [];
@@ -1581,6 +1581,7 @@ export function VenueAdmin({ section = "editor", headRight = null }) {
       <div className="panel">
         <div className="panel__head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}><div className="panel__title">Home page map</div>{headRight}</div>
         <div className="panel__body">
+          {extraTop}
           <p style={{ color: "var(--muted)", margin: "0 0 14px", fontSize: 14 }}>
             Tick the locations to show on the home page. Under each ticked location, choose which info tiles appear beneath its map. Add or edit locations in the Venue &amp; Map tab.
           </p>
@@ -2491,24 +2492,16 @@ function HomeHeadFields({ k, defEyebrow, defTitle, withFooter }) {
     Store.updateSettings({ homeHeads: { ...(settings.homeHeads || {}), [k]: { ...cur, [field]: e.target.value } } });
   // Show the EFFECTIVE current text (stored override, else the stock default)
   // so the admin sees what the site displays right now; clearing a field falls
-  // back to the default on the public site.
+  // back to the default on the public site. Renders INLINE inside the folder's
+  // main panel (no panel of its own).
   const val = (field, dflt) => (cur[field] !== undefined ? cur[field] : dflt);
   return (
-    <>
-      <div className="panel">
-        <div className="panel__head"><div className="panel__title">Section header</div></div>
-        <div className="panel__body" style={{ maxWidth: 900, margin: "0 auto" }}>
-          <p style={{ color: "var(--muted)", margin: "0 0 14px", fontSize: 14 }}>
-            The header above this section on the home page. Clear a field to go back to the default.
-          </p>
-          <div className="field-row field-row--2">
-            <Field label="Small Header" id={"hh-e-" + k}><Input id={"hh-e-" + k} value={val("eyebrow", defEyebrow)} onChange={put("eyebrow")} placeholder={defEyebrow} /></Field>
-            <Field label="Big Header" id={"hh-t-" + k}><Input id={"hh-t-" + k} value={val("title", defTitle)} onChange={put("title")} placeholder={defTitle} /></Field>
-          </div>
-        </div>
+    <div style={{ padding: withFooter ? "0" : "0 16px 16px" }}>
+      <div className="field-row field-row--2">
+        <Field label="Small Header" id={"hh-e-" + k}><Input id={"hh-e-" + k} value={val("eyebrow", defEyebrow)} onChange={put("eyebrow")} placeholder={defEyebrow} /></Field>
+        <Field label="Big Header" id={"hh-t-" + k}><Input id={"hh-t-" + k} value={val("title", defTitle)} onChange={put("title")} placeholder={defTitle} /></Field>
       </div>
-      {withFooter ? <SaveFooter /> : null}
-    </>
+    </div>
   );
 }
 
@@ -2620,6 +2613,7 @@ export function HomeAdmin() {
         <div className="panel">
           <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Home timeline</div><HeadSwitch label="Show timeline on the home page" checked={f.showTimeline !== false} onChange={(v) => toggleShow("showTimeline", v)} /></div>
           <div className="panel__body">
+            <HomeHeadFields k="schedule" defEyebrow="The Day" defTitle="A glimpse of the schedule" withFooter />
             <p style={{ color: "var(--muted)", margin: "0 0 18px", fontSize: 14 }}>
               How the “A glimpse of the schedule” timeline shows on the home page. Edit the events themselves in the Schedule tab. Saves instantly.
             </p>
@@ -2641,7 +2635,7 @@ export function HomeAdmin() {
             </div>
           </div>
         </div>
-        <HomeHeadFields k="schedule" defEyebrow="The Day" defTitle="A glimpse of the schedule" withFooter />
+        <SaveFooter />
         </>
       )}
 
@@ -2650,6 +2644,7 @@ export function HomeAdmin() {
         <div className="panel">
           <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Home details</div><HeadSwitch label="Show details on the home page" checked={f.showHomeDetails === true} onChange={(v) => toggleShow("showHomeDetails", v)} /></div>
           <div className="panel__body">
+            <HomeHeadFields k="details" defEyebrow="Details" defTitle="The details" withFooter />
             <p style={{ color: "var(--muted)", margin: "0 0 18px", fontSize: 14 }}>
               Shows your detail cards on the home page, right after the schedule glimpse. Edit the cards themselves in the Details tab. Saves instantly.
             </p>
@@ -2671,7 +2666,7 @@ export function HomeAdmin() {
             </div>
           </div>
         </div>
-        <HomeHeadFields k="details" defEyebrow="Details" defTitle="The details" withFooter />
+        <SaveFooter />
         </>
       )}
 
@@ -2711,20 +2706,22 @@ export function HomeAdmin() {
       )}
       {canEntourage && active === "entourage" && (
         <>
-          <EntourageAdmin headRight={<HeadSwitch label="Show entourage on the home page" checked={f.showEntourage !== false} onChange={(v) => toggleShow("showEntourage", v)} />} />
-          <HomeHeadFields k="entourage" defEyebrow="With Us" defTitle="The Entourage" withFooter />
+          <EntourageAdmin headRight={<HeadSwitch label="Show entourage on the home page" checked={f.showEntourage !== false} onChange={(v) => toggleShow("showEntourage", v)} />}
+            extraTop={<HomeHeadFields k="entourage" defEyebrow="With Us" defTitle="The Entourage" />} />
+          <SaveFooter />
         </>
       )}
       {can("attire") && active === "attire" && (
         <>
-          <AttireAdmin headRight={<HeadSwitch label="Show attire guide on the home page" checked={f.showAttire !== false} onChange={(v) => toggleShow("showAttire", v)} />} />
-          <HomeHeadFields k="attire" defEyebrow="What to wear" defTitle="Attire guide" withFooter />
+          <AttireAdmin headRight={<HeadSwitch label="Show attire guide on the home page" checked={f.showAttire !== false} onChange={(v) => toggleShow("showAttire", v)} />}
+            extraTop={<HomeHeadFields k="attire" defEyebrow="What to wear" defTitle="Attire guide" />} />
+          <SaveFooter />
         </>
       )}
       {can("maps") && active === "maps" && (
         <>
-          <VenueAdmin section="home" headRight={<HeadSwitch label="Show map on the home page" checked={f.showMap !== false} onChange={(v) => toggleShow("showMap", v)} />} />
-          <HomeHeadFields k="maps" defEyebrow="The Venue" defTitle="Where we'll celebrate" />
+          <VenueAdmin section="home" headRight={<HeadSwitch label="Show map on the home page" checked={f.showMap !== false} onChange={(v) => toggleShow("showMap", v)} />}
+            extraTop={<HomeHeadFields k="maps" defEyebrow="The Venue" defTitle="Where we'll celebrate" />} />
         </>
       )}
     </div>
@@ -2783,7 +2780,7 @@ export function EntourageGroupEditor({ open, group, onClose }) {
   );
 }
 
-export function EntourageAdmin({ headRight }) {
+export function EntourageAdmin({ headRight, extraTop = null }) {
   const { entourage } = useStore();
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const groups = entourage || [];
@@ -2801,6 +2798,7 @@ export function EntourageAdmin({ headRight }) {
         <div className="panel__title">Entourage <span style={{ color: "var(--muted)", fontSize: 15 }}>({groups.length})</span></div>
         {headRight}
       </div>
+      {extraTop && <div style={{ padding: "14px 16px 0" }}>{extraTop}</div>}
       <div className="panel__body">
         <div className="admin-toolbar" style={{ marginBottom: 16 }}><div className="admin-toolbar__end"><Button variant="primary" className="admin-toolbar__action" onClick={() => { setEditGroup(null); setGroupOpen(true); }}>+ Add group</Button></div></div>
         <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 0, marginBottom: 18 }}>Groups shown on the home page after the schedule. Add a group (e.g. Groomsmen), then add people under it. Everything saves automatically.</p>
@@ -2900,7 +2898,7 @@ export function AttireGroupEditor({ open, group, onClose }) {
   );
 }
 
-export function AttireAdmin({ headRight }) {
+export function AttireAdmin({ headRight, extraTop = null }) {
   const { attire } = useStore();
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const groups = attire || [];
@@ -2914,6 +2912,7 @@ export function AttireAdmin({ headRight }) {
         <div className="panel__title">Attire guide <span style={{ color: "var(--muted)", fontSize: 15 }}>({groups.length})</span></div>
         {headRight}
       </div>
+      {extraTop && <div style={{ padding: "14px 16px 0" }}>{extraTop}</div>}
       <div className="admin-toolbar" style={{ padding: "14px 16px" }}><div className="admin-toolbar__end"><Button variant="primary" className="admin-toolbar__action" onClick={() => { setEditing(null); setOpen(true); }}>+ Add group</Button></div></div>
       <div className="panel__body--flush table-wrap">
         <table className="tbl">
