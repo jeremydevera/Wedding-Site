@@ -642,10 +642,10 @@ export function PageHero({ eyebrow, title, lead }) {
 }
 
 export function StoryPage() {
-  const { story } = useStore();
+  const { story, settings } = useStore();
   return (
     <div className="fade-up">
-      <PageHero eyebrow={sectionLabel("story", s.moduleLabels, "Our Story")} title="How we got here" lead="Every love story is beautiful, but this one is ours." />
+      <PageHero eyebrow={sectionLabel("story", settings.moduleLabels, "Our Story")} title="How we got here" lead="Every love story is beautiful, but this one is ours." />
       <section className="block" style={{ paddingTop: 30 }}>
         <div className="container" style={{ maxWidth: 920 }}>
           <div className="story-list">
@@ -850,7 +850,7 @@ export function SchedulePage() {
   const { schedule, settings } = useStore();
   return (
     <div className="fade-up">
-      <PageHero eyebrow={sectionLabel("schedule", s.moduleLabels, "The Day Of")} title="Wedding day schedule" lead="Here's how the celebration will unfold, hour by hour." />
+      <PageHero eyebrow={sectionLabel("schedule", settings.moduleLabels, "The Day Of")} title="Wedding day schedule" lead="Here's how the celebration will unfold, hour by hour." />
       <section className="block" style={{ paddingTop: 30 }}>
         <div className="container">
           <ScheduleView items={schedule} style="alt" />
