@@ -228,6 +228,17 @@ body.env-sealed main { padding-top: 0; }
   font-weight: 500; line-height: 1.0; text-shadow: 0 2px 30px rgba(0,0,0,.25);
 }
 .hero__names .amp { font-style: italic; display: block; font-size: 0.42em; margin: 0.06em 0; opacity: 0.92; }
+/* Solo event title (birthday — no partner B): couple-name sizing overflows on a
+   long single line ("Jeremy's 65th Birthday"), so cap it lower and wrap cleanly
+   onto the next line instead of spilling off-screen. */
+.hero__names--solo {
+  font-size: clamp(38px, 8.5vw, 92px);
+  line-height: 1.08;
+  max-width: min(92vw, 13ch);
+  margin-left: auto; margin-right: auto;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
 .hero__date { color: var(--accent-ink); font-size: clamp(15px, 2.4vw, 20px); letter-spacing: 0.28em; text-transform: uppercase; font-weight: 500; margin-bottom: 30px; }
 .hero__welcome { color: var(--accent-ink); max-width: 50ch; margin: 0 auto 30px; font-size: 18px; opacity: 0.95; }
 .hero__cta { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }

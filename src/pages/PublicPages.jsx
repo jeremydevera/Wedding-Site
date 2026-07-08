@@ -469,7 +469,9 @@ export function Home() {
         <HeroBg />
         <div className="hero__inner">
           <div className="eyebrow hero__eyebrow eyebrow--solo">{s.tagline}</div>
-          <h1 className="hero__names">
+          {/* Solo title (birthday: no partner B) gets a smaller clamp + balanced
+              wrapping — couple-name sizing overflows on long titles. */}
+          <h1 className={"hero__names" + (s.partnerB ? "" : " hero__names--solo")}>
             {s.partnerA}{s.partnerB ? <><span className="amp">&amp;</span>{s.partnerB}</> : null}
           </h1>
           {s.weddingDateLabel && <div className="hero__date">{s.weddingDateLabel}</div>}
