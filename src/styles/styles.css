@@ -289,6 +289,22 @@ body.env-sealed main { padding-top: 0; }
 /* slim, theme-tinted scrollbar for the row */
 .home-details-row::-webkit-scrollbar { height: 4px; }
 .home-details-row::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
+/* Desktop: the horizontal layout becomes a CENTERED wrap-grid — max 3 per row,
+   remainder row centered (2 cards → centered pair; 4 → 3 up top + 1 centered
+   below). Mobile keeps the snap-scroll swipe row above. */
+@media (min-width: 861px) {
+  .home-details-row {
+    flex-wrap: wrap; justify-content: center;
+    overflow: visible; scroll-snap-type: none;
+    gap: 6px 46px;
+    max-width: calc(3 * 300px + 2 * 46px); /* caps a row at 3 cards */
+    margin: 0 auto; padding: 2px 0 4px;
+  }
+  .home-details-row .home-dcard {
+    flex: 0 0 300px; min-height: 0;
+    border-left: none; padding: 24px 8px 26px;
+  }
+}
 
 /* Solo event title (birthday — no partner B): couple-name sizing overflows on a
    long single line ("Jeremy's 65th Birthday"), so cap it lower and wrap cleanly
