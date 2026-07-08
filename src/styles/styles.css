@@ -459,7 +459,9 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
    content is indented past it (padding-left above). */
 .story-rail, .story-rail__fill { position: absolute; top: 0; left: 16px; width: 2px; transform: translateX(-50%); border-radius: 2px; }
 .story-rail { height: 100%; background: color-mix(in srgb, var(--accent) 15%, transparent); }
-.story-rail__fill { height: 0; background: var(--accent); box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 55%, transparent); transition: height .12s linear; }
+.story-rail__fill { height: 0; background: var(--accent); box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 60%, transparent); transition: height .12s linear; }
+/* Glowing point that leads the drawn line as it travels (sits at the fill's tip). */
+.story-rail__fill::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); transform: translate(-50%, 50%); box-shadow: 0 0 12px 1px color-mix(in srgb, var(--accent) 75%, transparent); }
 
 .story-row { display: grid; grid-template-columns: 1fr; gap: 26px; align-items: center; margin-bottom: 72px; position: relative; }
 .story-row:last-child { margin-bottom: 0; }
@@ -471,7 +473,7 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
    drawn line's playhead reaches that center (row gets .dot-on from StoryPage's
    scroll handler); un-pops scrolling back. Mobile: text starts at the row's
    44px indent, rail center is x=16 → left:-28 lands the dot on the left rail. */
-.story-dot { position: absolute; top: 50%; left: -28px; z-index: 2; width: 15px; height: 15px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 16%, transparent); transform: translate(-50%, -50%) scale(0); transition: transform .3s ease; }
+.story-dot { position: absolute; top: 50%; left: -28px; z-index: 2; width: 15px; height: 15px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px var(--surface), 0 0 0 7px color-mix(in srgb, var(--accent) 22%, transparent); transform: translate(-50%, -50%) scale(0); transition: transform .3s ease; }
 /* Gentle pop on activation — small overshoot, ends at scale(1). Scroll-up
    removal falls back to the .3s shrink transition above. */
 .story-row.dot-on .story-dot { transform: translate(-50%, -50%) scale(1); animation: story-dot-pop .5s cubic-bezier(.2, 1.3, .4, 1) both; }
@@ -524,14 +526,54 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
   .story-row:nth-child(odd) .story-dot  { left: -28px; }
   .story-row:nth-child(even) .story-dot { left: calc(100% + 28px); }
 }
-/* Shrink the photo/video so there's room for the rail and the layout stays airy. */
-.story-row__media { max-width: 440px; }
-/* Year uses the readable accent, not --accent-soft (a pale background tint that
-   rendered near-invisible on light themes). Title pinned to --ink so it never
-   inherits a low-contrast color. */
-.story-row__year { font-family: var(--font-display); font-size: 60px; color: var(--accent); line-height: 1; }
-.story-row__title { font-size: 32px; margin: 6px 0 12px; color: var(--ink); }
-.story-row__desc { color: var(--ink-soft); font-size: 18px; }
+/* Framed photo: soft layered shadow + a hairline accent ring, gently lifts on
+   hover (the whole frame moves so a video's crop transform is never clobbered;
+   only still images get the inner zoom). Shrunk so the layout stays airy. */
+.story-row__media {
+  max-width: 440px;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent),
+              0 30px 55px -30px color-mix(in srgb, var(--ink) 60%, transparent);
+  transition: transform .55s cubic-bezier(.2, .7, .2, 1), box-shadow .55s ease;
+}
+.story-row__media > img { transition: transform .8s cubic-bezier(.2, .7, .2, 1); }
+.story-row__media:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent),
+              0 40px 70px -28px color-mix(in srgb, var(--ink) 62%, transparent);
+}
+.story-row__media:hover > img { transform: scale(1.055); }
+
+/* Editorial type: the year as an accent display numeral led by a short rule,
+   a display title, and a measured description. */
+.story-row__year {
+  font-family: var(--font-display);
+  font-size: clamp(30px, 4.4vw, 46px);
+  color: var(--accent);
+  line-height: 1;
+  letter-spacing: .01em;
+  display: inline-flex;
+  align-items: center;
+  gap: 13px;
+}
+.story-row__year::before { content: ""; width: 28px; height: 2px; background: currentColor; opacity: .5; border-radius: 2px; }
+.story-row__title { font-family: var(--font-display); font-size: clamp(23px, 3vw, 31px); margin: 13px 0 12px; color: var(--ink); line-height: 1.16; }
+.story-row__desc { color: var(--ink-soft); font-size: 17px; line-height: 1.68; max-width: 46ch; margin: 0; }
+
+/* Text rises in as the line reaches the milestone (rides .dot-on), staggered
+   after the dot pop for a two-beat reveal. */
+.story-row__year, .story-row__title, .story-row__desc {
+  opacity: 0; transform: translateY(12px);
+  transition: opacity .6s ease, transform .6s cubic-bezier(.2, .7, .2, 1);
+}
+.story-row.dot-on .story-row__year { opacity: 1; transform: none; transition-delay: .06s; }
+.story-row.dot-on .story-row__title { opacity: 1; transform: none; transition-delay: .14s; }
+.story-row.dot-on .story-row__desc { opacity: 1; transform: none; transition-delay: .22s; }
+@media (prefers-reduced-motion: reduce) {
+  .story-row__year, .story-row__title, .story-row__desc { opacity: 1; transform: none; transition: none; }
+  .story-row__media, .story-row__media > img { transition: none; }
+}
 
 /* --- Info grid (details/venue) ---------------------------------------------*/
 .info-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
