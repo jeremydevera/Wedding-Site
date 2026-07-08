@@ -513,8 +513,10 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
   .story-timeline { padding-left: 0; }
   .story-rail, .story-rail__fill { left: 50%; }
   .story-row { grid-template-columns: 1fr 1fr; column-gap: 56px; align-items: center; min-height: 66vh; margin-bottom: 40px; }
-  .story-row__card { flex-direction: row; align-items: center; gap: 28px; grid-column: 2; }   /* odd → right half: [text | picture] */
-  .story-row:nth-child(even) .story-row__card { grid-column: 1; flex-direction: row-reverse; } /* even → left half: [picture | text] */
+  /* Text is the INNER item (nearest the rail) so the dot off its inner edge
+     lands on the centered rail; picture sits on the outer side. */
+  .story-row__card { flex-direction: row-reverse; align-items: center; gap: 28px; grid-column: 2; }  /* odd → right half: [text | picture] */
+  .story-row:nth-child(even) .story-row__card { grid-column: 1; flex-direction: row; }               /* even → left half: [picture | text] */
   .story-row__media { flex: 0 0 46%; max-width: 46%; }
   .story-row__text { flex: 1; }
   /* Dot on the centered rail, off the text block's inner edge (half the 56px
