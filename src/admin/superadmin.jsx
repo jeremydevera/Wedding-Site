@@ -223,8 +223,11 @@ function TicketModal({ ticket, onClose, onRefresh }) {
   const meta = (label, val) => val ? <div style={{ fontSize: 13, color: "var(--muted)" }}><strong style={{ color: "var(--ink)" }}>{label}:</strong> {val}</div> : null;
   return (
     <Modal open onClose={() => !busy && onClose()} label="Support ticket">
+      {/* Fixed-height column: header + meta + reply stay pinned; ONLY the
+          message list scrolls (ticket-thread--modal flexes .tk-msgs). */}
+      <div style={{ display: "flex", flexDirection: "column", maxHeight: "72vh", minHeight: 0 }}>
       <SectionHead eyebrow="Support ticket" title={ticket.subject} />
-      <div style={{ display: "grid", gap: 4, margin: "0 0 12px" }}>
+      <div style={{ display: "grid", gap: 4, margin: "0 0 12px", flex: "none" }}>
         {meta("From", ticket.submitter_name || ticket.submitter_email)}
         {meta("Email", ticket.submitter_email)}
         {meta("Where", ticket.context_url)}
@@ -234,6 +237,7 @@ function TicketModal({ ticket, onClose, onRefresh }) {
       </div>
       <TicketThread
         ticket={ticket}
+        variant="modal"
         onChanged={onRefresh}
         leftAction={
           <label className="tk-status">
@@ -246,6 +250,7 @@ function TicketModal({ ticket, onClose, onRefresh }) {
         }
         rightAction={<Button variant="ghost" onClick={() => !busy && onClose()} disabled={busy}>Close</Button>}
       />
+      </div>
     </Modal>
   );
 }

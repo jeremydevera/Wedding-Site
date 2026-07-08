@@ -14,7 +14,7 @@ const { useState, useEffect, useRef } = React;
 // thread (owner ⇄ support), and a reply box. Used by both the owner's Support
 // tab and the superadmin ticket modal. postTicketMessage pins sender_role to the
 // caller's actual role; an owner reply reopens a resolved ticket (DB trigger).
-export function TicketThread({ ticket, onChanged, leftAction, rightAction }) {
+export function TicketThread({ ticket, onChanged, leftAction, rightAction, variant }) {
   const [msgs, setMsgs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reply, setReply] = useState("");
@@ -43,7 +43,7 @@ export function TicketThread({ ticket, onChanged, leftAction, rightAction }) {
   }
 
   return (
-    <div className="ticket-thread">
+    <div className={"ticket-thread" + (variant === "modal" ? " ticket-thread--modal" : "")}>
       <div className="tk-msgs">
         {/* Original request */}
         <div className="tk-msg tk-msg--client">
