@@ -449,79 +449,19 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
   .sched-cards__item { grid-template-columns: 1fr; gap: 8px; }
 }
 
-/* --- Story timeline ("Chapters of us") ------------------------------------*/
-/* A vertical spine that DRAWS as you scroll (fill height set by JS in
-   StoryPage); each milestone is a chapter card with a node on the spine that
-   blooms + ripples as the line reaches it, a big faint year watermark behind,
-   a framed photo, and an editorial title/description. Mobile: left spine,
-   single column, snap carousel. Desktop: centered spine, alternating cards. */
-.tl { position: relative; padding-left: 52px; }
-.tl__spine, .tl__spine-fill { position: absolute; top: 0; left: 20px; width: 2px; transform: translateX(-50%); border-radius: 2px; }
-.tl__spine { height: 100%; background: color-mix(in srgb, var(--accent) 14%, transparent); }
-.tl__spine-fill { height: 0; background: linear-gradient(var(--accent), color-mix(in srgb, var(--accent) 65%, transparent)); box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 55%, transparent); transition: height .12s linear; }
-.tl__spine-fill::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); transform: translate(-50%, 50%); box-shadow: 0 0 14px 1px color-mix(in srgb, var(--accent) 70%, transparent); }
-
-.tl__item { position: relative; margin-bottom: 40px; }
-.tl__item:last-child { margin-bottom: 0; }
-
-/* node on the spine */
-/* node left:-32 lands on the spine: items sit inside .tl's 52px left padding,
-   the spine is at .tl x=20, so 20-52 = -32 relative to the item. */
-.tl__node { position: absolute; top: 30px; left: -32px; z-index: 3; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); box-shadow: 0 0 0 5px var(--surface); transform: translate(-50%, -50%) scale(.5); transition: transform .35s ease, background .35s ease; }
-.tl__item.is-on .tl__node { background: var(--accent); animation: tl-bloom .6s cubic-bezier(.2, 1.45, .35, 1) forwards; }
-@keyframes tl-bloom { 0% { transform: translate(-50%, -50%) scale(.5); } 55% { transform: translate(-50%, -50%) scale(1.22); } 100% { transform: translate(-50%, -50%) scale(1); } }
-.tl__node::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid var(--accent); opacity: 0; pointer-events: none; }
-.tl__item.is-on .tl__node::after { animation: tl-ripple .9s ease-out; }
-@keyframes tl-ripple { 0% { opacity: .5; transform: scale(1); } 100% { opacity: 0; transform: scale(2.9); } }
-
-/* connector spine → card */
-.tl__item::before { content: ""; position: absolute; top: 30px; left: -32px; width: 32px; height: 2px; background: color-mix(in srgb, var(--accent) 22%, transparent); opacity: 0; transition: opacity .4s ease .12s; }
-.tl__item.is-on::before { opacity: 1; }
-
-/* card + entrance (slides up as the line reaches it) */
-.tl__card { position: relative; opacity: 0; transform: translateY(26px); transition: opacity .7s ease, transform .8s cubic-bezier(.2, .7, .2, 1); }
-.tl__item.is-on .tl__card { opacity: 1; transform: none; }
-
-.tl__year { position: absolute; z-index: 0; top: -26px; right: 0; font-family: var(--font-display); font-weight: 600; font-size: clamp(66px, 15vw, 140px); line-height: .8; letter-spacing: -.02em; color: color-mix(in srgb, var(--accent) 11%, transparent); pointer-events: none; user-select: none; }
-.tl__photo { position: relative; z-index: 1; max-width: 460px; border-radius: 16px; overflow: hidden; margin-bottom: 18px; box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent), 0 28px 52px -30px color-mix(in srgb, var(--ink) 60%, transparent); transition: transform .55s cubic-bezier(.2, .7, .2, 1); }
-.tl__photo > img { transition: transform .8s cubic-bezier(.2, .7, .2, 1); }
-.tl__photo:hover { transform: translateY(-5px); }
-.tl__photo:hover > img { transform: scale(1.05); }
-.tl__body { position: relative; z-index: 1; }
-.tl__yeartag { display: flex; align-items: center; gap: 10px; font-size: 12px; letter-spacing: .24em; text-transform: uppercase; font-weight: 700; color: var(--accent); margin-bottom: 9px; }
-.tl__yeartag::before { content: ""; width: 22px; height: 2px; background: currentColor; opacity: .6; }
-.tl__title { font-family: var(--font-display); font-size: clamp(26px, 3.6vw, 38px); line-height: 1.12; color: var(--ink); margin: 0 0 10px; }
-.tl__desc { color: var(--ink-soft); font-size: 17px; line-height: 1.7; max-width: 52ch; margin: 0; }
-
-@media (prefers-reduced-motion: reduce) {
-  .tl__spine-fill, .tl__node, .tl__photo, .tl__photo > img, .tl__card { transition: none; }
-  .tl__item.is-on .tl__node { animation: none; transform: translate(-50%, -50%) scale(1); }
-  .tl__item.is-on .tl__node::after { animation: none; }
-  .tl__card { opacity: 1; transform: none; }
+/* --- Story -----------------------------------------------------------------*/
+.story-row { display: grid; grid-template-columns: 1fr; gap: 26px; align-items: center; margin-bottom: 60px; }
+.story-row:last-child { margin-bottom: 0; }
+@media (min-width: 760px) {
+  .story-row { grid-template-columns: 1fr 1fr; gap: 50px; }
+  .story-row:nth-child(even) .story-row__media { order: 2; }
 }
-
-/* mobile: left spine, single column, snap carousel (scoped via .story-snap) */
-@media (max-width: 860px) {
-  .site-scroll:has(.story-snap) { scroll-snap-type: y proximity; scroll-padding-top: 12px; }
-  .story-snap .tl__item { min-height: 80svh; display: flex; flex-direction: column; justify-content: center; scroll-snap-align: center; margin-bottom: 0; }
-  .story-snap .tl__node, .story-snap .tl__item::before { top: 50%; }
-}
-
-/* desktop: centered spine, cards alternate sides */
-@media (min-width: 820px) {
-  .tl { padding-left: 0; }
-  .tl__spine, .tl__spine-fill { left: 50%; }
-  .tl__item { width: calc(50% - 48px); min-height: 60vh; display: flex; flex-direction: column; justify-content: center; margin-bottom: 24px; }
-  .tl__item:nth-child(odd) { margin-left: auto; }
-  .tl__item:nth-child(even) { margin-right: auto; }
-  .tl__node, .tl__item::before { top: 50%; }
-  .tl__item:nth-child(odd) .tl__node { left: -48px; }
-  .tl__item:nth-child(odd)::before { left: -48px; width: 48px; }
-  .tl__item:nth-child(even) .tl__node { left: auto; right: -48px; }
-  .tl__item:nth-child(even)::before { left: auto; right: -48px; width: 48px; }
-  .tl__year { top: -34px; }
-  .tl__item:nth-child(even) .tl__year { left: 0; right: auto; }
-}
+/* Year uses the readable accent, not --accent-soft (a pale background tint that
+   rendered near-invisible on light themes). Title pinned to --ink so it never
+   inherits a low-contrast color. */
+.story-row__year { font-family: var(--font-display); font-size: 60px; color: var(--accent); line-height: 1; }
+.story-row__title { font-size: 32px; margin: 6px 0 12px; color: var(--ink); }
+.story-row__desc { color: var(--ink-soft); font-size: 18px; }
 
 /* --- Info grid (details/venue) ---------------------------------------------*/
 .info-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }

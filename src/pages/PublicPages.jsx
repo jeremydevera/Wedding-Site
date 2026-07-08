@@ -641,60 +641,21 @@ export function PageHero({ eyebrow, title, lead }) {
 
 export function StoryPage() {
   const { story } = useStore();
-  const tlRef = useRef(null);     // the timeline container
-  const fillRef = useRef(null);   // the spine fill that draws with scroll
-  const rows = Array.isArray(story) ? story : [];
-
-  // Draw the spine as you scroll: fill height tracks a "playhead" at ~55% of the
-  // viewport travelling through the timeline; each chapter turns .is-on when the
-  // playhead reaches its centre (node blooms, card slides in). Scroll-linked
-  // both ways. Works with the mobile shell scroller and the desktop document.
-  useEffect(() => {
-    const wrap = tlRef.current;
-    if (!wrap) return;
-    let raf = 0;
-    const update = () => {
-      raf = 0;
-      const rect = wrap.getBoundingClientRect();
-      const vh = window.innerHeight || document.documentElement.clientHeight || 0;
-      const line = vh * 0.55;
-      const p = rect.height ? (line - rect.top) / rect.height : 0;
-      if (fillRef.current) fillRef.current.style.height = Math.max(0, Math.min(1, p)) * 100 + "%";
-      wrap.querySelectorAll(".tl__item").forEach((it) => {
-        const r = it.getBoundingClientRect();
-        it.classList.toggle("is-on", r.top + r.height / 2 <= line);
-      });
-    };
-    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
-    update();
-    const off = onSiteScroll(onScroll);
-    window.addEventListener("resize", onScroll);
-    return () => { off(); window.removeEventListener("resize", onScroll); if (raf) cancelAnimationFrame(raf); };
-  }, [rows.length]);
-
   return (
-    <div className="fade-up story-snap">
+    <div className="fade-up">
       <PageHero eyebrow="Our Story" title="How we got here" lead="Every love story is beautiful, but this one is ours." />
-      <section className="block" style={{ paddingTop: 24 }}>
-        <div className="container" style={{ maxWidth: 1040 }}>
-          <div className="tl" ref={tlRef}>
-            <span className="tl__spine" aria-hidden="true" />
-            <span className="tl__spine-fill" ref={fillRef} aria-hidden="true" />
-            {rows.map((row, i) => (
-              <article className="tl__item" key={i}>
-                <span className="tl__node" aria-hidden="true" />
-                <div className="tl__card">
-                  {row.year ? <span className="tl__year" aria-hidden="true">{row.year}</span> : null}
-                  <div className="tl__photo"><StoryImg row={row} /></div>
-                  <div className="tl__body">
-                    {row.year ? <div className="tl__yeartag">{row.year}</div> : null}
-                    <h3 className="tl__title">{row.title}</h3>
-                    <p className="tl__desc">{row.desc}</p>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
+      <section className="block" style={{ paddingTop: 30 }}>
+        <div className="container" style={{ maxWidth: 920 }}>
+          {(Array.isArray(story) ? story : []).map((row, i) => (
+            <div className="story-row" key={i}>
+              <div className="story-row__media"><StoryImg row={row} /></div>
+              <div>
+                <div className="story-row__year">{row.year}</div>
+                <h3 className="story-row__title">{row.title}</h3>
+                <p className="story-row__desc">{row.desc}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
     </div>
