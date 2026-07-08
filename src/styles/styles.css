@@ -232,9 +232,9 @@ body.env-sealed main { padding-top: 0; }
    long single line ("Jeremy's 65th Birthday"), so cap it lower and wrap cleanly
    onto the next line instead of spilling off-screen. */
 .hero__names--solo {
-  font-size: clamp(38px, 8.5vw, 92px);
+  /* same size as couple names — only add wrapping for long titles */
   line-height: 1.08;
-  max-width: min(92vw, 13ch);
+  max-width: min(92vw, 12ch);
   margin-left: auto; margin-right: auto;
   overflow-wrap: break-word;
   text-wrap: balance;
