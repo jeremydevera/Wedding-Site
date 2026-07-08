@@ -2301,7 +2301,7 @@ export function SettingsAdmin() {
 
       {tab === "access" && (<><div className="panel">
         <div className="panel__head"><div className="panel__title">Moderation</div></div>
-        <div className="panel__body">
+        <div className="panel__body" style={{ maxWidth: 760, margin: "0 auto" }}>
           {/* Gallery/uploads are globally shelved (roles.js DISABLED_MODULES) — hide the
               dead moderation toggle so it can't mislead. Reappears when the gallery ships. */}
           {!DISABLED_MODULES.has("gallery") && (
@@ -2326,7 +2326,7 @@ export function SettingsAdmin() {
         return (
           <div className="panel">
             <div className="panel__head"><div><div className="panel__title">Owner editing</div><div className="panel__sub">Choose which sections the couple's own login may edit. Everything else stays superadmin-only.</div></div></div>
-            <div className="panel__body">
+            <div className="panel__body" style={{ maxWidth: 760, margin: "0 auto" }}>
               <div className="owner-edit__group">
                 <div className="owner-edit__grouphead">
                   <span className="owner-edit__grouptitle">{Icon.home({ style: { width: 15, height: 15 } })} Home tab folders</span>
@@ -2351,7 +2351,7 @@ export function SettingsAdmin() {
 
       <div className="panel">
         <div className="panel__head"><div className="panel__title">Access &amp; Toggles</div></div>
-        <div className="panel__body">
+        <div className="panel__body" style={{ maxWidth: 760, margin: "0 auto" }}>
           {/* NOTE: the old "Admin password" field was removed — it gated nothing
               (admin login is Supabase email/password) and was stripped before save
               (mappers CONTENT_SECRET_KEYS), so editing it never persisted. */}
