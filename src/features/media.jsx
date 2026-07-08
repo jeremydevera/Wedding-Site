@@ -297,7 +297,7 @@ export function GalleryPage() {
 
   return (
     <div className="fade-up">
-      <PageHero eyebrow="Gallery" title="Moments, by everyone" lead={`Every photo and clip shared by guests of ${settings.partnerA} & ${settings.partnerB}.`} />
+      <PageHero eyebrow="Gallery" title="Moments, by everyone" lead={`Every photo and clip shared by guests of ${[settings.partnerA, settings.partnerB].filter(Boolean).join(" & ")}.`} />
       <section className="block" style={{ paddingTop: 18 }}>
         <div className="container container--wide">
           <div className="gal-toolbar">

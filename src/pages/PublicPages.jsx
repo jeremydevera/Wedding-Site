@@ -4,7 +4,7 @@ import { onSiteScroll, scrollOffset, siteScrollEl } from "@/lib/scroll.js";
 import { cropTransform, mediaUrl } from "@/lib/media.js";
 import { useStore } from "@/lib/store.jsx";
 import { mapStyleFilter } from "@/lib/mapStyles.js";
-import { moduleEnabled } from "@/lib/roles.js";
+import { moduleEnabled, sectionLabel } from "@/lib/roles.js";
 import { egTintGradientFor, envColorFilterFor } from "@/themes";
 import { Button, Countdown, FloatingDecor, Icon, Placeholder, SectionHead, mapCoordStr, mapDirUrl, mapEmbedUrl, mapResolveQuery } from "@/ui/components.jsx";
 import { VinylPlayer } from "@/features/music.jsx";
@@ -645,7 +645,7 @@ export function StoryPage() {
   const { story } = useStore();
   return (
     <div className="fade-up">
-      <PageHero eyebrow="Our Story" title="How we got here" lead="Every love story is beautiful, but this one is ours." />
+      <PageHero eyebrow={sectionLabel("story", s.moduleLabels, "Our Story")} title="How we got here" lead="Every love story is beautiful, but this one is ours." />
       <section className="block" style={{ paddingTop: 30 }}>
         <div className="container" style={{ maxWidth: 920 }}>
           <div className="story-list">
@@ -673,7 +673,7 @@ export function DetailsPage() {
   const [open, setOpen] = useState(0);
   return (
     <div className="fade-up">
-      <PageHero eyebrow="Wedding Details" title="Everything you need to know" lead={s.weddingDateLabel ? `We can't wait to celebrate with you on ${s.weddingDateLabel}.` : "We can't wait to celebrate with you."} />
+      <PageHero eyebrow={sectionLabel("details", s.moduleLabels, "Wedding Details")} title="Everything you need to know" lead={s.weddingDateLabel ? `We can't wait to celebrate with you on ${s.weddingDateLabel}.` : "We can't wait to celebrate with you."} />
       <section className="block" style={{ paddingTop: 20 }}>
         <div className="container">
           <div className="info-grid info-grid--2">
@@ -850,7 +850,7 @@ export function SchedulePage() {
   const { schedule, settings } = useStore();
   return (
     <div className="fade-up">
-      <PageHero eyebrow="The Day Of" title="Wedding day schedule" lead="Here's how the celebration will unfold, hour by hour." />
+      <PageHero eyebrow={sectionLabel("schedule", s.moduleLabels, "The Day Of")} title="Wedding day schedule" lead="Here's how the celebration will unfold, hour by hour." />
       <section className="block" style={{ paddingTop: 30 }}>
         <div className="container">
           <ScheduleView items={schedule} style="alt" />
@@ -876,7 +876,7 @@ export function VenuePage() {
   const heroLead = multi ? "Here's where we'll be." : ((first && first.address) || s.venueAddress);
   return (
     <div className="fade-up">
-      <PageHero eyebrow="Venue & Map" title={heroTitle} lead={heroLead} />
+      <PageHero eyebrow={sectionLabel("venue", s.moduleLabels, "Venue & Map")} title={heroTitle} lead={heroLead} />
       {(() => {
         const sectionOf = (v, vi) => {
           const query = (v.mapQuery && v.mapQuery.trim()) || v.address;

@@ -18,7 +18,7 @@ import { AdminApp, ImageUploadField } from "@/admin/manage.jsx";
 import { ApplyWizard } from "@/admin/apply.jsx";
 import { RoadToForeverSite } from "@/features/roadtoforever.jsx";
 import { hasSection } from "@/config/eventTypes.js";
-import { moduleEnabled, moduleLabel } from "@/lib/roles.js";
+import { moduleEnabled, moduleLabel, sectionLabel } from "@/lib/roles.js";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // ============================================================================
@@ -76,14 +76,6 @@ function visibleNav(eventType, modules, labels) {
     });
 }
 
-// The guest-facing label for a single module key, honoring the owner's rename
-// (Settings → Features). Falls back to the built-in NAV label / moduleLabel.
-export function sectionLabel(key, labels) {
-  const custom = labels && typeof labels[key] === "string" ? labels[key].trim() : "";
-  if (custom) return custom;
-  const nav = NAV_LINKS.find((l) => l.key === key);
-  return nav ? nav.label : moduleLabel(key);
-}
 
 
 export function useRoute() {
@@ -180,7 +172,7 @@ export function Nav({ route }) {
       <div className="container nav__inner">
         <a className="nav__brand" onClick={() => go("home")}>
           <Monogram a={settings.partnerA} b={settings.partnerB} size={40} />
-          <span className="nav__names">{settings.partnerA} <span className="amp">&amp;</span> {settings.partnerB}</span>
+          <span className="nav__names">{settings.partnerA}{settings.partnerB ? <> <span className="amp">&amp;</span> {settings.partnerB}</> : null}</span>
         </a>
         <div className="nav__links">
           {visibleNav(settings.eventType, settings.modules, settings.moduleLabels).map((l) => (
@@ -256,7 +248,7 @@ export function Footer() {
     <footer className="footer">
       <div className="container">
         <div className="divider-mark">{Icon.rings({})}</div>
-        <div className="footer__names">{settings.partnerA} <span className="amp">&amp;</span> {settings.partnerB}</div>
+        <div className="footer__names">{settings.partnerA}{settings.partnerB ? <> <span className="amp">&amp;</span> {settings.partnerB}</> : null}</div>
         <div className="footer__hash">{settings.hashtag}</div>
         <div className="footer__links">
           {visibleNav(settings.eventType, settings.modules, settings.moduleLabels).map((l) => <button key={l.key} onClick={() => go(l.key)}>{l.label}</button>)}

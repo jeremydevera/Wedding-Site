@@ -4,6 +4,7 @@ import { scrollToTop } from "@/lib/scroll.js";
 import { Store, useStore } from "@/lib/store.jsx";
 import { postRsvp, rsvpNameTaken, upsertRsvp, guestAllocation } from "@/lib/api.js";
 import { isRsvpClosed, joinPlusOnes, isValidOptionalEmail, maxPartySize } from "@/lib/rsvp.js";
+import { sectionLabel } from "@/lib/roles.js";
 import { Button, Field, Icon, Input, Select, Textarea, confirmDialog } from "@/ui/components.jsx";
 import { PageHero } from "@/pages/PublicPages.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
@@ -297,7 +298,7 @@ export function RSVPPage() {
 
   return (
     <div className="fade-up">
-      <PageHero eyebrow="RSVP" title="Will you be there?" lead={settings.rsvpDeadlineOn !== false && settings.rsvpDeadline ? `Kindly respond by ${settings.rsvpDeadline}.` : undefined} />
+      <PageHero eyebrow={sectionLabel("rsvp", settings.moduleLabels, "RSVP")} title="Will you be there?" lead={settings.rsvpDeadlineOn !== false && settings.rsvpDeadline ? `Kindly respond by ${settings.rsvpDeadline}.` : undefined} />
       <section className="block" style={{ paddingTop: 20 }}>
         <div className="container container--narrow">
           <form className="card card--pad-lg" onSubmit={submit} noValidate>

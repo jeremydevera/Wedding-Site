@@ -778,7 +778,7 @@ export function RsvpsAdmin() {
     </tr>`).join("");
     const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#222;max-width:640px;margin:0 auto">
       <h2 style="margin:0 0 4px">${heading}</h2>
-      <p style="color:#666;margin:0 0 16px">${esc(settings.partnerA)} &amp; ${esc(settings.partnerB)}</p>
+      <p style="color:#666;margin:0 0 16px">${esc(settings.partnerA)}${settings.partnerB ? " &amp; " + esc(settings.partnerB) : ""}</p>
       <p style="margin:0 0 16px">
         <strong>${filtered.length}</strong> responses &nbsp;·&nbsp;
         <strong>${yes.length}</strong> attending (${guests} guests) &nbsp;·&nbsp;
@@ -1012,7 +1012,7 @@ export function GuestbookAdmin() {
     </tr>`).join("");
     const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#222;max-width:640px;margin:0 auto">
       <h2 style="margin:0 0 4px">${heading}</h2>
-      <p style="color:#666;margin:0 0 16px">${esc(settings.partnerA)} &amp; ${esc(settings.partnerB)}</p>
+      <p style="color:#666;margin:0 0 16px">${esc(settings.partnerA)}${settings.partnerB ? " &amp; " + esc(settings.partnerB) : ""}</p>
       <p style="margin:0 0 16px"><strong>${filtered.length}</strong> message${filtered.length === 1 ? "" : "s"}</p>
       <table style="border-collapse:collapse;width:100%;font-size:14px">
         <thead><tr style="text-align:left;background:#f6f6f6">

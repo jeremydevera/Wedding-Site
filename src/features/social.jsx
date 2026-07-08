@@ -5,6 +5,7 @@ import { Store, useStore } from "@/lib/store.jsx";
 import { postGuestbook, postQuiz } from "@/lib/api.js";
 import { hasPlayedQuiz, markQuizPlayed, clearQuizPlayed } from "@/lib/quiz-attempt.js";
 import { resolveSubdomain } from "@/lib/tenant.js";
+import { sectionLabel } from "@/lib/roles.js";
 import { Button, Field, Icon, Input, Modal, Pager, SectionHead, Textarea, toast, useServerPaged } from "@/ui/components.jsx";
 import { supabase } from "@/lib/supabase.js";
 import { rowToGuestbook } from "@/lib/mappers.js";
@@ -26,6 +27,7 @@ function gbAlign(id) {
 }
 
 export function GuestbookPage() {
+  const { settings } = useStore(); // renamed-tab label for the eyebrow
   const [form, setForm] = useState({ name: "", relationship: "", message: "" });
   const [errors, setErrors] = useState({});
   const [open, setOpen] = useState(false);
@@ -104,7 +106,7 @@ export function GuestbookPage() {
 
   return (
     <div className="fade-up">
-      <PageHero eyebrow="Guestbook" title="Leave us a little love" lead="A note, a wish, a favorite memory — we'll treasure every word." />
+      <PageHero eyebrow={sectionLabel("guestbook", settings.moduleLabels, "Guestbook")} title="Leave us a little love" lead="A note, a wish, a favorite memory — we'll treasure every word." />
       <section className="block" style={{ paddingTop: 8 }}>
         <div className="container">
           <div style={{ textAlign: "center", marginBottom: 40 }}>
@@ -162,7 +164,7 @@ export function GuestbookPage() {
 
 // --- Quiz ------------------------------------------------------------------
 export function QuizPage() {
-  const { quiz } = useStore();
+  const { quiz, settings } = useStore();
   // Demo site = showcase: guests can see their result AND retake freely (no lock).
   // Real client sites: one attempt per guest, and the result is NOT shown.
   const isDemo = resolveSubdomain() === "demo";
@@ -223,7 +225,7 @@ export function QuizPage() {
   if (stage === "locked") {
     return (
       <div className="fade-up">
-        <PageHero eyebrow="Couple Quiz" title="How well do you know us?" lead="Five quick questions about the happy couple." />
+        <PageHero eyebrow={sectionLabel("quiz", settings.moduleLabels, "Couple Quiz")} title="How well do you know us?" lead="Five quick questions about the happy couple." />
         <section className="block" style={{ paddingTop: 12 }}>
           <div className="container container--narrow">
             <div className="card card--pad-lg" style={{ textAlign: "center" }}>
@@ -244,7 +246,7 @@ export function QuizPage() {
     if (total === 0) {
       return (
         <div className="fade-up">
-          <PageHero eyebrow="Couple Quiz" title="How well do you know us?" lead="Five quick questions about the happy couple." />
+          <PageHero eyebrow={sectionLabel("quiz", settings.moduleLabels, "Couple Quiz")} title="How well do you know us?" lead="Five quick questions about the happy couple." />
           <section className="block" style={{ paddingTop: 12 }}>
             <div className="container container--narrow">
               <div className="card card--pad-lg" style={{ textAlign: "center" }}>
@@ -259,7 +261,7 @@ export function QuizPage() {
     }
     return (
       <div className="fade-up">
-        <PageHero eyebrow="Couple Quiz" title="How well do you know us?" lead="Five quick questions about the happy couple. Bragging rights on the line!" />
+        <PageHero eyebrow={sectionLabel("quiz", settings.moduleLabels, "Couple Quiz")} title="How well do you know us?" lead="Five quick questions about the happy couple. Bragging rights on the line!" />
         <section className="block" style={{ paddingTop: 12 }}>
           <div className="container container--narrow">
             <div className="card card--pad-lg" style={{ textAlign: "center" }}>

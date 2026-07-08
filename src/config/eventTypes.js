@@ -26,7 +26,10 @@ export const EVENT_TYPES = {
   birthday: {
     label: "Birthday",
     terms: { host: "the celebrant", action: "Let's celebrate!", rsvp: "Can you make it?" },
-    sections: ["details", "schedule", "venue", "gallery", "guestbook"],
+    // Full section parity with weddings — birthdays RSVP too (the original
+    // scaffold omitted rsvp/quiz/story, which left the nav's RSVP button
+    // pointing at a "section unavailable" page on birthday sites).
+    sections: ["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"],
     defaultTheme: "blush",
     // All designs EXCEPT "envelope" (Olive Envelope is wedding-only).
     themes: ["classic", "classic2", "classic3", "glass", "noir", "garden", "blush", "dusk", "burgundy", "lavender", "emerald", "terracotta", "champagne"],

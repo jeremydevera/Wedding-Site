@@ -92,6 +92,15 @@ export function moduleLabel(key) {
   return MODULE_LABELS[key] || (key ? key.charAt(0).toUpperCase() + key.slice(1) : key);
 }
 
+// Guest-facing label for a section, honoring the owner's rename (Settings →
+// Features → Rename tabs). Used by BOTH the nav links and each page's heading
+// eyebrow so a rename shows everywhere, not just in the menu. `dflt` lets a
+// page keep its richer default ("Venue & Map") when no rename exists.
+export function sectionLabel(key, labels, dflt) {
+  const custom = labels && typeof labels[key] === "string" ? labels[key].trim() : "";
+  return custom || dflt || moduleLabel(key);
+}
+
 // Per-client module flags. modules = { guestbook:false, quiz:true, ... }; absent key = on.
 export function moduleEnabled(modules, key) {
   if (DISABLED_MODULES.has(key)) return false;   // global "off for now"

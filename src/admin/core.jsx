@@ -125,7 +125,7 @@ export function AdminLogin({ onAuthed }) {
         {isClient ? (
           <div className="signin__brand">
             <Monogram a={settings.partnerA} b={settings.partnerB} size={34} />
-            <span className="signin__word">{settings.partnerA} <span className="amp">&amp;</span> {settings.partnerB}</span>
+            <span className="signin__word">{settings.partnerA}{settings.partnerB ? <> <span className="amp">&amp;</span> {settings.partnerB}</> : null}</span>
           </div>
         ) : (
           <div className="signin__brand"><Logo size={30} /><span className="signin__word">Celebrately</span></div>
