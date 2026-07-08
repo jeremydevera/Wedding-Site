@@ -286,9 +286,13 @@ body.env-sealed main { padding-top: 0; }
 .home-details-row .home-dcard:first-child { border-left: none; padding-left: 8px; }
 .home-details-row .home-dcard__no { right: 14px; }
 .home-details-row .home-dcard__title { font-size: 23px; }
-/* slim, theme-tinted scrollbar for the row */
-.home-details-row::-webkit-scrollbar { height: 4px; }
-.home-details-row::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
+/* carousel: the frosted tl-nav pill replaces the scrollbar (like the timeline) */
+.home-details-hwrap { position: relative; }
+.home-details-row { scrollbar-width: none; }
+.home-details-row::-webkit-scrollbar { display: none; }
+.home-details-row .home-dcard.is-active .home-dcard__no { opacity: .3; }
+.home-details-row .home-dcard.is-active .home-dcard__title { color: var(--accent); transition: color .3s ease; }
+.home-details-row .home-dcard.is-active::before { transform: scaleX(1); }
 /* Desktop: the horizontal layout becomes a CENTERED wrap-grid — max 3 per row,
    remainder row centered (2 cards → centered pair; 4 → 3 up top + 1 centered
    below). Mobile keeps the snap-scroll swipe row above. */

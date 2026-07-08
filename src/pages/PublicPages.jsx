@@ -560,16 +560,20 @@ export function Home() {
         <section className="block" id="home-details">
           <div className="container">
             <SectionHead center eyebrow={sectionLabel("details", s.moduleLabels, "Details")} title="The details" />
-            <div className={s.homeDetailsLayout === "horizontal" ? "home-details-row" : "home-details-stack"}>
-              {detailCards.filter((c) => (c.title || "").trim() || (c.body || "").trim()).map((c, i) => (
-                <article className="home-dcard" key={i}>
-                  <span className="home-dcard__no" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
-                  <div className="home-dcard__eyebrow">{(Icon[c.icon] || Icon.rings)({})}<i className="home-dcard__tick" aria-hidden="true" /></div>
-                  <h3 className="home-dcard__title">{c.title}</h3>
-                  <p className="home-dcard__body">{c.body}</p>
-                </article>
-              ))}
-            </div>
+            {s.homeDetailsLayout === "horizontal"
+              ? <HomeDetailsCarousel cards={detailCards.filter((c) => (c.title || "").trim() || (c.body || "").trim())} />
+              : (
+                <div className="home-details-stack">
+                  {detailCards.filter((c) => (c.title || "").trim() || (c.body || "").trim()).map((c, i) => (
+                    <article className="home-dcard" key={i}>
+                      <span className="home-dcard__no" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+                      <div className="home-dcard__eyebrow">{(Icon[c.icon] || Icon.rings)({})}<i className="home-dcard__tick" aria-hidden="true" /></div>
+                      <h3 className="home-dcard__title">{c.title}</h3>
+                      <p className="home-dcard__body">{c.body}</p>
+                    </article>
+                  ))}
+                </div>
+              )}
             <div style={{ textAlign: "center", marginTop: 22 }}>
               <Button variant="ghost" onClick={() => go("details")}>See all details {Icon.arrow({})}</Button>
             </div>
@@ -733,17 +737,14 @@ export function DetailsPage() {
   );
 }
 
-// Horizontal timeline: a scrollable rail with desktop nav arrows that appear
-// only when there's more to scroll in that direction (scrollbar hidden on
-// desktop; mobile keeps native touch scroll).
-function HorizontalTimeline({ items }) {
+// Shared horizontal-rail mechanics: track scroll PROGRESS so dot i maps to
+// scroll fraction i/(n-1) — dots light in order and the chevrons disable at the
+// ends even when the rail only overflows a little. Used by the schedule's
+// horizontal timeline AND the home Details carousel.
+function useRailNav(n) {
   const ref = useRef(null);
   const [active, setActive] = useState(0);
   const [overflow, setOverflow] = useState(false);
-  // The rail scrolls continuously, so the dots track scroll PROGRESS: dot i maps
-  // to scroll fraction i/(n-1). This keeps the dots lighting in order and the
-  // chevrons disabling at the ends even when the rail only overflows a little.
-  const n = items.length;
   const update = useCallback(() => {
     const el = ref.current; if (!el) return;
     const max = el.scrollWidth - el.clientWidth;
@@ -765,6 +766,55 @@ function HorizontalTimeline({ items }) {
     const j = Math.max(0, Math.min(n - 1, i));
     el.scrollTo({ left: n > 1 ? (j / (n - 1)) * max : 0, behavior: "smooth" });
   };
+  return { ref, active, overflow, toItem };
+}
+
+// Frosted nav pill (chevrons + dot indicators) shown only when a rail overflows.
+function RailNav({ n, active, toItem, itemNoun = "item" }) {
+  return (
+    <div className="tl-nav">
+      <button type="button" className="tl-nav__arrow" onClick={() => toItem(active - 1)} disabled={active === 0} aria-label="Previous">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+      </button>
+      <div className="tl-nav__dots">
+        {Array.from({ length: n }, (_, i) => (
+          <button key={i} type="button" className={"tl-nav__dot" + (i === active ? " is-active" : "")} onClick={() => toItem(i)} aria-label={`Go to ${itemNoun} ${i + 1}`} aria-current={i === active} />
+        ))}
+      </div>
+      <button type="button" className="tl-nav__arrow" onClick={() => toItem(active + 1)} disabled={active === n - 1} aria-label="Next">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+      </button>
+    </div>
+  );
+}
+
+// Home Details, horizontal layout: same carousel mechanics as the horizontal
+// timeline (scroll rail + frosted chevron/dot pill). On desktop the row becomes
+// a centered wrap-grid (CSS) — no overflow, so the pill hides itself there.
+function HomeDetailsCarousel({ cards }) {
+  const { ref, active, overflow, toItem } = useRailNav(cards.length);
+  return (
+    <div className="home-details-hwrap">
+      <div className="home-details-row" ref={ref}>
+        {cards.map((c, i) => (
+          <article className={"home-dcard" + (overflow && i === active ? " is-active" : "")} key={i}>
+            <span className="home-dcard__no" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+            <div className="home-dcard__eyebrow">{(Icon[c.icon] || Icon.rings)({})}<i className="home-dcard__tick" aria-hidden="true" /></div>
+            <h3 className="home-dcard__title">{c.title}</h3>
+            <p className="home-dcard__body">{c.body}</p>
+          </article>
+        ))}
+      </div>
+      {overflow && <RailNav n={cards.length} active={active} toItem={toItem} itemNoun="detail" />}
+    </div>
+  );
+}
+
+// Horizontal timeline: a scrollable rail with desktop nav arrows that appear
+// only when there's more to scroll in that direction (scrollbar hidden on
+// desktop; mobile keeps native touch scroll).
+function HorizontalTimeline({ items }) {
+  const { ref, active, overflow, toItem } = useRailNav(items.length);
   return (
     <div className="timeline-hwrap">
       <div className="timeline-h" ref={ref}>
@@ -782,23 +832,8 @@ function HorizontalTimeline({ items }) {
           ))}
         </div>
       </div>
-      {/* Nav pill (adapted from the "tilt stack carousel" pen): prev/next chevrons
-          + dot indicators in a frosted pill. Shown only when the rail overflows. */}
-      {overflow && (
-        <div className="tl-nav">
-          <button type="button" className="tl-nav__arrow" onClick={() => toItem(active - 1)} disabled={active === 0} aria-label="Previous">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
-          </button>
-          <div className="tl-nav__dots">
-            {items.map((_, i) => (
-              <button key={i} type="button" className={"tl-nav__dot" + (i === active ? " is-active" : "")} onClick={() => toItem(i)} aria-label={"Go to event " + (i + 1)} aria-current={i === active} />
-            ))}
-          </div>
-          <button type="button" className="tl-nav__arrow" onClick={() => toItem(active + 1)} disabled={active === items.length - 1} aria-label="Next">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
-          </button>
-        </div>
-      )}
+      {/* Nav pill (adapted from the "tilt stack carousel" pen). Shown only when the rail overflows. */}
+      {overflow && <RailNav n={items.length} active={active} toItem={toItem} itemNoun="event" />}
     </div>
   );
 }
