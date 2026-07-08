@@ -276,14 +276,14 @@ body.env-sealed main { padding-top: 0; }
   display: flex; gap: 0; overflow-x: auto; padding: 2px 2px 16px;
   scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
 }
+/* Mobile: ONE full-width tile per screen — guests page through with the
+   frosted pill (chevrons + dots), exactly like the horizontal timeline. */
 .home-details-row .home-dcard {
-  flex: 0 0 min(80vw, 320px); scroll-snap-align: start;
+  flex: 0 0 100%; scroll-snap-align: center;
   border-top: 1px solid var(--line);
-  border-left: 1px solid var(--line);
-  padding: 24px 22px 26px;
-  min-height: 210px;
+  padding: 24px 10px 26px;
+  min-height: 200px;
 }
-.home-details-row .home-dcard:first-child { border-left: none; padding-left: 8px; }
 .home-details-row .home-dcard__no { right: 14px; }
 .home-details-row .home-dcard__title { font-size: 23px; }
 /* carousel: the frosted tl-nav pill replaces the scrollbar (like the timeline) */
