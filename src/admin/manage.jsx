@@ -2339,7 +2339,6 @@ export function SettingsAdmin() {
                 </div>
               </div>
               <div className="owner-edit__group">
-                <div className="owner-edit__grouphead"><span className="owner-edit__grouptitle">{Icon.grid({ style: { width: 15, height: 15 } })} Other tabs</span></div>
                 {TAB_GRANTS.map((g) => (
                   <AdminToggle key={g.k} label={g.label} desc={g.desc} checked={oe[g.k] === true} onChange={(v) => setGrant(g.k, v)} />
                 ))}
@@ -2508,7 +2507,7 @@ export function HomeAdmin() {
   const active = TABS.some((t) => t.k === tab) ? tab : TABS[0].k;
   return (
     <div>
-      <div className="folders">
+      <div className="folders" style={{ paddingInline: 20 }}>
         {TABS.map((t) => (
           <button key={t.k} className={"folder" + (active === t.k ? " folder--active" : "")} onClick={() => setTab(t.k)}>
             {Icon[t.icon] ? Icon[t.icon]({}) : null} {t.label}
