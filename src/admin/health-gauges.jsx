@@ -41,7 +41,7 @@ function ringConfig(pct, has) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: { enabled: false } },
-      animation: { duration: 800, easing: "easeInOutQuart" },
+      animation: false, // render instantly — no sweep-in on load/refresh
     },
   };
 }
