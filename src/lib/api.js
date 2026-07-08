@@ -528,6 +528,39 @@ export async function postTicketMessage(ticketId, body) {
   if (error) throw error;
 }
 
+// Live thread updates: push new replies for ONE ticket (both the superadmin
+// modal and the owner viewer subscribe while open). Unique topic per call.
+let _msgChanSeq = 0;
+export function subscribeTicketMessagesRealtime(ticketId, onChange) {
+  let t = null;
+  const ping = () => { clearTimeout(t); t = setTimeout(onChange, 250); };
+  const ch = supabase
+    .channel(`tk-msgs-${ticketId}-${++_msgChanSeq}`)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "support_ticket_messages", filter: `ticket_id=eq.${ticketId}` }, ping)
+    .subscribe();
+  return () => { clearTimeout(t); supabase.removeChannel(ch); };
+}
+
+// Superadmin bell: recent CLIENT replies (superadmin's own replies aren't
+// notifications). RLS returns all rows only for the superadmin.
+export async function listRecentClientReplies(limit = 20) {
+  const { data, error } = await supabase.from("support_ticket_messages")
+    .select("*").eq("sender_role", "owner").order("created_at", { ascending: false }).limit(limit);
+  if (error) throw error;
+  return data || [];
+}
+
+// Realtime for ALL ticket messages (superadmin bell) — unique topic per call.
+export function subscribeAllTicketMessagesRealtime(onChange) {
+  let t = null;
+  const ping = () => { clearTimeout(t); t = setTimeout(onChange, 400); };
+  const ch = supabase
+    .channel(`sa-tk-msgs-${++_msgChanSeq}`)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "support_ticket_messages" }, ping)
+    .subscribe();
+  return () => { clearTimeout(t); supabase.removeChannel(ch); };
+}
+
 // Realtime for the console bell — same debounce pattern as site requests.
 // DEFECT-2026-07-09-B: the channel topic MUST be unique per subscriber.
 // supabase-js caches channels by topic; with a fixed "sa-support" name the
@@ -574,11 +607,14 @@ export async function deleteSiteRequest(id) {
 // Realtime for the console bell: new /apply submissions push over websocket
 // (publication 0020; RLS delivers only to superadmin). Debounced like the
 // owner-side feed; returns an unsubscribe fn for the effect cleanup.
+let _reqChanSeq = 0;
 export function subscribeSiteRequestsRealtime(onChange) {
   let t = null;
   const ping = () => { clearTimeout(t); t = setTimeout(onChange, 400); };
   const ch = supabase
-    .channel("sa-site-requests")
+    // unique topic per subscriber — fixed topics crash the second subscriber
+    // (Bug 0009 / DEFECT-2026-07-09-B class)
+    .channel(`sa-site-requests-${++_reqChanSeq}`)
     .on("postgres_changes", { event: "*", schema: "public", table: "site_requests" }, ping)
     .subscribe((status, err) => { console.info("[api] sa realtime:", status, err ? String(err) : ""); });
   return () => { clearTimeout(t); supabase.removeChannel(ch); };

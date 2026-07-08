@@ -5,7 +5,7 @@
 // manage.jsx. Clicking the launcher's × hides it entirely for the session —
 // the Support tab remains the way back in.
 import React from "react";
-import { submitTicket, listTickets, listTicketMessages, postTicketMessage } from "@/lib/api.js";
+import { submitTicket, listTickets, listTicketMessages, postTicketMessage , subscribeTicketMessagesRealtime} from "@/lib/api.js";
 import { Button, Field, Icon, Input, Modal, Select, Textarea, toast } from "@/ui/components.jsx";
 import { fmtDate } from "@/admin/core.jsx";
 const { useState, useEffect, useRef } = React;
@@ -14,7 +14,7 @@ const { useState, useEffect, useRef } = React;
 // thread (owner ⇄ support), and a reply box. Used by both the owner's Support
 // tab and the superadmin ticket modal. postTicketMessage pins sender_role to the
 // caller's actual role; an owner reply reopens a resolved ticket (DB trigger).
-export function TicketThread({ ticket, onChanged, leftAction, rightAction, variant }) {
+export function TicketThread({ ticket, onChanged, onGone, leftAction, rightAction, variant }) {
   const [msgs, setMsgs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reply, setReply] = useState("");
@@ -25,6 +25,8 @@ export function TicketThread({ ticket, onChanged, leftAction, rightAction, varia
     .catch(() => {})
     .finally(() => setLoading(false));
   useEffect(() => { setLoading(true); load(); }, [ticket.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // live replies: refresh the thread when the other side sends (Bug scan #1)
+  useEffect(() => subscribeTicketMessagesRealtime(ticket.id, load), [ticket.id]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (endRef.current && endRef.current.scrollIntoView) endRef.current.scrollIntoView({ block: "nearest" }); }, [msgs.length]);
 
   async function send() {
@@ -36,7 +38,13 @@ export function TicketThread({ ticket, onChanged, leftAction, rightAction, varia
       await load();
       onChanged && onChanged();
     } catch (e) {
-      toast(e.message || "Couldn't send your reply — try again.", "error");
+      // 23503 = FK violation: the ticket was deleted while this thread was open
+      if (e && (e.code === "23503" || /foreign key/i.test(e.message || ""))) {
+        toast("This ticket was deleted.", "error");
+        onGone && onGone();
+      } else {
+        toast(e.message || "Couldn't send your reply — try again.", "error");
+      }
     } finally {
       setBusy(false);
     }
@@ -240,7 +248,7 @@ export function SupportPanel({ tab }) {
           <div style={{ display: "flex", flexDirection: "column", height: "min(70vh, 560px)", minHeight: 0 }}>
             <h3 style={{ margin: "0 0 2px", flex: "none" }}>{viewing.subject}</h3>
             <p style={{ margin: "0 0 12px", color: "var(--muted)", fontSize: 13, flex: "none" }}>{viewing.category} · {viewing.urgency} · <span className={"tk-chip " + (viewing.status === "open" ? "tk-chip--open" : "tk-chip--resolved")}>{viewing.status}</span></p>
-            <TicketThread ticket={viewing} variant="modal" onChanged={refresh} />
+            <TicketThread ticket={viewing} variant="modal" onChanged={refresh} onGone={() => { setViewing(null); refresh(); }} />
           </div>
         )}
       </Modal>

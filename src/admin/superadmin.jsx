@@ -255,7 +255,7 @@ function TicketModal({ ticket, onClose, onRefresh }) {
           </div>
         </aside>
         <section className="tk-detail__main">
-          <TicketThread ticket={ticket} variant="modal" onChanged={onRefresh} />
+          <TicketThread ticket={ticket} variant="modal" onChanged={onRefresh} onGone={() => { onClose(); onRefresh && onRefresh(); }} />
         </section>
       </div>
     </Modal>

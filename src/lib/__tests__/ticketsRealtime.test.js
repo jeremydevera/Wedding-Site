@@ -12,7 +12,7 @@ vi.mock("@/lib/supabase.js", () => ({
   },
 }));
 
-import { subscribeTicketsRealtime } from "@/lib/api.js";
+import { subscribeTicketsRealtime, subscribeSiteRequestsRealtime, subscribeTicketMessagesRealtime, subscribeAllTicketMessagesRealtime } from "@/lib/api.js";
 
 describe("subscribeTicketsRealtime", () => {
   it("uses a unique channel topic per subscription (bell + console can coexist)", () => {
@@ -21,5 +21,16 @@ describe("subscribeTicketsRealtime", () => {
     expect(topics.length).toBe(2);
     expect(topics[0]).not.toBe(topics[1]);
     off1(); off2();
+  });
+
+  it("EVERY realtime subscriber uses unique topics (Bug 0009 class, incl. site requests + messages)", () => {
+    topics.length = 0;
+    const offs = [
+      subscribeSiteRequestsRealtime(() => {}), subscribeSiteRequestsRealtime(() => {}),
+      subscribeTicketMessagesRealtime("t1", () => {}), subscribeTicketMessagesRealtime("t1", () => {}),
+      subscribeAllTicketMessagesRealtime(() => {}), subscribeAllTicketMessagesRealtime(() => {}),
+    ];
+    expect(new Set(topics).size).toBe(topics.length); // all distinct
+    offs.forEach((o) => o());
   });
 });

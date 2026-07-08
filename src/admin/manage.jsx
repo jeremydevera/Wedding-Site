@@ -10,7 +10,7 @@ import { SupportWidget, SupportPanel } from "@/admin/SupportWidget.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { signOut, createOwner } from "@/lib/auth.js";
 import { supabase } from "@/lib/supabase.js";
-import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb, updateRsvpDietDb, listSiteRequests, subscribeSiteRequestsRealtime, listTickets, subscribeTicketsRealtime } from "@/lib/api.js";
+import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb, updateRsvpDietDb, listSiteRequests, subscribeSiteRequestsRealtime, listTickets, subscribeTicketsRealtime , listRecentClientReplies, subscribeAllTicketMessagesRealtime} from "@/lib/api.js";
 import { DIET_OPTIONS } from "@/features/rsvp.jsx";
 import { reconcileGuests, guestFromRsvp, findDuplicateGuest } from "@/lib/guests.js";
 import { headsOf } from "@/lib/rsvp.js";
@@ -3237,6 +3237,7 @@ function SuperNotificationBell({ goTab }) {
   const [open, setOpen] = useState(false);
   const [reqs, setReqs] = useState([]);
   const [tix, setTix] = useState([]);
+  const [replies, setReplies] = useState([]);
   const key = "evermore_notif_seen_sa";
   const clearKey = "evermore_notif_cleared_sa";
   const [seen, setSeen] = useState(() => { try { return Number(localStorage.getItem(key) || 0); } catch (_) { return 0; } });
@@ -3246,18 +3247,25 @@ function SuperNotificationBell({ goTab }) {
     let dead = false;
     const refresh = () => listSiteRequests().then((rows) => { if (!dead) setReqs(rows || []); }).catch(() => {});
     const refreshT = () => listTickets().then((rows) => { if (!dead) setTix(rows || []); }).catch(() => {});
-    refresh(); refreshT();
+    const refreshR = () => listRecentClientReplies().then((rows) => { if (!dead) setReplies(rows || []); }).catch(() => {});
+    refresh(); refreshT(); refreshR();
     const off = subscribeSiteRequestsRealtime(refresh);
     const offT = subscribeTicketsRealtime(refreshT);
-    return () => { dead = true; off(); offT(); };
+    const offM = subscribeAllTicketMessagesRealtime(() => { refreshR(); refreshT(); });
+    return () => { dead = true; off(); offT(); offM(); };
   }, []);
 
-  const items = useMemo(() => [
-    ...(reqs || []).map((r) => ({ id: "r:" + r.id, who: `${r.partner_a || "?"} & ${r.partner_b || "?"}`, text: `requested ${r.subdomain}.celebrately.us`, at: new Date(r.created_at).getTime() || 0, status: r.status, kind: "request" })),
-    ...(tix || []).map((t) => ({ id: "t:" + t.id, who: t.submitter_name || t.submitter_email || "A client", text: `support: ${t.subject}`, at: new Date(t.created_at).getTime() || 0, status: t.status, kind: "ticket" })),
-  ]
-    .filter((x) => x.at > clearedAt)
-    .sort((x, y) => y.at - x.at), [reqs, tix, clearedAt]);
+  const items = useMemo(() => {
+    const bySubject = Object.fromEntries((tix || []).map((t) => [t.id, t.subject]));
+    return [
+      ...(reqs || []).map((r) => ({ id: "r:" + r.id, who: `${r.partner_a || "?"} & ${r.partner_b || "?"}`, text: `requested ${r.subdomain}.celebrately.us`, at: new Date(r.created_at).getTime() || 0, status: r.status, kind: "request" })),
+      ...(tix || []).map((t) => ({ id: "t:" + t.id, who: t.submitter_name || t.submitter_email || "A client", text: `support: ${t.subject}`, at: new Date(t.created_at).getTime() || 0, status: t.status, kind: "ticket" })),
+      // client replies on existing tickets (scan finding #1: these used to be silent)
+      ...(replies || []).map((m) => ({ id: "m:" + m.id, who: m.sender_name || "A client", text: `replied: ${bySubject[m.ticket_id] || "support ticket"}`, at: new Date(m.created_at).getTime() || 0, status: "open", kind: "reply" })),
+    ]
+      .filter((x) => x.at > clearedAt)
+      .sort((x, y) => y.at - x.at);
+  }, [reqs, tix, replies, clearedAt]);
 
   const clearAll = () => {
     const now = Date.now();
