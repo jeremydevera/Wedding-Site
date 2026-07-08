@@ -11,12 +11,22 @@ Claude test run. Done items stay here as the permanent history.
 - **`[APPROVAL]`** in a title = Claude found this (testing / scheduled run); needs your review before work.
 
 ## Next IDs
-- Next Bug ID: **0009**
+- Next Bug ID: **0010**
 - Next Enhancement ID: **0014**
 
 ---
 
 ## Pending
+
+### Bug ID: 0009 — Superadmin console STILL white after Bug 0008 fix — duplicate realtime channel topic
+- **Severity:** P1 · **Status:** Done (2026-07-09, fixed same day) · **Added:** 2026-07-09 (reported by Jeremy; reproduced via Playwright login on celebrately.us)
+- **Where:** Superadmin console → immediately on load once BOTH the notification bell and the Clients console subscribed to ticket realtime
+- **Root cause:** `subscribeTicketsRealtime` used a FIXED channel topic ("sa-support"). supabase-js caches channels by topic, so the second subscriber (bell + console both subscribe) got back the already-subscribed channel and `.on(...)` threw `cannot add postgres_changes callbacks after subscribe()` — render-time crash → white console. Bug 0008 (missing fmtDate import) was real but masked this second, independent crash.
+- **How found:** headless Playwright login as superadmin captured the exact pageerror — jsdom tests mock supabase's channel cache, so they could never reproduce it.
+- **Fix:** unique topic per subscription (`sa-support-<n>`), code comment DEFECT-2026-07-09-B at the site.
+- **Regression guard:** `src/lib/__tests__/ticketsRealtime.test.js` — two subscriptions must produce two distinct channel topics.
+- **Lesson:** realtime channel topics must be unique per subscriber; and jsdom can't catch supabase-js channel-cache behavior — verify console-level changes with a real browser (Playwright) before declaring fixed.
+
 
 ### Bug ID: 0008 — Superadmin console white screen (Clients/Support) — missing fmtDate import
 - **Severity:** P1 · **Status:** Done (2026-07-09, fixed same day) · **Added:** 2026-07-09 (reported by Jeremy)

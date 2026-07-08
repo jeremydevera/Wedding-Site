@@ -499,11 +499,18 @@ export async function updateTicket(id, patch) {
 }
 
 // Realtime for the console bell — same debounce pattern as site requests.
+// DEFECT-2026-07-09-B: the channel topic MUST be unique per subscriber.
+// supabase-js caches channels by topic; with a fixed "sa-support" name the
+// SECOND subscriber (bell + Clients console both subscribe) got the already-
+// subscribed channel back and `.on(...)` threw "cannot add postgres_changes
+// callbacks after subscribe()" — a render-time crash = white console.
+// Guarded by src/lib/__tests__/ticketsRealtime.test.js.
+let _tixChanSeq = 0;
 export function subscribeTicketsRealtime(onChange) {
   let t = null;
   const ping = () => { clearTimeout(t); t = setTimeout(onChange, 400); };
   const ch = supabase
-    .channel("sa-support")
+    .channel(`sa-support-${++_tixChanSeq}`)
     .on("postgres_changes", { event: "*", schema: "public", table: "support_tickets" }, ping)
     .subscribe();
   return () => { clearTimeout(t); supabase.removeChannel(ch); };
