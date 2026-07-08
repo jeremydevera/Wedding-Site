@@ -30,6 +30,32 @@ describe("Home section visibility toggles", () => {
     expect(container.querySelector("#home-attire .attire-card__desc")).toBeTruthy();
   });
 
+  // Today's batch: opt-in home Details section + per-section header overrides.
+  it("home Details section: hidden by default, shows when enabled, hides when the module is off", () => {
+    setup({});
+    expect(render(<Home />).container.querySelector("#home-details")).toBeNull();
+    cleanup();
+    setup({ showHomeDetails: true });
+    const { container } = render(<Home />);
+    expect(container.querySelector("#home-details")).toBeTruthy();
+    expect(container.querySelectorAll("#home-details .home-dcard").length).toBeGreaterThan(0);
+    cleanup();
+    setup({ showHomeDetails: true, modules: { details: false } });
+    expect(render(<Home />).container.querySelector("#home-details")).toBeNull();
+  });
+
+  it("homeHeads overrides replace section headers; blank falls back to defaults", () => {
+    // modules: {} — clear the previous case's modules.details=false (store leaks across tests by design here)
+    setup({ showHomeDetails: true, modules: {}, homeHeads: { schedule: { eyebrow: "Big Day", title: "Run of show" }, details: { title: "" }, music: { title: "Spin it" } } });
+    const { container } = render(<Home />);
+    const text = container.textContent;
+    expect(text).toContain("Big Day");
+    expect(text).toContain("Run of show");
+    expect(text).not.toContain("A glimpse of the schedule");
+    expect(text).toContain("The details"); // blank title -> default
+    expect(text).toContain("Spin it");     // music player title override
+  });
+
   it("hides each section when its flag is false", () => {
     setup({ showMusic: false, showEntourage: false, showMap: false, showAttire: false });
     const { container } = render(<Home />);
