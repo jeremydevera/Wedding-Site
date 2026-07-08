@@ -2644,6 +2644,11 @@ export function HomeAdmin() {
           <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Home details</div><HeadSwitch label="Show details on the home page" checked={f.showHomeDetails === true} onChange={(v) => toggleShow("showHomeDetails", v)} /></div>
           <div className="panel__body">
             <HomeHeadFields k="details" defEyebrow="Details" defTitle="The details" />
+            {!moduleEnabled(f.modules, "details") && (
+              <div style={{ background: "#fdf3e7", border: "1px solid #eecfa1", borderRadius: 8, padding: "8px 12px", fontSize: 13, margin: "0 0 14px" }}>
+                ⚠ The Details module is turned off (Features → Site sections), so this section stays hidden on the home page even when the switch above is on.
+              </div>
+            )}
             <p style={{ color: "var(--muted)", margin: "0 0 18px", fontSize: 14 }}>
               Shows your detail cards on the home page, right after the schedule glimpse. Edit the cards themselves in the Details tab. Saves instantly.
             </p>
