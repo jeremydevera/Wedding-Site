@@ -1991,28 +1991,13 @@ export function SettingsAdmin() {
   const set = (k) => (e) => Store.updateSettings({ [k]: e.target && e.target.type === "checkbox" ? e.target.checked : e.target.value });
   const setKey = (k, v) => Store.updateSettings({ [k]: v });
   const [tab, setTab] = useState("features");
-  const themeRowRef = useRef(null);
-  const renderSwatch = (key) => {
-    const v = THEMES[key].vars;
-    const on = f.theme === key;
-    return (
-      <button key={key} className={"theme-sw" + (on ? " theme-sw--on" : "")} onClick={() => Store.updateSettings({ theme: key, themeAccent: "", displayFont: THEME_FONTS[key].display, bodyFont: THEME_FONTS[key].body })}>
-        <span className="theme-sw__prev" style={{ background: v["--bg"] }}>
-          <i style={{ background: v["--accent"] }} />
-          <i style={{ background: v["--gold"] }} />
-          <i style={{ background: v["--ink"] }} />
-        </span>
-        <span className="theme-sw__name">{THEMES[key].label}{on ? " ✓" : ""}</span>
-        <span className="theme-sw__blurb">{THEMES[key].blurb}</span>
-      </button>
-    );
-  };
   // Theme options are scoped to the active event type via the registry.
   const allowed = themesForEvent(f.eventType || DEFAULT_EVENT_TYPE);
   const normalThemes = allowed.filter((k) => THEMES[k] && !isPremiumTheme(k));
   const premiumThemes = allowed.filter((k) => THEMES[k] && isPremiumTheme(k));
   // "General" (Couple & Event) moved to the top-level Home tab.
-  const STABS = [["features", "Features", "check"], ["appearance", "Theme", "grid"], ["photos", "Photos", "camera"], ["access", "Access", "check"]];
+  // Photos hidden for now (future feature) — body code stays, tab not shown.
+  const STABS = [["features", "Features", "check"], ["appearance", "Theme", "grid"], ["access", "Access", "check"]];
 
   return (
     <div>
@@ -2072,25 +2057,19 @@ export function SettingsAdmin() {
           <ThemePreviewFrame theme={f.theme} decorStyle={f.decorStyle} decorOn={f.decorOn} />
           <span className="field__label" style={{ display: "block", margin: "20px 0 10px" }}>Choose a theme</span>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 8px", whiteSpace: "nowrap" }}>
-            <span style={{ fontWeight: 600, color: "var(--ink)", fontSize: 14 }}>Normal Themes</span>
-            <span style={{ fontSize: 12, color: "var(--muted)", textTransform: "none", letterSpacing: 0 }}>— scroll for more →</span>
-          </div>
-          <div className="theme-scroller">
-            <button type="button" className="theme-nav theme-nav--l" aria-label="Previous themes" onClick={() => themeRowRef.current && themeRowRef.current.scrollBy({ left: -320, behavior: "smooth" })}>‹</button>
-            <button type="button" className="theme-nav theme-nav--r" aria-label="Next themes" onClick={() => themeRowRef.current && themeRowRef.current.scrollBy({ left: 320, behavior: "smooth" })}>›</button>
-            <div className="theme-grid" ref={themeRowRef}>
-            {normalThemes.map(renderSwatch)}
-            </div>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "26px 0 8px", whiteSpace: "nowrap" }}>
-            <span style={{ fontWeight: 600, color: "var(--ink)", fontSize: 14 }}>Premium Themes</span>
-            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".06em", color: "#7a5b12", background: "linear-gradient(180deg,#f6e6b8,#e9cf86)", border: "1px solid #d8b65e", borderRadius: 999, padding: "2px 9px" }}>★ PREMIUM</span>
-          </div>
-          <div className="theme-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 12, overflow: "visible" }}>
-            {premiumThemes.map(renderSwatch)}
-          </div>
+          <Field label="Choose a theme" id="s-theme-dd" hint="Preview above updates instantly; Save changes to publish.">
+            <Select id="s-theme-dd" value={f.theme}
+              onChange={(e) => { const key = e.target.value; Store.updateSettings({ theme: key, themeAccent: "", displayFont: THEME_FONTS[key].display, bodyFont: THEME_FONTS[key].body }); }}>
+              <optgroup label="Normal themes">
+                {normalThemes.map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
+              </optgroup>
+              {premiumThemes.length > 0 && (
+                <optgroup label="★ Premium themes">
+                  {premiumThemes.map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
+                </optgroup>
+              )}
+            </Select>
+          </Field>
 
           {isPremiumTheme(f.theme) && (
             <div style={{ marginTop: 24, padding: 18, border: "1px solid #d8b65e", borderRadius: "var(--radius)", background: "linear-gradient(180deg, color-mix(in oklch, #f6e6b8 22%, var(--surface)), var(--surface))" }}>
