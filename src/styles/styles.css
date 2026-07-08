@@ -1333,7 +1333,10 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 [data-theme="glass"] .reveal { transform: scale(1.04); filter: blur(7px); transition-duration: .95s; }
 [data-theme="dusk"] .reveal { transform: translateX(40px); }
 [data-theme="burgundy"] .reveal { transform: translateY(46px); }
-[data-theme="emerald"] .reveal { transform: perspective(900px) rotateX(20deg) translateY(22px); transform-origin: top center; }
+/* 2D (not 3D): a perspective/rotateX reveal gets composited and escapes
+   overflow-x:clip, causing a few px of horizontal scroll. Keep an emerald-
+   distinct rise+scale that stays clipped. */
+[data-theme="emerald"] .reveal { transform: translateY(28px) scale(0.955); transform-origin: top center; }
 [data-theme="lavender"] .reveal { transform: translateY(36px) scale(0.95); }
 [data-theme="terracotta"] .reveal { transform: translateY(30px) scale(0.93) rotate(-1deg); }
 [data-theme="blush"] .reveal { transform: translateY(24px) scale(0.97); }
