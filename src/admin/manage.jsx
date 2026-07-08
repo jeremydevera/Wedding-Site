@@ -2484,7 +2484,7 @@ function ClosesAtInput({ value, onChange }) {
 // Per-section home-page header editor (eyebrow + title). Blank = the default
 // shown as the placeholder, so new clients start with the stock copy and only
 // stored overrides change the site (settings.homeHeads = { [k]: {eyebrow,title} }).
-function HomeHeadFields({ k, defEyebrow, defTitle, withFooter }) {
+function HomeHeadFields({ k, defEyebrow, defTitle }) {
   const { settings, auth } = useStore();
   if (auth.role !== "superadmin") return null; // superadmin-only editor — owners never see it
   const cur = (settings.homeHeads || {})[k] || {};
@@ -2493,14 +2493,13 @@ function HomeHeadFields({ k, defEyebrow, defTitle, withFooter }) {
   // Show the EFFECTIVE current text (stored override, else the stock default)
   // so the admin sees what the site displays right now; clearing a field falls
   // back to the default on the public site. Renders INLINE inside the folder's
-  // main panel (no panel of its own).
+  // main panel (no panel of its own) — containers own the spacing so alignment
+  // matches the surrounding fields everywhere.
   const val = (field, dflt) => (cur[field] !== undefined ? cur[field] : dflt);
   return (
-    <div style={{ padding: withFooter ? "0" : "0 16px 16px" }}>
-      <div className="field-row field-row--2">
-        <Field label="Small Header" id={"hh-e-" + k}><Input id={"hh-e-" + k} value={val("eyebrow", defEyebrow)} onChange={put("eyebrow")} placeholder={defEyebrow} /></Field>
-        <Field label="Big Header" id={"hh-t-" + k}><Input id={"hh-t-" + k} value={val("title", defTitle)} onChange={put("title")} placeholder={defTitle} /></Field>
-      </div>
+    <div className="field-row field-row--2" style={{ marginBottom: 16 }}>
+      <Field label="Small Header" id={"hh-e-" + k}><Input id={"hh-e-" + k} value={val("eyebrow", defEyebrow)} onChange={put("eyebrow")} placeholder={defEyebrow} /></Field>
+      <Field label="Big Header" id={"hh-t-" + k}><Input id={"hh-t-" + k} value={val("title", defTitle)} onChange={put("title")} placeholder={defTitle} /></Field>
     </div>
   );
 }
@@ -2613,7 +2612,7 @@ export function HomeAdmin() {
         <div className="panel">
           <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Home timeline</div><HeadSwitch label="Show timeline on the home page" checked={f.showTimeline !== false} onChange={(v) => toggleShow("showTimeline", v)} /></div>
           <div className="panel__body">
-            <HomeHeadFields k="schedule" defEyebrow="The Day" defTitle="A glimpse of the schedule" withFooter />
+            <HomeHeadFields k="schedule" defEyebrow="The Day" defTitle="A glimpse of the schedule" />
             <p style={{ color: "var(--muted)", margin: "0 0 18px", fontSize: 14 }}>
               How the “A glimpse of the schedule” timeline shows on the home page. Edit the events themselves in the Schedule tab. Saves instantly.
             </p>
@@ -2644,7 +2643,7 @@ export function HomeAdmin() {
         <div className="panel">
           <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Home details</div><HeadSwitch label="Show details on the home page" checked={f.showHomeDetails === true} onChange={(v) => toggleShow("showHomeDetails", v)} /></div>
           <div className="panel__body">
-            <HomeHeadFields k="details" defEyebrow="Details" defTitle="The details" withFooter />
+            <HomeHeadFields k="details" defEyebrow="Details" defTitle="The details" />
             <p style={{ color: "var(--muted)", margin: "0 0 18px", fontSize: 14 }}>
               Shows your detail cards on the home page, right after the schedule glimpse. Edit the cards themselves in the Details tab. Saves instantly.
             </p>
@@ -2675,6 +2674,7 @@ export function HomeAdmin() {
           <div className="panel">
             <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Music player</div><HeadSwitch label="Show music player on the home page" checked={f.showMusic !== false} onChange={(v) => toggleShow("showMusic", v)} /></div>
             <div className="panel__body">
+              <HomeHeadFields k="music" defEyebrow="Our Song" defTitle="Our Playlist" />
               <AdminToggle label="Autoplay music on load" desc="Start the playlist automatically (on the first tap or scroll). When off, guests press play themselves. Saves instantly."
                 checked={f.musicAutoplay !== false} onChange={(v) => toggleShow("musicAutoplay", v)} />
               <div style={{ height: 20 }} />
@@ -2702,6 +2702,7 @@ export function HomeAdmin() {
           </div>
           <R2MigratePanel />
           <MusicAdmin />
+          <SaveFooter />
         </>
       )}
       {canEntourage && active === "entourage" && (

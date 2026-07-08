@@ -149,6 +149,7 @@ export function VinylPlayer({ tracks }) {
 // disk, plus — when there is more than one song — a themed playlist below.
 // Its own titled section; wired to the shared audio engine.
 function VinylSkin({ tracks }) {
+  const { settings: hs } = useStore(); // home header override source
   const st = useMusic();
   const uid = "vp-" + React.useId().replace(/:/g, "");
   const listRef = useRef(null);
@@ -166,12 +167,13 @@ function VinylSkin({ tracks }) {
   const cur = list[st.index] || list[0];
   const frac = st.duration ? st.time / st.duration : 0;
   const many = list.length > 1;
+  const mh = ((hs || {}).homeHeads || {}).music || {}; // Home → Music header override
   return (
     <section className="block" id="home-playlist">
       <div className="container">
         <div className="sec-head sec-head--center">
-          <div className="eyebrow">Our Song</div>
-          <h2 className="sec-head__title">{many ? "Our Playlist" : "Press Play"}</h2>
+          <div className="eyebrow">{(mh.eyebrow || "").trim() || "Our Song"}</div>
+          <h2 className="sec-head__title">{(mh.title || "").trim() || (many ? "Our Playlist" : "Press Play")}</h2>
         </div>
         <div className={"vinyl-card" + (many ? " vinyl-card--row" : "")}>
           <div className="vinyl-main">
@@ -237,6 +239,7 @@ function VinylSkin({ tracks }) {
 // in styles.css) so it fits the responsive site — unlike the fixed-px original.
 // Screen art is a themed gradient (tracks carry audio + title/artist, no cover).
 function DevicePlayer({ tracks }) {
+  const { settings: hs } = useStore(); // home header override source
   const st = useMusic();
   const listRef = useRef(null);
   const activeRef = useRef(null);
@@ -253,6 +256,7 @@ function DevicePlayer({ tracks }) {
   const cur = list[st.index] || list[0];
   const frac = st.duration ? st.time / st.duration : 0;
   const many = list.length > 1;
+  const mh = ((hs || {}).homeHeads || {}).music || {}; // Home → Music header override
   const clearWheel = () => { setTilt(""); setPressed(false); };
   // Per-track cover: uploaded image/gif (as bg) or mp4 (as <video>); else the
   // themed gradient (CSS default). Scanlines are hidden over a real cover.
@@ -262,8 +266,8 @@ function DevicePlayer({ tracks }) {
     <section className="block" id="home-playlist">
       <div className="container">
         <div className="sec-head sec-head--center">
-          <div className="eyebrow">Our Song</div>
-          <h2 className="sec-head__title">{many ? "Our Playlist" : "Press Play"}</h2>
+          <div className="eyebrow">{(mh.eyebrow || "").trim() || "Our Song"}</div>
+          <h2 className="sec-head__title">{(mh.title || "").trim() || (many ? "Our Playlist" : "Press Play")}</h2>
         </div>
         <div className="device-player">
           <div className="dp-frame">
