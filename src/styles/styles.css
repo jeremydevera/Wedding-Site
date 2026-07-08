@@ -1069,18 +1069,31 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
   .tk-detail__side { border-right: none; border-bottom: 1px solid #eef1f5; padding-right: 0; padding-bottom: 14px; }
 }
 
-/* iMessage-style composer: textarea with a circular send button inside. */
-.tk-composer { position: relative; }
-.tk-composer .input { padding-right: 52px; }
+/* iMessage-style composer: the CONTAINER is the field (border/radius); the
+   textarea inside is chromeless and the send circle sits inside the pill —
+   absolute positioning over the textarea corner looked glued to the border. */
+.tk-composer {
+  display: flex; align-items: flex-end; gap: 8px;
+  border: 1px solid var(--line, #e4e8ef); border-radius: 16px; background: #fff;
+  padding: 6px 6px 6px 14px;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.tk-composer:focus-within { border-color: #9db8e8; box-shadow: 0 0 0 3px rgba(79, 127, 214, .12); }
+.tk-composer .input {
+  flex: 1 1 auto; border: none; outline: none; box-shadow: none; background: transparent;
+  resize: none; padding: 8px 0; min-height: 38px; max-height: 130px; border-radius: 0;
+}
+.tk-composer .input:focus { border: none; box-shadow: none; }
 .tk-send {
-  position: absolute; right: 9px; bottom: 9px;
+  flex: none; margin: 0 0 2px;
   width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer;
-  padding: 0; /* UA button padding skewed the icon off-center */
+  padding: 0;
   display: grid; place-items: center; color: #fff;
   background: linear-gradient(180deg, #4f7fd6, #3a5fb0);
   box-shadow: 0 4px 12px -4px rgba(58, 95, 176, .55);
   transition: transform .15s ease, opacity .15s ease;
 }
+.tk-send:hover:not(:disabled) { transform: scale(1.06); }
 .tk-send svg { display: block; }
 .tk-send:hover:not(:disabled) { transform: scale(1.06); }
 .tk-send:disabled { background: #cbd5e1; box-shadow: none; cursor: default; }

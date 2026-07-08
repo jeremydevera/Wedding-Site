@@ -252,7 +252,6 @@ function TicketModal({ ticket, onClose, onRefresh }) {
               </Select>
             </Field>
             <Button variant="primary" block onClick={save} disabled={busy || !dirty}>{busy ? "Saving…" : "Save"}</Button>
-            <Button variant="ghost" block onClick={() => !busy && onClose()} disabled={busy}>Close</Button>
           </div>
         </aside>
         <section className="tk-detail__main">
