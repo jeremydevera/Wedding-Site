@@ -492,6 +492,12 @@ export async function setTicketStatus(id, status) {
   if (error) throw error;
 }
 
+// Superadmin: permanently remove a ticket (RLS delete policy is superadmin-only).
+export async function deleteTicket(id) {
+  const { error } = await supabase.from("support_tickets").delete().eq("id", id);
+  if (error) throw error;
+}
+
 // Superadmin: save the internal reply note (or any partial patch).
 export async function updateTicket(id, patch) {
   const { error } = await supabase.from("support_tickets").update(patch).eq("id", id);

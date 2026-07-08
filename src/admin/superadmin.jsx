@@ -7,7 +7,7 @@ import { themesForEvent } from "@/config/eventTypes.js";
 import { moduleLabel, DISABLED_MODULES, OWNER_EDIT_HOME, OWNER_EDIT_TABS } from "@/lib/roles.js";
 import { PLATFORM_DOMAIN, clientUrl, isValidSubdomain } from "@/config/site.js"; // platform config → src/config/site.js
 import { Button, confirmDialog, Field, Icon, Input, Modal, Pager, SectionHead, Select, Textarea, toast, usePaged } from "@/ui/components.jsx";
-import { listMedia, deleteFromR2, listSiteRequests, approveSiteRequest, setSiteRequestStatus, updateSiteRequest, deleteSiteRequest, listTickets, setTicketStatus, updateTicket, subscribeTicketsRealtime } from "@/lib/api.js";
+import { listMedia, deleteFromR2, listSiteRequests, approveSiteRequest, setSiteRequestStatus, updateSiteRequest, deleteSiteRequest, listTickets, setTicketStatus, updateTicket, subscribeTicketsRealtime, deleteTicket } from "@/lib/api.js";
 import { ApplyWizard } from "@/admin/apply.jsx";
 import { TicketThread } from "@/admin/SupportWidget.jsx";
 // fmtDate: DEFECT-2026-07-09-A — the Support view/TicketModal used fmtDate
@@ -303,7 +303,13 @@ export function SupportAdmin() {
                   <td>{t.urgency}</td>
                   <td><span className={"tk-chip " + (t.status === "open" ? "tk-chip--open" : "tk-chip--resolved")}>{t.status}</span></td>
                   <td style={{ whiteSpace: "nowrap", color: "var(--muted)", fontSize: 13 }}>{fmtDate(t.created_at)}</td>
-                  <td><Button variant="ghost" size="sm" onClick={() => setTicket(t)}>{Icon.eye({})} Open</Button></td>
+                  <td style={{ whiteSpace: "nowrap" }}>
+                      <Button variant="ghost" size="sm" onClick={() => setTicket(t)}>{Icon.eye({})} Open</Button>
+                      <Button variant="ghost" size="sm" aria-label="Delete ticket" onClick={async () => {
+                        if (!(await confirmDialog({ title: "Delete this ticket?", message: `Permanently remove "${t.subject}" and its replies. This can't be undone.`, confirmLabel: "Delete", danger: true }))) return;
+                        try { await deleteTicket(t.id); toast("Ticket deleted", "success"); load(); } catch (e) { toast(e.message || "Delete failed", "error"); }
+                      }}>{Icon.trash({})}</Button>
+                    </td>
                 </tr>
               ))}
             </tbody>
