@@ -304,7 +304,7 @@ export function SupportAdmin() {
                   <td><span className={"tk-chip " + (t.status === "open" ? "tk-chip--open" : "tk-chip--resolved")}>{t.status}</span></td>
                   <td style={{ whiteSpace: "nowrap", color: "var(--muted)", fontSize: 13 }}>{fmtDate(t.created_at)}</td>
                   <td style={{ whiteSpace: "nowrap" }}>
-                      <Button variant="ghost" size="sm" onClick={() => setTicket(t)}>{Icon.eye({})} Open</Button>
+                      <Button variant="ghost" size="sm" style={{ marginRight: 14 }} onClick={() => setTicket(t)}>{Icon.eye({})} Open</Button>
                       <Button variant="ghost" size="sm" aria-label="Delete ticket" onClick={async () => {
                         if (!(await confirmDialog({ title: "Delete this ticket?", message: `Permanently remove "${t.subject}" and its replies. This can't be undone.`, confirmLabel: "Delete", danger: true }))) return;
                         try { await deleteTicket(t.id); toast("Ticket deleted", "success"); load(); } catch (e) { toast(e.message || "Delete failed", "error"); }
