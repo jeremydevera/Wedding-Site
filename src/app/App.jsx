@@ -67,8 +67,22 @@ function SectionUnavailable({ section }) {
 // Nav links visible for the active event type (home always shows). Driven by
 // the event-type registry so adding a type (birthday, corporate) re-shapes nav.
 // Also filters by per-client module flags (absent key = on by default).
-function visibleNav(eventType, modules) {
-  return NAV_LINKS.filter((l) => l.key === "home" || (hasSection(eventType, l.key) && moduleEnabled(modules, l.key)));
+function visibleNav(eventType, modules, labels) {
+  return NAV_LINKS
+    .filter((l) => l.key === "home" || (hasSection(eventType, l.key) && moduleEnabled(modules, l.key)))
+    .map((l) => {
+      const custom = labels && typeof labels[l.key] === "string" ? labels[l.key].trim() : "";
+      return custom ? { ...l, label: custom } : l;
+    });
+}
+
+// The guest-facing label for a single module key, honoring the owner's rename
+// (Settings → Features). Falls back to the built-in NAV label / moduleLabel.
+export function sectionLabel(key, labels) {
+  const custom = labels && typeof labels[key] === "string" ? labels[key].trim() : "";
+  if (custom) return custom;
+  const nav = NAV_LINKS.find((l) => l.key === key);
+  return nav ? nav.label : moduleLabel(key);
 }
 
 
@@ -169,14 +183,14 @@ export function Nav({ route }) {
           <span className="nav__names">{settings.partnerA} <span className="amp">&amp;</span> {settings.partnerB}</span>
         </a>
         <div className="nav__links">
-          {visibleNav(settings.eventType, settings.modules).map((l) => (
+          {visibleNav(settings.eventType, settings.modules, settings.moduleLabels).map((l) => (
             <button key={l.key} className={"nav__link" + (route === l.key ? " nav__link--active" : "")} onClick={() => go(l.key)}>{l.label}</button>
           ))}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {/* RSVP button shows on every site. Demo's only extra is the theme +
               decoration pickers beside it. */}
-          <Button className="nav__cta" variant="primary" size="sm" onClick={() => go("rsvp")}>RSVP</Button>
+          <Button className="nav__cta" variant="primary" size="sm" onClick={() => go("rsvp")}>{sectionLabel("rsvp", settings.moduleLabels)}</Button>
           {isDemo && <>
             <Button className="nav__cta" variant="ghost" size="sm" onClick={() => { window.location.href = "https://celebrately.us/apply"; }}>Register</Button>
             <ThemePicker />{!isPremiumTheme(settings.theme) && <DecorPicker />}
@@ -194,13 +208,13 @@ export function Nav({ route }) {
               <Monogram a={settings.partnerA} b={settings.partnerB} size={40} />
               <button className="nav__burger" onClick={() => setDrawer(false)} aria-label="Close">{Icon.close({})}</button>
             </div>
-            {visibleNav(settings.eventType, settings.modules).map((l) => (
+            {visibleNav(settings.eventType, settings.modules, settings.moduleLabels).map((l) => (
               <button key={l.key} className={"drawer__link" + (route === l.key ? " drawer__link--active" : "")} onClick={() => { go(l.key); setDrawer(false); }}>{l.label}</button>
             ))}
             {moduleEnabled(settings.modules, "gallery") && <button className="drawer__link" onClick={() => { go("upload"); setDrawer(false); }}>Share Photos</button>}
             {settings.uploadsEnabled && moduleEnabled(settings.modules, "video-message") && <button className="drawer__link" onClick={() => { go("video-message"); setDrawer(false); }}>Video Message</button>}
             <div style={{ marginTop: 20 }}>
-              <Button variant="primary" block onClick={() => { go("rsvp"); setDrawer(false); }}>RSVP Now</Button>
+              <Button variant="primary" block onClick={() => { go("rsvp"); setDrawer(false); }}>{sectionLabel("rsvp", settings.moduleLabels)} Now</Button>
             </div>
             {isDemo && (
               <div style={{ marginTop: 10 }}>
@@ -245,7 +259,7 @@ export function Footer() {
         <div className="footer__names">{settings.partnerA} <span className="amp">&amp;</span> {settings.partnerB}</div>
         <div className="footer__hash">{settings.hashtag}</div>
         <div className="footer__links">
-          {visibleNav(settings.eventType, settings.modules).map((l) => <button key={l.key} onClick={() => go(l.key)}>{l.label}</button>)}
+          {visibleNav(settings.eventType, settings.modules, settings.moduleLabels).map((l) => <button key={l.key} onClick={() => go(l.key)}>{l.label}</button>)}
           {moduleEnabled(settings.modules, "gallery") && <button onClick={() => go("upload")}>Upload</button>}
         </div>
         <p className="footer__fine">{fine.date}{fine.sep && " · "}{fine.venue}</p>

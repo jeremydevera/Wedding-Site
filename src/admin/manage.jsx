@@ -2046,6 +2046,20 @@ export function SettingsAdmin() {
               );
             })}
           </div>
+
+          <div style={{ marginTop: 26, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
+            <div className="field__label" style={{ margin: "0 0 4px" }}>Rename tabs</div>
+            <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>Change how each section is labeled in your site menu — handy when a default name doesn't fit your event (e.g. rename <em>Guestbook</em> to <em>Well Wishes</em>). Leave a field blank to keep the default. Click <strong>Save changes</strong> to apply.</p>
+            <div className="mod-rename">
+              {["story", "details", "schedule", "venue", "guestbook", "quiz", "rsvp"].filter((m) => !DISABLED_MODULES.has(m)).map((m) => (
+                <div key={m} className="mod-rename__row" style={{ display: "grid", gridTemplateColumns: "minmax(96px, 150px) 1fr", gap: 12, alignItems: "center", marginBottom: 10 }}>
+                  <span style={{ color: "var(--muted)", fontSize: 13 }}>{moduleLabel(m)}</span>
+                  <Input type="text" value={f.moduleLabels?.[m] ?? ""} placeholder={moduleLabel(m)}
+                    onChange={(e) => Store.updateSettings({ moduleLabels: { ...(f.moduleLabels || {}), [m]: e.target.value } })} />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
         <SaveFooter />
       </div>)}
@@ -3413,7 +3427,7 @@ export function AdminApp() {
           ) : (
             <>
               <Monogram a={settings.partnerA} b={settings.partnerB} size={38} />
-              <div><div className="admin__brand-name">{settings.partnerA} & {settings.partnerB}</div><div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--muted)" }}>Admin</div></div>
+              <div><div className="admin__brand-name">{settings.partnerA}{settings.partnerB ? ` & ${settings.partnerB}` : ""}</div><div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--muted)" }}>Admin</div></div>
             </>
           )}
         </div>

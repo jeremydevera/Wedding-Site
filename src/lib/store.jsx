@@ -39,6 +39,10 @@ export const DEFAULT_SETTINGS = {
   // Master switch for the invited-guest list feature. When on, the admin gains a
   // "Guests" tab to manage invites + track replies. Public RSVP form is unaffected.
   strictRsvp: false,
+  // Per-module display-name overrides for the guest nav tabs. Empty object = use
+  // the default labels; a per-key value (e.g. { guestbook: "Well Wishes" }) renames
+  // that tab everywhere it shows (nav, drawer, footer). Set in Settings → Features.
+  moduleLabels: {},
   hashtag: "#JeremyAndIrish2026",
   adminPassword: "wedding",
   uploadsEnabled: true,
