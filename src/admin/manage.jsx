@@ -2067,7 +2067,7 @@ export function SettingsAdmin() {
 
       {tab === "appearance" && (<><div className="panel">
         <div className="panel__head"><div className="panel__title">Theme</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Preview updates instantly — Save changes to publish</span></div>
-        <div className="panel__body">
+        <div className="panel__body" style={{ maxWidth: 760, margin: "0 auto" }}>
           <span className="field__label" style={{ display: "block", margin: "0 0 8px" }}>Live preview</span>
           <ThemePreviewFrame theme={f.theme} decorStyle={f.decorStyle} decorOn={f.decorOn} />
           <span className="field__label" style={{ display: "block", margin: "20px 0 10px" }}>Choose a theme</span>
