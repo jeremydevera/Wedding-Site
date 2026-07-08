@@ -328,13 +328,7 @@ body.env-sealed main { padding-top: 0; }
   background: #fff; border: 1px solid #e4e8ef; color: #64748b; box-shadow: 0 3px 10px -4px rgba(0,0,0,.3);
 }
 .support-launcher__x svg { width: 12px; height: 12px; }
-.support-bubble {
-  position: fixed; right: 20px; bottom: 20px; z-index: 1200;
-  width: 46px; height: 46px; border-radius: 50%; cursor: pointer;
-  border: none; padding: 0; display: grid; place-items: center;
-  background: #fff; box-shadow: 0 10px 26px -10px rgba(20,30,60,.4);
-}
-@media (max-width: 860px) { .support-launcher, .support-bubble { right: 14px; bottom: 14px; } }
+@media (max-width: 860px) { .support-launcher { right: 14px; bottom: 14px; } }
 
 /* Solo event title (birthday — no partner B): couple-name sizing overflows on a
    long single line ("Jeremy's 65th Birthday"), so cap it lower and wrap cleanly

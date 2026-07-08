@@ -6,7 +6,7 @@ import { Button, CropModal, DecorPreview, FallingFx, Field, Icon, Input, Modal, 
 import { FX_LIST } from "@/lib/falling-fx.js";
 import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
-import { SupportWidget } from "@/admin/SupportWidget.jsx";
+import { SupportWidget, SupportPanel } from "@/admin/SupportWidget.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { signOut, createOwner } from "@/lib/auth.js";
 import { supabase } from "@/lib/supabase.js";
@@ -3442,6 +3442,10 @@ export function AdminApp() {
   } else {
     tabs = tabsForClient(visibleAdminTabs(auth.role, ADMIN_TABS, settings.ownerEdit), auth.role, settings.modules);
   }
+  // Support: submit-a-ticket tab for the client admin (demo-gated like the widget).
+  if (clientId && resolveSubdomain() === "demo") {
+    tabs = [...tabs, { key: "support", label: "Support", icon: "mail" }];
+  }
   const activeTab = tabs.some((t) => t.key === tab) ? tab : (tabs[0]?.key || "dashboard");
   const title = (tabs.find((t) => t.key === activeTab) || { label: "Admin" }).label;
   const onPlatformTab = activeTab === "overview" || activeTab === "clients";
@@ -3535,6 +3539,7 @@ export function AdminApp() {
           {activeTab === "clients" && <ClientsAdmin />}
           {activeTab === "r2media" && !clientId && <R2LibraryAdmin />}
           {activeTab === "health" && !clientId && <CloudflareHealth />}
+          {activeTab === "support" && clientId && <SupportPanel tab={activeTab} />}
           </AdminSaveCtx.Provider>
           {/* Footer: a clear end-of-content marker at the bottom of the scroll. */}
           <footer className="admin__footer">

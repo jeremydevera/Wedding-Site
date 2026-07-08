@@ -1,12 +1,14 @@
-// Sticky "support agent" widget for the owner admin console. A fixed launcher
-// (agent avatar + "Need help?") opens a ticket form in the shared Modal (which
-// handles the admin iOS scroll-lock correctly — CLAUDE.md). Submits via
-// submitTicket → support_tickets (RLS-scoped to the owner's client). Rendered
-// only for the demo client for now (gated at the mount site in manage.jsx).
+// Client support: a sticky "agent" launcher (opens the ticket form in the
+// shared Modal) + a full "Support" admin tab (submit a ticket AND see your own
+// tickets' status + our reply). Submits via submitTicket → support_tickets
+// (RLS-scoped to the owner's client). Demo-gated at the mount sites in
+// manage.jsx. Clicking the launcher's × hides it entirely for the session —
+// the Support tab remains the way back in.
 import React from "react";
-import { submitTicket } from "@/lib/api.js";
+import { submitTicket, listTickets } from "@/lib/api.js";
 import { Button, Field, Icon, Input, Modal, Select, Textarea, toast } from "@/ui/components.jsx";
-const { useState } = React;
+import { fmtDate } from "@/admin/core.jsx";
+const { useState, useEffect } = React;
 
 // Friendly headset "agent" avatar — self-contained SVG, console-neutral colors.
 function AgentAvatar({ size = 40 }) {
@@ -21,7 +23,6 @@ function AgentAvatar({ size = 40 }) {
       <circle cx="24" cy="24" r="24" fill="url(#sw-ag)" />
       <circle cx="24" cy="20" r="7" fill="#fff" />
       <path d="M12 36c0-6 5.4-9 12-9s12 3 12 9" fill="#fff" opacity="0.92" />
-      {/* headset band + earcups + mic */}
       <path d="M15 20a9 9 0 0 1 18 0" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" />
       <rect x="12.5" y="19" width="3.5" height="6" rx="1.75" fill="#fff" />
       <rect x="32" y="19" width="3.5" height="6" rx="1.75" fill="#fff" />
@@ -33,25 +34,13 @@ function AgentAvatar({ size = 40 }) {
 
 const CATEGORIES = ["Question", "Bug", "Design change", "Billing", "Other"];
 const URGENCIES = ["Low", "Normal", "High"];
+const BLANK = { subject: "", category: "Question", urgency: "Normal", message: "" };
 
-export function SupportWidget({ tab }) {
-  const [open, setOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(() => {
-    try { return sessionStorage.getItem("evermore_support_dismissed") === "1"; } catch (_) { return false; }
-  });
+// The ticket form — shared by the floating widget's modal and the Support tab.
+function TicketForm({ tab, onDone, onCancel }) {
+  const [form, setForm] = useState(BLANK);
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ subject: "", category: "Question", urgency: "Normal", message: "" });
   const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
-
-  const dismiss = (e) => {
-    e.stopPropagation();
-    setCollapsed(true);
-    try { sessionStorage.setItem("evermore_support_dismissed", "1"); } catch (_) {}
-  };
-  const expand = () => {
-    setCollapsed(false);
-    try { sessionStorage.removeItem("evermore_support_dismissed"); } catch (_) {}
-  };
 
   async function send() {
     if (busy) return;
@@ -60,8 +49,8 @@ export function SupportWidget({ tab }) {
     try {
       await submitTicket(form, tab);
       toast("Ticket sent — we'll get back to you soon.", "success");
-      setForm({ subject: "", category: "Question", urgency: "Normal", message: "" });
-      setOpen(false);
+      setForm(BLANK);
+      onDone && onDone();
     } catch (e) {
       toast(e.message || "Couldn't send your ticket — try again.", "error");
     } finally {
@@ -71,21 +60,47 @@ export function SupportWidget({ tab }) {
 
   return (
     <>
-      {collapsed ? (
-        <button type="button" className="support-bubble" onClick={expand} aria-label="Need help? Open support">
-          <AgentAvatar size={30} />
-        </button>
-      ) : (
-        <div className="support-launcher">
-          <button type="button" className="support-launcher__main" onClick={() => setOpen(true)} aria-label="Need help? Contact support">
-            <AgentAvatar size={34} />
-            <span className="support-launcher__label">Need help?</span>
-          </button>
-          <button type="button" className="support-launcher__x" onClick={dismiss} aria-label="Hide support">{Icon.close({})}</button>
-        </div>
-      )}
+      <Field label="Subject" id="sw-subj"><Input id="sw-subj" value={form.subject} onChange={set("subject")} placeholder="Short summary" maxLength={120} /></Field>
+      <div className="field-row field-row--2">
+        <Field label="Category" id="sw-cat"><Select id="sw-cat" value={form.category} onChange={set("category")}>{CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}</Select></Field>
+        <Field label="Urgency" id="sw-urg"><Select id="sw-urg" value={form.urgency} onChange={set("urgency")}>{URGENCIES.map((u) => <option key={u} value={u}>{u}</option>)}</Select></Field>
+      </div>
+      <Field label="Message" id="sw-msg"><Textarea id="sw-msg" rows={5} value={form.message} onChange={set("message")} placeholder="Tell us what you need…" /></Field>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
+        {onCancel && <Button variant="ghost" onClick={() => !busy && onCancel()} disabled={busy}>Cancel</Button>}
+        <Button variant="primary" onClick={send} disabled={busy}>{busy ? "Sending…" : "Send ticket"}</Button>
+      </div>
+    </>
+  );
+}
 
-      <Modal open={open} onClose={() => !busy && setOpen(false)} label="Contact support">
+// Sticky floating launcher. × hides it entirely for this session (the Support
+// tab is the persistent entry point).
+export function SupportWidget({ tab }) {
+  const [open, setOpen] = useState(false);
+  const [hidden, setHidden] = useState(() => {
+    try { return sessionStorage.getItem("evermore_support_dismissed") === "1"; } catch (_) { return false; }
+  });
+
+  if (hidden) return null;
+
+  const dismiss = (e) => {
+    e.stopPropagation();
+    setHidden(true);
+    try { sessionStorage.setItem("evermore_support_dismissed", "1"); } catch (_) {}
+  };
+
+  return (
+    <>
+      <div className="support-launcher">
+        <button type="button" className="support-launcher__main" onClick={() => setOpen(true)} aria-label="Need help? Contact support">
+          <AgentAvatar size={34} />
+          <span className="support-launcher__label">Need help?</span>
+        </button>
+        <button type="button" className="support-launcher__x" onClick={dismiss} aria-label="Hide support">{Icon.close({})}</button>
+      </div>
+
+      <Modal open={open} onClose={() => setOpen(false)} label="Contact support">
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
           <AgentAvatar size={40} />
           <div>
@@ -93,17 +108,55 @@ export function SupportWidget({ tab }) {
             <p style={{ margin: "2px 0 0", color: "var(--muted)", fontSize: 13 }}>Send us a ticket and we'll get back to you.</p>
           </div>
         </div>
-        <Field label="Subject" id="sw-subj"><Input id="sw-subj" value={form.subject} onChange={set("subject")} placeholder="Short summary" maxLength={120} /></Field>
-        <div className="field-row field-row--2">
-          <Field label="Category" id="sw-cat"><Select id="sw-cat" value={form.category} onChange={set("category")}>{CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}</Select></Field>
-          <Field label="Urgency" id="sw-urg"><Select id="sw-urg" value={form.urgency} onChange={set("urgency")}>{URGENCIES.map((u) => <option key={u} value={u}>{u}</option>)}</Select></Field>
-        </div>
-        <Field label="Message" id="sw-msg"><Textarea id="sw-msg" rows={5} value={form.message} onChange={set("message")} placeholder="Tell us what you need…" /></Field>
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
-          <Button variant="ghost" onClick={() => !busy && setOpen(false)} disabled={busy}>Cancel</Button>
-          <Button variant="primary" onClick={send} disabled={busy}>{busy ? "Sending…" : "Send ticket"}</Button>
-        </div>
+        <TicketForm tab={tab} onDone={() => setOpen(false)} onCancel={() => setOpen(false)} />
       </Modal>
     </>
+  );
+}
+
+// "Support" admin tab: submit a ticket + the client's own tickets with status
+// and our reply (RLS returns only their client's rows).
+export function SupportPanel({ tab }) {
+  const [mine, setMine] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const refresh = () => listTickets().then((rows) => setMine(rows || [])).catch(() => {}).finally(() => setLoading(false));
+  useEffect(() => { refresh(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div>
+      <div className="panel">
+        <div className="panel__head">
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <AgentAvatar size={30} />
+            <div className="panel__title">Submit a ticket</div>
+          </div>
+        </div>
+        <div className="panel__body" style={{ maxWidth: 760, margin: "0 auto" }}>
+          <TicketForm tab={tab} onDone={refresh} />
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel__head"><div className="panel__title">Your tickets</div></div>
+        <div className="panel__body--flush table-wrap">
+          <table className="tbl">
+            <thead><tr><th>Subject</th><th>Category</th><th>Status</th><th>Our reply</th><th>When</th></tr></thead>
+            <tbody>
+              {loading && <tr><td colSpan={5} style={{ color: "var(--muted)", padding: 18 }}>Loading…</td></tr>}
+              {!loading && mine.length === 0 && <tr><td colSpan={5} style={{ color: "var(--muted)", padding: 18 }}>No tickets yet — send one above if you need a hand.</td></tr>}
+              {mine.map((t) => (
+                <tr key={t.id}>
+                  <td><strong>{t.subject}</strong></td>
+                  <td><span className="tag tag--hidden">{t.category}</span></td>
+                  <td><span className="tag" style={{ background: t.status === "open" ? "#fdecc8" : "#d6f0e0", color: t.status === "open" ? "#7a5b12" : "#1e6b45" }}>{t.status}</span></td>
+                  <td style={{ maxWidth: 320, whiteSpace: "pre-wrap" }}>{t.admin_note || <span style={{ color: "var(--muted)" }}>—</span>}</td>
+                  <td style={{ whiteSpace: "nowrap", color: "var(--muted)", fontSize: 13 }}>{fmtDate(t.created_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   );
 }
