@@ -2504,6 +2504,7 @@ export function HomeAdmin() {
     ] : []),
     ...(can("maps") ? [{ k: "maps", label: "Google Maps", icon: "pin" }] : []),
     ...(can("timeline") ? [{ k: "timeline", label: "Timeline", icon: "calendar" }] : []),
+    ...(can("homeDetails") ? [{ k: "details", label: "Details", icon: "book" }] : []),
     ...(can("attire") ? [{ k: "attire", label: "Attire", icon: "book" }] : []),
     ...(can("music") ? [{ k: "music", label: "Music playlist", icon: "play" }] : []),
     ...(canEntourage ? [{ k: "entourage", label: "Entourage", icon: "user" }] : []),
@@ -2599,6 +2600,33 @@ export function HomeAdmin() {
                 <button key={o.v} type="button"
                   className={"tl-pick__opt" + ((f.homeTimelineLayout || "vertical") === o.v ? " is-active" : "")}
                   onClick={() => toggleShow("homeTimelineLayout", o.v)}>
+                  <span className="tl-pick__art">{o.art}</span>
+                  <span className="tl-pick__label">{o.label}</span>
+                  <span className="tl-pick__sub">{o.sub}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {can("homeDetails") && active === "details" && (
+        <div className="panel">
+          <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Home details</div><HeadSwitch label="Show details on the home page" checked={f.showHomeDetails === true} onChange={(v) => toggleShow("showHomeDetails", v)} /></div>
+          <div className="panel__body">
+            <p style={{ color: "var(--muted)", margin: "0 0 18px", fontSize: 14 }}>
+              Shows your detail cards on the home page, right after the schedule glimpse. Edit the cards themselves in the Details tab. Saves instantly.
+            </p>
+            <div className="tl-pick">
+              {[
+                { v: "vertical", label: "Vertical", sub: "Cards stacked down the page",
+                  art: <svg viewBox="0 0 64 48" width="64" height="48" fill="none"><rect x="14" y="6" width="36" height="10" rx="3" stroke="currentColor" strokeWidth="2" /><rect x="14" y="19" width="36" height="10" rx="3" stroke="currentColor" strokeWidth="2" opacity="0.7" /><rect x="14" y="32" width="36" height="10" rx="3" stroke="currentColor" strokeWidth="2" opacity="0.4" /></svg> },
+                { v: "horizontal", label: "Horizontal", sub: "Cards side by side (scrolls)",
+                  art: <svg viewBox="0 0 64 48" width="64" height="48" fill="none"><rect x="4" y="14" width="16" height="20" rx="3" stroke="currentColor" strokeWidth="2" /><rect x="24" y="14" width="16" height="20" rx="3" stroke="currentColor" strokeWidth="2" opacity="0.7" /><rect x="44" y="14" width="16" height="20" rx="3" stroke="currentColor" strokeWidth="2" opacity="0.4" /></svg> },
+              ].map((o) => (
+                <button key={o.v} type="button"
+                  className={"tl-pick__opt" + ((f.homeDetailsLayout || "vertical") === o.v ? " is-active" : "")}
+                  onClick={() => toggleShow("homeDetailsLayout", o.v)}>
                   <span className="tl-pick__art">{o.art}</span>
                   <span className="tl-pick__label">{o.label}</span>
                   <span className="tl-pick__sub">{o.sub}</span>

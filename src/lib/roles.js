@@ -50,6 +50,7 @@ export const OWNER_EDIT_HOME = [
   { k: "home", label: "Couple & Event + Invitation", desc: "Couple & event details and the invitation section." },
   { k: "maps", label: "Google Maps", desc: "The home-page map and its pin." },
   { k: "timeline", label: "Timeline", desc: "The home-page schedule-glimpse layout." },
+  { k: "homeDetails", label: "Details (home section)", desc: "The home-page details cards — visibility + vertical/horizontal layout." },
   { k: "attire", label: "Attire", desc: "The dress-code guide." },
   { k: "music", label: "Music playlist", desc: "The home-page player and its tracks." },
   { k: "entourage", label: "Entourage", desc: "Wedding-party groups and names." },

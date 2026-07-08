@@ -400,7 +400,7 @@ function HomeMapsCarousel({ maps }) {
 }
 
 export function Home() {
-  const { settings, story, schedule: scheduleRaw, entourage, attire, playlist, venues } = useStore();
+  const { settings, story, schedule: scheduleRaw, entourage, attire, playlist, venues, detailCards } = useStore();
   // Guard against a non-array truthy schedule in tenant content (bad import /
   // manual DB edit): clientToState only falls back to seeds on falsiness, so an
   // object/string would reach .slice/.length below and white-screen the home.
@@ -551,6 +551,29 @@ export function Home() {
           )}
         </div>
       </section>
+      )}
+
+      {/* DETAILS PREVIEW — opt-in (Home → Details), right after the schedule
+          glimpse. Cards come from the Details tab; layout = vertical stack or a
+          horizontally scrolling row. Hidden when the Details module is off. */}
+      {s.showHomeDetails === true && moduleEnabled(s.modules, "details") && detailCards.filter((c) => (c.title || "").trim() || (c.body || "").trim()).length > 0 && (
+        <section className="block" id="home-details">
+          <div className="container">
+            <SectionHead center eyebrow={sectionLabel("details", s.moduleLabels, "Details")} title="The details" />
+            <div className={s.homeDetailsLayout === "horizontal" ? "home-details-row" : "home-details-stack"}>
+              {detailCards.filter((c) => (c.title || "").trim() || (c.body || "").trim()).map((c, i) => (
+                <div className="card card--pad-lg info-card" key={i}>
+                  <div className="info-card__icon">{(Icon[c.icon] || Icon.rings)({})}</div>
+                  <h3>{c.title}</h3>
+                  <p>{c.body}</p>
+                </div>
+              ))}
+            </div>
+            <div style={{ textAlign: "center", marginTop: 22 }}>
+              <Button variant="ghost" onClick={() => go("details")}>See all details {Icon.arrow({})}</Button>
+            </div>
+          </div>
+        </section>
       )}
 
       {/* ATTIRE GUIDE — right after the schedule glimpse */}

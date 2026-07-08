@@ -228,6 +228,12 @@ body.env-sealed main { padding-top: 0; }
   font-weight: 500; line-height: 1.0; text-shadow: 0 2px 30px rgba(0,0,0,.25);
 }
 .hero__names .amp { font-style: italic; display: block; font-size: 0.42em; margin: 0.06em 0; opacity: 0.92; }
+/* Home "Details" preview section (Home → Details folder). Vertical = cards
+   stacked down the page; horizontal = a scroll-snap row of cards. */
+.home-details-stack { display: grid; grid-template-columns: 1fr; gap: 16px; max-width: 640px; margin: 0 auto; }
+.home-details-row { display: flex; gap: 16px; overflow-x: auto; padding: 4px 2px 14px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+.home-details-row .info-card { flex: 0 0 min(78vw, 300px); scroll-snap-align: start; }
+
 /* Solo event title (birthday — no partner B): couple-name sizing overflows on a
    long single line ("Jeremy's 65th Birthday"), so cap it lower and wrap cleanly
    onto the next line instead of spilling off-screen. */
