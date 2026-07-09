@@ -1884,7 +1884,6 @@ function ClientPasswordReset() {
         <Field label="New password" id="cpr-pw" hint="At least 6 characters">
           <Input id="cpr-pw" type="text" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="••••••••" autoComplete="new-password" />
         </Field>
-        </div>
         <Button variant="primary" disabled={busy || !pw || !email.trim()} onClick={reset}>{busy ? "Updating…" : (email && loaded ? "Reset password" : "Set login")}</Button>
       </div>
     </div>
