@@ -40,7 +40,10 @@ describe("owner Support notifications — driven by superadmin replies", () => {
     const { container } = render(<AdminApp />);
     // owner default tab is Dashboard, so the badge is NOT auto-cleared
     await waitFor(() => {
-      expect(navLabels(container).join(" | ")).toMatch(/Support \(1\)/);
+      // red count pill on the Support tab (replaces the old "Support (1)" text)
+      const supportTab = [...container.querySelectorAll(".admin__navlink")].find((b) => /Support/.test(b.textContent));
+      expect(supportTab).toBeTruthy();
+      expect(supportTab.querySelector(".admin__navbadge")?.textContent).toBe("1");
     });
   });
 });

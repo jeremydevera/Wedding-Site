@@ -3537,7 +3537,7 @@ export function AdminApp() {
   // Support: submit-a-ticket tab for every client admin. Badge = tickets with a
   // new reply from support waiting for the client.
   if (clientId) {
-    tabs = [...tabs, { key: "support", label: supportWaiting > 0 ? `Support (${supportWaiting})` : "Support", icon: "mail" }];
+    tabs = [...tabs, { key: "support", label: "Support", icon: "mail", badge: supportWaiting }];
   }
   const activeTab = tabs.some((t) => t.key === tab) ? tab : (tabs[0]?.key || "dashboard");
   const title = (tabs.find((t) => t.key === activeTab) || { label: "Admin" }).label;
@@ -3582,6 +3582,7 @@ export function AdminApp() {
           {tabs.map((t) => (
             <button key={t.key} className={"admin__navlink" + (activeTab === t.key ? " admin__navlink--active" : "")} onClick={() => { setTab(t.key); setMenuOpen(false); }}>
               {Icon[t.icon]({})} {t.label}
+              {t.badge > 0 && <span className="admin__navbadge">{t.badge > 9 ? "9+" : t.badge}</span>}
             </button>
           ))}
         </nav>
