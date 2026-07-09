@@ -2483,8 +2483,9 @@ export function HomeAdmin() {
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const f = settings;
   const set = (k) => (e) => Store.updateSettings({ [k]: e.target && e.target.type === "checkbox" ? e.target.checked : e.target.value });
-  // flip a home-section visibility flag and save immediately (auto-save tabs)
-  const toggleShow = async (k, v) => { Store.updateSettings({ [k]: v }); await persistChanges(); };
+  // Stage a home-section flag/layout — the folder's "Save changes" button
+  // commits (was auto-saving on every flip; owner asked for explicit Save).
+  const toggleShow = (k, v) => Store.updateSettings({ [k]: v });
   const isSuper = auth.role === "superadmin";
   // Folder sub-tabs. Each folder shows for the superadmin, or for an owner the
   // superadmin granted that folder in Settings → Access (settings.ownerEdit):
@@ -2588,7 +2589,7 @@ export function HomeAdmin() {
           <div className="panel__body">
             <HomeHeadFields k="schedule" defEyebrow="The Day" defTitle="A glimpse of the schedule" />
             <p style={{ color: "var(--muted)", margin: "0 0 18px", fontSize: 14 }}>
-              How the “A glimpse of the schedule” timeline shows on the home page. Edit the events themselves in the Schedule tab. Saves instantly.
+              How the “A glimpse of the schedule” timeline shows on the home page. Edit the events themselves in the Schedule tab. Click Save changes to apply.
             </p>
             <div className="tl-pick">
               {[
@@ -2624,7 +2625,7 @@ export function HomeAdmin() {
               </div>
             )}
             <p style={{ color: "var(--muted)", margin: "0 0 18px", fontSize: 14 }}>
-              Shows your detail cards on the home page, right after the schedule glimpse. Edit the cards themselves in the Details tab. Saves instantly.
+              Shows your detail cards on the home page, right after the schedule glimpse. Edit the cards themselves in the Details tab. Click Save changes to apply.
             </p>
             <div className="tl-pick">
               {[
@@ -2654,12 +2655,12 @@ export function HomeAdmin() {
             <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Music player</div><HeadSwitch label="Show music player on the home page" checked={f.showMusic !== false} onChange={(v) => toggleShow("showMusic", v)} /></div>
             <div className="panel__body">
               <HomeHeadFields k="music" defEyebrow="Our Song" defTitle="Our Playlist" />
-              <AdminToggle label="Autoplay music on load" desc="Start the playlist automatically (on the first tap or scroll). When off, guests press play themselves. Saves instantly."
+              <AdminToggle label="Autoplay music on load" desc="Start the playlist automatically (on the first tap or scroll). When off, guests press play themselves. Click Save changes to apply."
                 checked={f.musicAutoplay !== false} onChange={(v) => toggleShow("musicAutoplay", v)} />
               <div style={{ height: 20 }} />
               <div style={{ fontWeight: 600, marginBottom: 6 }}>Player style</div>
               <p style={{ color: "var(--muted)", margin: "0 0 14px", fontSize: 14 }}>
-                How the home music player looks. Saves instantly.
+                How the home music player looks. Click Save changes to apply.
               </p>
               <div className="tl-pick">
                 {[
@@ -3453,8 +3454,8 @@ export function AdminApp() {
   } else {
     tabs = tabsForClient(visibleAdminTabs(auth.role, ADMIN_TABS, settings.ownerEdit), auth.role, settings.modules);
   }
-  // Support: submit-a-ticket tab for the client admin (demo-gated like the widget).
-  if (clientId && resolveSubdomain() === "demo") {
+  // Support: submit-a-ticket tab for every client admin.
+  if (clientId) {
     tabs = [...tabs, { key: "support", label: "Support", icon: "mail" }];
   }
   const activeTab = tabs.some((t) => t.key === tab) ? tab : (tabs[0]?.key || "dashboard");
@@ -3558,8 +3559,8 @@ export function AdminApp() {
           </footer>
         </div>
       </main>
-      {/* Support widget — owner console, demo client only for now. */}
-      {clientId && resolveSubdomain() === "demo" && <SupportWidget tab={activeTab} />}
+      {/* Support widget — every client's admin console. */}
+      {clientId && <SupportWidget tab={activeTab} />}
     </div>
   );
 }
