@@ -2035,15 +2035,21 @@ export function SettingsAdmin() {
             })}
           </div>
 
-          <div style={{ marginTop: 22, paddingTop: 18, borderTop: "1px solid var(--line)", display: "grid", gap: 12 }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontWeight: 600 }}>
-              <input type="checkbox" checked={f.autoApproveGuestbook === true} onChange={(e) => setKey("autoApproveGuestbook", e.target.checked)} style={{ width: 16, height: 16, flex: "none", accentColor: "var(--accent)" }} />
-              Auto-approve guestbook messages
-            </label>
-            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontWeight: 600 }}>
-              <input type="checkbox" checked={f.strictRsvp === true} onChange={(e) => setKey("strictRsvp", e.target.checked)} style={{ width: 16, height: 16, flex: "none", accentColor: "var(--accent)" }} />
-              Enable Strict RSVP
-            </label>
+          <div style={{ marginTop: 22, paddingTop: 18, borderTop: "1px solid var(--line)", display: "grid", gap: 16 }}>
+            <div style={{ display: "flex", gap: 10 }}>
+              <input type="checkbox" checked={f.autoApproveGuestbook === true} onChange={(e) => setKey("autoApproveGuestbook", e.target.checked)} style={{ width: 16, height: 16, flex: "none", marginTop: 2, accentColor: "var(--accent)" }} />
+              <div>
+                <div style={{ fontWeight: 600 }}>Auto-approve guestbook messages</div>
+                <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>When on, messages post immediately. When off, they stay hidden until you approve them in the Guestbook tab.</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <input type="checkbox" checked={f.strictRsvp === true} onChange={(e) => setKey("strictRsvp", e.target.checked)} style={{ width: 16, height: 16, flex: "none", marginTop: 2, accentColor: "var(--accent)" }} />
+              <div>
+                <div style={{ fontWeight: 600 }}>Enable Strict RSVP</div>
+                <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>Track an invited-guest list with seat allocations, and see who hasn't replied. Adds a Guests tab. Only guests on the list can RSVP, and party size is capped at their seat allocation.</div>
+              </div>
+            </div>
           </div>
 
           <div style={{ marginTop: 26, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
