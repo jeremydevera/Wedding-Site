@@ -2035,9 +2035,15 @@ export function SettingsAdmin() {
             })}
           </div>
 
-          <div style={{ marginTop: 22, paddingTop: 18, borderTop: "1px solid var(--line)" }}>
-            <AdminToggle label="Auto-approve guestbook messages" desc="When on, messages post immediately. When off, they stay hidden until you approve them in the Guestbook tab." checked={f.autoApproveGuestbook} onChange={(v) => setKey("autoApproveGuestbook", v)} />
-            <AdminToggle label="Enable Strict RSVP" desc="Track an invited-guest list with seat allocations, and see who hasn't replied. Adds a Guests tab. Only guests on the list can RSVP, and party size is capped at their seat allocation." checked={f.strictRsvp === true} onChange={(v) => setKey("strictRsvp", v)} />
+          <div style={{ marginTop: 22, paddingTop: 18, borderTop: "1px solid var(--line)", display: "grid", gap: 12 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontWeight: 600 }}>
+              <input type="checkbox" checked={f.autoApproveGuestbook === true} onChange={(e) => setKey("autoApproveGuestbook", e.target.checked)} style={{ width: 16, height: 16, flex: "none", accentColor: "var(--accent)" }} />
+              Auto-approve guestbook messages
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontWeight: 600 }}>
+              <input type="checkbox" checked={f.strictRsvp === true} onChange={(e) => setKey("strictRsvp", e.target.checked)} style={{ width: 16, height: 16, flex: "none", accentColor: "var(--accent)" }} />
+              Enable Strict RSVP
+            </label>
           </div>
 
           <div style={{ marginTop: 26, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
