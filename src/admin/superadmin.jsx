@@ -248,9 +248,12 @@ function TicketModal({ ticket, onClose, onRefresh }) {
           <div className="tk-detail__controls">
             <Field label="Status" id="tk-status">
               <Select id="tk-status" value={status} disabled={busy} onChange={(e) => setStatus(e.target.value)}>
+                {/* Reopened is AUTO-set by the client-reply trigger — never
+                    admin-pickable. The disabled option only exists so a
+                    reopened ticket's select can display its current value. */}
+                {status === "reopened" && <option value="reopened" disabled>Reopened</option>}
                 <option value="open">Open</option>
-                <option value="reopened">Reopened (client replied)</option>
-                <option value="waiting_reply">Waiting reply (notify client)</option>
+                <option value="waiting_reply">Waiting reply</option>
                 <option value="resolved">Resolved</option>
               </Select>
             </Field>
