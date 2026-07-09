@@ -53,6 +53,15 @@ export function clientToState(client) {
     theme: client.template_key,
     eventType: client.event_type,
   };
+  // BASE_SETTINGS carries the DEMO's seed venue ("Somewhere in Lipa, Batangas").
+  // A real client that simply hasn't set a venue must NOT inherit it (it leaked
+  // into footers/venue lines). Blank the seed for non-demo clients whose own
+  // content doesn't define these keys.
+  if (client.subdomain !== "demo") {
+    for (const k of ["venueName", "venueAddress", "mapQuery"]) {
+      if (!(k in content)) settings[k] = "";
+    }
+  }
   return {
     clientId: client.id,
     settings,
