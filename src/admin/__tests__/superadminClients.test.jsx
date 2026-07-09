@@ -47,4 +47,15 @@ describe("superadmin Clients list with real rows", () => {
     expect(container.textContent).toContain("leo-7");
     expect(container.textContent).toContain("bare");
   });
+
+  it("site address is a link that opens the live site in a new tab", async () => {
+    const { container } = render(<ClientsAdmin />);
+    await waitFor(() => expect(container.textContent).toContain("demo"));
+    const link = [...container.querySelectorAll("a.client-domain--link")]
+      .find((a) => a.textContent.includes("demo.celebrately.us"));
+    expect(link).toBeTruthy();
+    expect(link.getAttribute("href")).toBe("https://demo.celebrately.us");
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toContain("noreferrer");
+  });
 });
