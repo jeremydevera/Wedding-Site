@@ -1060,6 +1060,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .tk-chip--open { background: #fdecc8; color: #7a5b12; border: 1px solid #ecd39a; }
 .tk-chip--resolved { background: #d6f0e0; color: #1e6b45; border: 1px solid #b5e0c8; }
 .tk-chip--waiting { background: #e6ecfb; color: #2b4a9e; border: 1px solid #c6d4f5; }
+.tk-chip--reopened { background: #fde5e5; color: #9e2b2b; border: 1px solid #f5c6c6; }
 
 /* Ticket detail — ops-rail layout: meta rail left, conversation right. */
 .tk-detail {

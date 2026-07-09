@@ -13,9 +13,9 @@ const { useState, useEffect, useRef } = React;
 // Ticket status → chip class + labels. Owner sees a customer-friendly label
 // ("waiting_reply" = the superadmin replied and is waiting on them → shown as
 // "New Reply From Support"); superadmin sees the operational label.
-export const TK_CHIP = { open: "tk-chip--open", waiting_reply: "tk-chip--waiting", resolved: "tk-chip--resolved" };
+export const TK_CHIP = { open: "tk-chip--open", waiting_reply: "tk-chip--waiting", resolved: "tk-chip--resolved", reopened: "tk-chip--reopened" };
 export const tkOwnerLabel = (st) => st === "waiting_reply" ? "New Reply From Support" : st === "resolved" ? "Resolved" : "Open";
-export const tkAdminLabel = (st) => st === "waiting_reply" ? "Waiting reply" : st === "resolved" ? "Resolved" : "Open";
+export const tkAdminLabel = (st) => st === "waiting_reply" ? "Waiting reply" : st === "resolved" ? "Resolved" : st === "reopened" ? "Reopened" : "Open";
 
 // Shared conversation view for a ticket: the original request, the message
 // thread (owner ⇄ support), and a reply box. Used by both the owner's Support

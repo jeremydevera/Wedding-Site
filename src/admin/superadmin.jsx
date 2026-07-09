@@ -249,6 +249,7 @@ function TicketModal({ ticket, onClose, onRefresh }) {
             <Field label="Status" id="tk-status">
               <Select id="tk-status" value={status} disabled={busy} onChange={(e) => setStatus(e.target.value)}>
                 <option value="open">Open</option>
+                <option value="reopened">Reopened (client replied)</option>
                 <option value="waiting_reply">Waiting reply (notify client)</option>
                 <option value="resolved">Resolved</option>
               </Select>
@@ -270,7 +271,7 @@ function TicketModal({ ticket, onClose, onRefresh }) {
 export function SupportAdmin() {
   const [tickets, setTickets] = useState([]);
   const [ticket, setTicket] = useState(null);        // ticket open in the detail modal
-  const [ticketFilter, setTicketFilter] = useState("open"); // open | resolved
+  const [ticketFilter, setTicketFilter] = useState("open"); // open | reopened | waiting_reply | resolved
   const [loading, setLoading] = useState(true);
   const load = () => listTickets().then((rows) => setTickets(rows || [])).catch(() => {}).finally(() => setLoading(false));
   useEffect(() => { load(); }, []);
@@ -278,10 +279,13 @@ export function SupportAdmin() {
     const off = subscribeTicketsRealtime(() => { listTickets().then((r) => setTickets(r || [])).catch(() => {}); });
     return off;
   }, []);
+  // Open = NEW tickets from clients; Reopened = a client replied on a ticket
+  // that was resolved / waiting-reply (flipped by the DB trigger).
   const openN = tickets.filter((t) => t.status === "open").length;
+  const reopenedN = tickets.filter((t) => t.status === "reopened").length;
   const waitingN = tickets.filter((t) => t.status === "waiting_reply").length;
   const resolvedN = tickets.filter((t) => t.status === "resolved").length;
-  const shown = tickets.filter((t) => t.status === (ticketFilter === "resolved" ? "resolved" : ticketFilter === "waiting_reply" ? "waiting_reply" : "open"));
+  const shown = tickets.filter((t) => t.status === (["resolved", "waiting_reply", "reopened"].includes(ticketFilter) ? ticketFilter : "open"));
   return (
     <div>
       <div className="panel">
@@ -289,6 +293,7 @@ export function SupportAdmin() {
         <div className="admin-toolbar" style={{ padding: "12px 16px" }}>
           <div className="seg">
             <button type="button" className={ticketFilter === "open" ? "on" : ""} onClick={() => setTicketFilter("open")}>Open ({openN})</button>
+            <button type="button" className={ticketFilter === "reopened" ? "on" : ""} onClick={() => setTicketFilter("reopened")}>Reopened ({reopenedN})</button>
             <button type="button" className={ticketFilter === "waiting_reply" ? "on" : ""} onClick={() => setTicketFilter("waiting_reply")}>Waiting Reply ({waitingN})</button>
             <button type="button" className={ticketFilter === "resolved" ? "on" : ""} onClick={() => setTicketFilter("resolved")}>Resolved ({resolvedN})</button>
           </div>
