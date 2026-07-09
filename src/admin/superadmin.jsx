@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase.js";
 import { createOwner, updateOwnerEmail, deleteOwner } from "@/lib/auth.js";
 import { THEMES } from "@/themes";
 import { themesForEvent } from "@/config/eventTypes.js";
-import { moduleLabel, DISABLED_MODULES, OWNER_EDIT_HOME, OWNER_EDIT_TABS } from "@/lib/roles.js";
+import { moduleLabel, DISABLED_MODULES, OWNER_EDIT_HOME, OWNER_EDIT_TABS , DEFAULT_CLIENT_MODULES} from "@/lib/roles.js";
 import { PLATFORM_DOMAIN, clientUrl, isValidSubdomain } from "@/config/site.js"; // platform config → src/config/site.js
 import { Button, confirmDialog, Field, Icon, Input, Modal, Pager, SectionHead, Select, Textarea, toast, usePaged } from "@/ui/components.jsx";
 import { listMedia, deleteFromR2, listSiteRequests, approveSiteRequest, setSiteRequestStatus, updateSiteRequest, deleteSiteRequest, listTickets, setTicketStatus, updateTicket, subscribeTicketsRealtime, deleteTicket } from "@/lib/api.js";
@@ -377,7 +377,11 @@ export function ClientsAdmin() {
   function openReqEdit(r) {
     const c = r.content || {};
     setReqAccess({
-      modules: Object.fromEntries(MODULES.map((m) => [m, c.modules?.[m] !== false])),
+      // No saved map on the request -> the platform default (four core sections
+      // on, the rest off) — NOT "everything on". A hand-picked map keeps its
+      // absent-means-on semantics untouched.
+      modules: Object.fromEntries(MODULES.map((m) => [m,
+        c.modules ? c.modules[m] !== false : DEFAULT_CLIENT_MODULES[m] === true])),
       autoApproveMedia: c.autoApproveMedia !== false,
       autoApproveGuestbook: c.autoApproveGuestbook !== false,
       uploadsEnabled: c.uploadsEnabled !== false,

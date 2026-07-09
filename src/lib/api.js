@@ -3,6 +3,7 @@ import { Store } from "@/lib/store.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { clientToState, stateToClientRow, rowToGuestbook, rowToRsvp, rowToQuizSub, rsvpToRow, guestbookToRow, quizToRow, guestToRow, rowToGuest, ticketToRow } from "@/lib/mappers.js";
 import { loadSession } from "@/lib/auth.js";
+import { DEFAULT_CLIENT_MODULES } from "@/lib/roles.js";
 
 // Boot: load the active client + approved guestbook, hydrate the store cache.
 export async function loadClientData() {
@@ -670,8 +671,7 @@ export async function approveSiteRequest(reqRow) {
     // RSVP only — Story/Guestbook/Quiz (and the shelved gallery) start OFF and
     // the superadmin enables them per client. If the request already carries a
     // modules map (preconfigured in the edit-request Access tab), respect it.
-    modules: (c.modules && typeof c.modules === "object") ? c.modules
-      : { details: true, schedule: true, venue: true, rsvp: true, story: false, guestbook: false, quiz: false, gallery: false },
+    modules: (c.modules && typeof c.modules === "object") ? c.modules : { ...DEFAULT_CLIENT_MODULES },
     // New registered sites open with falling petals (Classic Ivory is the wizard's
     // default theme). Owner can change decor/theme anytime in admin.
     decorOn: true,

@@ -73,6 +73,12 @@ export function canEnterAdmin(profile, currentClientId) {
   return false;
 }
 
+// Default feature set for a NEW client/request: the four core sections on,
+// everything else off until the superadmin enables it per client. Single
+// source for approveSiteRequest AND the request editor's Access seeding —
+// "absent modules map" must read as THIS, never as "everything on".
+export const DEFAULT_CLIENT_MODULES = { details: true, schedule: true, venue: true, rsvp: true, story: false, guestbook: false, quiz: false, gallery: false };
+
 // Platform-wide kill switch: modules disabled for EVERYONE, regardless of
 // per-client flags or event-type sections. "Off for now" features live here —
 // empty the set to bring one back. Hides the nav link + blocks the route.
