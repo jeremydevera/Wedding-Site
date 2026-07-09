@@ -2069,11 +2069,9 @@ export function SettingsAdmin() {
 
       {tab === "appearance" && (<><div className="panel">
         <div className="panel__head"><div className="panel__title">Theme</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Preview updates instantly — Save changes to publish</span></div>
-        <div className="panel__body" style={{ maxWidth: 760 }}>
-          <span className="field__label" style={{ display: "block", margin: "0 0 8px" }}>Live preview</span>
-          <ThemePreviewFrame theme={f.theme} decorStyle={f.decorStyle} decorOn={f.decorOn} />
-
-          <Field label="Choose a theme" id="s-theme-dd" hint="Preview above updates instantly; Save changes to publish.">
+        <div className="panel__body theme-layout">
+          <div className="theme-layout__controls">
+          <Field label="Choose a theme" id="s-theme-dd" hint="Preview updates instantly; Save changes to publish.">
             <Select id="s-theme-dd" value={f.theme}
               onChange={(e) => { const key = e.target.value; Store.updateSettings({ theme: key, themeAccent: "", displayFont: THEME_FONTS[key].display, bodyFont: THEME_FONTS[key].body }); }}>
               <optgroup label="Normal themes">
@@ -2123,6 +2121,11 @@ export function SettingsAdmin() {
               />
             </div>
           )}
+          </div>
+          <div className="theme-layout__preview">
+            <span className="field__label" style={{ display: "block", margin: "0 0 8px" }}>Live preview</span>
+            <ThemePreviewFrame theme={f.theme} decorStyle={f.decorStyle} decorOn={f.decorOn} />
+          </div>
         </div>
         <SaveFooter />
       </div>
