@@ -1070,11 +1070,13 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .tk-detail__side { border-right: 1px solid #eef1f5; padding-right: 20px; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
 .tk-detail__eyebrow { font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: #94a3b8; font-weight: 700; }
 .tk-detail__subject { margin: 0; font-size: 20px; line-height: 1.25; }
-.tk-meta { width: 100%; margin-top: 6px; border-top: 1px dashed #eef1f5; }
+/* The meta list is the flexible, SCROLLABLE part of the rail — long emails /
+   URLs used to push the Status select + Save button past the clipped rail. */
+.tk-meta { width: 100%; margin-top: 6px; border-top: 1px dashed #eef1f5; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 .tk-meta__row { display: flex; flex-direction: column; gap: 1px; padding: 8px 0; border-bottom: 1px dashed #eef1f5; }
 .tk-meta__label { font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: #94a3b8; font-weight: 700; }
 .tk-meta__value { font-size: 13.5px; color: var(--ink, #1e293b); overflow-wrap: anywhere; }
-.tk-detail__controls { width: 100%; margin-top: auto; display: grid; gap: 8px; padding-top: 12px; }
+.tk-detail__controls { width: 100%; margin-top: auto; display: grid; gap: 8px; padding-top: 12px; flex: none; }
 .tk-detail__main { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
 @media (max-width: 720px) {
   .tk-detail { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); height: 78vh; }
