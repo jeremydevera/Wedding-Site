@@ -1250,7 +1250,10 @@ a.client-domain--link:hover { text-decoration: underline; }
 .admin--sa .input { height: 34px; min-height: 34px; font-size: 14px; line-height: 16px; border: 1px solid #e2e2e2; border-radius: 6px; background: #fcfcfc; }
 .admin--sa .input::placeholder { color: #a1a1aa; }
 .admin--sa input.input { padding: 8px 12px; }
-.admin--sa select.input { padding: 8px 30px 8px 12px; }
+/* Selects: no fixed line-height / vertical padding — mobile browsers render
+   the selected value with their own metrics and a 16px line box clipped
+   descenders ("Open" → "O̶p̶en"). Zero v-padding lets the control center it. */
+.admin--sa select.input { padding: 0 30px 0 12px; line-height: normal; }
 .admin--sa textarea.input { height: auto; min-height: 80px; padding: 8px 12px; }
 .admin--sa .input:focus { outline: 2px solid rgba(30, 91, 214, .35); outline-offset: 0; border-color: #1E5BD6; box-shadow: none; }
 
