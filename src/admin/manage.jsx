@@ -1790,7 +1790,7 @@ function VenueEditorModal({ open, venue, onPatch, onSave, onClose, onDiscard, on
 // Live theme preview — embeds the REAL home page (/?preview) and re-themes it
 // instantly via postMessage as the operator clicks themes. Display-only; the
 // iframe applies changes in-memory (previewSettings) and never saves.
-function ThemePreviewFrame({ theme, decorStyle, decorOn }) {
+function ThemePreviewFrame({ theme, decorStyle, decorOn, envColor, envColorCustom, envMatchSite }) {
   const ref = React.useRef(null);
   const wrapRef = React.useRef(null);
   const [device, setDevice] = React.useState("desktop"); // desktop | mobile
@@ -1815,8 +1815,8 @@ function ThemePreviewFrame({ theme, decorStyle, decorOn }) {
   }, [baseW, baseH]);
   const post = React.useCallback(() => {
     const w = ref.current && ref.current.contentWindow;
-    if (w) w.postMessage({ type: "evermore:preview", theme, decorStyle, decorOn }, window.location.origin);
-  }, [theme, decorStyle, decorOn]);
+    if (w) w.postMessage({ type: "evermore:preview", theme, decorStyle, decorOn, envColor, envColorCustom, envMatchSite }, window.location.origin);
+  }, [theme, decorStyle, decorOn, envColor, envColorCustom, envMatchSite]);
   React.useEffect(() => { post(); }, [post]);   // re-post whenever the selection changes
   React.useEffect(() => {                        // and once the embedded app signals ready
     const onReady = (e) => { if (e.origin === window.location.origin && e.data && e.data.type === "evermore:preview-ready") post(); };
@@ -2170,7 +2170,7 @@ export function SettingsAdmin() {
           </div>
           <div className="theme-layout__preview">
             <span className="field__label" style={{ display: "block", margin: "0 0 8px" }}>Live preview</span>
-            <ThemePreviewFrame theme={f.theme} decorStyle={f.decorStyle} decorOn={f.decorOn} />
+            <ThemePreviewFrame theme={f.theme} decorStyle={f.decorStyle} decorOn={f.decorOn} envColor={f.envColor} envColorCustom={f.envColorCustom} envMatchSite={f.envMatchSite} />
           </div>
         </div>
         <SaveFooter />

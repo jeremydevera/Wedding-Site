@@ -398,6 +398,9 @@ export function App() {
       }
       if (d.decorStyle !== undefined) patch.decorStyle = d.decorStyle;
       if (d.decorOn !== undefined) patch.decorOn = d.decorOn;
+      if (d.envColor !== undefined) patch.envColor = d.envColor;
+      if (d.envColorCustom !== undefined) patch.envColorCustom = d.envColorCustom;
+      if (d.envMatchSite !== undefined) patch.envMatchSite = d.envMatchSite;
       if (Object.keys(patch).length) { previewPatchRef.current = { ...(previewPatchRef.current || {}), ...patch }; Store.previewSettings(patch); }
     };
     window.addEventListener("message", onMsg);
