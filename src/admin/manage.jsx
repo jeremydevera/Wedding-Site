@@ -2353,21 +2353,20 @@ export function SettingsAdmin() {
         );
       })()}
 
+      {/* Owner-editing grants above write via Store.updateSettings — this footer
+          is their Save (the old empty "Access & Toggles" shell that carried it
+          is gone; its only content was the shelved gallery switches). */}
+      <SaveFooter />
+      {!DISABLED_MODULES.has("gallery") && (
       <div className="panel">
         <div className="panel__head"><div className="panel__title">Access &amp; Toggles</div></div>
         <div className="panel__body" style={{ maxWidth: 760, margin: "0 auto" }}>
-          {/* NOTE: the old "Admin password" field was removed — it gated nothing
-              (admin login is Supabase email/password) and was stripped before save
-              (mappers CONTENT_SECRET_KEYS), so editing it never persisted. */}
-          {/* Guest uploads + public gallery are globally shelved (roles.js DISABLED_MODULES);
-              hide these dead master switches so they can't mislead. Reappear when it ships. */}
-          {!DISABLED_MODULES.has("gallery") && (<>
-            <AdminToggle label="Allow guest uploads" desc="Master switch for the photo/video upload pages." checked={f.uploadsEnabled} onChange={(v) => setKey("uploadsEnabled", v)} />
-            <AdminToggle label="Show public gallery" desc="Hide the gallery from guests entirely if you prefer." checked={f.galleryEnabled} onChange={(v) => setKey("galleryEnabled", v)} />
-          </>)}
+          <AdminToggle label="Allow guest uploads" desc="Master switch for the photo/video upload pages." checked={f.uploadsEnabled} onChange={(v) => setKey("uploadsEnabled", v)} />
+          <AdminToggle label="Show public gallery" desc="Hide the gallery from guests entirely if you prefer." checked={f.galleryEnabled} onChange={(v) => setKey("galleryEnabled", v)} />
         </div>
         <SaveFooter />
       </div>
+      )}
 
       <ClientPasswordReset /></>)}
     </div>
