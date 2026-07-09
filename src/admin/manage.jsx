@@ -1877,14 +1877,13 @@ function ClientPasswordReset() {
   return (
     <div className="panel">
       <div className="panel__head"><div><div className="panel__title">Client login</div><div className="panel__sub">Set or reset the couple's sign-in password. Passwords can't be viewed — only replaced.</div></div></div>
-      <div className="panel__body">
-        <div className="field-row field-row--2">
-          <Field label="Owner email" id="cpr-email" hint={loaded && !email ? "No owner login yet — set one here" : "The email the couple signs in with"}>
-            <Input id="cpr-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="owner@theirdomain" />
-          </Field>
-          <Field label="New password" id="cpr-pw" hint="At least 6 characters">
-            <Input id="cpr-pw" type="text" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="••••••••" autoComplete="new-password" />
-          </Field>
+      <div className="panel__body" style={{ maxWidth: 420 }}>
+        <Field label="Owner email" id="cpr-email" hint={loaded && !email ? "No owner login yet — set one here" : "The email the couple signs in with"}>
+          <Input id="cpr-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="owner@theirdomain" />
+        </Field>
+        <Field label="New password" id="cpr-pw" hint="At least 6 characters">
+          <Input id="cpr-pw" type="text" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="••••••••" autoComplete="new-password" />
+        </Field>
         </div>
         <Button variant="primary" disabled={busy || !pw || !email.trim()} onClick={reset}>{busy ? "Updating…" : (email && loaded ? "Reset password" : "Set login")}</Button>
       </div>
@@ -2071,7 +2070,7 @@ export function SettingsAdmin() {
 
       {tab === "appearance" && (<><div className="panel">
         <div className="panel__head"><div className="panel__title">Theme</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Preview updates instantly — Save changes to publish</span></div>
-        <div className="panel__body" style={{ maxWidth: 760, margin: "0 auto" }}>
+        <div className="panel__body" style={{ maxWidth: 760 }}>
           <span className="field__label" style={{ display: "block", margin: "0 0 8px" }}>Live preview</span>
           <ThemePreviewFrame theme={f.theme} decorStyle={f.decorStyle} decorOn={f.decorOn} />
 
@@ -2150,7 +2149,7 @@ export function SettingsAdmin() {
       {f.theme === "envelope" && (
       <div className="panel">
         <div className="panel__head"><div className="panel__title">Envelope Color</div><span style={{ color: "var(--muted)", fontSize: 14 }}>The paper color of the envelope itself</span></div>
-        <div className="panel__body" style={{ maxWidth: 760, margin: "0 auto" }}>
+        <div className="panel__body" style={{ maxWidth: 760 }}>
           <div style={{ display: "flex", gap: 28, alignItems: "flex-start", flexWrap: "wrap" }}>
             <div style={{ flex: "1 1 280px", minWidth: 260 }}>
               <Field label="Paper color" id="s-envcolor" hint="Recolors the envelope paper and lace — the wax seal stays cream. The falling leaves and everything inside the envelope are unchanged.">
@@ -2219,7 +2218,7 @@ export function SettingsAdmin() {
       {f.theme === "envelope" && (
       <div className="panel">
         <div className="panel__head"><div className="panel__title">Title Size</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Size of &ldquo;A Love Letter From&rdquo; + your names on the cover</span></div>
-        <div className="panel__body" style={{ maxWidth: 760, margin: "0 auto" }}>
+        <div className="panel__body" style={{ maxWidth: 760 }}>
           {(() => {
             const sc = (f.envTitleSize != null && f.envTitleSize >= 1 && f.envTitleSize <= 10) ? f.envTitleSize : 5;
             const px = Math.round(9 + (sc - 1) / 9 * 30); // indicative preview only — real size scales with the envelope
@@ -2323,7 +2322,7 @@ export function SettingsAdmin() {
           moved to Features) — hide the whole panel while the gallery is shelved. */}
       {!DISABLED_MODULES.has("gallery") && (<div className="panel">
         <div className="panel__head"><div className="panel__title">Moderation</div></div>
-        <div className="panel__body" style={{ maxWidth: 760, margin: "0 auto" }}>
+        <div className="panel__body" style={{ maxWidth: 760 }}>
           <AdminToggle label="Auto-approve photos &amp; videos" desc="When on, guest uploads appear in the gallery instantly. When off, they wait in the Media queue for your approval." checked={f.autoApproveMedia} onChange={(v) => setKey("autoApproveMedia", v)} />
         </div>
       </div>)}
@@ -2343,7 +2342,7 @@ export function SettingsAdmin() {
         return (
           <div className="panel">
             <div className="panel__head"><div><div className="panel__title">Owner editing</div><div className="panel__sub">Choose which sections the couple's own login may edit. Everything else stays superadmin-only.</div></div></div>
-            <div className="panel__body" style={{ maxWidth: 760, margin: "0 auto" }}>
+            <div className="panel__body" style={{ maxWidth: 760 }}>
               <div className="owner-edit__group">
                 <div className="owner-edit__grouphead">
                   <span className="owner-edit__grouptitle">{Icon.home({ style: { width: 15, height: 15 } })} Home tab folders</span>
@@ -2372,7 +2371,7 @@ export function SettingsAdmin() {
       {!DISABLED_MODULES.has("gallery") && (
       <div className="panel">
         <div className="panel__head"><div className="panel__title">Access &amp; Toggles</div></div>
-        <div className="panel__body" style={{ maxWidth: 760, margin: "0 auto" }}>
+        <div className="panel__body" style={{ maxWidth: 760 }}>
           <AdminToggle label="Allow guest uploads" desc="Master switch for the photo/video upload pages." checked={f.uploadsEnabled} onChange={(v) => setKey("uploadsEnabled", v)} />
           <AdminToggle label="Show public gallery" desc="Hide the gallery from guests entirely if you prefer." checked={f.galleryEnabled} onChange={(v) => setKey("galleryEnabled", v)} />
         </div>
