@@ -2479,7 +2479,7 @@ function HomeHeadFields({ k, defEyebrow, defTitle }) {
 }
 
 export function HomeAdmin() {
-  const { settings, auth } = useStore();
+  const { settings, auth, faq } = useStore();
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const f = settings;
   const set = (k) => (e) => Store.updateSettings({ [k]: e.target && e.target.type === "checkbox" ? e.target.checked : e.target.value });
@@ -2661,9 +2661,25 @@ export function HomeAdmin() {
                 ⚠ The Details module is turned off (Features → Site sections), so this section stays hidden on the home page even when the switch above is on.
               </div>
             )}
-            <p style={{ color: "var(--muted)", margin: "0 0 4px", fontSize: 14 }}>
+            <p style={{ color: "var(--muted)", margin: "0 0 14px", fontSize: 14 }}>
               Shows your FAQ accordion on the home page, after the details preview. Edit the questions themselves in the Details tab → FAQ. Click Save changes to apply.
             </p>
+            {/* live preview of the questions this section will show */}
+            {(Array.isArray(faq) ? faq : []).length > 0 ? (
+              <div style={{ border: "1px solid var(--line)", borderRadius: 10, overflow: "hidden" }}>
+                {(faq || []).map((item, i) => (
+                  <div key={i} style={{ display: "flex", gap: 12, alignItems: "baseline", padding: "10px 14px", borderTop: i ? "1px solid var(--line)" : "none" }}>
+                    <span style={{ color: "var(--muted)", fontFamily: "var(--font-display)", fontSize: 16, flex: "none" }}>{i + 1}</span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 600 }}>{item.q || "—"}</div>
+                      <div style={{ color: "var(--ink-soft)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.a}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ color: "var(--muted)", fontSize: 13 }}>No questions yet — add them in the Details tab → FAQ.</p>
+            )}
           </div>
         </div>
         <SaveFooter />
