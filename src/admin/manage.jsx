@@ -2039,14 +2039,14 @@ export function SettingsAdmin() {
             <div style={{ display: "flex", gap: 10 }}>
               <input type="checkbox" checked={f.autoApproveGuestbook === true} onChange={(e) => setKey("autoApproveGuestbook", e.target.checked)} style={{ width: 16, height: 16, flex: "none", marginTop: 2, accentColor: "var(--accent)" }} />
               <div>
-                <div style={{ fontWeight: 600 }}>Auto-approve guestbook messages</div>
+                <div style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: ".03em" }}>Auto-approve guestbook messages</div>
                 <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>When on, messages post immediately. When off, they stay hidden until you approve them in the Guestbook tab.</div>
               </div>
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <input type="checkbox" checked={f.strictRsvp === true} onChange={(e) => setKey("strictRsvp", e.target.checked)} style={{ width: 16, height: 16, flex: "none", marginTop: 2, accentColor: "var(--accent)" }} />
               <div>
-                <div style={{ fontWeight: 600 }}>Enable Strict RSVP</div>
+                <div style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: ".03em" }}>Enable Strict RSVP</div>
                 <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>Track an invited-guest list with seat allocations, and see who hasn't replied. Adds a Guests tab. Only guests on the list can RSVP, and party size is capped at their seat allocation.</div>
               </div>
             </div>
