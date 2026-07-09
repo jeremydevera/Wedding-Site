@@ -2105,6 +2105,52 @@ export function SettingsAdmin() {
             </Select>
           </Field>
 
+          {/* Olive Envelope paper color — lives INSIDE the Theme card so it's
+              part of the theme section (only shown when the envelope theme is on). */}
+          {f.theme === "envelope" && (
+            <div style={{ marginTop: 20, paddingTop: 18, borderTop: "1px solid var(--line)" }}>
+              <Field label="Envelope paper color" id="s-envcolor" hint="Recolors the envelope paper and lace — the wax seal stays cream. The falling leaves and everything inside the envelope are unchanged.">
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {Object.keys(ENV_COLORS).map((key) => {
+                    const on = (f.envColor || "olive") === key;
+                    return (
+                      <button key={key} type="button" onClick={() => setKey("envColor", key)}
+                        style={{ display: "flex", alignItems: "center", gap: 7, padding: "6px 11px 6px 7px", borderRadius: 999, cursor: "pointer",
+                          border: on ? "2px solid var(--accent)" : "1px solid var(--line)", background: on ? "color-mix(in oklch, var(--accent) 10%, var(--surface))" : "var(--surface)",
+                          font: "inherit", fontSize: 13, fontWeight: on ? 700 : 500, color: "var(--ink)" }}>
+                        <span style={{ width: 16, height: 16, borderRadius: "50%", background: ENV_COLORS[key].dot, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.15)" }} />
+                        {ENV_COLORS[key].label}
+                      </button>
+                    );
+                  })}
+                  {(() => {
+                    const on = f.envColor === "custom";
+                    const hex = f.envColorCustom || "#9e6243";
+                    return (
+                      <button type="button" onClick={() => { setKey("envColor", "custom"); if (!f.envColorCustom) setKey("envColorCustom", hex); }}
+                        style={{ display: "flex", alignItems: "center", gap: 7, padding: "6px 11px 6px 7px", borderRadius: 999, cursor: "pointer",
+                          border: on ? "2px solid var(--accent)" : "1px solid var(--line)", background: on ? "color-mix(in oklch, var(--accent) 10%, var(--surface))" : "var(--surface)",
+                          font: "inherit", fontSize: 13, fontWeight: on ? 700 : 500, color: "var(--ink)" }}>
+                        <span style={{ width: 16, height: 16, borderRadius: "50%", background: on ? hex : "conic-gradient(red, yellow, lime, cyan, blue, magenta, red)", boxShadow: "inset 0 0 0 1px rgba(0,0,0,.15)" }} />
+                        Custom
+                      </button>
+                    );
+                  })()}
+                </div>
+              </Field>
+              {f.envColor === "custom" && (
+                <Field label="Pick any color" id="s-envcustom" hint="The envelope paper is matched to this color as closely as the artwork allows">
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <input id="s-envcustom" type="color" value={f.envColorCustom || "#9e6243"} onChange={(e) => setKey("envColorCustom", e.target.value)}
+                      style={{ width: 52, height: 36, padding: 2, border: "1px solid var(--line)", borderRadius: 8, background: "var(--surface)", cursor: "pointer" }} />
+                    <code style={{ fontSize: 13, color: "var(--ink-soft)" }}>{f.envColorCustom || "#9e6243"}</code>
+                  </div>
+                </Field>
+              )}
+              <AdminToggle label="Match website colors" desc="Page backgrounds, headings and buttons take on the envelope color. Turn off to keep the classic olive-green site." checked={f.envMatchSite !== false} onChange={(v) => setKey("envMatchSite", v)} />
+            </div>
+          )}
+
           {/* Tools / Enable-arrange hidden for now (owner request) — flip `false` to restore. */}
           {false && isPremiumTheme(f.theme) && (
             <div style={{ marginTop: 24, padding: 18, border: "1px solid #d8b65e", borderRadius: "var(--radius)", background: "linear-gradient(180deg, color-mix(in oklch, #f6e6b8 22%, var(--surface)), var(--surface))" }}>
@@ -2148,74 +2194,6 @@ export function SettingsAdmin() {
       </div>
       )}
 
-      {f.theme === "envelope" && (
-      <div className="panel">
-        <div className="panel__head"><div className="panel__title">Envelope Color</div><span style={{ color: "var(--muted)", fontSize: 14 }}>The paper color of the envelope itself</span></div>
-        <div className="panel__body" style={{ maxWidth: 760 }}>
-          <div style={{ display: "flex", gap: 28, alignItems: "flex-start", flexWrap: "wrap" }}>
-            <div style={{ flex: "1 1 280px", minWidth: 260 }}>
-              <Field label="Paper color" id="s-envcolor" hint="Recolors the envelope paper and lace — the wax seal stays cream. The falling leaves and everything inside the envelope are unchanged.">
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {Object.keys(ENV_COLORS).map((key) => {
-                    const on = (f.envColor || "olive") === key;
-                    return (
-                      <button key={key} type="button" onClick={() => setKey("envColor", key)}
-                        style={{ display: "flex", alignItems: "center", gap: 7, padding: "6px 11px 6px 7px", borderRadius: 999, cursor: "pointer",
-                          border: on ? "2px solid var(--accent)" : "1px solid var(--line)", background: on ? "color-mix(in oklch, var(--accent) 10%, var(--surface))" : "var(--surface)",
-                          font: "inherit", fontSize: 13, fontWeight: on ? 700 : 500, color: "var(--ink)" }}>
-                        <span style={{ width: 16, height: 16, borderRadius: "50%", background: ENV_COLORS[key].dot, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.15)" }} />
-                        {ENV_COLORS[key].label}
-                      </button>
-                    );
-                  })}
-                  {(() => {
-                    const on = f.envColor === "custom";
-                    const hex = f.envColorCustom || "#9e6243";
-                    return (
-                      <button type="button" onClick={() => { setKey("envColor", "custom"); if (!f.envColorCustom) setKey("envColorCustom", hex); }}
-                        style={{ display: "flex", alignItems: "center", gap: 7, padding: "6px 11px 6px 7px", borderRadius: 999, cursor: "pointer",
-                          border: on ? "2px solid var(--accent)" : "1px solid var(--line)", background: on ? "color-mix(in oklch, var(--accent) 10%, var(--surface))" : "var(--surface)",
-                          font: "inherit", fontSize: 13, fontWeight: on ? 700 : 500, color: "var(--ink)" }}>
-                        <span style={{ width: 16, height: 16, borderRadius: "50%", background: on ? hex : "conic-gradient(red, yellow, lime, cyan, blue, magenta, red)", boxShadow: "inset 0 0 0 1px rgba(0,0,0,.15)" }} />
-                        Custom
-                      </button>
-                    );
-                  })()}
-                </div>
-              </Field>
-              {f.envColor === "custom" && (
-                <Field label="Pick any color" id="s-envcustom" hint="The envelope paper is matched to this color as closely as the artwork allows">
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <input id="s-envcustom" type="color" value={f.envColorCustom || "#9e6243"} onChange={(e) => setKey("envColorCustom", e.target.value)}
-                      style={{ width: 52, height: 36, padding: 2, border: "1px solid var(--line)", borderRadius: 8, background: "var(--surface)", cursor: "pointer" }} />
-                    <code style={{ fontSize: 13, color: "var(--ink-soft)" }}>{f.envColorCustom || "#9e6243"}</code>
-                  </div>
-                </Field>
-              )}
-              <AdminToggle label="Match website colors" desc="Page backgrounds, headings and buttons take on the envelope color. Turn off to keep the classic olive-green site." checked={f.envMatchSite !== false} onChange={(v) => setKey("envMatchSite", v)} />
-            </div>
-            <div style={{ flex: "1 1 300px", minWidth: 260, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-              {(() => {
-                const flt = envColorFilterFor(f.envColor, f.envColorCustom);
-                return (
-                  <div style={{ position: "relative", width: "100%", maxWidth: 380 }}>
-                    <img src="/assets/invite/env-closed.webp" alt="Envelope color preview" style={{ display: "block", width: "100%", height: "auto", borderRadius: 8 }} />
-                    {flt ? <>
-                      <img src="/assets/invite/env-closed.webp" alt="" aria-hidden="true"
-                        style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "auto", borderRadius: 8, pointerEvents: "none", filter: flt, WebkitMaskImage: ENV_SEAL_MASK, maskImage: ENV_SEAL_MASK }} />
-                      <img src="/assets/invite/seal-closed-v2.png" alt="" aria-hidden="true"
-                        style={{ position: "absolute", left: ENV_SEAL_POS.left, top: ENV_SEAL_POS.top, width: ENV_SEAL_POS.width, transform: "translate(-50%, -50%)", pointerEvents: "none" }} />
-                    </> : null}
-                  </div>
-                );
-              })()}
-              <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 10, maxWidth: 360 }}>Live preview — the wax seal always stays cream. Save changes, then view the site.</p>
-            </div>
-          </div>
-        </div>
-        <SaveFooter />
-      </div>
-      )}
 
       {f.theme === "envelope" && (
       <div className="panel">
