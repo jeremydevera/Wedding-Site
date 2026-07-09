@@ -2018,7 +2018,7 @@ export function SettingsAdmin() {
 
       {tab === "features" && (<div className="panel">
         <div className="panel__head"><div className="panel__title">Features</div></div>
-        <div className="panel__body" style={{ maxWidth: 760, margin: "0 auto" }}>
+        <div className="panel__body" style={{ maxWidth: 760 }}>
           <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>Turn sections of this site on or off — disabled ones are hidden from guests and the menu. Click <strong>Save changes</strong> to apply.</p>
           <div className="mod-toggles mod-toggles--edit">
             {["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"].map((m) => {
