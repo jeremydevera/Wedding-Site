@@ -661,7 +661,7 @@ export function ClientsAdmin() {
           <div className="panel__head"><div className="panel__title">Site requests</div><span style={{ color: "var(--muted)", fontSize: 13 }}>Submitted from the /apply wizard — approve to create the site</span></div>
           <div className="panel__body--flush table-wrap">
             <table className="tbl">
-              <thead><tr><th>Couple</th><th>Site address</th><th>Email</th><th>Theme</th><th>RSVP</th><th></th></tr></thead>
+              <thead><tr><th>Couple</th><th>Site address</th><th>Email</th><th>Note</th><th>RSVP</th><th></th></tr></thead>
               <tbody>
                 {requests.filter((r) => r.status === "pending").map((r) => (
                   <React.Fragment key={r.id}>
@@ -669,7 +669,9 @@ export function ClientsAdmin() {
                       <td><strong>{r.partner_a}{r.partner_b ? ` & ${r.partner_b}` : ""}</strong></td>
                       <td className="client-domain">{r.subdomain}.celebrately.us</td>
                       <td>{r.email}</td>
-                      <td>{r.template_key}</td>
+                      <td style={{ maxWidth: 180 }}>{(r.content && r.content.note)
+                      ? <span title={r.content.note} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{r.content.note}</span>
+                      : <span style={{ color: "var(--muted)" }}>—</span>}</td>
                       <td>{r.content && r.content.strictRsvp ? "Strict" : "Open"}</td>
                       <td>
                         <div className="row-actions">
@@ -711,17 +713,31 @@ export function ClientsAdmin() {
           <div className="panel__head"><div className="panel__title">Approved requests</div><span style={{ color: "var(--muted)", fontSize: 13 }}>These sites were created — manage them in the Clients tab</span></div>
           <div className="panel__body--flush table-wrap">
             <table className="tbl">
-              <thead><tr><th>Couple</th><th>Site address</th><th>Email</th><th>Theme</th><th>Submitted</th><th></th></tr></thead>
+              <thead><tr><th>Couple</th><th>Site address</th><th>Email</th><th>Note</th><th>Submitted</th><th></th></tr></thead>
               <tbody>
                 {requests.filter((r) => r.status === "approved").map((r) => (
                   <tr key={r.id}>
                     <td><strong>{r.partner_a}{r.partner_b ? ` & ${r.partner_b}` : ""}</strong></td>
                     <td className="client-domain">{r.subdomain}.celebrately.us</td>
                     <td>{r.email}</td>
-                    <td>{r.template_key}</td>
+                    <td style={{ maxWidth: 180 }}>{(r.content && r.content.note)
+                      ? <span title={r.content.note} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{r.content.note}</span>
+                      : <span style={{ color: "var(--muted)" }}>—</span>}</td>
                     <td style={{ color: "var(--muted)", fontSize: 13 }}>{new Date(r.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</td>
                     <td>
                       <div className="row-actions">
+                        {/* Login lives on the CLIENT created at approval, not the request —
+                            resolve it by subdomain and open its Access tab (same tool as
+                            the Clients table's Reset/Set login). */}
+                        {(() => {
+                          const cl = clients.find((x) => x.subdomain === r.subdomain);
+                          return (
+                            <Button variant="ghost" size="sm" onClick={() => {
+                              if (!cl) { toast("No client site found for this request.", "error"); return; }
+                              openEdit(cl); setEditTab("access");
+                            }}>{cl && cl.owner_email ? "Reset" : "Set login"}</Button>
+                          );
+                        })()}
                         <button className="icon-btn" title="Details" onClick={() => setReqInfo(r)}>{Icon.eye({})}</button>
                         <button className="icon-btn" title="Edit request" onClick={() => openReqEdit(r)}>{Icon.edit({})}</button>
                         <a className="icon-btn" href={clientUrl(r.subdomain)} target="_blank" rel="noreferrer" title="Open live site">{Icon.arrow({})}</a>
@@ -744,14 +760,16 @@ export function ClientsAdmin() {
           <div className="panel__head"><div className="panel__title">Rejected requests</div><span style={{ color: "var(--muted)", fontSize: 13 }}>Reopen to move a request back to pending — nothing is deleted</span></div>
           <div className="panel__body--flush table-wrap">
             <table className="tbl">
-              <thead><tr><th>Couple</th><th>Site address</th><th>Email</th><th>Theme</th><th>Submitted</th><th></th></tr></thead>
+              <thead><tr><th>Couple</th><th>Site address</th><th>Email</th><th>Note</th><th>Submitted</th><th></th></tr></thead>
               <tbody>
                 {requests.filter((r) => r.status === "rejected").map((r) => (
                   <tr key={r.id}>
                     <td><strong>{r.partner_a}{r.partner_b ? ` & ${r.partner_b}` : ""}</strong></td>
                     <td className="client-domain">{r.subdomain}.celebrately.us</td>
                     <td>{r.email}</td>
-                    <td>{r.template_key}</td>
+                    <td style={{ maxWidth: 180 }}>{(r.content && r.content.note)
+                      ? <span title={r.content.note} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{r.content.note}</span>
+                      : <span style={{ color: "var(--muted)" }}>—</span>}</td>
                     <td style={{ color: "var(--muted)", fontSize: 13 }}>{new Date(r.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</td>
                     <td>
                       <div className="row-actions">
