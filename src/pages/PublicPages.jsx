@@ -96,14 +96,32 @@ export function EnvelopeHero() {
   const [ready, setReady] = React.useState(false);
   const artRef = React.useRef(null);
   const triggerReady = React.useCallback(() => setReady(true), []);
+  // Wait for the envelope art (paper + wax seal) to fully DECODE before showing
+  // the cover — previously the type-on played over a blank/partial background
+  // and the image popped in late. Fails open after 4s so a slow/failed decode
+  // never blanks the cover forever.
+  const [artReady, setArtReady] = React.useState(false);
   React.useEffect(() => {
-    // Flip ready a couple frames after mount so the hidden text paints first, then
-    // the type-on plays — independent of the image cache, so it runs on desktop
-    // too (a cached image used to flip ready before first paint, skipping it).
+    let dead = false;
+    const decode = (src) => {
+      const im = new Image();
+      im.src = src;
+      return (im.decode ? im.decode() : Promise.resolve()).catch(() => {});
+    };
+    Promise.all([decode("/assets/invite/env-closed.webp"), decode("/assets/invite/seal-closed-v2.png")])
+      .then(() => { if (!dead) setArtReady(true); });
+    const t = setTimeout(() => { if (!dead) setArtReady(true); }, 4000);
+    return () => { dead = true; clearTimeout(t); };
+  }, []);
+  React.useEffect(() => {
+    // Flip ready a couple frames AFTER the art is decoded so the cover fades in
+    // complete and the type-on plays over the finished envelope (the two-frame
+    // delay keeps the hidden text painting first, cached or not).
+    if (!artReady) return;
     let r1, r2;
     r1 = requestAnimationFrame(() => { r2 = requestAnimationFrame(() => setReady(true)); });
     return () => { cancelAnimationFrame(r1); cancelAnimationFrame(r2); };
-  }, []);
+  }, [artReady]);
   // Type-on reveal via Web Animations API. Crucially, ON FINISH we clear the
   // clip-path entirely so the resting state is unclipped — otherwise a browser
   // that clamps the negative end-inset to 0 shaves the last glyph ("m" in "From").
@@ -201,7 +219,7 @@ export function EnvelopeHero() {
       <div className="eg-stage">
         {/* Sealed envelope */}
         <div className={"eg-page" + (open ? "" : " is-active")}>
-          <div className={"inv-sealed-wrap eg-sealed" + (ready ? " is-ready" : "")}>
+          <div className={"inv-sealed-wrap eg-sealed" + (ready ? " is-ready" : "")} style={{ opacity: artReady ? 1 : 0, transition: "opacity .45s ease" }}>
             <img ref={artRef} className="inv-sealed-art" src="/assets/invite/env-closed.webp" alt="Sealed olive envelope with lace trim and wax seal" onLoad={triggerReady} />
             {envRecolorOverlay(s, "sealed")}
             <div className="inv-letter-from">
@@ -269,7 +287,7 @@ export function EnvelopeInvite() {
     <div className={"inv-stage" + (open ? " is-open" : "")} style={egTintVars(s)}>
       {/* Sealed envelope */}
       <div className={"inv-page" + (open ? "" : " is-active")}>
-        <div className="inv-sealed-wrap">
+        <div className="inv-sealed-wrap" style={{ opacity: artReady ? 1 : 0, transition: "opacity .45s ease" }}>
           <img className="inv-sealed-art" src="/assets/invite/env-closed.webp" alt="Sealed olive envelope with lace trim and wax seal" />
           {envRecolorOverlay(s, "sealed")}
           <div className="inv-letter-from">
