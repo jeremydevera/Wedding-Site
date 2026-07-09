@@ -78,11 +78,17 @@ export function TicketThread({ ticket, onChanged, onGone, leftAction, rightActio
         <div ref={endRef} />
       </div>
       <div className="tk-reply">
-        {/* Composer: textarea + an explicit labeled send button below it
-            (the icon-only circle read as decoration). Cmd/Ctrl+Enter sends. */}
+        {/* iMessage-style composer: textarea + circular send (arrow-up) button.
+            Cmd/Ctrl+Enter also sends. A labeled Send reply button sits below
+            as the explicit save action. */}
         <div className="tk-composer">
           <Textarea rows={2} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Write a reply…"
             onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") send(); }} />
+          <button type="button" className="tk-send" onClick={send} disabled={busy || !reply.trim()} aria-label="Send reply">
+            {busy
+              ? <span className="tk-send__dot" aria-hidden="true" />
+              : <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20V5.5" /><path d="M5.5 11.5 12 5l6.5 6.5" /></svg>}
+          </button>
         </div>
         <div className="tk-reply__actions">
           <div className="tk-reply__left">{leftAction}</div>
