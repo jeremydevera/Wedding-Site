@@ -39,6 +39,15 @@ export function RSVPPage() {
   });
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  // Guests submit from deep in a long form on phones — jump to the top AFTER
+  // the confirmation card replaces the form (scrolling before the swap gets
+  // cancelled by the layout change on iOS, leaving the guest staring at the
+  // footer instead of the confirmation).
+  useEffect(() => {
+    if (!submitted) return;
+    const r = requestAnimationFrame(() => scrollToTop({ top: 0, behavior: "auto" }));
+    return () => cancelAnimationFrame(r);
+  }, [submitted]);
   const [submitting, setSubmitting] = useState(false);
 
   const set = (k) => (e) => {
@@ -236,8 +245,7 @@ export function RSVPPage() {
       if (forceUpdate) await upsertRsvp(payload);
       else await postRsvp(payload);
       setForm((f) => ({ ...f, count })); // success card shows the real head count
-      setSubmitted(true);
-      scrollToTop({ top: 0, behavior: "smooth" });
+      setSubmitted(true); // the submitted-effect scrolls AFTER the card renders
     } catch (err) {
       setErrors({ notes: "Could not submit right now. Please try again." });
     } finally {
