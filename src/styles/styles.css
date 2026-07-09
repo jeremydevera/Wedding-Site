@@ -1542,7 +1542,10 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 [data-theme="classic2"] .reveal { transform: translateX(-28px); }
 [data-theme="garden"] .reveal { transform: scale(0.86); }
 [data-theme="glass"] .reveal { transform: scale(1.04); filter: blur(7px); transition-duration: .95s; }
-[data-theme="dusk"] .reveal { transform: translateX(40px); }
+/* Slide from the LEFT (negative X): a positive translateX(40px) pushed reveals
+   past the right edge and leaked horizontal scroll on mobile (overflow-x:clip
+   doesn't absorb rightward overflow the way it does leftward). */
+[data-theme="dusk"] .reveal { transform: translateX(-40px); }
 [data-theme="burgundy"] .reveal { transform: translateY(46px); }
 /* 2D (not 3D): a perspective/rotateX reveal gets composited and escapes
    overflow-x:clip, causing a few px of horizontal scroll. Keep an emerald-
