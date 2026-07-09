@@ -38,11 +38,21 @@ vi.mock("@/lib/supabase.js", () => ({
   get supabase() { return current.supabase; },
 }));
 
+// Approval auto-provisions the owner login (starter password) — mock the edge-fn
+// wrapper so tests stay offline and can assert the call.
+const createOwnerMock = vi.fn(async () => ({}));
+vi.mock("@/lib/auth.js", () => ({
+  loadSession: async () => {},
+  createOwner: (...a) => createOwnerMock(...a),
+  updateOwnerEmail: async () => {},
+  deleteOwner: async () => {},
+}));
+
 import { approveSiteRequest } from "@/lib/api.js";
 
 const REQ = { id: "req1", subdomain: "amy-and-ben", partner_a: "Amy", partner_b: "Ben", email: "a@b.com", template_key: "classic", content: {} };
 
-beforeEach(() => { current = null; });
+beforeEach(() => { current = null; createOwnerMock.mockClear(); });
 
 describe("approveSiteRequest", () => {
   it("inserts a new client then marks the request approved", async () => {
@@ -52,7 +62,9 @@ describe("approveSiteRequest", () => {
     });
     current = s;
     const out = await approveSiteRequest(REQ);
-    expect(out).toEqual({ id: "cli1" });
+    expect(out).toMatchObject({ id: "cli1", loginError: "" });
+    // auto-provisioned owner login with the starter password
+    expect(createOwnerMock).toHaveBeenCalledWith({ email: "a@b.com", password: "Password123+", client_id: "cli1" });
     expect(s.calls.inserts).toBe(1);
     expect(s.calls.updates).toBe(1);
     expect(s.state.updatePatch).toEqual({ status: "approved" });
@@ -65,7 +77,7 @@ describe("approveSiteRequest", () => {
     });
     current = s;
     const out = await approveSiteRequest(REQ);
-    expect(out).toEqual({ id: "cli-existing" });
+    expect(out).toMatchObject({ id: "cli-existing", loginError: "" });
     expect(s.calls.inserts).toBe(0);      // did NOT re-insert
     expect(s.calls.updates).toBe(1);      // converged on approved
     expect(s.state.updatePatch).toEqual({ status: "approved" });
@@ -83,7 +95,7 @@ describe("approveSiteRequest", () => {
     });
     current = s;
     const out = await approveSiteRequest(REQ);
-    expect(out).toEqual({ id: "cli-dup" });
+    expect(out).toMatchObject({ id: "cli-dup", loginError: "" });
     expect(s.calls.inserts).toBe(1);
     expect(s.calls.updates).toBe(1);
     expect(s.state.updatePatch).toEqual({ status: "approved" });
