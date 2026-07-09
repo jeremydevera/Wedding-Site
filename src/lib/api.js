@@ -654,6 +654,18 @@ export async function approveSiteRequest(reqRow) {
     ...(Array.isArray(c.schedule) && c.schedule.length ? { schedule: c.schedule } : {}),
     ...(Array.isArray(c.entourage) && c.entourage.length ? { entourage: c.entourage } : {}),
     strictRsvp: c.strictRsvp === true,
+    // Starter copy for the home page (BASE_SETTINGS blanks these for real
+    // clients, so without seeding here a new site launches with an empty
+    // invitation + welcome). Owner/superadmin edits them in Home afterwards.
+    ...(eventType === "birthday" ? {
+      welcome: "One big day, all our favorite people. Find everything you need below.",
+      inviteTitle: "You're invited to the celebration",
+      inviteBody: "We can't wait to celebrate with the people we love most. Here's everything you need for the big day.",
+    } : {
+      welcome: "Two families, one celebration. We would be honored to have you with us as we say \u201cI do.\u201d Find everything you need below.",
+      inviteTitle: "You're invited to celebrate love",
+      inviteBody: "We can't wait to celebrate the start of our forever, surrounded by the people we love most. Thank you for being part of our story \u2014 here's a little about how we got here, and what our wedding day will hold.",
+    }),
     // Default features for a freshly approved site: Details, Schedule, Venue,
     // RSVP only — Story/Guestbook/Quiz (and the shelved gallery) start OFF and
     // the superadmin enables them per client. If the request already carries a
