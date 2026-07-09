@@ -2664,14 +2664,26 @@ export function HomeAdmin() {
             <p style={{ color: "var(--muted)", margin: "0 0 14px", fontSize: 14 }}>
               Shows your FAQ accordion on the home page, after the details preview. Edit the questions themselves in the Details tab → FAQ. Click Save changes to apply.
             </p>
-            {/* live preview of the questions this section will show */}
+            {/* pick which questions show on home; checkbox per FAQ + enable-all */}
             {(Array.isArray(faq) ? faq : []).length > 0 ? (
               <div style={{ border: "1px solid var(--line)", borderRadius: 10, overflow: "hidden" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 14px", background: "var(--surface-2, #f7f8fa)", borderBottom: "1px solid var(--line)" }}>
+                  <span style={{ fontSize: 12, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--muted)", fontWeight: 700 }}>Show on home</span>
+                  {(() => {
+                    const allOn = (faq || []).every((it) => it.home !== false);
+                    return (
+                      <Button variant="ghost" size="sm" onClick={() => (faq || []).forEach((_, i) => Store.updateFaqItem(i, { home: !allOn }))}>
+                        {allOn ? "Turn all off" : "Enable all"}
+                      </Button>
+                    );
+                  })()}
+                </div>
                 {(faq || []).map((item, i) => (
-                  <div key={i} style={{ display: "flex", gap: 12, alignItems: "baseline", padding: "10px 14px", borderTop: i ? "1px solid var(--line)" : "none" }}>
+                  <div key={i} style={{ display: "flex", gap: 12, alignItems: "center", padding: "10px 14px", borderTop: i ? "1px solid var(--line)" : "none" }}>
+                    <input type="checkbox" checked={item.home !== false} onChange={(e) => Store.updateFaqItem(i, { home: e.target.checked })} aria-label={`Show "${item.q || "question " + (i + 1)}" on the home page`} style={{ width: 16, height: 16, flex: "none", accentColor: "var(--accent)" }} />
                     <span style={{ color: "var(--muted)", fontFamily: "var(--font-display)", fontSize: 16, flex: "none" }}>{i + 1}</span>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 600 }}>{item.q || "—"}</div>
+                      <div style={{ fontWeight: 600, opacity: item.home === false ? 0.5 : 1 }}>{item.q || "—"}</div>
                       <div style={{ color: "var(--ink-soft)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.a}</div>
                     </div>
                   </div>

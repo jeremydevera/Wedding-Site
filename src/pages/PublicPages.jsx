@@ -598,11 +598,11 @@ export function Home() {
 
       {/* FAQ PREVIEW — opt-in (Home → FAQ), after the details preview. Questions
           come from the Details tab; hidden when the Details module is off. */}
-      {s.showHomeFaq === true && moduleEnabled(s.modules, "details") && (Array.isArray(faq) ? faq : []).length > 0 && (
+      {s.showHomeFaq === true && moduleEnabled(s.modules, "details") && (Array.isArray(faq) ? faq : []).filter((f) => f.home !== false).length > 0 && (
         <section className="block block--tint" id="home-faq">
           <div className="container container--narrow">
             <SectionHead center eyebrow={hh("faq", "Good to know", "Frequently asked").e} title={hh("faq", "Good to know", "Frequently asked").t} />
-            <HomeFaqList faq={faq} />
+            <HomeFaqList faq={(Array.isArray(faq) ? faq : []).filter((f) => f.home !== false)} />
           </div>
         </section>
       )}
