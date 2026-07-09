@@ -726,18 +726,6 @@ export function ClientsAdmin() {
                     <td style={{ color: "var(--muted)", fontSize: 13 }}>{new Date(r.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</td>
                     <td>
                       <div className="row-actions">
-                        {/* Login lives on the CLIENT created at approval, not the request —
-                            resolve it by subdomain and open its Access tab (same tool as
-                            the Clients table's Reset/Set login). */}
-                        {(() => {
-                          const cl = clients.find((x) => x.subdomain === r.subdomain);
-                          return (
-                            <Button variant="ghost" size="sm" onClick={() => {
-                              if (!cl) { toast("No client site found for this request.", "error"); return; }
-                              openEdit(cl); setEditTab("access");
-                            }}>{cl && cl.owner_email ? "Reset" : "Set login"}</Button>
-                          );
-                        })()}
                         <button className="icon-btn" title="Details" onClick={() => setReqInfo(r)}>{Icon.eye({})}</button>
                         <button className="icon-btn" title="Edit request" onClick={() => openReqEdit(r)}>{Icon.edit({})}</button>
                         <a className="icon-btn" href={clientUrl(r.subdomain)} target="_blank" rel="noreferrer" title="Open live site">{Icon.arrow({})}</a>
@@ -1103,7 +1091,9 @@ export function ClientsAdmin() {
                 merges into the request's content (Strict RSVP lives in the wizard). */}
             <div style={{ display: reqEditTab === "access" ? "block" : "none" }}>
               <div className="form-rows">
-                <AccessFields v={reqAccess} set={(patch) => setReqAccess((a) => ({ ...a, ...patch }))} omit={["strictRsvp"]} passwordEnabled={false} />
+                {/* Approved request = the client exists, so the password field is live
+                    (save resolves the client by subdomain and resets via createOwner). */}
+                <AccessFields v={reqAccess} set={(patch) => setReqAccess((a) => ({ ...a, ...patch }))} omit={["strictRsvp"]} passwordEnabled={reqEdit && reqEdit.status === "approved"} />
                 <div className="form-foot">
                   <Button type="button" variant="ghost" onClick={() => setReqEdit(null)}>Cancel</Button>
                   <Button type="button" variant="primary" disabled={busy} onClick={() => runBusy("Saving…", async () => {
@@ -1119,8 +1109,26 @@ export function ClientsAdmin() {
                     };
                     await updateSiteRequest(reqEdit.id, { content });
                     setReqEdit((r) => (r ? { ...r, content } : r)); // keep local row in sync for a later Design save
-                    toast("Access settings saved", "success");
+                    // Approved request + typed password → reset the CLIENT's owner login
+                    // (resolved by subdomain). Authoritative: never claim success if the
+                    // password step failed (same rule as the edit-client modal).
+                    const pw = reqAccess.ownerPassword;
+                    let pwErr = "";
+                    if (pw && reqEdit.status === "approved") {
+                      const cl = clients.find((x) => x.subdomain === reqEdit.subdomain);
+                      if (!cl) pwErr = "no client site found for this request";
+                      else {
+                        try { await createOwner({ email: cl.owner_email || reqEdit.email, password: pw, client_id: cl.id }); }
+                        catch (e2) { pwErr = e2?.message || "password change failed"; }
+                      }
+                    }
                     await load();
+                    if (pwErr) {
+                      toast("Settings saved, but the password was NOT changed: " + pwErr, "err");
+                    } else {
+                      if (pw) setReqAccess((a) => ({ ...a, ownerPassword: "" }));
+                      toast(pw && reqEdit.status === "approved" ? "Settings saved and owner password set" : "Access settings saved", "success");
+                    }
                   })}>{busy ? "Saving…" : "Save changes"}</Button>
                 </div>
               </div>
