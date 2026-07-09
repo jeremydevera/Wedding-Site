@@ -409,7 +409,7 @@ function HomeMapsCarousel({ maps }) {
 }
 
 export function Home() {
-  const { settings, story, schedule: scheduleRaw, entourage, attire, playlist, venues, detailCards } = useStore();
+  const { settings, story, schedule: scheduleRaw, entourage, attire, playlist, venues, detailCards, faq } = useStore();
   // Per-section home header overrides (Home → each folder → "Section header").
   // Blank/absent falls back to the stock copy, so new clients look unchanged.
   const hh = (k, defEyebrow, defTitle) => {
@@ -596,6 +596,17 @@ export function Home() {
         </section>
       )}
 
+      {/* FAQ PREVIEW — opt-in (Home → FAQ), after the details preview. Questions
+          come from the Details tab; hidden when the Details module is off. */}
+      {s.showHomeFaq === true && moduleEnabled(s.modules, "details") && (Array.isArray(faq) ? faq : []).length > 0 && (
+        <section className="block block--tint" id="home-faq">
+          <div className="container container--narrow">
+            <SectionHead center eyebrow={hh("faq", "Good to know", "Frequently asked").e} title={hh("faq", "Good to know", "Frequently asked").t} />
+            <HomeFaqList faq={faq} />
+          </div>
+        </section>
+      )}
+
       {/* ATTIRE GUIDE — right after the schedule glimpse */}
       {s.showAttire !== false && <AttireView groups={attire} />}
 
@@ -610,6 +621,25 @@ export function Home() {
 
 // Public attire-guide section: each group has an example image and a colour
 // palette. Renders nothing when there are no groups with any content.
+// Home FAQ accordion — same faq-item markup as the Details page, own open state.
+function HomeFaqList({ faq }) {
+  const [open, setOpen] = useState(-1);
+  return (
+    <div>
+      {(Array.isArray(faq) ? faq : []).map((item, i) => (
+        <div className={"faq-item" + (open === i ? " faq-item--open" : "")} key={i}>
+          <button className="faq-q" onClick={() => setOpen(open === i ? -1 : i)}>
+            {item.q}<span className="faq-q__icon" />
+          </button>
+          <div className="faq-a" style={{ maxHeight: open === i ? 240 : 0 }}>
+            <div className="faq-a__inner">{item.a}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function AttireView({ groups }) {
   const { settings } = useStore();
   const h = (settings.homeHeads || {}).attire || {};

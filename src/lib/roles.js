@@ -52,6 +52,7 @@ export const OWNER_EDIT_HOME = [
   { k: "maps", label: "Google Maps", desc: "The home-page map and its pin." },
   { k: "timeline", label: "Timeline", desc: "The home-page schedule-glimpse layout." },
   { k: "homeDetails", label: "Details (home section)", desc: "The home-page details cards — visibility + vertical/horizontal layout." },
+  { k: "homeFaq", label: "FAQ (home section)", desc: "The home-page FAQ accordion — visibility + header." },
   { k: "attire", label: "Attire", desc: "The dress-code guide." },
   { k: "music", label: "Music playlist", desc: "The home-page player and its tracks." },
   { k: "entourage", label: "Entourage", desc: "Wedding-party groups and names." },

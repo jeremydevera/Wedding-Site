@@ -44,6 +44,7 @@ export const DEFAULT_SETTINGS = {
   // that tab everywhere it shows (nav, drawer, footer). Set in Settings → Features.
   moduleLabels: {},
   homeHeads: {},   // per-home-section header overrides { [k]: { eyebrow, title } }
+  showHomeFaq: false, // opt-in home FAQ section (Home → FAQ)
   hashtag: "#JeremyAndIrish2026",
   adminPassword: "wedding",
   uploadsEnabled: true,

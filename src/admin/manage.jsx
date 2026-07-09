@@ -2504,6 +2504,7 @@ export function HomeAdmin() {
     ...(can("maps") ? [{ k: "maps", label: "Google Maps", icon: "pin" }] : []),
     ...(can("timeline") ? [{ k: "timeline", label: "Timeline", icon: "calendar" }] : []),
     ...(can("homeDetails") ? [{ k: "details", label: "Details", icon: "book" }] : []),
+    ...(can("homeFaq") ? [{ k: "faq", label: "FAQ", icon: "quiz" }] : []),
     ...(can("attire") ? [{ k: "attire", label: "Attire", icon: "book" }] : []),
     ...(can("music") ? [{ k: "music", label: "Music playlist", icon: "play" }] : []),
     ...(canEntourage ? [{ k: "entourage", label: "Entourage", icon: "user" }] : []),
@@ -2643,6 +2644,26 @@ export function HomeAdmin() {
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+        <SaveFooter />
+        </>
+      )}
+
+      {can("homeFaq") && active === "faq" && (
+        <>
+        <div className="panel">
+          <div className="panel__head" style={HEAD_ROW}><div className="panel__title">Home FAQ</div><HeadSwitch label="Show FAQ on the home page" checked={f.showHomeFaq === true} onChange={(v) => toggleShow("showHomeFaq", v)} /></div>
+          <div className="panel__body">
+            <HomeHeadFields k="faq" defEyebrow="Good to know" defTitle="Frequently asked" />
+            {!moduleEnabled(f.modules, "details") && (
+              <div style={{ background: "#fdf3e7", border: "1px solid #eecfa1", borderRadius: 8, padding: "8px 12px", fontSize: 13, margin: "0 0 14px" }}>
+                ⚠ The Details module is turned off (Features → Site sections), so this section stays hidden on the home page even when the switch above is on.
+              </div>
+            )}
+            <p style={{ color: "var(--muted)", margin: "0 0 4px", fontSize: 14 }}>
+              Shows your FAQ accordion on the home page, after the details preview. Edit the questions themselves in the Details tab → FAQ. Click Save changes to apply.
+            </p>
           </div>
         </div>
         <SaveFooter />

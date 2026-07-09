@@ -44,6 +44,19 @@ describe("Home section visibility toggles", () => {
     expect(render(<Home />).container.querySelector("#home-details")).toBeNull();
   });
 
+  it("home FAQ section: hidden by default, shows when enabled, hides when Details module off", () => {
+    setup({ modules: {} });
+    expect(render(<Home />).container.querySelector("#home-faq")).toBeNull();
+    cleanup();
+    setup({ showHomeFaq: true, modules: {} });
+    const { container } = render(<Home />);
+    expect(container.querySelector("#home-faq")).toBeTruthy();
+    expect(container.querySelectorAll("#home-faq .faq-item").length).toBeGreaterThan(0);
+    cleanup();
+    setup({ showHomeFaq: true, modules: { details: false } });
+    expect(render(<Home />).container.querySelector("#home-faq")).toBeNull();
+  });
+
   it("homeHeads overrides replace section headers; blank falls back to defaults", () => {
     // modules: {} — clear the previous case's modules.details=false (store leaks across tests by design here)
     setup({ showHomeDetails: true, modules: {}, homeHeads: { schedule: { eyebrow: "Big Day", title: "Run of show" }, details: { title: "" }, music: { title: "Spin it" } } });

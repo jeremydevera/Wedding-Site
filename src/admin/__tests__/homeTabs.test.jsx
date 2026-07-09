@@ -33,7 +33,7 @@ describe("Home tab — folder sub-tabs", () => {
     clickByText(container, "nav.admin__nav button", "Home");
 
     expect(folderLabels(container)).toEqual([
-      "Couple & Event", "Invitation", "Google Maps", "Timeline", "Details", "Attire", "Music playlist", "Entourage",
+      "Couple & Event", "Invitation", "Google Maps", "Timeline", "Details", "FAQ", "Attire", "Music playlist", "Entourage",
     ]);
 
     // Couple & Event (default) → explicit Save button
@@ -74,6 +74,11 @@ describe("Home tab — folder sub-tabs", () => {
     expect(container.textContent).toMatch(/Home timeline/);
     expect(container.textContent).toMatch(/Vertical/);
     expect(container.textContent).toMatch(/Horizontal/);
+
+    // FAQ → show toggle
+    clickByText(container, ".folders .folder", "FAQ");
+    expect(hasSwitch(container, "Show FAQ on the home page")).toBe(true);
+    expect(container.textContent).toMatch(/Home FAQ/);
 
     // Details → show toggle + vertical/horizontal layout picker
     clickByText(container, ".folders .folder", "Details");
