@@ -204,6 +204,9 @@ export function SuperOverview() {
 // select saves immediately. onRefresh re-pulls the list so the badge/table
 // stay in sync without closing the modal.
 function TicketModal({ ticket, onClose, onRefresh }) {
+  // Mobile splits the modal into two tabs (Chat | Info); desktop shows both
+  // panes side by side and ignores this state entirely (tabs hidden by CSS).
+  const [mtab, setMtab] = useState("chat");
   // Status is STAGED — changing the dropdown does nothing until Save is pressed.
   const [status, setStatus] = useState(ticket.status || "open");
   const [saved, setSaved] = useState(ticket.status || "open");
@@ -231,8 +234,13 @@ function TicketModal({ ticket, onClose, onRefresh }) {
   return (
     <Modal open onClose={() => !busy && onClose()} label="Support ticket" wide>
       {/* Ops-rail layout: pinned meta rail on the LEFT, conversation on the
-          RIGHT (only the message list scrolls — ticket-thread--modal). */}
-      <div className="tk-detail">
+          RIGHT (only the message list scrolls — ticket-thread--modal).
+          On phones: Chat | Info tabs, one pane at a time. */}
+      <div className="tk-mtabs seg" role="tablist" aria-label="Ticket view">
+        <button type="button" role="tab" aria-selected={mtab === "chat"} className={mtab === "chat" ? "on" : ""} onClick={() => setMtab("chat")}>Chat</button>
+        <button type="button" role="tab" aria-selected={mtab === "info"} className={mtab === "info" ? "on" : ""} onClick={() => setMtab("info")}>Info</button>
+      </div>
+      <div className={"tk-detail tk-detail--" + mtab}>
         <aside className="tk-detail__side">
           <div className="tk-detail__eyebrow">Support ticket</div>
           <h3 className="tk-detail__subject">{ticket.subject}</h3>

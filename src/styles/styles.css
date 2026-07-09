@@ -1082,13 +1082,17 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .tk-meta__value { font-size: 13.5px; color: var(--ink, #1e293b); overflow-wrap: anywhere; }
 .tk-detail__controls { width: 100%; margin-top: auto; display: grid; gap: 8px; padding-top: 12px; flex: none; }
 .tk-detail__main { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+/* Mobile Chat | Info tabs — hidden on desktop where both panes show at once. */
+.tk-mtabs { display: none; }
+.tk-mtabs button.on { background: var(--accent, #1E5BD6); color: #fff; }
 @media (max-width: 720px) {
-  .tk-detail { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); height: 78vh; }
-  /* Cap the rail so the CONVERSATION + composer always get the majority of the
-     modal on phones — an uncapped rail used to swallow the whole 78vh and clip
-     the thread (couldn't reply on mobile). The rail scrolls within itself. */
-  .tk-detail__side { border-right: none; border-bottom: 1px solid #eef1f5; padding-right: 0; padding-bottom: 14px; max-height: 32vh; overflow-y: auto; }
-  .tk-detail__side .tk-meta { flex: none; overflow-y: visible; }
+  .tk-mtabs { display: flex; width: 100%; margin-bottom: 12px; }
+  .tk-mtabs button { flex: 1; text-align: center; }
+  .tk-detail { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr); height: 70vh; }
+  .tk-detail__side { border-right: none; padding-right: 0; overflow-y: auto; }
+  /* one pane at a time */
+  .tk-detail--chat .tk-detail__side { display: none; }
+  .tk-detail--info .tk-detail__main { display: none; }
 }
 
 /* iMessage-style composer: the CONTAINER is the field (border/radius); the
