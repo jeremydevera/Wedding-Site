@@ -422,8 +422,8 @@ section.block--accent { background: var(--accent); color: var(--accent-ink); }
 .theme-layout__preview { min-width: 0; }
 @media (min-width: 900px) {
   .theme-layout { flex-direction: row; align-items: flex-start; max-width: none; }
-  .theme-layout__controls { flex: 1 1 380px; max-width: 420px; }
-  .theme-layout__preview { flex: 1 1 480px; position: sticky; top: 20px; }
+  .theme-layout__controls { flex: 1 1 50%; max-width: 640px; }
+  .theme-layout__preview { flex: 1 1 42%; position: sticky; top: 20px; }
 }
 /* Companions column: on desktop fix the width and let a long name list wrap
    (taller row) instead of stretching the column. Mobile keeps table scroll. */
