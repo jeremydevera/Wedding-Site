@@ -740,9 +740,18 @@ export function ClientsAdmin() {
                     <td><strong>{r.partner_a}{r.partner_b ? ` & ${r.partner_b}` : ""}</strong></td>
                     <td className="client-domain">{r.subdomain}.celebrately.us</td>
                     <td>{r.email}</td>
-                    <td style={{ maxWidth: 180 }}>{(r.content && r.content.note)
-                      ? <span title={r.content.note} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{r.content.note}</span>
-                      : <span style={{ color: "var(--muted)" }}>—</span>}</td>
+                    <td style={{ maxWidth: 180 }}>{(() => {
+                      // Approved rows map to a live client (by subdomain). Show that
+                      // client's private note (client_notes, edited via Edit → Access
+                      // "private note") so this column matches the Clients tab — NOT
+                      // the request's original content.note. Only fall back to the
+                      // request note if the client was deleted afterwards.
+                      const cl = clients.find((x) => x.subdomain === r.subdomain);
+                      const noteText = cl ? (notes[cl.id] || "") : ((r.content && r.content.note) || "");
+                      return noteText
+                        ? <span title={noteText} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{noteText}</span>
+                        : <span style={{ color: "var(--muted)" }}>—</span>;
+                    })()}</td>
                     <td style={{ color: "var(--muted)", fontSize: 13 }}>{new Date(r.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</td>
                     <td>
                       {/* Approved = a live client exists: expose the SAME actions as the
