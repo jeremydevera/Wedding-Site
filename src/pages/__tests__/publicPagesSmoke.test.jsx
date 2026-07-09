@@ -33,6 +33,18 @@ describe("public pages smoke render", () => {
     });
   }
 
+  // Bug 0014: a video milestone with a pan/zoom crop (scale/translate) must be
+  // clipped — unwrapped, the transform escaped the frame and bled full-page.
+  it("StoryPage clips a video milestone's pan/zoom crop inside overflow:hidden", () => {
+    Store.set({ clientId: "c1", loading: false, story: [{ year: "2025", title: "The proposal", desc: "d", img: "abc/owner/video/x.mp4", imgCrop: { z: 1.3, dx: -0.17, dy: 0.02 } }] });
+    const { container } = render(<StoryPage />);
+    const vid = container.querySelector("video");
+    expect(vid).toBeTruthy();
+    expect(vid.style.transform).toContain("scale(1.3)");
+    expect(vid.parentElement.style.overflow).toBe("hidden");
+    Store.set({ story: [] });
+  });
+
   it("StoryPage honors a renamed tab label in its eyebrow", () => {
     Store.updateSettings({ moduleLabels: { story: "Milestones" } });
     const { container } = render(<StoryPage />);

@@ -11,12 +11,19 @@ Claude test run. Done items stay here as the permanent history.
 - **`[APPROVAL]`** in a title = Claude found this (testing / scheduled run); needs your review before work.
 
 ## Next IDs
-- Next Bug ID: **0014**
+- Next Bug ID: **0015**
 - Next Enhancement ID: **0014**
 
 ---
 
 ## Pending
+
+### Bug ID: 0014 — Cropped story VIDEO bleeds full-page on the public Our Story
+- **Severity:** P1 · **Status:** Done (2026-07-09) · **Added:** 2026-07-09 (reported by Jeremy on jeremyandirish; root-caused from the stored row)
+- **Root cause:** a video milestone's crop saves non-destructive pan/zoom params (z/dx/dy). `cropTransform` is documented as "applied to a cover-fitted <video> inside an overflow:hidden box" — the admin thumb has that clip (.imgup__thumb), but public `StoryImg` applied the scale/translate straight on the <video> with no wrapper, so a z:1.3 crop escaped its 4/3 frame and bled across the page. (Distinct from Bug 0013, the black crop box for images.)
+- **Fix:** StoryImg wraps the video in an overflow:hidden 4/3 frame. Regression test asserts the clip.
+- **Lesson:** every consumer of cropTransform needs the clipping wrapper; grep for cropTransform when adding render sites.
+
 
 ### Bug ID: 0013 — Story photo crop shows a black box (browser CORS cache poisoning)
 - **Severity:** P1 · **Status:** Done (2026-07-09) · **Added:** 2026-07-09 (reported by Jeremy; reproduced via Playwright)

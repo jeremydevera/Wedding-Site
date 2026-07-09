@@ -35,7 +35,16 @@ export function StoryImg({ row }) {
   if (!row || !row.img) return <Placeholder label="story photo" ratio="4 / 3" />;
   const base = { width: "100%", aspectRatio: "4 / 3", objectFit: "cover", borderRadius: "var(--radius)", display: "block" };
   if (/\.(mp4|webm|mov|m4v)(\?|$)/i.test(row.img)) {
-    return <video src={mediaUrl(row.img)} muted loop autoPlay playsInline style={{ ...base, ...(cropTransform(row.imgCrop) || {}) }} />;
+    // Bug 0014: cropTransform is a pan/zoom (scale/translate) meant for a
+    // cover-fitted video INSIDE an overflow:hidden box (see cropTransform's
+    // doc). Applying it straight on the <video> let a zoomed crop escape its
+    // frame and bleed across the page — clip it.
+    return (
+      <div style={{ width: "100%", aspectRatio: "4 / 3", borderRadius: "var(--radius)", overflow: "hidden" }}>
+        <video src={mediaUrl(row.img)} muted loop autoPlay playsInline
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", ...(cropTransform(row.imgCrop) || {}) }} />
+      </div>
+    );
   }
   return <img src={mediaUrl(row.img)} alt={row.title} style={base} />;
 }
