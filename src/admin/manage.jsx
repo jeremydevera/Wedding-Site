@@ -3533,7 +3533,7 @@ export function AdminApp() {
           ) : (
             <>
               <Monogram a={settings.partnerA} b={settings.partnerB} size={38} />
-              <div><div className="admin__brand-name">Admin</div></div>
+              <div><div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--muted)" }}>Admin</div></div>
             </>
           )}
         </div>
