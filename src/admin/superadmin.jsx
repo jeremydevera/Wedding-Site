@@ -732,6 +732,7 @@ export function ClientsAdmin() {
                       <div className="row-actions">
                         <button className="icon-btn" title="Details" onClick={() => setReqInfo(r)}>{Icon.eye({})}</button>
                         <button className="icon-btn" title="Edit request" onClick={() => openReqEdit(r)}>{Icon.edit({})}</button>
+                        <a className="icon-btn" href={`/admin?client=${r.subdomain}`} title="Open admin">{Icon.grid({})}</a>
                         <a className="icon-btn" href={clientUrl(r.subdomain)} target="_blank" rel="noreferrer" title="Open live site">{Icon.arrow({})}</a>
                         <button className="icon-btn icon-btn--danger" title="Delete request" onClick={() => setDelReq({ r, typed: "" })}>{Icon.trash({})}</button>
                       </div>
