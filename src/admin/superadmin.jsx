@@ -743,13 +743,11 @@ export function ClientsAdmin() {
                         const cl = clients.find((x) => x.subdomain === r.subdomain);
                         return (
                           <div className="row-actions">
-                            {cl && (
-                              <button className={"icon-btn" + (cl.is_active ? "" : " icon-btn--danger")} onClick={() => toggleActive(cl)} title={cl.is_active ? "Lock site (take offline)" : "Unlock site (put live)"} aria-pressed={!cl.is_active}>
-                                {cl.is_active
-                                  ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V7a4 4 0 0 1 7.5-2" /></svg>
-                                  : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>}
-                              </button>
-                            )}
+                            <button className={"icon-btn" + (cl && !cl.is_active ? " icon-btn--danger" : "")}
+                              onClick={() => cl ? toggleActive(cl) : toast("Client site not found — refresh and try again.", "err")}
+                              title={!cl ? "Site on/off" : cl.is_active ? "Disable access (take site offline)" : "Enable access (put site live)"} aria-pressed={cl ? cl.is_active : undefined}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 3.5v8" /><path d="M6.6 6.8a8 8 0 1 0 10.8 0" /></svg>
+                            </button>
                             <a className="icon-btn" href={`/admin?client=${r.subdomain}`} title="Open admin">{Icon.grid({})}</a>
                             <button className="icon-btn" title={cl ? "Client info" : "Request details"} onClick={() => (cl ? setInfo(cl) : setReqInfo(r))}>{Icon.eye({})}</button>
                             <button className="icon-btn" title={cl ? "Edit client" : "Edit request"} onClick={() => (cl ? openEdit(cl) : openReqEdit(r))}>{Icon.edit({})}</button>
@@ -890,10 +888,8 @@ export function ClientsAdmin() {
                         : <span style={{ color: "var(--muted)" }}>—</span>}</td>
                       <td>
                         <div className="row-actions">
-                          <button className={"icon-btn" + (c.is_active ? "" : " icon-btn--danger")} onClick={() => toggleActive(c)} title={c.is_active ? "Lock site (take offline)" : "Unlock site (put live)"} aria-pressed={!c.is_active}>
-                            {c.is_active
-                              ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V7a4 4 0 0 1 7.5-2" /></svg>
-                              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>}
+                          <button className={"icon-btn" + (c.is_active ? "" : " icon-btn--danger")} onClick={() => toggleActive(c)} title={c.is_active ? "Disable access (take site offline)" : "Enable access (put site live)"} aria-pressed={c.is_active}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 3.5v8" /><path d="M6.6 6.8a8 8 0 1 0 10.8 0" /></svg>
                           </button>
                           <a className="icon-btn" href={`/admin?client=${c.subdomain}`} title="Open admin">{Icon.grid({})}</a>
                           <button className="icon-btn" onClick={() => setInfo(c)} title="Client info">{Icon.eye({})}</button>
