@@ -1519,7 +1519,15 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
   html:has(.site-shell), body:has(.site-shell) { overflow: hidden; height: 100%; }
   .site-shell { position: relative; display: flex; flex-direction: column; height: 100vh; height: 100svh; overflow: hidden; }
   .site-shell > .nav { position: static; flex: none; left: auto; right: auto; top: auto; }
-  .site-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  /* overflow-x: clip is the site-wide guard against sideways scroll on EVERY
+     public page/module (Home, Details, Schedule, Venue, Story, Guestbook, Quiz,
+     RSVP). On mobile the document is locked (html/body overflow:hidden above) and
+     .site-scroll is the ONLY scroller — its default overflow-x is visible, so any
+     element that pokes past the right edge (a reveal transform, a wide image, a
+     stray margin) leaks a horizontal scroll. clip contains it without creating a
+     scrollport (safe beside overflow-y:auto; unlike position:fixed it can't break
+     iOS inputs). Keep per-element causes fixed too — this is belt-and-suspenders. */
+  .site-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: clip; -webkit-overflow-scrolling: touch; }
   /* nav is in-flow now — drop the offset that cleared the old fixed nav. */
   .site-shell main:not(.admin__main) { padding-top: 0; }
 }
