@@ -445,9 +445,11 @@ export function ClientsAdmin() {
       .insert({ subdomain: sub, event_type: form.event_type, template_key: form.template_key }).select().single();
     if (error) { setBusy(false); setBusyLabel(""); return toast("Create failed: " + error.message); }
     if (form.note.trim()) { try { await saveNote(created.id, form.note); } catch (_) { /* note is best-effort */ } }
-    if (form.ownerEmail.trim() && form.ownerPassword) {
+    if (form.ownerEmail.trim()) {
+      // No password typed -> the platform starter password (same as approvals).
+      const pw = form.ownerPassword || "Password123+";
       try {
-        await createOwner({ email: form.ownerEmail.trim(), password: form.ownerPassword, client_id: created.id });
+        await createOwner({ email: form.ownerEmail.trim(), password: pw, client_id: created.id });
         await supabase.from("clients").update({ owner_email: form.ownerEmail.trim() }).eq("id", created.id);
         toast("Client + owner login created");
       } catch (e2) { toast("Client created — owner login pending:"); edgeOrToast(e2); }
