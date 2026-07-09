@@ -11,12 +11,20 @@ Claude test run. Done items stay here as the permanent history.
 - **`[APPROVAL]`** in a title = Claude found this (testing / scheduled run); needs your review before work.
 
 ## Next IDs
-- Next Bug ID: **0013**
+- Next Bug ID: **0014**
 - Next Enhancement ID: **0014**
 
 ---
 
 ## Pending
+
+### Bug ID: 0013 — Story photo crop shows a black box (browser CORS cache poisoning)
+- **Severity:** P1 · **Status:** Done (2026-07-09) · **Added:** 2026-07-09 (reported by Jeremy; reproduced via Playwright)
+- **Where:** Any admin image Crop (Our Story milestone photo confirmed) since media moved to media.celebrately.us
+- **Root cause:** the plain preview `<img>` caches the media response WITHOUT CORS headers (R2 adds ACAO/Vary only when the request carries an Origin header). The crop modal's `crossOrigin="anonymous"` `<img>` then reuses that cached copy, the browser blocks it for missing ACAO → image error → black crop box; applying produced a garbage/blank crop.
+- **Fix:** crop image fetches a cache-split URL (`?xo=1` — R2 ignores query strings for object lookup), guaranteeing a fresh CORS-mode fetch that carries ACAO. Code comment DEFECT-2026-07-09-C at the site.
+- **Lesson:** pairing `crossOrigin` with URLs also loaded plainly needs a cache-splitting param (or Vary: Origin on ALL responses).
+
 
 ### Bug ID: 0010 — Client replies on open tickets were silent (no bell, no refresh)
 - **Severity:** P2 · **Status:** Done (2026-07-09) · **Added:** 2026-07-09 (Claude feature scan)

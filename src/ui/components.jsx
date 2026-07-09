@@ -386,6 +386,13 @@ export function confirmDialog(opts) {
 // as a CSS transform (see cropTransform in lib/media.js). `initialParams` seeds
 // the view so re-cropping a video starts from the saved position.
 export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, initialParams }) {
+  // DEFECT-2026-07-09-C: the plain preview <img> caches the media response
+  // WITHOUT CORS headers (no Vary/ACAO on the plain fetch); this CORS-mode
+  // <img> then reuses that cached copy and the browser blocks it — black crop
+  // box + broken icon. A cache-splitting query param forces a fresh fetch WITH
+  // Origin (R2 ignores the query for object lookup). http(s) only — data:/blob:
+  // pass through untouched.
+  const corsSrc = /^https?:/i.test(src || "") ? src + (src.includes("?") ? "&" : "?") + "xo=1" : src;
   const [zoom, setZoom] = useState(1);
   const [off, setOff] = useState({ x: 0, y: 0 });
   const [nat, setNat] = useState({ w: 0, h: 0 });
@@ -499,7 +506,7 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
           <div className="crop__view" style={{ width: W, height: H }} onPointerDown={onDown}>
             {src && (isVideo
               ? <video ref={imgRef} src={src} muted loop autoPlay playsInline draggable="false" onLoadedMetadata={(e) => setNat({ w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })} style={{ position: "absolute", left: off.x, top: off.y, width: dispW, height: dispH, maxWidth: "none" }} />
-              : <img ref={imgRef} src={src} alt="" draggable="false" crossOrigin="anonymous" style={{ position: "absolute", left: off.x, top: off.y, width: dispW, height: dispH, maxWidth: "none" }} />)}
+              : <img ref={imgRef} src={corsSrc} alt="" draggable="false" crossOrigin="anonymous" style={{ position: "absolute", left: off.x, top: off.y, width: dispW, height: dispH, maxWidth: "none" }} />)}
             <div className="crop__frame" />
           </div>
           {frameSrc && (
