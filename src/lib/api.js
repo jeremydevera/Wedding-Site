@@ -654,6 +654,12 @@ export async function approveSiteRequest(reqRow) {
     ...(Array.isArray(c.schedule) && c.schedule.length ? { schedule: c.schedule } : {}),
     ...(Array.isArray(c.entourage) && c.entourage.length ? { entourage: c.entourage } : {}),
     strictRsvp: c.strictRsvp === true,
+    // Default features for a freshly approved site: Details, Schedule, Venue,
+    // RSVP only — Story/Guestbook/Quiz (and the shelved gallery) start OFF and
+    // the superadmin enables them per client. If the request already carries a
+    // modules map (preconfigured in the edit-request Access tab), respect it.
+    modules: (c.modules && typeof c.modules === "object") ? c.modules
+      : { details: true, schedule: true, venue: true, rsvp: true, story: false, guestbook: false, quiz: false, gallery: false },
     // New registered sites open with falling petals (Classic Ivory is the wizard's
     // default theme). Owner can change decor/theme anytime in admin.
     decorOn: true,
