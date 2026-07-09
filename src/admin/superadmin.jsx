@@ -217,6 +217,7 @@ function TicketModal({ ticket, onClose, onRefresh }) {
       setSaved(status);
       toast(status === "resolved" ? "Marked resolved" : status === "waiting_reply" ? "Client notified — waiting for their reply" : "Reopened", "success");
       onRefresh && onRefresh();
+      onClose && onClose(); // saving is the end of the interaction — close the ticket
     } catch (e) {
       toast(e.message || "Couldn't update status", "error");
     } finally { setBusy(false); }
