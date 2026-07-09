@@ -10,7 +10,7 @@ import { SupportWidget, SupportPanel } from "@/admin/SupportWidget.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { signOut, createOwner } from "@/lib/auth.js";
 import { supabase } from "@/lib/supabase.js";
-import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb, updateRsvpDietDb, listSiteRequests, subscribeSiteRequestsRealtime, listTickets, subscribeTicketsRealtime , listRecentClientReplies, subscribeAllTicketMessagesRealtime} from "@/lib/api.js";
+import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb, updateRsvpDietDb, listSiteRequests, subscribeSiteRequestsRealtime, listTickets, subscribeTicketsRealtime , listRecentClientReplies, listRecentSupportReplies, subscribeAllTicketMessagesRealtime} from "@/lib/api.js";
 import { DIET_OPTIONS } from "@/features/rsvp.jsx";
 import { reconcileGuests, guestFromRsvp, findDuplicateGuest } from "@/lib/guests.js";
 import { headsOf } from "@/lib/rsvp.js";
@@ -3196,7 +3196,7 @@ function initialsOf(name) {
   if (!parts.length) return "?";
   return ((parts[0][0] || "") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
 }
-function NotificationBell({ goTab, tickets = [] }) {
+function NotificationBell({ goTab, supportReplies = [] }) {
   const { rsvps, guestbook, quizSubs, clientId, settings } = useStore();
   const [open, setOpen] = useState(false);
   const key = "evermore_notif_seen_" + (clientId || "x");
@@ -3215,11 +3215,12 @@ function NotificationBell({ goTab, tickets = [] }) {
     (rsvps || []).forEach((r) => a.push({ id: "r" + r.id, tab: "rsvps", icon: "mail", who: r.fullName || "Someone", text: stLabel[r.status] || "RSVP'd", at: r.createdAt || 0 }));
     if (gbOn) (guestbook || []).forEach((g) => a.push({ id: "g" + g.id, tab: "guestbook", icon: "book", who: g.name || "Someone", text: "signed the guestbook", at: g.createdAt || 0 }));
     if (quizOn) (quizSubs || []).forEach((q) => a.push({ id: "q" + q.id, tab: "quiz", icon: "quiz", who: q.name || "Someone", text: `took the quiz (${q.score}/${q.total})`, at: q.createdAt || 0 }));
-    // Support: the superadmin replied and is waiting on the client (waiting_reply).
-    (tickets || []).filter((t) => t.status === "waiting_reply").forEach((t) =>
-      a.push({ id: "t" + t.id, tab: "support", icon: "mail", who: "Support", text: `replied to "${t.subject}"`, at: t.updated_at ? Date.parse(t.updated_at) : 0 }));
+    // Support: one entry per SUPERADMIN reply message (not per ticket) — fires
+    // whenever support replies, regardless of the ticket's status.
+    (supportReplies || []).forEach((m) =>
+      a.push({ id: "sm" + m.id, tab: "support", icon: "mail", who: "Support", text: `replied to "${m.subject || "your ticket"}"`, at: m.created_at ? Date.parse(m.created_at) : 0 }));
     return a.filter((x) => x.at > clearedAt).sort((x, y) => y.at - x.at);
-  }, [rsvps, guestbook, quizSubs, gbOn, quizOn, clearedAt, tickets]);
+  }, [rsvps, guestbook, quizSubs, gbOn, quizOn, clearedAt, supportReplies]);
 
   const clearAll = () => {
     const now = Date.now();
@@ -3425,19 +3426,42 @@ function ProfileMenu({ name, email, onViewSite, onSignOut }) {
 export function AdminApp() {
   const { settings, auth, clientId } = useStore();
   const [tab, setTab] = useState("dashboard");
-  // Client's own support tickets — drives the Support tab badge + the owner
-  // notification bell. waiting_reply = the superadmin replied ("New Reply From
-  // Support"). Live-refreshes on any ticket change.
+  // Client's own support tickets + the superadmin's replies on them. Drives the
+  // Support tab badge + the owner notification bell. The badge/bell fire on any
+  // SUPERADMIN REPLY (a message), not on ticket status — a reply that doesn't
+  // flip status to waiting_reply still notifies. The waiting_reply status only
+  // drives the "New Reply From Support" label on the ticket itself. Live-
+  // refreshes on any ticket change AND any new message (RLS scopes both to this
+  // client, so subscribeAllTicketMessagesRealtime only delivers own replies).
   const [clientTickets, setClientTickets] = useState([]);
+  const [supportReplies, setSupportReplies] = useState([]);
   useEffect(() => {
-    if (!clientId) { setClientTickets([]); return; }
+    if (!clientId) { setClientTickets([]); setSupportReplies([]); return; }
     let dead = false;
-    const refresh = () => listTickets().then((r) => { if (!dead) setClientTickets(r || []); }).catch(() => {});
+    const refresh = () => {
+      listTickets().then((r) => { if (!dead) setClientTickets(r || []); }).catch(() => {});
+      listRecentSupportReplies().then((r) => { if (!dead) setSupportReplies(r || []); }).catch(() => {});
+    };
     refresh();
-    const off = subscribeTicketsRealtime(refresh);
-    return () => { dead = true; off(); };
+    const offT = subscribeTicketsRealtime(refresh);
+    const offM = subscribeAllTicketMessagesRealtime(refresh);
+    return () => { dead = true; offT && offT(); offM && offM(); };
   }, [clientId]);
-  const supportWaiting = clientTickets.filter((t) => t.status === "waiting_reply").length;
+  // Superadmin replies tagged with their ticket's subject (for the bell line).
+  const supportReplyItems = useMemo(() => supportReplies.map((m) => ({
+    ...m, subject: (clientTickets.find((t) => t.id === m.ticket_id) || {}).subject || "your ticket",
+  })), [supportReplies, clientTickets]);
+  // Support tab badge = superadmin replies the owner hasn't opened the tab to
+  // read yet. Cleared (stamped) when they view the Support tab, below.
+  const supportSeenKey = "evermore_support_seen_" + (clientId || "x");
+  const [supportSeen, setSupportSeen] = useState(() => { try { return Number(localStorage.getItem(supportSeenKey) || 0); } catch (_) { return 0; } });
+  const supportWaiting = supportReplies.filter((m) => (m.created_at ? Date.parse(m.created_at) : 0) > supportSeen).length;
+  useEffect(() => {
+    if (tab !== "support" || !clientId) return;
+    const now = Date.now();
+    try { localStorage.setItem(supportSeenKey, String(now)); } catch (_) {}
+    setSupportSeen(now);
+  }, [tab, clientId, supportSeenKey, supportReplies.length]);
   const [menuOpen, setMenuOpen] = useState(false);   // mobile drawer
   const [saving, setSaving] = useState(false);
   // Dirty tracking: Save stays disabled until the editable state diverges from
@@ -3579,7 +3603,7 @@ export function AdminApp() {
             <div className="admin__title">{title}</div>
           </div>
           <div className="admin__topbar-right">
-            {clientId && <NotificationBell goTab={setTab} tickets={clientTickets} />}
+            {clientId && <NotificationBell goTab={setTab} supportReplies={supportReplyItems} />}
             {!clientId && auth.role === "superadmin" && <SuperNotificationBell goTab={setTab} />}
             <ProfileMenu name={auth.role === "superadmin" ? "Superadmin" : [settings.partnerA, settings.partnerB].filter(Boolean).join(" & ") || "Owner"} email={auth.email} onViewSite={() => go("home")} onSignOut={() => signOut().then(() => { if (clientOverride) exitToConsole(); else go("home"); })} />
           </div>

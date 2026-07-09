@@ -551,6 +551,19 @@ export async function listRecentClientReplies(limit = 20) {
   return data || [];
 }
 
+// Owner bell + Support tab badge: recent SUPERADMIN replies on the caller's OWN
+// tickets. RLS scopes support_ticket_messages to the owner's own tickets, so
+// this returns only replies addressed to this client. Mirror of
+// listRecentClientReplies (the superadmin side). Drives the "the superadmin
+// replied" notification independently of the ticket's status — a reply that
+// doesn't flip status to waiting_reply still notifies.
+export async function listRecentSupportReplies(limit = 20) {
+  const { data, error } = await supabase.from("support_ticket_messages")
+    .select("*").eq("sender_role", "superadmin").order("created_at", { ascending: false }).limit(limit);
+  if (error) throw error;
+  return data || [];
+}
+
 // Realtime for ALL ticket messages (superadmin bell) — unique topic per call.
 export function subscribeAllTicketMessagesRealtime(onChange) {
   let t = null;
