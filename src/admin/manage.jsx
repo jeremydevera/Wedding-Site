@@ -1999,7 +1999,7 @@ export function SettingsAdmin() {
   const premiumThemes = allowed.filter((k) => THEMES[k] && isPremiumTheme(k));
   // "General" (Couple & Event) moved to the top-level Home tab.
   // Photos hidden for now (future feature) — body code stays, tab not shown.
-  const STABS = [["features", "Features", "check"], ["appearance", "Theme", "grid"], ["access", "Access", "check"]];
+  const STABS = [["features", "Features", "check"], ["appearance", "Theme", "grid"], ["access", "Access", "check"], ["account", "Account", "user"]];
 
   return (
     <div>
@@ -2368,7 +2368,9 @@ export function SettingsAdmin() {
       </div>
       )}
 
-      <ClientPasswordReset /></>)}
+      </>)}
+
+      {tab === "account" && (<ClientPasswordReset />)}
     </div>
   );
 }
