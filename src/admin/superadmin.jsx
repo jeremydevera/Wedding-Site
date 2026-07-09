@@ -729,13 +729,26 @@ export function ClientsAdmin() {
                       : <span style={{ color: "var(--muted)" }}>—</span>}</td>
                     <td style={{ color: "var(--muted)", fontSize: 13 }}>{new Date(r.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</td>
                     <td>
-                      <div className="row-actions">
-                        <button className="icon-btn" title="Details" onClick={() => setReqInfo(r)}>{Icon.eye({})}</button>
-                        <button className="icon-btn" title="Edit request" onClick={() => openReqEdit(r)}>{Icon.edit({})}</button>
-                        <a className="icon-btn" href={`/admin?client=${r.subdomain}`} title="Open admin">{Icon.grid({})}</a>
-                        <a className="icon-btn" href={clientUrl(r.subdomain)} target="_blank" rel="noreferrer" title="Open live site">{Icon.arrow({})}</a>
-                        <button className="icon-btn icon-btn--danger" title="Delete request" onClick={() => setDelReq({ r, typed: "" })}>{Icon.trash({})}</button>
-                      </div>
+                      {/* Approved = a live client exists: expose the SAME actions as the
+                          Clients tab (power / open admin / info / edit — password lives in
+                          Edit → Access). Trash still deletes the REQUEST row only. */}
+                      {(() => {
+                        const cl = clients.find((x) => x.subdomain === r.subdomain);
+                        return (
+                          <div className="row-actions">
+                            {cl && (
+                              <button className={"icon-btn" + (cl.is_active ? "" : " icon-btn--danger")} onClick={() => toggleActive(cl)} title={cl.is_active ? "Disable access (take site offline)" : "Enable access (put site live)"} aria-pressed={cl.is_active}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 3.5v8" /><path d="M6.6 6.8a8 8 0 1 0 10.8 0" /></svg>
+                              </button>
+                            )}
+                            <a className="icon-btn" href={`/admin?client=${r.subdomain}`} title="Open admin">{Icon.grid({})}</a>
+                            <button className="icon-btn" title={cl ? "Client info" : "Request details"} onClick={() => (cl ? setInfo(cl) : setReqInfo(r))}>{Icon.eye({})}</button>
+                            <button className="icon-btn" title={cl ? "Edit client" : "Edit request"} onClick={() => (cl ? openEdit(cl) : openReqEdit(r))}>{Icon.edit({})}</button>
+                            <a className="icon-btn" href={clientUrl(r.subdomain)} target="_blank" rel="noreferrer" title="Open live site">{Icon.arrow({})}</a>
+                            <button className="icon-btn icon-btn--danger" title="Delete request" onClick={() => setDelReq({ r, typed: "" })}>{Icon.trash({})}</button>
+                          </div>
+                        );
+                      })()}
                     </td>
                   </tr>
                 ))}
@@ -817,6 +830,7 @@ export function ClientsAdmin() {
                     <td>
                       <div className="row-actions">
                         <Button variant="primary" size="sm" disabled={busy} onClick={() => toggleActive(c)}>Enable</Button>
+                        <a className="icon-btn" href={`/admin?client=${c.subdomain}`} title="Open admin">{Icon.grid({})}</a>
                         <button className="icon-btn" onClick={() => setInfo(c)} title="Client info">{Icon.eye({})}</button>
                         <button className="icon-btn" onClick={() => openEdit(c)} title="Edit">{Icon.edit({})}</button>
                         <button className="icon-btn icon-btn--danger" onClick={() => deleteClient(c)} title="Delete">{Icon.trash({})}</button>
@@ -845,7 +859,7 @@ export function ClientsAdmin() {
                   <th style={{ width: 34 }}><input type="checkbox" aria-label="Select all on this page"
                     checked={pg.pageItems.length > 0 && pg.pageItems.every((c) => sel.has(c.id))}
                     onChange={(e) => setSel((p) => { const n = new Set(p); pg.pageItems.forEach((c) => e.target.checked ? n.add(c.id) : n.delete(c.id)); return n; })} /></th>
-                  <th>Client</th><th>Email</th><th>Password</th><th>Notes</th><th></th></tr></thead>
+                  <th>Client</th><th>Email</th><th>Notes</th><th></th></tr></thead>
                 <tbody>
                   {pg.pageItems.map((c) => (
                     <tr key={c.id}>
@@ -862,13 +876,6 @@ export function ClientsAdmin() {
                       <td style={{ maxWidth: 200 }}>{c.owner_email
                         ? <span className="client-domain" title={c.owner_email} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{c.owner_email}</span>
                         : <span style={{ color: "var(--muted)", fontSize: 13 }}>no login</span>}</td>
-                      {/* Auth passwords are hashed and can't be shown — offer a
-                          set/reset that opens the edit modal's Access tab. */}
-                      <td>
-                        <Button variant="ghost" size="sm" onClick={() => { openEdit(c); setEditTab("access"); }}>
-                          {c.owner_email ? "Reset" : "Set login"}
-                        </Button>
-                      </td>
                       <td style={{ maxWidth: 180 }}>{notes[c.id]
                         ? <span title={notes[c.id]} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{notes[c.id]}</span>
                         : <span style={{ color: "var(--muted)" }}>—</span>}</td>
