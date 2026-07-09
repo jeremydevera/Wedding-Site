@@ -9,7 +9,7 @@ import { PLATFORM_DOMAIN, clientUrl, isValidSubdomain } from "@/config/site.js";
 import { Button, confirmDialog, Field, Icon, Input, Modal, Pager, SectionHead, Select, Textarea, toast, usePaged } from "@/ui/components.jsx";
 import { listMedia, deleteFromR2, listSiteRequests, approveSiteRequest, setSiteRequestStatus, updateSiteRequest, deleteSiteRequest, listTickets, setTicketStatus, updateTicket, subscribeTicketsRealtime, deleteTicket } from "@/lib/api.js";
 import { ApplyWizard } from "@/admin/apply.jsx";
-import { TicketThread } from "@/admin/SupportWidget.jsx";
+import { TicketThread, TK_CHIP, tkAdminLabel } from "@/admin/SupportWidget.jsx";
 // fmtDate: DEFECT-2026-07-09-A — the Support view/TicketModal used fmtDate
 // without this import; the render-time ReferenceError unmounted the whole
 // console (white screen). Guarded by superadminSupport.test.jsx.
@@ -215,7 +215,7 @@ function TicketModal({ ticket, onClose, onRefresh }) {
     try {
       await setTicketStatus(ticket.id, status);
       setSaved(status);
-      toast(status === "resolved" ? "Marked resolved" : "Reopened", "success");
+      toast(status === "resolved" ? "Marked resolved" : status === "waiting_reply" ? "Client notified — waiting for their reply" : "Reopened", "success");
       onRefresh && onRefresh();
     } catch (e) {
       toast(e.message || "Couldn't update status", "error");
@@ -235,7 +235,7 @@ function TicketModal({ ticket, onClose, onRefresh }) {
         <aside className="tk-detail__side">
           <div className="tk-detail__eyebrow">Support ticket</div>
           <h3 className="tk-detail__subject">{ticket.subject}</h3>
-          <span className={"tk-chip " + (saved === "open" ? "tk-chip--open" : "tk-chip--resolved")}>{saved}</span>
+          <span className={"tk-chip " + (TK_CHIP[saved] || "tk-chip--open")}>{tkAdminLabel(saved)}</span>
           <div className="tk-meta">
             {meta("From", ticket.submitter_name || ticket.submitter_email)}
             {meta("Email", ticket.submitter_email)}
@@ -248,6 +248,7 @@ function TicketModal({ ticket, onClose, onRefresh }) {
             <Field label="Status" id="tk-status">
               <Select id="tk-status" value={status} disabled={busy} onChange={(e) => setStatus(e.target.value)}>
                 <option value="open">Open</option>
+                <option value="waiting_reply">Waiting reply (notify client)</option>
                 <option value="resolved">Resolved</option>
               </Select>
             </Field>
@@ -277,8 +278,9 @@ export function SupportAdmin() {
     return off;
   }, []);
   const openN = tickets.filter((t) => t.status === "open").length;
+  const waitingN = tickets.filter((t) => t.status === "waiting_reply").length;
   const resolvedN = tickets.filter((t) => t.status === "resolved").length;
-  const shown = tickets.filter((t) => (ticketFilter === "resolved" ? t.status === "resolved" : t.status === "open"));
+  const shown = tickets.filter((t) => t.status === (ticketFilter === "resolved" ? "resolved" : ticketFilter === "waiting_reply" ? "waiting_reply" : "open"));
   return (
     <div>
       <div className="panel">
@@ -286,6 +288,7 @@ export function SupportAdmin() {
         <div className="admin-toolbar" style={{ padding: "12px 16px" }}>
           <div className="seg">
             <button type="button" className={ticketFilter === "open" ? "on" : ""} onClick={() => setTicketFilter("open")}>Open ({openN})</button>
+            <button type="button" className={ticketFilter === "waiting_reply" ? "on" : ""} onClick={() => setTicketFilter("waiting_reply")}>Waiting Reply ({waitingN})</button>
             <button type="button" className={ticketFilter === "resolved" ? "on" : ""} onClick={() => setTicketFilter("resolved")}>Resolved ({resolvedN})</button>
           </div>
         </div>
@@ -294,14 +297,14 @@ export function SupportAdmin() {
             <thead><tr><th>Client</th><th>Subject</th><th>Category</th><th>Urgency</th><th>Status</th><th>When</th><th></th></tr></thead>
             <tbody>
               {loading && <tr><td colSpan={7} style={{ color: "var(--muted)", padding: 18 }}>Loading…</td></tr>}
-              {!loading && shown.length === 0 && <tr><td colSpan={7} style={{ color: "var(--muted)", padding: 18 }}>No {ticketFilter} tickets.</td></tr>}
+              {!loading && shown.length === 0 && <tr><td colSpan={7} style={{ color: "var(--muted)", padding: 18 }}>No {ticketFilter === "waiting_reply" ? "waiting-reply" : ticketFilter} tickets.</td></tr>}
               {shown.map((t) => (
                 <tr key={t.id}>
                   <td><strong>{t.submitter_name || t.submitter_email || "—"}</strong><div style={{ color: "var(--muted)", fontSize: 12 }}>{t.context_url || ""}</div></td>
                   <td>{t.subject}</td>
                   <td><span className="tag tag--hidden">{t.category}</span></td>
                   <td>{t.urgency}</td>
-                  <td><span className={"tk-chip " + (t.status === "open" ? "tk-chip--open" : "tk-chip--resolved")}>{t.status}</span></td>
+                  <td><span className={"tk-chip " + (TK_CHIP[t.status] || "tk-chip--open")}>{tkAdminLabel(t.status)}</span></td>
                   <td style={{ whiteSpace: "nowrap", color: "var(--muted)", fontSize: 13 }}>{fmtDate(t.created_at)}</td>
                   <td style={{ whiteSpace: "nowrap" }}>
                       <Button variant="ghost" size="sm" style={{ marginRight: 14 }} onClick={() => setTicket(t)}>{Icon.eye({})} Open</Button>

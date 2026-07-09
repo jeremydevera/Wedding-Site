@@ -10,6 +10,13 @@ import { Button, Field, Icon, Input, Modal, Select, Textarea, toast } from "@/ui
 import { fmtDate } from "@/admin/core.jsx";
 const { useState, useEffect, useRef } = React;
 
+// Ticket status → chip class + labels. Owner sees a customer-friendly label
+// ("waiting_reply" = the superadmin replied and is waiting on them → shown as
+// "New Reply From Support"); superadmin sees the operational label.
+export const TK_CHIP = { open: "tk-chip--open", waiting_reply: "tk-chip--waiting", resolved: "tk-chip--resolved" };
+export const tkOwnerLabel = (st) => st === "waiting_reply" ? "New Reply From Support" : st === "resolved" ? "Resolved" : "Open";
+export const tkAdminLabel = (st) => st === "waiting_reply" ? "Waiting reply" : st === "resolved" ? "Resolved" : "Open";
+
 // Shared conversation view for a ticket: the original request, the message
 // thread (owner ⇄ support), and a reply box. Used by both the owner's Support
 // tab and the superadmin ticket modal. postTicketMessage pins sender_role to the
@@ -208,6 +215,7 @@ export function SupportPanel({ tab }) {
   const refresh = () => listTickets().then((rows) => setMine(rows || [])).catch(() => {}).finally(() => setLoading(false));
   useEffect(() => { refresh(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const openCount = mine.filter((t) => t.status === "open").length;
+  const replyCount = mine.filter((t) => t.status === "waiting_reply").length;
 
   return (
     <div>
@@ -215,7 +223,7 @@ export function SupportPanel({ tab }) {
         <div className="panel__head">
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <AgentAvatar size={30} />
-            <div className="panel__title">Your tickets {openCount > 0 && <span style={{ color: "var(--muted)", fontSize: 15 }}>({openCount} open)</span>}</div>
+            <div className="panel__title">Your tickets {replyCount > 0 ? <span style={{ color: "var(--accent)", fontSize: 15, fontWeight: 600 }}>({replyCount} new reply)</span> : openCount > 0 ? <span style={{ color: "var(--muted)", fontSize: 15 }}>({openCount} open)</span> : null}</div>
           </div>
         </div>
         <div className="admin-toolbar" style={{ padding: "14px 16px" }}>
@@ -233,7 +241,7 @@ export function SupportPanel({ tab }) {
                 <tr key={t.id}>
                   <td><strong>{t.subject}</strong></td>
                   <td><span className="tag tag--hidden">{t.category}</span></td>
-                  <td><span className={"tk-chip " + (t.status === "open" ? "tk-chip--open" : "tk-chip--resolved")}>{t.status}</span></td>
+                  <td><span className={"tk-chip " + (TK_CHIP[t.status] || "tk-chip--open")}>{tkOwnerLabel(t.status)}</span></td>
                   <td style={{ whiteSpace: "nowrap", color: "var(--muted)", fontSize: 13 }}>{fmtDate(t.created_at)}</td>
                   <td><Button variant="ghost" size="sm" onClick={() => setViewing(t)}>{Icon.mail ? Icon.mail({}) : null} View &amp; reply</Button></td>
                 </tr>
@@ -247,7 +255,7 @@ export function SupportPanel({ tab }) {
         {viewing && (
           <div style={{ display: "flex", flexDirection: "column", height: "min(70vh, 560px)", minHeight: 0 }}>
             <h3 style={{ margin: "0 0 2px", flex: "none" }}>{viewing.subject}</h3>
-            <p style={{ margin: "0 0 12px", color: "var(--muted)", fontSize: 13, flex: "none" }}>{viewing.category} · {viewing.urgency} · <span className={"tk-chip " + (viewing.status === "open" ? "tk-chip--open" : "tk-chip--resolved")}>{viewing.status}</span></p>
+            <p style={{ margin: "0 0 12px", color: "var(--muted)", fontSize: 13, flex: "none" }}>{viewing.category} · {viewing.urgency} · <span className={"tk-chip " + (TK_CHIP[viewing.status] || "tk-chip--open")}>{tkOwnerLabel(viewing.status)}</span></p>
             <TicketThread ticket={viewing} variant="modal" onChanged={refresh} onGone={() => { setViewing(null); refresh(); }} />
           </div>
         )}

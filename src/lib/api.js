@@ -489,7 +489,7 @@ export async function listTickets() {
 // Superadmin: flip status; stamp resolved_at on resolve, clear it on reopen.
 export async function setTicketStatus(id, status) {
   const { error } = await supabase.from("support_tickets")
-    .update({ status, resolved_at: status === "resolved" ? new Date().toISOString() : null }).eq("id", id);
+    .update({ status, resolved_at: status === "resolved" ? new Date().toISOString() : null, updated_at: new Date().toISOString() }).eq("id", id);
   if (error) throw error;
 }
 

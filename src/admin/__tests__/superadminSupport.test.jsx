@@ -32,8 +32,10 @@ describe("superadmin console — Support tab", () => {
     expect(container.textContent).toContain("Support tickets");
     // the seeded row must render (this is where the fmtDate crash lived)
     await findByText("Help with map");
-    // and its detail modal (reply thread) must open
-    fireEvent.click(getByText("Open"));
+    // and its detail modal (reply thread) must open — target the row's Open
+    // BUTTON (the status chip + filter tab also say "Open" now).
+    const openBtn = [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === "Open");
+    fireEvent.click(openBtn);
     expect(document.body.textContent).toContain("Pin resets");
   });
 });

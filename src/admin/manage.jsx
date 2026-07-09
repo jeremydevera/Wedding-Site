@@ -3196,7 +3196,7 @@ function initialsOf(name) {
   if (!parts.length) return "?";
   return ((parts[0][0] || "") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
 }
-function NotificationBell({ goTab }) {
+function NotificationBell({ goTab, tickets = [] }) {
   const { rsvps, guestbook, quizSubs, clientId, settings } = useStore();
   const [open, setOpen] = useState(false);
   const key = "evermore_notif_seen_" + (clientId || "x");
@@ -3215,8 +3215,11 @@ function NotificationBell({ goTab }) {
     (rsvps || []).forEach((r) => a.push({ id: "r" + r.id, tab: "rsvps", icon: "mail", who: r.fullName || "Someone", text: stLabel[r.status] || "RSVP'd", at: r.createdAt || 0 }));
     if (gbOn) (guestbook || []).forEach((g) => a.push({ id: "g" + g.id, tab: "guestbook", icon: "book", who: g.name || "Someone", text: "signed the guestbook", at: g.createdAt || 0 }));
     if (quizOn) (quizSubs || []).forEach((q) => a.push({ id: "q" + q.id, tab: "quiz", icon: "quiz", who: q.name || "Someone", text: `took the quiz (${q.score}/${q.total})`, at: q.createdAt || 0 }));
+    // Support: the superadmin replied and is waiting on the client (waiting_reply).
+    (tickets || []).filter((t) => t.status === "waiting_reply").forEach((t) =>
+      a.push({ id: "t" + t.id, tab: "support", icon: "mail", who: "Support", text: `replied to "${t.subject}"`, at: t.updated_at ? Date.parse(t.updated_at) : 0 }));
     return a.filter((x) => x.at > clearedAt).sort((x, y) => y.at - x.at);
-  }, [rsvps, guestbook, quizSubs, gbOn, quizOn, clearedAt]);
+  }, [rsvps, guestbook, quizSubs, gbOn, quizOn, clearedAt, tickets]);
 
   const clearAll = () => {
     const now = Date.now();
@@ -3422,6 +3425,19 @@ function ProfileMenu({ name, email, onViewSite, onSignOut }) {
 export function AdminApp() {
   const { settings, auth, clientId } = useStore();
   const [tab, setTab] = useState("dashboard");
+  // Client's own support tickets — drives the Support tab badge + the owner
+  // notification bell. waiting_reply = the superadmin replied ("New Reply From
+  // Support"). Live-refreshes on any ticket change.
+  const [clientTickets, setClientTickets] = useState([]);
+  useEffect(() => {
+    if (!clientId) { setClientTickets([]); return; }
+    let dead = false;
+    const refresh = () => listTickets().then((r) => { if (!dead) setClientTickets(r || []); }).catch(() => {});
+    refresh();
+    const off = subscribeTicketsRealtime(refresh);
+    return () => { dead = true; off(); };
+  }, [clientId]);
+  const supportWaiting = clientTickets.filter((t) => t.status === "waiting_reply").length;
   const [menuOpen, setMenuOpen] = useState(false);   // mobile drawer
   const [saving, setSaving] = useState(false);
   // Dirty tracking: Save stays disabled until the editable state diverges from
@@ -3494,9 +3510,10 @@ export function AdminApp() {
   } else {
     tabs = tabsForClient(visibleAdminTabs(auth.role, ADMIN_TABS, settings.ownerEdit), auth.role, settings.modules);
   }
-  // Support: submit-a-ticket tab for every client admin.
+  // Support: submit-a-ticket tab for every client admin. Badge = tickets with a
+  // new reply from support waiting for the client.
   if (clientId) {
-    tabs = [...tabs, { key: "support", label: "Support", icon: "mail" }];
+    tabs = [...tabs, { key: "support", label: supportWaiting > 0 ? `Support (${supportWaiting})` : "Support", icon: "mail" }];
   }
   const activeTab = tabs.some((t) => t.key === tab) ? tab : (tabs[0]?.key || "dashboard");
   const title = (tabs.find((t) => t.key === activeTab) || { label: "Admin" }).label;
@@ -3562,7 +3579,7 @@ export function AdminApp() {
             <div className="admin__title">{title}</div>
           </div>
           <div className="admin__topbar-right">
-            {clientId && <NotificationBell goTab={setTab} />}
+            {clientId && <NotificationBell goTab={setTab} tickets={clientTickets} />}
             {!clientId && auth.role === "superadmin" && <SuperNotificationBell goTab={setTab} />}
             <ProfileMenu name={auth.role === "superadmin" ? "Superadmin" : [settings.partnerA, settings.partnerB].filter(Boolean).join(" & ") || "Owner"} email={auth.email} onViewSite={() => go("home")} onSignOut={() => signOut().then(() => { if (clientOverride) exitToConsole(); else go("home"); })} />
           </div>
