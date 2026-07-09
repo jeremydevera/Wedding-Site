@@ -2,7 +2,7 @@ import { supabase } from "@/lib/supabase.js";
 import { Store } from "@/lib/store.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { clientToState, stateToClientRow, rowToGuestbook, rowToRsvp, rowToQuizSub, rsvpToRow, guestbookToRow, quizToRow, guestToRow, rowToGuest, ticketToRow } from "@/lib/mappers.js";
-import { loadSession } from "@/lib/auth.js";
+import { loadSession, createOwner } from "@/lib/auth.js";
 import { DEFAULT_CLIENT_MODULES } from "@/lib/roles.js";
 
 // Boot: load the active client + approved guestbook, hydrate the store cache.
@@ -702,6 +702,19 @@ export async function approveSiteRequest(reqRow) {
       created = data;
     }
   }
+  // Auto-provision the owner login with the platform's starter password so a
+  // fresh site is immediately sign-in-able (owner request). Skipped when the
+  // client already has a login (idempotent re-approve). Failure does NOT block
+  // the approval — the caller surfaces it so the superadmin sets it manually.
+  let loginError = "";
+  try {
+    const { data: fresh } = await supabase.from("clients").select("owner_email").eq("id", created.id).maybeSingle();
+    if (!fresh || !fresh.owner_email) {
+      await createOwner({ email: reqRow.email, password: "Password123+", client_id: created.id });
+    }
+  } catch (e) {
+    loginError = e?.message || "owner login could not be created";
+  }
   await setSiteRequestStatus(reqRow.id, "approved");
-  return created;
+  return { ...created, loginError };
 }

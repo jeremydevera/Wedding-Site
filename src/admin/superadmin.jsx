@@ -687,7 +687,12 @@ export function ClientsAdmin() {
                                 const ok = await confirmDialog({ title: "Approve this site?", message: `Create ${r.subdomain}.celebrately.us for ${r.partner_a}${r.partner_b ? ` & ${r.partner_b}` : ""}? You can set the owner's login afterwards via the pencil (Edit) on the client.`, confirmLabel: "Approve & create" });
                                 if (!ok) return;
                                 setBusy(true);
-                                try { await approveSiteRequest(r); toast("Site created — set the owner's login next", "success"); await load(); }
+                                try {
+                                  const res = await approveSiteRequest(r);
+                                  if (res && res.loginError) toast("Site created, but the owner login was NOT set (" + res.loginError + ") — set it via Edit → Access.", "err");
+                                  else toast("Site created — owner can sign in with the starter password", "success");
+                                  await load();
+                                }
                                 catch (e) { toast("Approve failed: " + (e.message || "error"), "err"); }
                                 finally { setBusy(false); }
                               }}>Approve</Button>
