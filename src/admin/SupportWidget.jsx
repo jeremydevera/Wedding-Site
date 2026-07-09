@@ -238,12 +238,12 @@ export function SupportPanel({ tab }) {
               {loading && <tr><td colSpan={5} style={{ color: "var(--muted)", padding: 18 }}>Loading…</td></tr>}
               {!loading && mine.length === 0 && <tr><td colSpan={5} style={{ color: "var(--muted)", padding: 18 }}>No tickets yet — send one above if you need a hand.</td></tr>}
               {mine.map((t) => (
-                <tr key={t.id}>
+                <tr key={t.id} className="tbl__row--click" onClick={() => setViewing(t)}>
                   <td><strong>{t.subject}</strong></td>
                   <td><span className="tag tag--hidden">{t.category}</span></td>
                   <td><span className={"tk-chip " + (TK_CHIP[t.status] || "tk-chip--open")}>{tkOwnerLabel(t.status)}</span></td>
                   <td style={{ whiteSpace: "nowrap", color: "var(--muted)", fontSize: 13 }}>{fmtDate(t.created_at)}</td>
-                  <td><Button variant="ghost" size="sm" onClick={() => setViewing(t)}>{Icon.mail ? Icon.mail({}) : null} View &amp; reply</Button></td>
+                  <td onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="sm" onClick={() => setViewing(t)}>{Icon.mail ? Icon.mail({}) : null} View &amp; reply</Button></td>
                 </tr>
               ))}
             </tbody>

@@ -1084,7 +1084,11 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .tk-detail__main { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
 @media (max-width: 720px) {
   .tk-detail { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); height: 78vh; }
-  .tk-detail__side { border-right: none; border-bottom: 1px solid #eef1f5; padding-right: 0; padding-bottom: 14px; }
+  /* Cap the rail so the CONVERSATION + composer always get the majority of the
+     modal on phones — an uncapped rail used to swallow the whole 78vh and clip
+     the thread (couldn't reply on mobile). The rail scrolls within itself. */
+  .tk-detail__side { border-right: none; border-bottom: 1px solid #eef1f5; padding-right: 0; padding-bottom: 14px; max-height: 32vh; overflow-y: auto; }
+  .tk-detail__side .tk-meta { flex: none; overflow-y: visible; }
 }
 
 /* iMessage-style composer: the CONTAINER is the field (border/radius); the
@@ -1128,6 +1132,8 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .tk-msg__body { white-space: pre-wrap; font-size: 14px; line-height: 1.5; color: var(--ink); }
 .tk-msg__at { font-size: 11px; color: var(--muted); margin-top: 4px; }
 .tk-reply { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 4px; }
+.tbl__row--click { cursor: pointer; }
+.tbl__row--click:hover td { background: color-mix(in oklch, var(--accent, #1E5BD6) 4%, transparent); }
 .tk-reply__actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
 .tk-reply__left { display: flex; align-items: center; }
 .tk-reply__right { display: flex; align-items: center; gap: 10px; margin-left: auto; }

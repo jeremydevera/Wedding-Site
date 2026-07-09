@@ -308,14 +308,14 @@ export function SupportAdmin() {
               {loading && <tr><td colSpan={7} style={{ color: "var(--muted)", padding: 18 }}>Loading…</td></tr>}
               {!loading && shown.length === 0 && <tr><td colSpan={7} style={{ color: "var(--muted)", padding: 18 }}>No {ticketFilter === "waiting_reply" ? "waiting-reply" : ticketFilter} tickets.</td></tr>}
               {shown.map((t) => (
-                <tr key={t.id}>
+                <tr key={t.id} className="tbl__row--click" onClick={() => setTicket(t)}>
                   <td><strong>{t.submitter_name || t.submitter_email || "—"}</strong><div style={{ color: "var(--muted)", fontSize: 12 }}>{t.context_url || ""}</div></td>
                   <td>{t.subject}</td>
                   <td><span className="tag tag--hidden">{t.category}</span></td>
                   <td>{t.urgency}</td>
                   <td><span className={"tk-chip " + (TK_CHIP[t.status] || "tk-chip--open")}>{tkAdminLabel(t.status)}</span></td>
                   <td style={{ whiteSpace: "nowrap", color: "var(--muted)", fontSize: 13 }}>{fmtDate(t.created_at)}</td>
-                  <td style={{ whiteSpace: "nowrap" }}>
+                  <td style={{ whiteSpace: "nowrap" }} onClick={(e) => e.stopPropagation()}>
                       <Button variant="ghost" size="sm" style={{ marginRight: 14 }} onClick={() => setTicket(t)}>{Icon.eye({})} Open</Button>
                       <Button variant="ghost" size="sm" aria-label="Delete ticket" onClick={async () => {
                         if (!(await confirmDialog({ title: "Delete this ticket?", message: `Permanently remove "${t.subject}" and its replies. This can't be undone.`, confirmLabel: "Delete", danger: true }))) return;
