@@ -5,12 +5,10 @@
 // served back by functions/r2/[[path]].js — no public bucket / custom domain
 // needed. Scoped to /api/* via public/_routes.json so the SPA is untouched.
 
-// Per-file caps by media kind: images stay small (downloaded by every guest);
-// audio/video get room for real songs and clips. Both are far under the
-// platform's ~100MB request ceiling.
-const CAP_IMAGE = 25 * 1024 * 1024;   // 25 MB
-const CAP_AV = 100 * 1024 * 1024;     // 100 MB (audio + video)
-const capFor = (t) => (/^(audio|video)\//.test(String(t || "")) ? CAP_AV : CAP_IMAGE);
+// One flat per-file cap for every media kind (owner decision 2026-07-10:
+// keep storage + guest bandwidth predictable).
+const CAP_ALL = 25 * 1024 * 1024; // 25 MB
+const capFor = () => CAP_ALL;
 const capLabel = (cap) => `${Math.round(cap / 1048576)}MB`;
 const TYPE_OK = /^(audio\/|image\/|video\/)/;
 const SCOPES = new Set(["owner", "guest"]);

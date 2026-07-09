@@ -13,7 +13,7 @@ const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 export const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/jpg"];
 export const VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
 export const PHOTO_MAX = 25 * 1024 * 1024;
-export const VIDEO_MAX = 100 * 1024 * 1024;
+export const VIDEO_MAX = 25 * 1024 * 1024;
 
 // Downscale an image file to a JPEG data URL (keeps localStorage small)
 export function imageToDataUrl(file, maxDim = 1100) {
@@ -93,7 +93,7 @@ export function UploadFlow({ category = "gallery", title, eyebrow, lead, accept 
       if (accept === "video" && !isVideo) { setErr("That file type isn't supported here. Please choose a video."); continue; }
       if (!isPhoto && !isVideo) { setErr("Unsupported file type."); continue; }
       if (isPhoto && file.size > PHOTO_MAX) { setErr(`"${file.name}" is too large (max 25 MB).`); continue; }
-      if (isVideo && file.size > VIDEO_MAX) { setErr(`"${file.name}" is too large (max 100 MB).`); continue; }
+      if (isVideo && file.size > VIDEO_MAX) { setErr(`"${file.name}" is too large (max 25 MB).`); continue; }
       try {
         const thumb = isPhoto ? await imageToDataUrl(file) : await videoToThumb(file);
         next.push({ id: uid(), file, type: isPhoto ? "photo" : "video", thumb, size: file.size });
@@ -202,7 +202,7 @@ export function UploadFlow({ category = "gallery", title, eyebrow, lead, accept 
               <div className="dropzone__title">Tap to choose, or drop files here</div>
               <div className="dropzone__hint">
                 {accept === "photo" && "JPG, PNG, WEBP, HEIC \u00b7 up to 25 MB each \u00b7 max 10"}
-                {accept === "video" && "MP4, MOV, WEBM \u00b7 up to 100 MB \u00b7 keep clips under a minute"}
+                {accept === "video" && "MP4, MOV, WEBM \u00b7 up to 25 MB \u00b7 keep clips under a minute"}
                 {accept === "both" && "Photos & videos \u00b7 up to 10 files"}
               </div>
               <input ref={inputRef} type="file" accept={acceptAttr} multiple={category === "gallery"}

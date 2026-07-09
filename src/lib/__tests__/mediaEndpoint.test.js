@@ -387,9 +387,9 @@ describe("POST /api/upload", () => {
 
   // Bug (line 59): a source with NO Content-Length that streams past its cap
   // must be aborted, not stored unbounded. capStream errors the put → 413.
-  // (Video cap is 100MB; images stay at 25MB.)
+  // (Flat 25MB cap for every media kind.)
   it("413 when an allowlisted source omits Content-Length and streams past the cap", async () => {
-    const OVER = 100 * 1024 * 1024 + 1; // 1 byte over the 100MB video cap
+    const OVER = 25 * 1024 * 1024 + 1; // 1 byte over the 25MB cap
     const bigStream = new ReadableStream({
       pull(controller) {
         controller.enqueue(new Uint8Array(OVER));
