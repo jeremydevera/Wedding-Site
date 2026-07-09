@@ -743,11 +743,27 @@ export function ClientsAdmin() {
                         const cl = clients.find((x) => x.subdomain === r.subdomain);
                         return (
                           <div className="row-actions">
-                            <button className={"icon-btn" + (cl && !cl.is_active ? " icon-btn--danger" : "")}
-                              onClick={() => cl ? toggleActive(cl) : toast("Client site not found — refresh and try again.", "err")}
-                              title={!cl ? "Site on/off" : cl.is_active ? "Disable access (take site offline)" : "Enable access (put site live)"} aria-pressed={cl ? cl.is_active : undefined}>
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 3.5v8" /><path d="M6.6 6.8a8 8 0 1 0 10.8 0" /></svg>
-                            </button>
+                            {!cl && (
+                              /* Approved but the client site was deleted afterwards — say so and
+                                 offer a one-click rebuild (approveSiteRequest is convergent: it
+                                 recreates the site + starter login and keeps the status). */
+                              <Button variant="primary" size="sm" disabled={busy} onClick={async () => {
+                                setBusy(true);
+                                try {
+                                  const res = await approveSiteRequest(r);
+                                  if (res && res.loginError) toast("Site restored, but the owner login was NOT set (" + res.loginError + ")", "err");
+                                  else toast("Site restored — owner can sign in with the starter password", "success");
+                                  await load();
+                                } catch (e) { toast("Restore failed: " + (e.message || "error"), "err"); }
+                                finally { setBusy(false); }
+                              }}>Restore site</Button>
+                            )}
+                            {cl && (
+                              <button className={"icon-btn" + (cl.is_active ? "" : " icon-btn--danger")} onClick={() => toggleActive(cl)}
+                                title={cl.is_active ? "Disable access (take site offline)" : "Enable access (put site live)"} aria-pressed={cl.is_active}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 3.5v8" /><path d="M6.6 6.8a8 8 0 1 0 10.8 0" /></svg>
+                              </button>
+                            )}
                             <a className="icon-btn" href={`/admin?client=${r.subdomain}`} title="Open admin">{Icon.grid({})}</a>
                             <button className="icon-btn" title={cl ? "Client info" : "Request details"} onClick={() => (cl ? setInfo(cl) : setReqInfo(r))}>{Icon.eye({})}</button>
                             <button className="icon-btn" title={cl ? "Edit client" : "Edit request"} onClick={() => (cl ? openEdit(cl) : openReqEdit(r))}>{Icon.edit({})}</button>
@@ -777,7 +793,7 @@ export function ClientsAdmin() {
               <tbody>
                 {requests.filter((r) => r.status === "rejected").map((r) => (
                   <tr key={r.id}>
-                    <td><strong>{r.partner_a}{r.partner_b ? ` & ${r.partner_b}` : ""}</strong></td>
+                    <td><strong>{r.partner_a}{r.partner_b ? ` & ${r.partner_b}` : ""}</strong>{!clients.some((x) => x.subdomain === r.subdomain) && <span className="tag" style={{ marginLeft: 8, background: "#fdE2e2", color: "#a03030" }}>site deleted</span>}</td>
                     <td className="client-domain">{r.subdomain}.celebrately.us</td>
                     <td>{r.email}</td>
                     <td style={{ maxWidth: 180 }}>{(r.content && r.content.note)
