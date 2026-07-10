@@ -414,7 +414,9 @@ export function GuestsAdmin() {
   const [emailOpen, setEmailOpen] = useState(false);
   const [emailTo, setEmailTo] = useState("");
   const [emailSending, setEmailSending] = useState(false);
-  const blank = { firstName: "", lastName: "", middleName: "", allocation: 2, email: "", notes: "", status: "attending" };
+  // New guests default to "Wait for Response" (status none) — most added guests
+  // haven't replied yet; flip the toggle off only when they already confirmed.
+  const blank = { firstName: "", lastName: "", middleName: "", allocation: 2, email: "", notes: "", status: "none" };
 
   const recon = React.useMemo(() => reconcileGuests(guests, rsvps), [guests, rsvps]);
   const byId = React.useMemo(() => new Map(recon.rows.map((x) => [x.guest.id, x])), [recon]);
