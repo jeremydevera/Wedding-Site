@@ -17,7 +17,7 @@ import { headsOf } from "@/lib/rsvp.js";
 import { cropTransform, mediaUrl } from "@/lib/media.js";
 import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
-import { visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel, moduleEnabled, OWNER_EDIT_HOME, OWNER_EDIT_TABS } from "@/lib/roles.js";
+import { featureLevel, visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel, moduleEnabled, OWNER_EDIT_HOME, OWNER_EDIT_TABS } from "@/lib/roles.js";
 import { MAP_STYLES, mapStyleKey, mapStyleFilter } from "@/lib/mapStyles.js";
 import { ClientsAdmin, R2LibraryAdmin, SuperOverview, SupportAdmin } from "@/admin/superadmin.jsx";
 import { CloudflareHealth } from "@/admin/CloudflareHealth.jsx";
@@ -3569,6 +3569,27 @@ export function AdminApp() {
   } else {
     tabs = tabsForClient(visibleAdminTabs(auth.role, ADMIN_TABS, settings.ownerEdit), auth.role, settings.modules);
   }
+  // Feature Permissions v2: the resolver is the only tab authority. Owners see
+  // a module tab only at "edit"; music + entourage are promoted to top-level
+  // tabs. Superadmin-on-client sees every feature tab. Legacy clients skip
+  // this block entirely (their tabs computed above stay untouched).
+  if (settings.accessV2 === true && clientId) {
+    const V2_TAB_FEATURE = { home: "home", story: "story", guestbook: "guestbook", schedule: "schedule", quiz: "quiz", details: "details", venue: "venue" };
+    const lvl = (k) => featureLevel(settings, k);
+    // Build from the FULL tab list — the legacy grant/module filtering above
+    // doesn't apply to v2 clients (levels are the only authority).
+    tabs = ADMIN_TABS.filter((t) => {
+      const fk = V2_TAB_FEATURE[t.key];
+      if (!fk) return true;                       // dashboard, rsvps, settings…
+      return auth.role === "superadmin" ? true : lvl(fk) === "edit";
+    });
+    const promoted = [
+      { key: "music", label: "Music playlist", icon: "play" },
+      { key: "entourage", label: "Entourage", icon: "user" },
+    ].filter((t) => auth.role === "superadmin" || lvl(t.key) === "edit");
+    const si = tabs.findIndex((t) => t.key === "settings");
+    tabs = si === -1 ? [...tabs, ...promoted] : [...tabs.slice(0, si), ...promoted, ...tabs.slice(si)];
+  }
   // Support: submit-a-ticket tab for every client admin. Badge = tickets with a
   // new reply from support waiting for the client.
   if (clientId) {
@@ -3662,6 +3683,9 @@ export function AdminApp() {
           {activeTab === "details" && <DetailsAdmin />}
           {activeTab === "story" && <StoryAdmin />}
           {activeTab === "venue" && <VenueAdmin />}
+          {/* accessV2 promoted tabs (HomeSectionPanel lands with them in T5) */}
+          {settings.accessV2 === true && activeTab === "music" && (<><R2MigratePanel /><MusicAdmin /></>)}
+          {settings.accessV2 === true && activeTab === "entourage" && <EntourageAdmin />}
           {activeTab === "qr" && <QrAdmin />}
           {activeTab === "settings" && <SettingsAdmin />}
           {activeTab === "overview" && <SuperOverview />}
