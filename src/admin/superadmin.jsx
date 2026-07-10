@@ -249,6 +249,16 @@ function TicketModal({ ticket, onClose, onRefresh }) {
             {meta("From", ticket.submitter_name || ticket.submitter_email)}
             {meta("Email", ticket.submitter_email)}
             {meta("Where", ticket.context_url)}
+            {/* context_url is "<subdomain> / <admin tab>" — first segment gives
+                the client's live site URL. */}
+            {(() => {
+              const sub = String(ticket.context_url || "").split(" / ")[0].trim();
+              return meta("Site", sub ? (
+                <a href={`https://${sub}.celebrately.us`} target="_blank" rel="noreferrer" style={{ color: "#1E5BD6", textDecoration: "none" }}>
+                  {sub}.celebrately.us ↗
+                </a>
+              ) : null);
+            })()}
             {meta("Category", ticket.category)}
             {meta("Urgency", ticket.urgency)}
             {meta("Submitted", fmtDate(ticket.created_at))}
