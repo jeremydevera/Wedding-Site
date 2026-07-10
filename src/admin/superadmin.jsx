@@ -881,7 +881,6 @@ export function ClientsAdmin() {
                       <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                         <span className="sa-dot sa-dot--off" title="Disabled" />
                         <div>
-                          <strong>{c.subdomain}</strong>
                           <a className="client-domain client-domain--link" href={c.custom_domain ? `https://${c.custom_domain}` : clientUrl(c.subdomain)} target="_blank" rel="noreferrer" title="Open live site in a new tab" onClick={(e) => e.stopPropagation()}>{c.custom_domain || `${c.subdomain}.${PLATFORM_DOMAIN}`}</a>
                         </div>
                       </div>
@@ -930,7 +929,7 @@ export function ClientsAdmin() {
                         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                           <span className={"sa-dot" + (c.is_active ? "" : " sa-dot--off")} title={c.is_active ? "Active" : "Disabled"} />
                           <div>
-                            <strong>{c.subdomain}</strong>{!c.is_active && <span className="tag tag--hidden" style={{ marginLeft: 8 }}>Disabled</span>}
+                            {!c.is_active && <span className="tag tag--hidden" style={{ marginRight: 8 }}>Disabled</span>}
                             <a className="client-domain client-domain--link" href={c.custom_domain ? `https://${c.custom_domain}` : clientUrl(c.subdomain)} target="_blank" rel="noreferrer" title="Open live site in a new tab" onClick={(e) => e.stopPropagation()}>{c.custom_domain || `${c.subdomain}.${PLATFORM_DOMAIN}`}</a>
                           </div>
                         </div>
