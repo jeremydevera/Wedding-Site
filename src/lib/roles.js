@@ -117,6 +117,53 @@ export function moduleEnabled(modules, key) {
   return !!modules[key];
 }
 
+// ── Feature Permissions v2 (spec: docs/superpowers/specs/2026-07-11-feature-permissions-v2-design.md)
+// One level per module per client: none | view | edit.
+//   none  → not on the guest site, no owner tab
+//   view  → live on the guest site, NO owner tab (superadmin does the CRUD)
+//   edit  → owner gets the tab (full CRUD + "Home section" panel)
+// RSVP is core → always "edit". Home always renders → floor "view".
+// Only clients with settings.accessV2 use the new map; everyone else derives
+// the SAME answer from the legacy modules+ownerEdit model (zero behavior change).
+export const FEATURE_LEVELS = ["none", "view", "edit"];
+export const FEATURE_DEFAULTS = {
+  home: "edit", story: "none", details: "edit", schedule: "edit",
+  venue: "edit", guestbook: "edit", quiz: "edit", entourage: "edit", music: "none",
+};
+// Rows for the superadmin table, in display order. noNone hides the None option (home).
+export const FEATURE_ROWS = [
+  { k: "home", label: "Home", noNone: true, desc: "Couple & event + invitation (landing page always renders)" },
+  { k: "story", label: "Our Story", desc: "Milestones page" },
+  { k: "details", label: "Details", desc: "Info cards + FAQ + attire guide" },
+  { k: "schedule", label: "Schedule", desc: "Wedding-day timeline (+ home glimpse)" },
+  { k: "venue", label: "Venue & Map", desc: "Locations, maps, home map" },
+  { k: "guestbook", label: "Guestbook", desc: "Guest messages" },
+  { k: "quiz", label: "Quiz", desc: "Couple quiz" },
+  { k: "entourage", label: "Entourage", desc: "Wedding party groups" },
+  { k: "music", label: "Music playlist", desc: "Home page player + tracks" },
+];
+// Legacy ownerEdit grant key per feature (guestbook/quiz have no grant today —
+// module on has always meant the owner gets the tab, i.e. "edit").
+const LEGACY_GRANT = { home: "home", story: "story", details: "details", schedule: "schedule", venue: "venue", music: "music", entourage: "entourage" };
+
+export function featureLevel(settings, key) {
+  const s = settings || {};
+  if (DISABLED_MODULES.has(key)) return "none";   // platform kill switch
+  if (key === "rsvp") return "edit";              // core feature, always
+  if (s.accessV2 === true) {
+    const raw = (s.features || {})[key];
+    let lvl = FEATURE_LEVELS.includes(raw) ? raw : (FEATURE_DEFAULTS[key] || "edit");
+    if (key === "home" && lvl === "none") lvl = "view";
+    return lvl;
+  }
+  // Legacy derivation — must reproduce today's behavior exactly.
+  if (!moduleEnabled(s.modules, key)) return "none";
+  const g = LEGACY_GRANT[key];
+  if (!g) return "edit";
+  return (s.ownerEdit || {})[g] === true ? "edit" : "view";
+}
+export function featureVisible(settings, key) { return featureLevel(settings, key) !== "none"; }
+
 // Admin tabs that correspond to a toggleable module (others — dashboard/qr — always show).
 const TAB_MODULE = { rsvps: "rsvp", guestbook: "guestbook", quiz: "quiz", schedule: "schedule", details: "details", story: "story" };
 
