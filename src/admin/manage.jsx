@@ -2565,43 +2565,40 @@ function ScheduleTabV2() {
         </a>
       } />
       <Modal open={open} onClose={() => setOpen(false)} label="Show to Home" wide>
-        <div className="panel__head" style={{ padding: "0 0 14px" }}>
+        <div className="panel__head" style={{ padding: "0 0 14px", display: "block" }}>
           <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
             <input type="checkbox" checked={on} onChange={(e) => toggleShow("showTimeline", e.target.checked)} style={{ width: 17, height: 17, accentColor: "var(--accent)" }} />
-            <span className="panel__title">Show to Home</span>
+            <span className="panel__title" style={{ textTransform: "uppercase", letterSpacing: ".04em", fontSize: 17 }}>Show to Home</span>
           </label>
+          <p style={{ margin: "6px 0 0 27px", color: "var(--muted)", fontSize: 13 }}>
+            If enabled, the schedule will also be shown on the home page.
+          </p>
         </div>
+        {on && (
         <div className="v2-design v2-design--split">
           <div className="v2-design__form">
-            <fieldset disabled={!on} style={{ border: 0, padding: 0, margin: 0, opacity: on ? 1 : 0.45, transition: "opacity .15s ease" }}>
-              <HomeHeadFields k="schedule" defEyebrow="The Day" defTitle="A glimpse of the schedule" />
-              <Field label="Timeline layout" id="tl-layout" hint="How the schedule glimpse flows on the home page.">
-                <Select id="tl-layout" value={f.homeTimelineLayout || "vertical"} onChange={(e) => toggleShow("homeTimelineLayout", e.target.value)}>
-                  <option value="vertical">Vertical</option>
-                  <option value="horizontal">Horizontal</option>
-                </Select>
-              </Field>
-            </fieldset>
+            <HomeHeadFields k="schedule" defEyebrow="The Day" defTitle="A glimpse of the schedule" />
+            <Field label="Timeline layout" id="tl-layout" hint="How the schedule glimpse flows on the home page.">
+              <Select id="tl-layout" value={f.homeTimelineLayout || "vertical"} onChange={(e) => toggleShow("homeTimelineLayout", e.target.value)}>
+                <option value="vertical">Vertical</option>
+                <option value="horizontal">Horizontal</option>
+              </Select>
+            </Field>
           </div>
           {/* REAL simulator: the actual public ScheduleView, themed with the
               client's palette, fed the staged (unsaved) settings. */}
           <aside className="v2-design__sim" aria-label="Home page preview">
             <div className="v2-design__simlabel">Live preview — schedule section on Home</div>
             <div className="v2-sim-frame" style={{ ...((THEMES[f.theme] || {}).vars || {}) }}>
-              {on ? (
-                <>
-                  <div className="sec-head sec-head--center" style={{ marginBottom: 18 }}>
-                    <div className="eyebrow">{heads.eyebrow ?? "The Day"}</div>
-                    <h2 className="sec-head__title" style={{ fontSize: 30 }}>{heads.title ?? "A glimpse of the schedule"}</h2>
-                  </div>
-                  <ScheduleView items={(f.homeTimelineLayout || "vertical") === "horizontal" ? schedule : (schedule || []).slice(0, 3)} style={(f.homeTimelineLayout || "vertical") === "horizontal" ? "horizontal" : "alt"} />
-                </>
-              ) : (
-                <div style={{ color: "var(--muted)", fontSize: 14, textAlign: "center", padding: "40px 0" }}>Hidden on the home page — tick “Show to Home” to preview.</div>
-              )}
+              <div className="sec-head sec-head--center" style={{ marginBottom: 18 }}>
+                <div className="eyebrow">{heads.eyebrow ?? "The Day"}</div>
+                <h2 className="sec-head__title" style={{ fontSize: 30 }}>{heads.title ?? "A glimpse of the schedule"}</h2>
+              </div>
+              <ScheduleView items={(f.homeTimelineLayout || "vertical") === "horizontal" ? schedule : (schedule || []).slice(0, 3)} style={(f.homeTimelineLayout || "vertical") === "horizontal" ? "horizontal" : "alt"} />
             </div>
           </aside>
         </div>
+        )}
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 18, paddingTop: 14, borderTop: "1px solid var(--line)" }}>
           <Button variant="ghost" onClick={() => setOpen(false)}>Close</Button>
           <Button variant="primary" disabled={saving || !dirty} onClick={async () => { await save(); setOpen(false); }}>{saving ? "Saving…" : "Save changes"}</Button>
