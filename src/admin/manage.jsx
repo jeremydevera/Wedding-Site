@@ -2466,7 +2466,9 @@ function ClosesAtInput({ value, onChange }) {
 // stored overrides change the site (settings.homeHeads = { [k]: {eyebrow,title} }).
 function HomeHeadFields({ k, defEyebrow, defTitle }) {
   const { settings, auth } = useStore();
-  if (auth.role !== "superadmin") return null; // superadmin-only editor — owners never see it
+  // Legacy: superadmin-only. accessV2: an owner reaching this body has "edit"
+  // on the owning feature (HomeAdmin's can()), so header overrides are theirs too.
+  if (auth.role !== "superadmin" && settings.accessV2 !== true) return null;
   const cur = (settings.homeHeads || {})[k] || {};
   const put = (field) => (e) =>
     Store.updateSettings({ homeHeads: { ...(settings.homeHeads || {}), [k]: { ...cur, [field]: e.target.value } } });
@@ -2484,7 +2486,28 @@ function HomeHeadFields({ k, defEyebrow, defTitle }) {
   );
 }
 
-export function HomeAdmin() {
+// `section` (accessV2): render ONE folder's body inline inside that feature's
+// own top-level tab (no folder chips) — the "Home section" panel of the spec.
+// Without it, the classic multi-folder Home tab renders as always.
+// accessV2: per-module guest-nav rename, shown at the top of the module's own
+// tab (replaces Settings → Features → "Rename tabs" for flagged clients).
+function V2TabRename({ feature }) {
+  const { settings } = useStore();
+  const f = settings;
+  if (f.accessV2 !== true) return null;
+  return (
+    <div className="panel">
+      <div className="panel__body" style={{ paddingTop: 16, paddingBottom: 6 }}>
+        <Field label="Tab name in the guest menu" id={"rn-" + feature} hint="Blank keeps the default.">
+          <Input id={"rn-" + feature} value={(f.moduleLabels && f.moduleLabels[feature]) || ""} placeholder={moduleLabel(feature)}
+            onChange={(e) => Store.updateSettings({ moduleLabels: { ...(f.moduleLabels || {}), [feature]: e.target.value } })} />
+        </Field>
+      </div>
+    </div>
+  );
+}
+
+export function HomeAdmin({ section = null }) {
   const { settings, auth, faq } = useStore();
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const f = settings;
@@ -2498,8 +2521,14 @@ export function HomeAdmin() {
   //   home → Couple & Event + Invitation · maps · timeline · attire · music ·
   //   entourage. An owner reaches this tab at all only when at least one of
   //   these grants is on (see visibleAdminTabs / HOME_EDIT_KEYS).
+  // accessV2: featureLevel is the only authority — an owner with "edit" on the
+  // owning feature edits that folder's body (grant map ignored).
   const grants = settings.ownerEdit || {};
-  const can = (k) => isSuper || grants[k] === true;
+  const V2_GRANT_FEATURE = { home: "home", maps: "venue", timeline: "schedule", homeDetails: "details", homeFaq: "details", attire: "details", music: "music", entourage: "entourage" };
+  const can = (k) => {
+    if (settings.accessV2 === true) return isSuper || featureLevel(settings, V2_GRANT_FEATURE[k] || k) === "edit";
+    return isSuper || grants[k] === true;
+  };
   const canHome = can("home");
   const canEntourage = can("entourage");
   const TABS = [
@@ -2516,17 +2545,22 @@ export function HomeAdmin() {
     ...(canEntourage ? [{ k: "entourage", label: "Entourage", icon: "user" }] : []),
   ];
   const [tab, setTab] = useState("couple");
-  if (TABS.length === 0) return null; // owner without any grant — tab shouldn't even be visible
-  const active = TABS.some((t) => t.k === tab) ? tab : TABS[0].k;
+  // accessV2 single-folder mode: render just that body, no chips. The classic
+  // Home tab itself slims to Couple & Event + Invitation (other folders now
+  // live inside their feature tabs).
+  const V2_HOME_FOLDERS = ["couple", "invite"];
+  const shownTabs = (settings.accessV2 === true && !section) ? TABS.filter((t) => V2_HOME_FOLDERS.includes(t.k)) : TABS;
+  if (!section && shownTabs.length === 0) return null; // owner without any grant — tab shouldn't even be visible
+  const active = section || (shownTabs.some((t) => t.k === tab) ? tab : (shownTabs[0] || { k: "couple" }).k);
   return (
     <div>
-      <div className="folders">
-        {TABS.map((t) => (
+      {!section && <div className="folders">
+        {shownTabs.map((t) => (
           <button key={t.k} className={"folder" + (active === t.k ? " folder--active" : "")} onClick={() => setTab(t.k)}>
             {Icon[t.icon] ? Icon[t.icon]({}) : null} {t.label}
           </button>
         ))}
-      </div>
+      </div>}
 
       {active === "couple" && (
         <>
@@ -3677,15 +3711,15 @@ export function AdminApp() {
               classic replies table. */}
           {activeTab === "rsvps" && (settings.strictRsvp ? <GuestsAdmin /> : <RsvpsAdmin />)}
           {activeTab === "media" && <MediaAdmin />}
-          {activeTab === "guestbook" && <GuestbookAdmin />}
-          {activeTab === "schedule" && <ScheduleAdmin />}
-          {activeTab === "quiz" && <QuizAdmin />}
-          {activeTab === "details" && <DetailsAdmin />}
-          {activeTab === "story" && <StoryAdmin />}
-          {activeTab === "venue" && <VenueAdmin />}
+          {activeTab === "guestbook" && (<>{settings.accessV2 === true && <V2TabRename feature="guestbook" />}<GuestbookAdmin /></>)}
+          {activeTab === "schedule" && (<>{settings.accessV2 === true && <><HomeAdmin section="timeline" /><V2TabRename feature="schedule" /></>}<ScheduleAdmin /></>)}
+          {activeTab === "quiz" && (<>{settings.accessV2 === true && <V2TabRename feature="quiz" />}<QuizAdmin /></>)}
+          {activeTab === "details" && (<>{settings.accessV2 === true && <><HomeAdmin section="details" /><HomeAdmin section="faq" /><V2TabRename feature="details" /></>}<DetailsAdmin />{settings.accessV2 === true && <HomeAdmin section="attire" />}</>)}
+          {activeTab === "story" && (<>{settings.accessV2 === true && <V2TabRename feature="story" />}<StoryAdmin /></>)}
+          {activeTab === "venue" && (<>{settings.accessV2 === true && <><HomeAdmin section="maps" /><V2TabRename feature="venue" /></>}<VenueAdmin /></>)}
           {/* accessV2 promoted tabs (HomeSectionPanel lands with them in T5) */}
-          {settings.accessV2 === true && activeTab === "music" && (<><R2MigratePanel /><MusicAdmin /></>)}
-          {settings.accessV2 === true && activeTab === "entourage" && <EntourageAdmin />}
+          {settings.accessV2 === true && activeTab === "music" && <HomeAdmin section="music" />}
+          {settings.accessV2 === true && activeTab === "entourage" && <HomeAdmin section="entourage" />}
           {activeTab === "qr" && <QrAdmin />}
           {activeTab === "settings" && <SettingsAdmin />}
           {activeTab === "overview" && <SuperOverview />}
