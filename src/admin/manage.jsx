@@ -2611,9 +2611,12 @@ function SectionPreviewFrame({ scrollTo, sampleTag = false }) {
       <div ref={wrapRef} style={{ width: "100%", position: "relative" }}>
         <div style={{ width: "fit-content", margin: "0 auto" }}>
           <DeviceFrame isPhone={device === "mobile"}>
-            <div style={{ width: Math.round(baseW * scale), height: Math.round(baseH * scale), overflow: "hidden", background: "#fff" }}>
+            {/* translateZ(0) + will-change keep the scaled iframe on its own
+                compositor layer — without them Chrome blanks it to white while
+                the modal scrolls (repaints only after the scroll settles). */}
+            <div style={{ width: Math.round(baseW * scale), height: Math.round(baseH * scale), overflow: "hidden", background: "#fff", transform: "translateZ(0)" }}>
               <iframe ref={ref} title="Section preview" src="/?preview=1" loading="lazy" onLoad={post}
-                style={{ width: baseW, height: baseH, border: 0, transform: `scale(${scale})`, transformOrigin: "top left", pointerEvents: "none" }} />
+                style={{ width: baseW, height: baseH, border: 0, transform: `scale(${scale}) translateZ(0)`, transformOrigin: "top left", pointerEvents: "none", willChange: "transform", backfaceVisibility: "hidden" }} />
             </div>
           </DeviceFrame>
         </div>
