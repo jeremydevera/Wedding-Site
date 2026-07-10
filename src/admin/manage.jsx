@@ -1995,7 +1995,7 @@ export function StoryEditor({ open, index, item, onClose }) {
 }
 
 export function SettingsAdmin() {
-  const { settings, story } = useStore();
+  const { settings, story, auth } = useStore();
   const f = settings;
   const set = (k) => (e) => Store.updateSettings({ [k]: e.target && e.target.type === "checkbox" ? e.target.checked : e.target.value });
   const setKey = (k, v) => Store.updateSettings({ [k]: v });
@@ -2010,7 +2010,11 @@ export function SettingsAdmin() {
   // module toggles, renames and owner-grants disappear here. RSVP options and
   // guestbook moderation stay (RSVP has no content tab).
   const STABS = settings.accessV2 === true
-    ? [["rsvp", "RSVP & moderation", "check"], ["appearance", "Theme", "grid"], ["account", "Account", "user"]]
+    ? [["rsvp", "RSVP & moderation", "check"],
+       // Renaming guest-menu tabs is a SUPERADMIN-only operation under v2
+       // (owner request 2026-07-11) — owners never see this folder.
+       ...(auth.role === "superadmin" ? [["tabnames", "Tab names", "edit"]] : []),
+       ["appearance", "Theme", "grid"], ["account", "Account", "user"]]
     : [["features", "Features", "check"], ["appearance", "Theme", "grid"], ["access", "Access", "check"], ["account", "Account", "user"]];
 
   return (
@@ -2027,6 +2031,23 @@ export function SettingsAdmin() {
           );
         })}
       </div>
+
+      {tab === "tabnames" && settings.accessV2 === true && auth.role === "superadmin" && (<div className="panel">
+        <div className="panel__head"><div className="panel__title">Tab names</div><span style={{ color: "var(--muted)", fontSize: 14 }}>How each section reads in the guest menu</span></div>
+        <div className="panel__body" style={{ maxWidth: 760 }}>
+          <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>Leave a field blank to keep the default. Click <strong>Save changes</strong> to apply.</p>
+          <div className="mod-rename">
+            {["story", "details", "schedule", "venue", "guestbook", "quiz", "rsvp"].filter((m) => !DISABLED_MODULES.has(m)).map((m) => (
+              <div key={m} className="mod-rename__row" style={{ display: "grid", gridTemplateColumns: "minmax(96px, 150px) 1fr", gap: 12, alignItems: "center", marginBottom: 10 }}>
+                <span style={{ color: "var(--muted)", fontSize: 13 }}>{moduleLabel(m)}</span>
+                <Input type="text" value={f.moduleLabels?.[m] ?? ""} placeholder={moduleLabel(m)}
+                  onChange={(e) => Store.updateSettings({ moduleLabels: { ...(f.moduleLabels || {}), [m]: e.target.value } })} />
+              </div>
+            ))}
+          </div>
+        </div>
+        <SaveFooter />
+      </div>)}
 
       {tab === "rsvp" && settings.accessV2 === true && (<div className="panel">
         <div className="panel__head"><div className="panel__title">RSVP &amp; moderation</div></div>
@@ -2562,12 +2583,6 @@ function ScheduleTabV2() {
                     </Select>
                   </Field>
                 </fieldset>
-                <div style={{ marginTop: 20, paddingTop: 18, borderTop: "1px solid var(--line)" }}>
-                  <Field label="Tab name in the guest menu" id="rn-schedule" hint="Blank keeps the default.">
-                    <Input id="rn-schedule" value={(f.moduleLabels && f.moduleLabels.schedule) || ""} placeholder={moduleLabel("schedule")}
-                      onChange={(e) => Store.updateSettings({ moduleLabels: { ...(f.moduleLabels || {}), schedule: e.target.value } })} />
-                  </Field>
-                </div>
               </div>
               {/* REAL simulator: the actual public ScheduleView, themed with the
                   client's palette, fed the staged (unsaved) settings — headers,
@@ -2593,24 +2608,6 @@ function ScheduleTabV2() {
           <SaveFooter />
         </>
       )}
-    </div>
-  );
-}
-
-// accessV2: per-module guest-nav rename, shown at the top of the module's own
-// tab (replaces Settings → Features → "Rename tabs" for flagged clients).
-function V2TabRename({ feature }) {
-  const { settings } = useStore();
-  const f = settings;
-  if (f.accessV2 !== true) return null;
-  return (
-    <div className="panel">
-      <div className="panel__body" style={{ paddingTop: 16, paddingBottom: 6 }}>
-        <Field label="Tab name in the guest menu" id={"rn-" + feature} hint="Blank keeps the default.">
-          <Input id={"rn-" + feature} value={(f.moduleLabels && f.moduleLabels[feature]) || ""} placeholder={moduleLabel(feature)}
-            onChange={(e) => Store.updateSettings({ moduleLabels: { ...(f.moduleLabels || {}), [feature]: e.target.value } })} />
-        </Field>
-      </div>
     </div>
   );
 }
@@ -3819,12 +3816,12 @@ export function AdminApp() {
               classic replies table. */}
           {activeTab === "rsvps" && (settings.strictRsvp ? <GuestsAdmin /> : <RsvpsAdmin />)}
           {activeTab === "media" && <MediaAdmin />}
-          {activeTab === "guestbook" && (<>{settings.accessV2 === true && <V2TabRename feature="guestbook" />}<GuestbookAdmin /></>)}
+          {activeTab === "guestbook" && <GuestbookAdmin />}
           {activeTab === "schedule" && (settings.accessV2 === true ? <ScheduleTabV2 /> : <ScheduleAdmin />)}
-          {activeTab === "quiz" && (<>{settings.accessV2 === true && <V2TabRename feature="quiz" />}<QuizAdmin /></>)}
-          {activeTab === "details" && (<>{settings.accessV2 === true && <><HomeAdmin section="details" /><HomeAdmin section="faq" /><V2TabRename feature="details" /></>}<DetailsAdmin />{settings.accessV2 === true && <HomeAdmin section="attire" />}</>)}
-          {activeTab === "story" && (<>{settings.accessV2 === true && <V2TabRename feature="story" />}<StoryAdmin /></>)}
-          {activeTab === "venue" && (<>{settings.accessV2 === true && <><HomeAdmin section="maps" /><V2TabRename feature="venue" /></>}<VenueAdmin /></>)}
+          {activeTab === "quiz" && <QuizAdmin />}
+          {activeTab === "details" && (<>{settings.accessV2 === true && <><HomeAdmin section="details" /><HomeAdmin section="faq" /></>}<DetailsAdmin />{settings.accessV2 === true && <HomeAdmin section="attire" />}</>)}
+          {activeTab === "story" && <StoryAdmin />}
+          {activeTab === "venue" && (<>{settings.accessV2 === true && <HomeAdmin section="maps" />}<VenueAdmin /></>)}
           {/* accessV2 promoted tabs (HomeSectionPanel lands with them in T5) */}
           {settings.accessV2 === true && activeTab === "music" && <HomeAdmin section="music" />}
           {settings.accessV2 === true && activeTab === "entourage" && <HomeAdmin section="entourage" />}
