@@ -2544,11 +2544,13 @@ function ScheduleTabV2() {
       {tab === "design" && (
         <>
           <div className="panel">
-            <div className="panel__head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-              <div className="panel__title">Design</div>
-              <HeadSwitch label="Show to Home" checked={on} onChange={(v) => toggleShow("showTimeline", v)} />
+            <div className="panel__head">
+              <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                <input type="checkbox" checked={on} onChange={(e) => toggleShow("showTimeline", e.target.checked)} style={{ width: 17, height: 17, accentColor: "var(--accent)" }} />
+                <span className="panel__title">Show to Home</span>
+              </label>
             </div>
-            <div className="panel__body">
+            <div className="panel__body v2-design">
               <fieldset disabled={!on} style={{ border: 0, padding: 0, margin: 0, opacity: on ? 1 : 0.45, transition: "opacity .15s ease" }}>
                 <HomeHeadFields k="schedule" defEyebrow="The Day" defTitle="A glimpse of the schedule" />
                 <p style={{ color: "var(--muted)", margin: "0 0 18px", fontSize: 14 }}>
@@ -2571,9 +2573,14 @@ function ScheduleTabV2() {
                   ))}
                 </div>
               </fieldset>
+              <div style={{ marginTop: 20, paddingTop: 18, borderTop: "1px solid var(--line)" }}>
+                <Field label="Tab name in the guest menu" id="rn-schedule" hint="Blank keeps the default.">
+                  <Input id="rn-schedule" value={(f.moduleLabels && f.moduleLabels.schedule) || ""} placeholder={moduleLabel("schedule")}
+                    onChange={(e) => Store.updateSettings({ moduleLabels: { ...(f.moduleLabels || {}), schedule: e.target.value } })} />
+                </Field>
+              </div>
             </div>
           </div>
-          <V2TabRename feature="schedule" />
           <SaveFooter />
         </>
       )}
