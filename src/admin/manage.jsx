@@ -2577,7 +2577,9 @@ function SectionPreviewFrame({ scrollTo, sampleTag = false }) {
     if (!w) return;
     try { w.postMessage({ type: "evermore:preview", settingsPatch: { ...settings, __previewSamples: true }, scrollTo }, window.location.origin); } catch (_) {}
   }, [settings, scrollTo]);
-  useEffect(() => { post(); }, [post]);
+  // repost on staged-settings changes AND on device toggle (the resize reflows
+  // the iframe scroll position back to the top — the repost re-scrolls it).
+  useEffect(() => { const t = setTimeout(post, 250); return () => clearTimeout(t); }, [post, device]);
   useEffect(() => {
     const onReady = (e) => { if (e.origin === window.location.origin && e.data && e.data.type === "evermore:preview-ready") post(); };
     window.addEventListener("message", onReady);
