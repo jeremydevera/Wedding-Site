@@ -71,6 +71,28 @@ describe("accessV2 — owner tabs from featureLevel", () => {
     expect(folders).not.toContain("RSVP & moderation");
   });
 
+  it("Show-to-Home preview falls back to SAMPLE data with a tag when the module is empty", () => {
+    Store.set({ clientId: "c1", loading: false, schedule: [] });
+    Store.updateSettings({ accessV2: true, features: {}, showTimeline: true });
+    Store.setAuth({ session: { user: { email: "su@x" } }, role: "superadmin", clientId: null, email: "su@x" });
+    const { container } = render(<AdminApp />);
+    fireEvent.click([...container.querySelectorAll("nav.admin__nav button")].find((b) => b.textContent.trim() === "Schedule"));
+    fireEvent.click(container.querySelector(".panel__title a"));
+    expect(container.textContent).toMatch(/Sample data/);
+    expect(container.textContent).toMatch(/Wedding Ceremony/);
+  });
+
+  it("Show-to-Home preview uses REAL data (no tag) when the module has items", () => {
+    Store.set({ clientId: "c1", loading: false, schedule: [{ time: "1:00 PM", title: "Real Thing", desc: "", loc: "" }] });
+    Store.updateSettings({ accessV2: true, features: {}, showTimeline: true });
+    Store.setAuth({ session: { user: { email: "su@x" } }, role: "superadmin", clientId: null, email: "su@x" });
+    const { container } = render(<AdminApp />);
+    fireEvent.click([...container.querySelectorAll("nav.admin__nav button")].find((b) => b.textContent.trim() === "Schedule"));
+    fireEvent.click(container.querySelector(".panel__title a"));
+    expect(container.textContent).toMatch(/Real Thing/);
+    expect(container.textContent).not.toMatch(/Sample data/);
+  });
+
   it("superadmin on an accessV2 client sees every feature tab", () => {
     Store.set({ clientId: "c1", loading: false });
     Store.updateSettings({ accessV2: true, features: { quiz: "none", music: "none" } });

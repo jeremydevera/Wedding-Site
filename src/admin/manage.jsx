@@ -2547,6 +2547,46 @@ function HomeHeadFields({ k, defEyebrow, defTitle }) {
 // accessV2 shared pieces: the "Show to Home?" text link (sits beside a panel
 // title) and the modal shell — uppercase checkbox + helper, fields + live
 // simulator only while enabled, Save commits staged changes and closes.
+// Preview-only sample content (spec 2026-07-11-preview-sample-data): shown in
+// the Show-to-Home simulators when the client's module is EMPTY, so the
+// preview always demonstrates the layout. Never written to the Store, never
+// saved, never rendered on the public site.
+const V2_SAMPLES = {
+  schedule: [
+    { time: "3:00 PM", title: "Wedding Ceremony", desc: "Exchange of vows", loc: "Main chapel" },
+    { time: "6:00 PM", title: "Dinner", desc: "Reception dinner with toasts", loc: "Grand ballroom" },
+    { time: "9:00 PM", title: "Party", desc: "Dancing till late", loc: "Garden pavilion" },
+  ],
+  detailCards: [
+    { title: "Parking", body: "Complimentary valet at the main entrance from 2:00 PM.", icon: "pin" },
+    { title: "Dress Code", body: "Formal attire — soft neutrals encouraged.", icon: "rings" },
+    { title: "Gifts", body: "Your presence is the present; a wishing well will be available.", icon: "heart" },
+  ],
+  faq: [
+    { q: "Can I bring a plus one?", a: "Check your invitation — seats are reserved by name." },
+    { q: "Is there parking at the venue?", a: "Yes, free valet parking from 2:00 PM." },
+    { q: "What time should I arrive?", a: "Doors open 30 minutes before the ceremony." },
+  ],
+  venue: { name: "Sample venue", address: "Manila Cathedral, Intramuros, Manila", mapQuery: "Manila Cathedral, Intramuros, Manila" },
+  playlist: [
+    { id: "s1", title: "Perfect", artist: "Ed Sheeran", url: "" },
+    { id: "s2", title: "At Last", artist: "Etta James", url: "" },
+  ],
+  entourage: [
+    { id: "g1", title: "Principal Sponsors", people: [{ id: "p1", name: "Maria Santos" }, { id: "p2", name: "Jose Cruz" }] },
+    { id: "g2", title: "Bridesmaids", people: [{ id: "p3", name: "Ana Reyes" }, { id: "p4", name: "Liza Ramos" }] },
+  ],
+};
+// All-or-nothing fallback: real list wins with >=1 item.
+const sampleOr = (list, samples) => ((list || []).length ? { items: list, sample: false } : { items: samples, sample: true });
+function SampleTag() {
+  return (
+    <div style={{ position: "absolute", top: 10, right: 10, zIndex: 2, background: "rgba(90, 96, 108, .92)", color: "#fff", fontSize: 11, fontWeight: 600, letterSpacing: ".04em", padding: "4px 10px", borderRadius: 999 }}>
+      Sample data — your real content will appear here
+    </div>
+  );
+}
+
 function STHLink({ onClick }) {
   return (
     <a href="#" onClick={(e) => { e.preventDefault(); onClick(); }}
@@ -2574,7 +2614,7 @@ function ShowToHomeModal({ open, onClose, showKey, defaultOn = true, helper, chi
           <div className="v2-design__form">{children}</div>
           <aside className="v2-design__sim" aria-label="Home page preview">
             <div className="v2-design__simlabel">Live preview — on Home</div>
-            <div className="v2-sim-frame" style={{ ...((THEMES[f.theme] || {}).vars || {}) }}>{sim}</div>
+            <div className="v2-sim-frame" style={{ position: "relative", ...((THEMES[f.theme] || {}).vars || {}) }}>{sim}</div>
           </aside>
         </div>
       )}
@@ -2761,6 +2801,7 @@ function ScheduleTabV2() {
   const [open, setOpen] = useState(false);
   const on = f.showTimeline !== false;
   const heads = (f.homeHeads || {}).schedule || {};
+  const sch = sampleOr(schedule, V2_SAMPLES.schedule);
   return (
     <div>
       <ScheduleAdmin headExtra={
@@ -2794,12 +2835,13 @@ function ScheduleTabV2() {
               client's palette, fed the staged (unsaved) settings. */}
           <aside className="v2-design__sim" aria-label="Home page preview">
             <div className="v2-design__simlabel">Live preview — schedule section on Home</div>
-            <div className="v2-sim-frame" style={{ ...((THEMES[f.theme] || {}).vars || {}) }}>
+            <div className="v2-sim-frame" style={{ position: "relative", ...((THEMES[f.theme] || {}).vars || {}) }}>
+              {sch.sample && <SampleTag />}
               <div className="sec-head sec-head--center" style={{ marginBottom: 18 }}>
                 <div className="eyebrow">{heads.eyebrow ?? "The Day"}</div>
                 <h2 className="sec-head__title" style={{ fontSize: 30 }}>{heads.title ?? "A glimpse of the schedule"}</h2>
               </div>
-              <ScheduleView items={(f.homeTimelineLayout || "vertical") === "horizontal" ? schedule : (schedule || []).slice(0, 3)} style={(f.homeTimelineLayout || "vertical") === "horizontal" ? "horizontal" : "alt"} />
+              <ScheduleView items={(f.homeTimelineLayout || "vertical") === "horizontal" ? sch.items : sch.items.slice(0, 3)} style={(f.homeTimelineLayout || "vertical") === "horizontal" ? "horizontal" : "alt"} />
             </div>
           </aside>
         </div>
