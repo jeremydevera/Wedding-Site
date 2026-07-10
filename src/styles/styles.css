@@ -1140,6 +1140,19 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .tk-msg__who { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
 .tk-msg__body { white-space: pre-wrap; font-size: 14px; line-height: 1.5; color: var(--ink); }
 .tk-msg__at { font-size: 11px; color: var(--muted); margin-top: 4px; }
+/* Ticket image attachment — thumbnail in a message; click opens full-size. */
+.tk-attach { display: inline-block; margin-top: 8px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); max-width: 220px; }
+.tk-attach img { display: block; width: 100%; height: auto; max-height: 200px; object-fit: cover; }
+/* Image picker (ticket form + reply composer). */
+.tk-form-attach { margin-top: 8px; }
+.tk-compose-attach { margin-top: 8px; }
+.tk-pick__btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; font-size: 13px; font-weight: 600; color: var(--muted); background: transparent; border: 1px dashed var(--line); border-radius: 9px; cursor: pointer; }
+.tk-pick__btn:hover:not(:disabled) { color: var(--accent); border-color: #9db8e8; }
+.tk-pick__btn:disabled { opacity: .5; cursor: default; }
+.tk-pick__preview { position: relative; display: inline-block; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); max-width: 160px; }
+.tk-pick__preview img { display: block; width: 100%; height: auto; max-height: 140px; object-fit: cover; }
+.tk-pick__rm { position: absolute; top: 5px; right: 5px; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: 50%; background: rgba(15, 23, 42, .72); color: #fff; cursor: pointer; }
+.tk-pick__rm svg { width: 13px; height: 13px; }
 .tk-reply { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 4px; }
 .tbl__row--click { cursor: pointer; }
 .tbl__row--click:hover td { background: color-mix(in oklch, var(--accent, #1E5BD6) 4%, transparent); }

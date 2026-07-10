@@ -518,15 +518,23 @@ export async function listTicketMessages(ticketId) {
 // Append a reply to a ticket. senderRole ('owner'|'superadmin') is pinned to the
 // caller's actual role (RLS also enforces this). An owner reply reopens the
 // ticket via the support_reopen_after_owner_msg trigger.
-export async function postTicketMessage(ticketId, body) {
+export async function postTicketMessage(ticketId, body, attachmentUrl) {
   const st = Store.get();
   const role = st.auth?.role === "superadmin" ? "superadmin" : "owner";
   const senderName = role === "superadmin"
     ? "Support"
     : ([st.settings?.partnerA, st.settings?.partnerB].filter(Boolean).join(" & ") || st.auth?.email || "Client");
   const { error } = await supabase.from("support_ticket_messages")
-    .insert({ ticket_id: ticketId, sender_role: role, sender_name: senderName, body: (body || "").trim() });
+    .insert({ ticket_id: ticketId, sender_role: role, sender_name: senderName, body: (body || "").trim(), attachment_url: attachmentUrl || null });
   if (error) throw error;
+}
+
+// Upload one support screenshot to R2 and return its bare key (render with
+// mediaUrl). Owners write under their own client; the superadmin passes the
+// ticket's client_id (the upload Function lets superadmin write any tenant).
+export async function uploadSupportImage(file, clientId) {
+  const { key } = await uploadToR2(file, { scope: "owner", purpose: "support" }, clientId || Store.get().clientId);
+  return key;
 }
 
 // Live thread updates: push new replies for ONE ticket (both the superadmin

@@ -5,10 +5,47 @@
 // manage.jsx. Clicking the launcher's × hides it entirely for the session —
 // the Support tab remains the way back in.
 import React from "react";
-import { submitTicket, listTickets, listTicketMessages, postTicketMessage , subscribeTicketMessagesRealtime} from "@/lib/api.js";
+import { submitTicket, listTickets, listTicketMessages, postTicketMessage, uploadSupportImage, subscribeTicketMessagesRealtime} from "@/lib/api.js";
 import { Button, Field, Icon, Input, Modal, Select, Textarea, toast } from "@/ui/components.jsx";
+import { mediaUrl } from "@/lib/media.js";
 import { fmtDate } from "@/admin/core.jsx";
-const { useState, useEffect, useRef } = React;
+const { useState, useEffect, useRef, useMemo } = React;
+
+// A stored R2 key rendered as a clickable thumbnail that opens full-size in a
+// new tab. Used for both the original ticket's screenshot and reply images.
+function TicketAttachment({ url }) {
+  if (!url) return null;
+  const src = mediaUrl(url);
+  return (
+    <a href={src} target="_blank" rel="noreferrer" className="tk-attach" title="Open image">
+      <img src={src} alt="Attachment" loading="lazy" />
+    </a>
+  );
+}
+
+// Image picker for the ticket form + reply composer. Holds the chosen File in
+// the parent (read on send); shows a preview thumbnail with a remove button.
+// One image at a time.
+function ImagePicker({ file, onPick, disabled }) {
+  const inputRef = useRef(null);
+  const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
+  return file ? (
+    <div className="tk-pick__preview">
+      <img src={preview} alt="Selected" />
+      <button type="button" className="tk-pick__rm" onClick={() => onPick(null)} disabled={disabled} aria-label="Remove image">{Icon.close({})}</button>
+    </div>
+  ) : (
+    <>
+      <input ref={inputRef} type="file" accept="image/*" style={{ display: "none" }}
+        onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) onPick(f); e.target.value = ""; }} />
+      <button type="button" className="tk-pick__btn" onClick={() => inputRef.current && inputRef.current.click()} disabled={disabled}>
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21.4 11.05 12.25 20.2a5.5 5.5 0 0 1-7.78-7.78l9.19-9.19a3.5 3.5 0 1 1 4.95 4.95l-9.2 9.19a1.5 1.5 0 0 1-2.12-2.12l8.49-8.49" /></svg>
+        Attach image
+      </button>
+    </>
+  );
+}
 
 // Ticket status → chip class + labels. Owner sees a customer-friendly label
 // ("waiting_reply" = the superadmin replied and is waiting on them → shown as
@@ -25,6 +62,7 @@ export function TicketThread({ ticket, onChanged, onGone, leftAction, rightActio
   const [msgs, setMsgs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reply, setReply] = useState("");
+  const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const endRef = useRef(null);
   const load = () => listTicketMessages(ticket.id)
@@ -37,11 +75,14 @@ export function TicketThread({ ticket, onChanged, onGone, leftAction, rightActio
   useEffect(() => { if (endRef.current && endRef.current.scrollIntoView) endRef.current.scrollIntoView({ block: "nearest" }); }, [msgs.length]);
 
   async function send() {
-    if (busy || !reply.trim()) return;
+    if (busy || (!reply.trim() && !file)) return;
     setBusy(true);
     try {
-      await postTicketMessage(ticket.id, reply);
+      let attachmentUrl = null;
+      if (file) attachmentUrl = await uploadSupportImage(file, ticket.client_id);
+      await postTicketMessage(ticket.id, reply, attachmentUrl);
       setReply("");
+      setFile(null);
       await load();
       onChanged && onChanged();
     } catch (e) {
@@ -64,6 +105,7 @@ export function TicketThread({ ticket, onChanged, onGone, leftAction, rightActio
         <div className="tk-msg tk-msg--client">
           <div className="tk-msg__who">{ticket.submitter_name || ticket.submitter_email || "Client"} · original request</div>
           <div className="tk-msg__body">{ticket.message}</div>
+          <TicketAttachment url={ticket.attachment_url} />
           <div className="tk-msg__at">{fmtDate(ticket.created_at)}</div>
         </div>
         {/* Replies */}
@@ -71,7 +113,8 @@ export function TicketThread({ ticket, onChanged, onGone, leftAction, rightActio
         {!loading && msgs.map((m) => (
           <div key={m.id} className={"tk-msg " + (m.sender_role === "superadmin" ? "tk-msg--support" : "tk-msg--client")}>
             <div className="tk-msg__who">{m.sender_role === "superadmin" ? (m.sender_name || "Support") : (m.sender_name || "Client")}</div>
-            <div className="tk-msg__body">{m.body}</div>
+            {m.body && <div className="tk-msg__body">{m.body}</div>}
+            <TicketAttachment url={m.attachment_url} />
             <div className="tk-msg__at">{fmtDate(m.created_at)}</div>
           </div>
         ))}
@@ -83,12 +126,13 @@ export function TicketThread({ ticket, onChanged, onGone, leftAction, rightActio
         <div className="tk-composer">
           <Textarea rows={2} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Write a reply…"
             onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") send(); }} />
-          <button type="button" className="tk-send" onClick={send} disabled={busy || !reply.trim()} aria-label="Send reply">
+          <button type="button" className="tk-send" onClick={send} disabled={busy || (!reply.trim() && !file)} aria-label="Send reply">
             {busy
               ? <span className="tk-send__dot" aria-hidden="true" />
               : <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20V5.5" /><path d="M5.5 11.5 12 5l6.5 6.5" /></svg>}
           </button>
         </div>
+        <div className="tk-compose-attach"><ImagePicker file={file} onPick={setFile} disabled={busy} /></div>
         {(leftAction || rightAction) && (
           <div className="tk-reply__actions">
             <div className="tk-reply__left">{leftAction}</div>
@@ -129,6 +173,7 @@ const BLANK = { subject: "", category: "Question", urgency: "Normal", message: "
 // The ticket form — shared by the floating widget's modal and the Support tab.
 function TicketForm({ tab, onDone, onCancel }) {
   const [form, setForm] = useState(BLANK);
+  const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
 
@@ -137,9 +182,12 @@ function TicketForm({ tab, onDone, onCancel }) {
     if (!form.subject.trim() || !form.message.trim()) { toast("Please add a subject and a message.", "error"); return; }
     setBusy(true);
     try {
-      await submitTicket(form, tab);
+      let attachmentUrl = null;
+      if (file) attachmentUrl = await uploadSupportImage(file);
+      await submitTicket({ ...form, attachmentUrl }, tab);
       toast("Ticket sent — we'll get back to you soon.", "success");
       setForm(BLANK);
+      setFile(null);
       onDone && onDone();
     } catch (e) {
       toast(e.message || "Couldn't send your ticket — try again.", "error");
@@ -156,6 +204,7 @@ function TicketForm({ tab, onDone, onCancel }) {
         <Field label="Urgency" id="sw-urg"><Select id="sw-urg" value={form.urgency} onChange={set("urgency")}>{URGENCIES.map((u) => <option key={u} value={u}>{u}</option>)}</Select></Field>
       </div>
       <Field label="Message" id="sw-msg"><Textarea id="sw-msg" rows={5} value={form.message} onChange={set("message")} placeholder="Tell us what you need…" /></Field>
+      <div className="tk-form-attach"><ImagePicker file={file} onPick={setFile} disabled={busy} /></div>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
         {onCancel && <Button variant="ghost" onClick={() => !busy && onCancel()} disabled={busy}>Cancel</Button>}
         <Button variant="primary" onClick={send} disabled={busy}>{busy ? "Sending…" : "Send ticket"}</Button>

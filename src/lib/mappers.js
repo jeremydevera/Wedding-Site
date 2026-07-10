@@ -115,6 +115,7 @@ export function ticketToRow(form, clientId, ctx = {}) {
     message: (form.message || "").trim(),
     context_url: [ctx.subdomain, ctx.tab].filter(Boolean).join(" / ") || null,
     status: "open",
+    attachment_url: form.attachmentUrl || null,
   };
 }
 
