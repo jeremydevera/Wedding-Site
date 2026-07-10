@@ -2587,6 +2587,36 @@ function SampleTag() {
   );
 }
 
+// Device-framed preview: on a phone-sized admin the preview sits inside a
+// drawn PHONE (and, since the real viewport is mobile, the public components
+// naturally render their mobile styles); on desktop it sits inside a LAPTOP
+// and renders desktop mode. Frame follows the admin's viewport live.
+function useIsPhoneViewport() {
+  const canMQ = typeof window !== "undefined" && typeof window.matchMedia === "function";
+  const [isPhone, setIsPhone] = useState(() => canMQ && window.matchMedia("(max-width: 860px)").matches);
+  useEffect(() => {
+    if (!canMQ) return;
+    const mq = window.matchMedia("(max-width: 860px)");
+    const fn = (e) => setIsPhone(e.matches);
+    mq.addEventListener ? mq.addEventListener("change", fn) : mq.addListener(fn);
+    return () => { mq.removeEventListener ? mq.removeEventListener("change", fn) : mq.removeListener(fn); };
+  }, [canMQ]);
+  return isPhone;
+}
+function DeviceFrame({ isPhone, children }) {
+  return isPhone ? (
+    <div className="dev-phone">
+      <span className="dev-phone__notch" aria-hidden="true" />
+      <div className="dev-phone__screen">{children}</div>
+    </div>
+  ) : (
+    <div className="dev-laptop">
+      <div className="dev-laptop__screen">{children}</div>
+      <div className="dev-laptop__base" aria-hidden="true" />
+    </div>
+  );
+}
+
 function STHLink({ onClick }) {
   return (
     <a href="#" onClick={(e) => { e.preventDefault(); onClick(); }}
@@ -2598,6 +2628,7 @@ function STHLink({ onClick }) {
 function ShowToHomeModal({ open, onClose, showKey, defaultOn = true, helper, children, sim }) {
   const { settings } = useStore();
   const { saving, dirty, save } = React.useContext(AdminSaveCtx);
+  const isPhone = useIsPhoneViewport();
   const f = settings;
   const on = defaultOn ? f[showKey] !== false : f[showKey] === true;
   return (
@@ -2613,8 +2644,10 @@ function ShowToHomeModal({ open, onClose, showKey, defaultOn = true, helper, chi
         <div className="v2-design v2-design--split">
           <div className="v2-design__form">{children}</div>
           <aside className="v2-design__sim" aria-label="Home page preview">
-            <div className="v2-design__simlabel">Live preview — on Home</div>
-            <div className="v2-sim-frame" style={{ position: "relative", ...((THEMES[f.theme] || {}).vars || {}) }}>{sim}</div>
+            <div className="v2-design__simlabel">Live preview — on Home ({isPhone ? "mobile" : "desktop"})</div>
+            <DeviceFrame isPhone={isPhone}>
+              <div className="v2-sim-frame v2-sim-frame--device" style={{ position: "relative", ...((THEMES[f.theme] || {}).vars || {}) }}>{sim}</div>
+            </DeviceFrame>
           </aside>
         </div>
       )}
@@ -2805,6 +2838,7 @@ function EntourageTabV2() {
 function ScheduleTabV2() {
   const { settings, schedule } = useStore();
   const { saving, dirty, save } = React.useContext(AdminSaveCtx);
+  const isPhone = useIsPhoneViewport();
   const f = settings;
   const toggleShow = (k, v) => Store.updateSettings({ [k]: v });
   const [open, setOpen] = useState(false);
@@ -2843,8 +2877,9 @@ function ScheduleTabV2() {
           {/* REAL simulator: the actual public ScheduleView, themed with the
               client's palette, fed the staged (unsaved) settings. */}
           <aside className="v2-design__sim" aria-label="Home page preview">
-            <div className="v2-design__simlabel">Live preview — schedule section on Home</div>
-            <div className="v2-sim-frame" style={{ position: "relative", ...((THEMES[f.theme] || {}).vars || {}) }}>
+            <div className="v2-design__simlabel">Live preview — schedule section on Home ({isPhone ? "mobile" : "desktop"})</div>
+            <DeviceFrame isPhone={isPhone}>
+            <div className="v2-sim-frame v2-sim-frame--device" style={{ position: "relative", ...((THEMES[f.theme] || {}).vars || {}) }}>
               {sch.sample && <SampleTag />}
               <div className="sec-head sec-head--center" style={{ marginBottom: 18 }}>
                 <div className="eyebrow">{heads.eyebrow ?? "The Day"}</div>
@@ -2852,6 +2887,7 @@ function ScheduleTabV2() {
               </div>
               <ScheduleView items={(f.homeTimelineLayout || "vertical") === "horizontal" ? sch.items : sch.items.slice(0, 3)} style={(f.homeTimelineLayout || "vertical") === "horizontal" ? "horizontal" : "alt"} />
             </div>
+            </DeviceFrame>
           </aside>
         </div>
         )}
