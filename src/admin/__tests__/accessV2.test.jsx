@@ -47,6 +47,30 @@ describe("accessV2 — owner tabs from featureLevel", () => {
     expect(tabs).toContain("Guestbook");
   });
 
+  it("accessV2 Settings loses Features/Access folders, gains RSVP & moderation", () => {
+    Store.set({ clientId: "c1", loading: false });
+    Store.updateSettings({ accessV2: true, features: {} });
+    Store.setAuth({ session: { user: { email: "su@x" } }, role: "superadmin", clientId: null, email: "su@x" });
+    const { container } = render(<AdminApp />);
+    fireEvent.click([...container.querySelectorAll("nav.admin__nav button")].find((b) => b.textContent.trim() === "Settings"));
+    const folders = [...container.querySelectorAll(".folders .folder")].map((b) => b.textContent.trim());
+    expect(folders).toContain("RSVP & moderation");
+    expect(folders).not.toContain("Features");
+    expect(folders).not.toContain("Access");
+  });
+
+  it("legacy Settings folders unchanged", () => {
+    Store.set({ clientId: "c1", loading: false });
+    Store.updateSettings({ accessV2: false, features: null });
+    Store.setAuth({ session: { user: { email: "su@x" } }, role: "superadmin", clientId: null, email: "su@x" });
+    const { container } = render(<AdminApp />);
+    fireEvent.click([...container.querySelectorAll("nav.admin__nav button")].find((b) => b.textContent.trim() === "Settings"));
+    const folders = [...container.querySelectorAll(".folders .folder")].map((b) => b.textContent.trim());
+    expect(folders).toContain("Features");
+    expect(folders).toContain("Access");
+    expect(folders).not.toContain("RSVP & moderation");
+  });
+
   it("superadmin on an accessV2 client sees every feature tab", () => {
     Store.set({ clientId: "c1", loading: false });
     Store.updateSettings({ accessV2: true, features: { quiz: "none", music: "none" } });

@@ -2005,7 +2005,12 @@ export function SettingsAdmin() {
   const premiumThemes = allowed.filter((k) => THEMES[k] && isPremiumTheme(k));
   // "General" (Couple & Event) moved to the top-level Home tab.
   // Photos hidden for now (future feature) — body code stays, tab not shown.
-  const STABS = [["features", "Features", "check"], ["appearance", "Theme", "grid"], ["access", "Access", "check"], ["account", "Account", "user"]];
+  // accessV2: feature membership + permissions moved to the superadmin table;
+  // module toggles, renames and owner-grants disappear here. RSVP options and
+  // guestbook moderation stay (RSVP has no content tab).
+  const STABS = settings.accessV2 === true
+    ? [["rsvp", "RSVP & moderation", "check"], ["appearance", "Theme", "grid"], ["account", "Account", "user"]]
+    : [["features", "Features", "check"], ["appearance", "Theme", "grid"], ["access", "Access", "check"], ["account", "Account", "user"]];
 
   return (
     <div>
@@ -2021,6 +2026,33 @@ export function SettingsAdmin() {
           );
         })}
       </div>
+
+      {tab === "rsvp" && settings.accessV2 === true && (<div className="panel">
+        <div className="panel__head"><div className="panel__title">RSVP &amp; moderation</div></div>
+        <div className="panel__body" style={{ maxWidth: 760, display: "grid", gap: 16 }}>
+          <div style={{ display: "flex", gap: 10 }}>
+            <input type="checkbox" checked={f.strictRsvp === true} onChange={(e) => setKey("strictRsvp", e.target.checked)} style={{ width: 16, height: 16, flex: "none", marginTop: 2, accentColor: "var(--accent)" }} />
+            <div>
+              <div style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: ".03em" }}>Enable Strict RSVP</div>
+              <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>Track an invited-guest list with seat allocations, and see who hasn't replied. Adds a Guests tab. Only guests on the list can RSVP, and party size is capped at their seat allocation.</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <input type="checkbox" checked={f.rsvpRequirePhone === true} onChange={(e) => setKey("rsvpRequirePhone", e.target.checked)} style={{ width: 16, height: 16, flex: "none", marginTop: 2, accentColor: "var(--accent)" }} />
+            <div>
+              <div style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: ".03em" }}>Require contact number in RSVP</div>
+              <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>Guests must enter a phone number to submit the RSVP form. Off = phone stays optional.</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <input type="checkbox" checked={f.autoApproveGuestbook === true} onChange={(e) => setKey("autoApproveGuestbook", e.target.checked)} style={{ width: 16, height: 16, flex: "none", marginTop: 2, accentColor: "var(--accent)" }} />
+            <div>
+              <div style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: ".03em" }}>Auto-approve guestbook messages</div>
+              <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>When on, messages post immediately. When off, they stay hidden until you approve them in the Guestbook tab.</div>
+            </div>
+          </div>
+        </div>
+      </div>)}
 
       {tab === "features" && (<div className="panel">
         <div className="panel__head"><div className="panel__title">Features</div></div>
