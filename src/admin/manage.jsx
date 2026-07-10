@@ -2603,12 +2603,12 @@ function SectionPreviewFrame({ scrollTo, sampleTag = false }) {
   }, [post]);
   return (
     <div style={{ width: "100%" }}>
-      <div className="seg" style={{ display: "flex", width: "fit-content", margin: "0 auto 12px" }}>
+      <div className="seg" style={{ display: "flex", width: "fit-content", margin: "0 auto 8px" }}>
         <button type="button" className={device === "desktop" ? "on" : ""} onClick={() => setDevice("desktop")}>Desktop</button>
         <button type="button" className={device === "mobile" ? "on" : ""} onClick={() => setDevice("mobile")}>Mobile</button>
       </div>
+      <div className="v2-design__simlabel" style={{ textAlign: "center", marginBottom: 10 }}>Live preview — on Home</div>
       <div ref={wrapRef} style={{ width: "100%", position: "relative" }}>
-        {sampleTag && <SampleTag />}
         <div style={{ width: "fit-content", margin: "0 auto" }}>
           <DeviceFrame isPhone={device === "mobile"}>
             <div style={{ width: Math.round(baseW * scale), height: Math.round(baseH * scale), overflow: "hidden", background: "#fff" }}>
@@ -2617,13 +2617,14 @@ function SectionPreviewFrame({ scrollTo, sampleTag = false }) {
             </div>
           </DeviceFrame>
         </div>
+        {sampleTag && <SampleTag />}
       </div>
     </div>
   );
 }
 function SampleTag() {
   return (
-    <div style={{ position: "absolute", top: 10, right: 10, zIndex: 2, background: "rgba(90, 96, 108, .92)", color: "#fff", fontSize: 11, fontWeight: 600, letterSpacing: ".04em", padding: "4px 10px", borderRadius: 999 }}>
+    <div style={{ width: "fit-content", margin: "10px auto 0", background: "rgba(90, 96, 108, .92)", color: "#fff", fontSize: 11, fontWeight: 600, letterSpacing: ".04em", padding: "4px 12px", borderRadius: 999 }}>
       Sample data — your real content will appear here
     </div>
   );
@@ -2655,7 +2656,6 @@ function ShowToHomeModal({ open, onClose, showKey, defaultOn = true, helper, chi
         <div className="v2-design v2-design--split">
           <div className="v2-design__form">{children}</div>
           <aside className="v2-design__sim" aria-label="Home page preview">
-            <div className="v2-design__simlabel">Live preview — on Home</div>
             {open && <SectionPreviewFrame scrollTo={scrollTo} sampleTag={sampleTag} />}
           </aside>
         </div>
@@ -2834,7 +2834,6 @@ function ScheduleTabV2() {
           {/* REAL simulator: the actual public ScheduleView, themed with the
               client's palette, fed the staged (unsaved) settings. */}
           <aside className="v2-design__sim" aria-label="Home page preview">
-            <div className="v2-design__simlabel">Live preview — on Home</div>
             {open && <SectionPreviewFrame scrollTo="home-schedule" sampleTag={(schedule || []).length === 0} />}
           </aside>
         </div>
