@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase.js";
 import { createOwner, updateOwnerEmail, deleteOwner } from "@/lib/auth.js";
 import { THEMES } from "@/themes";
 import { themesForEvent } from "@/config/eventTypes.js";
-import { moduleLabel, DISABLED_MODULES, OWNER_EDIT_HOME, OWNER_EDIT_TABS , DEFAULT_CLIENT_MODULES} from "@/lib/roles.js";
+import { FEATURE_ROWS, FEATURE_LEVELS, FEATURE_DEFAULTS, moduleLabel, DISABLED_MODULES, OWNER_EDIT_HOME, OWNER_EDIT_TABS , DEFAULT_CLIENT_MODULES} from "@/lib/roles.js";
 import { PLATFORM_DOMAIN, clientUrl, isValidSubdomain } from "@/config/site.js"; // platform config → src/config/site.js
 import { Button, confirmDialog, Field, Icon, Input, Modal, Pager, SectionHead, Select, Textarea, toast, usePaged } from "@/ui/components.jsx";
 import { listMedia, deleteFromR2, listSiteRequests, approveSiteRequest, setSiteRequestStatus, updateSiteRequest, deleteSiteRequest, listTickets, setTicketStatus, updateTicket, subscribeTicketsRealtime, deleteTicket } from "@/lib/api.js";
@@ -36,8 +36,65 @@ function AccessFields({ v, set, omit = [], passwordEnabled = true }) {
   const galleryOff = DISABLED_MODULES.has("gallery");
   const skip = new Set(omit);
   const setGrant = (k, val) => set({ ownerEdit: { ...(v.ownerEdit || {}), [k]: val } });
+  // ── Feature Permissions v2 (accessV2): ONE None/View/Edit table replaces the
+  // Features toggles + owner-edit grants. Toggle below flips the model; only
+  // the sandbox trial uses it for now (spec 2026-07-11).
+  const v2Level = (k) => (v.features && FEATURE_LEVELS.includes(v.features[k]) ? v.features[k] : FEATURE_DEFAULTS[k]);
+  const v2SetLevel = (k, lvl) => set({ features: { ...(v.features || {}), [k]: lvl } });
+  const v2Toggle = (
+    <div className="form-row">
+      <div className="form-row__head">
+        <div className="form-row__label">Permission model</div>
+        <div className="form-row__desc">accessV2 trial: one None/View/Edit table instead of Features + Access.</div>
+      </div>
+      <div className="form-row__fields">
+        <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14 }}>
+          <input type="checkbox" checked={v.accessV2 === true} onChange={(e) => set({ accessV2: e.target.checked })} style={{ width: 16, height: 16, accentColor: "var(--accent)" }} />
+          New permission model (sandbox trial)
+        </label>
+      </div>
+    </div>
+  );
+  if (v.accessV2 === true) {
+    return (
+      <>
+        {v2Toggle}
+        <div className="form-row">
+          <div className="form-row__head">
+            <div className="form-row__label">Features &amp; permissions</div>
+            <div className="form-row__desc">None = not on their site · View = on the site, you manage the content · Edit = they get the admin tab.</div>
+          </div>
+          <div className="form-row__fields">
+            <table className="tbl" style={{ width: "100%" }}>
+              <tbody>
+                {FEATURE_ROWS.map((r) => (
+                  <tr key={r.k}>
+                    <td><strong>{r.label}</strong><div style={{ color: "var(--muted)", fontSize: 12 }}>{r.desc}</div></td>
+                    <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
+                      <div className="seg">
+                        {["none", "view", "edit"].filter((l) => !(r.noNone && l === "none")).map((l) => (
+                          <button key={l} type="button" className={v2Level(r.k) === l ? "on" : ""} onClick={() => v2SetLevel(r.k, l)}>
+                            {l === "none" ? "None" : l === "view" ? "View" : "Edit"}
+                          </button>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                <tr>
+                  <td><strong>RSVP</strong><div style={{ color: "var(--muted)", fontSize: 12 }}>Core feature of the system</div></td>
+                  <td style={{ textAlign: "right" }}><span className="tag tag--hidden">Edit — always</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </>
+    );
+  }
   return (
     <>
+      {v2Toggle}
       <div className="form-row">
         <div className="form-row__head">
           <div className="form-row__label">Features</div>
@@ -529,6 +586,8 @@ export function ClientsAdmin() {
       galleryEnabled: ct.galleryEnabled !== false,
       strictRsvp: ct.strictRsvp === true,
       ownerEdit: { ...(ct.ownerEdit || {}) },
+      accessV2: ct.accessV2 === true,
+      features: ct.features ? { ...ct.features } : null,
     });
     // renders as a Modal over the list — no page swap
   }
@@ -572,6 +631,8 @@ export function ClientsAdmin() {
         uploadsEnabled: editForm.uploadsEnabled,
         galleryEnabled: editForm.galleryEnabled,
         ownerEdit: editForm.ownerEdit || {},
+        accessV2: editForm.accessV2 === true,
+        features: editForm.features || null,
       };
       const { error } = await supabase.from("clients").update({ content }).eq("id", id);
       if (error) { toast("Save failed: " + error.message, "err"); return; }
