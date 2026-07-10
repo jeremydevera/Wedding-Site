@@ -2048,6 +2048,13 @@ export function SettingsAdmin() {
                 <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>Track an invited-guest list with seat allocations, and see who hasn't replied. Adds a Guests tab. Only guests on the list can RSVP, and party size is capped at their seat allocation.</div>
               </div>
             </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <input type="checkbox" checked={f.rsvpRequirePhone === true} onChange={(e) => setKey("rsvpRequirePhone", e.target.checked)} style={{ width: 16, height: 16, flex: "none", marginTop: 2, accentColor: "var(--accent)" }} />
+              <div>
+                <div style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: ".03em" }}>Require contact number in RSVP</div>
+                <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>Guests must enter a phone number to submit the RSVP form. Off = phone stays optional.</div>
+              </div>
+            </div>
           </div>
 
           <div style={{ marginTop: 26, paddingTop: 20, borderTop: "1px solid var(--line)" }}>

@@ -58,6 +58,7 @@ export function RSVPPage() {
 
   const attending = form.status === "attending";
   const strict = settings.strictRsvp === true;
+  const phoneRequired = settings.rsvpRequirePhone === true;
 
   // Strict RSVP: once a first+last name is typed, look up the guest on the list
   // (the RPC returns only a status + a number — never the list itself) and show
@@ -119,6 +120,7 @@ export function RSVPPage() {
     if (!form.firstName.trim()) er.firstName = "Please enter your first name.";
     if (!form.lastName.trim()) er.lastName = "Please enter your last name.";
     if (!isValidOptionalEmail(form.email)) er.email = "Please enter a valid email, or leave it blank.";
+    if (phoneRequired && !form.phone.trim()) er.phone = "Please enter your contact number.";
     if (attending) {
       const n = parseInt(form.count, 10);
       if (strict) {
@@ -345,8 +347,8 @@ export function RSVPPage() {
               <Field label="Email" hint="Optional" error={errors.email} id="r-email">
                 <Input id="r-email" type="email" inputMode="email" value={form.email} onChange={set("email")} />
               </Field>
-              <Field label="Phone" hint="Optional" id="r-phone">
-                <Input id="r-phone" value={form.phone} onChange={set("phone")} />
+              <Field label="Phone" hint={phoneRequired ? undefined : "Optional"} required={phoneRequired} error={errors.phone} id="r-phone">
+                <Input id="r-phone" type="tel" inputMode="tel" value={form.phone} onChange={set("phone")} />
               </Field>
             </div>
 
