@@ -18,7 +18,7 @@ import { AdminApp, ImageUploadField } from "@/admin/manage.jsx";
 import { ApplyWizard } from "@/admin/apply.jsx";
 import { RoadToForeverSite } from "@/features/roadtoforever.jsx";
 import { hasSection } from "@/config/eventTypes.js";
-import { moduleEnabled, moduleLabel, sectionLabel } from "@/lib/roles.js";
+import { featureVisible, moduleEnabled, moduleLabel, sectionLabel } from "@/lib/roles.js";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // ============================================================================
@@ -67,9 +67,9 @@ function SectionUnavailable({ section }) {
 // Nav links visible for the active event type (home always shows). Driven by
 // the event-type registry so adding a type (birthday, corporate) re-shapes nav.
 // Also filters by per-client module flags (absent key = on by default).
-function visibleNav(eventType, modules, labels) {
+function visibleNav(eventType, settings, labels) {
   return NAV_LINKS
-    .filter((l) => l.key === "home" || (hasSection(eventType, l.key) && moduleEnabled(modules, l.key)))
+    .filter((l) => l.key === "home" || (hasSection(eventType, l.key) && featureVisible(settings, l.key)))
     .map((l) => {
       const custom = labels && typeof labels[l.key] === "string" ? labels[l.key].trim() : "";
       return custom ? { ...l, label: custom } : l;
@@ -175,7 +175,7 @@ export function Nav({ route }) {
           <span className="nav__names">{settings.partnerA}{settings.partnerB ? <> <span className="amp">&amp;</span> {settings.partnerB}</> : null}</span>
         </a>
         <div className="nav__links">
-          {visibleNav(settings.eventType, settings.modules, settings.moduleLabels).map((l) => (
+          {visibleNav(settings.eventType, settings, settings.moduleLabels).map((l) => (
             <button key={l.key} className={"nav__link" + (route === l.key ? " nav__link--active" : "")} onClick={() => go(l.key)}>{l.label}</button>
           ))}
         </div>
@@ -200,7 +200,7 @@ export function Nav({ route }) {
               <Monogram a={settings.partnerA} b={settings.partnerB} size={40} />
               <button className="nav__burger" onClick={() => setDrawer(false)} aria-label="Close">{Icon.close({})}</button>
             </div>
-            {visibleNav(settings.eventType, settings.modules, settings.moduleLabels).map((l) => (
+            {visibleNav(settings.eventType, settings, settings.moduleLabels).map((l) => (
               <button key={l.key} className={"drawer__link" + (route === l.key ? " drawer__link--active" : "")} onClick={() => { go(l.key); setDrawer(false); }}>{l.label}</button>
             ))}
             {moduleEnabled(settings.modules, "gallery") && <button className="drawer__link" onClick={() => { go("upload"); setDrawer(false); }}>Share Photos</button>}
@@ -251,7 +251,7 @@ export function Footer() {
         <div className="footer__names">{settings.partnerA}{settings.partnerB ? <> <span className="amp">&amp;</span> {settings.partnerB}</> : null}</div>
         <div className="footer__hash">{settings.hashtag}</div>
         <div className="footer__links">
-          {visibleNav(settings.eventType, settings.modules, settings.moduleLabels).map((l) => <button key={l.key} onClick={() => go(l.key)}>{l.label}</button>)}
+          {visibleNav(settings.eventType, settings, settings.moduleLabels).map((l) => <button key={l.key} onClick={() => go(l.key)}>{l.label}</button>)}
           {moduleEnabled(settings.modules, "gallery") && <button onClick={() => go("upload")}>Upload</button>}
         </div>
         <p className="footer__fine">{fine.date}{fine.sep && " · "}{fine.venue}</p>
@@ -475,7 +475,7 @@ export function App() {
 
   const isNavSection = NAV_LINKS.some((l) => l.key === route && l.key !== "home");
   const routeBlocked = route !== "home" && route !== "admin" &&
-    (!moduleEnabled(settings.modules, route) || (isNavSection && !hasSection(settings.eventType, route)));
+    (!featureVisible(settings, route) || (isNavSection && !hasSection(settings.eventType, route)));
   const ActivePage = routeBlocked ? SectionUnavailable : Page;
 
   return (

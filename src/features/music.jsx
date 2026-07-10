@@ -76,16 +76,20 @@ const fmt = (s) => { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 
 // player is the only visible control.
 export function MusicMount() {
   const { playlist, settings } = useStore();
-  const n = (playlist || []).length;
+  // accessV2 "none" on music silences the engine entirely (no autoplay, no
+  // tracks); legacy clients and view/edit levels keep today's behavior.
+  const musicOff = settings && settings.accessV2 === true && !featureVisible(settings, "music");
+  const tracks = musicOff ? [] : (playlist || []);
+  const n = tracks.length;
   // Autoplay is opt-out (default on). When off, the engine still has the tracks
   // loaded so the home player works — it just won't start on its own.
   // Never autoplay inside a preview iframe (the /apply theme simulator, the admin
   // theme picker) — a muted, still preview, not a concert.
   const isPreview = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("preview");
   const autoplay = !isPreview && (settings && settings.musicAutoplay) !== false;
-  const playlistKey = JSON.stringify(playlist);
+  const playlistKey = JSON.stringify(playlist) + ":" + musicOff;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setTracks(playlist || []); }, [playlistKey]);
+  useEffect(() => { setTracks(tracks); }, [playlistKey]);
   useEffect(() => {
     if (!n || !autoplay) return;
     let done = false;

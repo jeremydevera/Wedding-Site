@@ -4,7 +4,7 @@ import { onSiteScroll, scrollOffset, siteScrollEl } from "@/lib/scroll.js";
 import { cropTransform, mediaUrl } from "@/lib/media.js";
 import { useStore } from "@/lib/store.jsx";
 import { mapStyleFilter } from "@/lib/mapStyles.js";
-import { moduleEnabled, sectionLabel } from "@/lib/roles.js";
+import { featureVisible, moduleEnabled, sectionLabel } from "@/lib/roles.js";
 import { egTintGradientFor, envColorFilterFor } from "@/themes";
 import { Button, Countdown, FloatingDecor, Icon, Placeholder, SectionHead, mapCoordStr, mapDirUrl, mapEmbedUrl, mapResolveQuery } from "@/ui/components.jsx";
 import { VinylPlayer } from "@/features/music.jsx";
@@ -602,7 +602,7 @@ export function Home() {
 
       {/* MAP — venue location right after the invitation (map only, framed).
           Hidden when the Venue module is off (matches nav + /venue route). */}
-      {moduleEnabled(s.modules, "venue") && s.showMap !== false && homeMaps.length > 0 && (
+      {featureVisible(s, "venue") && s.showMap !== false && homeMaps.length > 0 && (
         <section className="block" id="home-map">
           <div className="container">
             <SectionHead center eyebrow={hh("maps", "The Venue", "Where we'll celebrate").e} title={hh("maps", "The Venue", "Where we'll celebrate").t} />
@@ -615,7 +615,7 @@ export function Home() {
 
       {/* SCHEDULE PREVIEW — hidden when the timeline toggle is off or the
           Schedule module is disabled (matches nav + /schedule route). */}
-      {s.showTimeline !== false && moduleEnabled(s.modules, "schedule") && (
+      {s.showTimeline !== false && featureVisible(s, "schedule") && (
       <section className="block block--tint" id="home-schedule">
         <div className="container">
           <SectionHead center eyebrow={hh("schedule", "The Day", "A glimpse of the schedule").e} title={hh("schedule", "The Day", "A glimpse of the schedule").t} />
@@ -632,7 +632,7 @@ export function Home() {
       {/* DETAILS PREVIEW — opt-in (Home → Details), right after the schedule
           glimpse. Cards come from the Details tab; layout = vertical stack or a
           horizontally scrolling row. Hidden when the Details module is off. */}
-      {s.showHomeDetails === true && moduleEnabled(s.modules, "details") && detailCards.filter((c) => (c.title || "").trim() || (c.body || "").trim()).length > 0 && (
+      {s.showHomeDetails === true && featureVisible(s, "details") && detailCards.filter((c) => (c.title || "").trim() || (c.body || "").trim()).length > 0 && (
         <section className="block" id="home-details">
           <div className="container">
             <SectionHead center eyebrow={hh("details", sectionLabel("details", s.moduleLabels, "Details"), "").e} title={hh("details", "", "The details").t} />
@@ -659,7 +659,7 @@ export function Home() {
 
       {/* FAQ PREVIEW — opt-in (Home → FAQ), after the details preview. Questions
           come from the Details tab; hidden when the Details module is off. */}
-      {s.showHomeFaq === true && moduleEnabled(s.modules, "details") && (Array.isArray(faq) ? faq : []).filter((f) => f.home !== false).length > 0 && (
+      {s.showHomeFaq === true && featureVisible(s, "details") && (Array.isArray(faq) ? faq : []).filter((f) => f.home !== false).length > 0 && (
         <section className="block block--tint" id="home-faq">
           <div className="container container--narrow">
             <SectionHead center eyebrow={hh("faq", "Good to know", "Frequently asked").e} title={hh("faq", "Good to know", "Frequently asked").t} />
@@ -669,13 +669,13 @@ export function Home() {
       )}
 
       {/* ATTIRE GUIDE — right after the schedule glimpse */}
-      {s.showAttire !== false && <AttireView groups={attire} />}
+      {s.showAttire !== false && (s.accessV2 !== true || featureVisible(s, "details")) && <AttireView groups={attire} />}
 
       {/* MUSIC — vinyl player now sits right after the schedule glimpse */}
-      {s.showMusic !== false && <VinylPlayer tracks={playlist} />}
+      {s.showMusic !== false && (s.accessV2 !== true || featureVisible(s, "music")) && <VinylPlayer tracks={playlist} />}
 
       {/* ENTOURAGE — groups of people (Groomsmen, Bridesmaids, …) */}
-      {s.showEntourage !== false && <EntourageView groups={entourage} />}
+      {s.showEntourage !== false && (s.accessV2 !== true || featureVisible(s, "entourage")) && <EntourageView groups={entourage} />}
     </div>
   );
 }
