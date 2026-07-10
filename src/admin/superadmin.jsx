@@ -327,7 +327,7 @@ export function SupportAdmin() {
               {!loading && shown.length === 0 && <tr><td colSpan={7} style={{ color: "var(--muted)", padding: 18 }}>No {ticketFilter === "waiting_reply" ? "waiting-reply" : ticketFilter} tickets.</td></tr>}
               {shown.map((t) => (
                 <tr key={t.id} className="tbl__row--click" onClick={() => setTicket(t)}>
-                  <td><strong>{t.submitter_name || t.submitter_email || "—"}</strong><div style={{ color: "var(--muted)", fontSize: 12 }}>{t.context_url || ""}</div></td>
+                  <td><strong>{(() => { const sub = String(t.context_url || "").split(" / ")[0].trim(); return sub ? sub + ".celebrately.us" : (t.submitter_name || t.submitter_email || "—"); })()}</strong></td>
                   <td>{t.subject}</td>
                   <td><span className="tag tag--hidden">{t.category}</span></td>
                   <td>{t.urgency}</td>
