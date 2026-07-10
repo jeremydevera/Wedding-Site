@@ -2565,7 +2565,7 @@ function ScheduleTabV2() {
         </a>
       } />
       <Modal open={open} onClose={() => setOpen(false)} label="Show to Home" wide>
-        <div className="panel__head" style={{ padding: "0 0 14px", display: "block" }}>
+        <div style={{ padding: "0 0 14px" }}>
           <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
             <input type="checkbox" checked={on} onChange={(e) => toggleShow("showTimeline", e.target.checked)} style={{ width: 17, height: 17, accentColor: "var(--accent)" }} />
             <span className="panel__title" style={{ textTransform: "uppercase", letterSpacing: ".04em", fontSize: 17 }}>Show to Home</span>
