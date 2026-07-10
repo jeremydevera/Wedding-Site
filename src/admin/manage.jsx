@@ -2521,6 +2521,66 @@ function HomeHeadFields({ k, defEyebrow, defTitle }) {
 // `section` (accessV2): render ONE folder's body inline inside that feature's
 // own top-level tab (no folder chips) — the "Home section" panel of the spec.
 // Without it, the classic multi-folder Home tab renders as always.
+// accessV2 Schedule tab: two folders — Events (the schedule CRUD) and Design
+// (how the schedule shows on the HOME page). Design leads with one master
+// "Show to Home" switch; everything under it (headers + layout) is disabled
+// until it's on (native <fieldset disabled>).
+function ScheduleTabV2() {
+  const { settings } = useStore();
+  const f = settings;
+  const toggleShow = (k, v) => Store.updateSettings({ [k]: v });
+  const [tab, setTab] = useState("events");
+  const on = f.showTimeline !== false;
+  return (
+    <div>
+      <div className="folders">
+        {[["events", "Events", "calendar"], ["design", "Design", "grid"]].map(([k, l, ic]) => (
+          <button key={k} className={"folder" + (tab === k ? " folder--active" : "")} onClick={() => setTab(k)}>
+            {Icon[ic] ? Icon[ic]({}) : null} {l}
+          </button>
+        ))}
+      </div>
+      {tab === "events" && <ScheduleAdmin />}
+      {tab === "design" && (
+        <>
+          <div className="panel">
+            <div className="panel__head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <div className="panel__title">Design</div>
+              <HeadSwitch label="Show to Home" checked={on} onChange={(v) => toggleShow("showTimeline", v)} />
+            </div>
+            <div className="panel__body">
+              <fieldset disabled={!on} style={{ border: 0, padding: 0, margin: 0, opacity: on ? 1 : 0.45, transition: "opacity .15s ease" }}>
+                <HomeHeadFields k="schedule" defEyebrow="The Day" defTitle="A glimpse of the schedule" />
+                <p style={{ color: "var(--muted)", margin: "0 0 18px", fontSize: 14 }}>
+                  How the timeline shows on the home page. Edit the events themselves in the Events folder. Click Save changes to apply.
+                </p>
+                <div className="tl-pick">
+                  {[
+                    { v: "vertical", label: "Vertical", sub: "Events stacked down a centre rail",
+                      art: <svg viewBox="0 0 64 48" width="64" height="48" fill="none"><line x1="16" y1="6" x2="16" y2="42" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /><circle cx="16" cy="12" r="3.5" fill="currentColor" /><circle cx="16" cy="24" r="3.5" fill="currentColor" /><circle cx="16" cy="36" r="3.5" fill="currentColor" /><rect x="26" y="10" width="28" height="4" rx="2" fill="currentColor" opacity="0.5" /><rect x="26" y="22" width="28" height="4" rx="2" fill="currentColor" opacity="0.5" /><rect x="26" y="34" width="28" height="4" rx="2" fill="currentColor" opacity="0.5" /></svg> },
+                    { v: "horizontal", label: "Horizontal", sub: "Events along a left-to-right rail (scrolls)",
+                      art: <svg viewBox="0 0 64 48" width="64" height="48" fill="none"><line x1="6" y1="20" x2="58" y2="20" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /><circle cx="16" cy="20" r="3.5" fill="currentColor" /><circle cx="32" cy="20" r="3.5" fill="currentColor" /><circle cx="48" cy="20" r="3.5" fill="currentColor" /><rect x="9" y="30" width="14" height="4" rx="2" fill="currentColor" opacity="0.5" /><rect x="25" y="30" width="14" height="4" rx="2" fill="currentColor" opacity="0.5" /><rect x="41" y="30" width="14" height="4" rx="2" fill="currentColor" opacity="0.5" /></svg> },
+                  ].map((o) => (
+                    <button key={o.v} type="button"
+                      className={"tl-pick__opt" + ((f.homeTimelineLayout || "vertical") === o.v ? " is-active" : "")}
+                      onClick={() => toggleShow("homeTimelineLayout", o.v)}>
+                      <span className="tl-pick__art">{o.art}</span>
+                      <span className="tl-pick__label">{o.label}</span>
+                      <span className="tl-pick__sub">{o.sub}</span>
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+            </div>
+          </div>
+          <V2TabRename feature="schedule" />
+          <SaveFooter />
+        </>
+      )}
+    </div>
+  );
+}
+
 // accessV2: per-module guest-nav rename, shown at the top of the module's own
 // tab (replaces Settings → Features → "Rename tabs" for flagged clients).
 function V2TabRename({ feature }) {
@@ -3744,7 +3804,7 @@ export function AdminApp() {
           {activeTab === "rsvps" && (settings.strictRsvp ? <GuestsAdmin /> : <RsvpsAdmin />)}
           {activeTab === "media" && <MediaAdmin />}
           {activeTab === "guestbook" && (<>{settings.accessV2 === true && <V2TabRename feature="guestbook" />}<GuestbookAdmin /></>)}
-          {activeTab === "schedule" && (<>{settings.accessV2 === true && <><HomeAdmin section="timeline" /><V2TabRename feature="schedule" /></>}<ScheduleAdmin /></>)}
+          {activeTab === "schedule" && (settings.accessV2 === true ? <ScheduleTabV2 /> : <ScheduleAdmin />)}
           {activeTab === "quiz" && (<>{settings.accessV2 === true && <V2TabRename feature="quiz" />}<QuizAdmin /></>)}
           {activeTab === "details" && (<>{settings.accessV2 === true && <><HomeAdmin section="details" /><HomeAdmin section="faq" /><V2TabRename feature="details" /></>}<DetailsAdmin />{settings.accessV2 === true && <HomeAdmin section="attire" />}</>)}
           {activeTab === "story" && (<>{settings.accessV2 === true && <V2TabRename feature="story" />}<StoryAdmin /></>)}
