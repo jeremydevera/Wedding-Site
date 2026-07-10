@@ -78,8 +78,8 @@ describe("accessV2 — owner tabs from featureLevel", () => {
     const { container } = render(<AdminApp />);
     fireEvent.click([...container.querySelectorAll("nav.admin__nav button")].find((b) => b.textContent.trim() === "Schedule"));
     fireEvent.click(container.querySelector(".panel__title a"));
-    expect(container.textContent).toMatch(/Sample data/);
-    expect(container.textContent).toMatch(/Wedding Ceremony/);
+    expect(document.body.textContent).toMatch(/Sample data/);
+    expect(document.body.textContent).toMatch(/Wedding Ceremony/);
   });
 
   it("Show-to-Home preview uses REAL data (no tag) when the module has items", () => {
@@ -89,8 +89,8 @@ describe("accessV2 — owner tabs from featureLevel", () => {
     const { container } = render(<AdminApp />);
     fireEvent.click([...container.querySelectorAll("nav.admin__nav button")].find((b) => b.textContent.trim() === "Schedule"));
     fireEvent.click(container.querySelector(".panel__title a"));
-    expect(container.textContent).toMatch(/Real Thing/);
-    expect(container.textContent).not.toMatch(/Sample data/);
+    expect(document.body.textContent).toMatch(/Real Thing/);
+    expect(document.body.textContent).not.toMatch(/Sample data/);
   });
 
   it("superadmin on an accessV2 client sees every feature tab", () => {

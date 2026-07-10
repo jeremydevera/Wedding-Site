@@ -2646,6 +2646,8 @@ function DetailsTabV2() {
   const [openF, setOpenF] = useState(false);
   const cards = (detailCards || []).filter((c) => (c.title || "").trim() || (c.body || "").trim());
   const homeFaqs = (Array.isArray(faq) ? faq : []).filter((x) => x.home !== false);
+  const dc = sampleOr(cards, V2_SAMPLES.detailCards);
+  const fq = sampleOr(homeFaqs, V2_SAMPLES.faq);
   return (
     <div>
       <DetailsAdmin headExtraTiles={<STHLink onClick={() => setOpenD(true)} />} headExtraFaq={<STHLink onClick={() => setOpenF(true)} />} />
@@ -2653,12 +2655,13 @@ function DetailsTabV2() {
       <ShowToHomeModal open={openD} onClose={() => setOpenD(false)} showKey="showHomeDetails" defaultOn={false}
         helper="If enabled, the detail cards will also be shown on the home page."
         sim={<>
+          {dc.sample && <SampleTag />}
           <SimHead heads={(f.homeHeads || {}).details} defEyebrow="Details" defTitle="The details" />
           {(f.homeDetailsLayout || "vertical") === "horizontal"
-            ? <HomeDetailsCarousel cards={cards} />
+            ? <HomeDetailsCarousel cards={dc.items} />
             : (
               <div className="home-details-stack">
-                {cards.map((c, i) => (
+                {dc.items.map((c, i) => (
                   <article className="home-dcard" key={i}>
                     <span className="home-dcard__no" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
                     <div className="home-dcard__eyebrow">{(Icon[c.icon] || Icon.rings)({})}<i className="home-dcard__tick" aria-hidden="true" /></div>
@@ -2680,8 +2683,9 @@ function DetailsTabV2() {
       <ShowToHomeModal open={openF} onClose={() => setOpenF(false)} showKey="showHomeFaq" defaultOn={false}
         helper="If enabled, the FAQ will also be shown on the home page."
         sim={<>
+          {fq.sample && <SampleTag />}
           <SimHead heads={(f.homeHeads || {}).faq} defEyebrow="Good to know" defTitle="Frequently asked" />
-          <HomeFaqList faq={homeFaqs} />
+          <HomeFaqList faq={fq.items} />
         </>}>
         <HomeHeadFields k="faq" defEyebrow="Good to know" defTitle="Frequently asked" />
         <div className="field__label" style={{ margin: "4px 0 8px" }}>Questions on home</div>
@@ -2714,11 +2718,12 @@ function VenueTabV2() {
         helper="If enabled, the venue map will also be shown on the home page."
         sim={<>
           <SimHead heads={(f.homeHeads || {}).maps} defEyebrow="The Venue" defTitle="Where we'll celebrate" />
-          {shown.length ? shown.slice(0, 1).map((v) => (
-            <div key={v.id} style={{ borderRadius: 12, overflow: "hidden", border: "1px solid var(--line)" }}>
+          {shown.length === 0 && <SampleTag />}
+          {(shown.length ? shown.slice(0, 1) : [V2_SAMPLES.venue]).map((v, i) => (
+            <div key={v.id || i} style={{ borderRadius: 12, overflow: "hidden", border: "1px solid var(--line)" }}>
               <iframe title="Map preview" src={mapEmbedUrl((v.mapQuery && v.mapQuery.trim()) || v.address, v.mapLat, v.mapLng)} style={{ width: "100%", height: 260, border: 0, display: "block" }} loading="lazy" />
             </div>
-          )) : <p style={{ color: "var(--muted)", fontSize: 13, textAlign: "center" }}>No location selected.</p>}
+          ))}
           {shown.length > 1 && <p style={{ color: "var(--muted)", fontSize: 12, textAlign: "center", marginTop: 10 }}>+{shown.length - 1} more map{shown.length > 2 ? "s" : ""} in a carousel on the home page.</p>}
         </>}>
         <HomeHeadFields k="maps" defEyebrow="The Venue" defTitle="Where we'll celebrate" />
@@ -2752,10 +2757,11 @@ function MusicTabV2() {
       <MusicAdmin headExtra={<STHLink onClick={() => setOpen(true)} />} />
       <ShowToHomeModal open={open} onClose={() => setOpen(false)} showKey="showMusic"
         helper="If enabled, the music player will also be shown on the home page."
-        sim={<>
+        sim={(() => { const pl = sampleOr(playlist, V2_SAMPLES.playlist); return (<>
+          {pl.sample && <SampleTag />}
           <SimHead heads={(f.homeHeads || {}).music} defEyebrow="Our Song" defTitle="Our Playlist" />
-          <VinylPlayer tracks={playlist || []} />
-        </>}>
+          <VinylPlayer tracks={pl.items} />
+        </>); })()}>
         <HomeHeadFields k="music" defEyebrow="Our Song" defTitle="Our Playlist" />
         <Field label="Player style" id="mp-skin">
           <Select id="mp-skin" value={f.playerSkin || "vinyl"} onChange={(e) => toggleShow("playerSkin", e.target.value)}>
@@ -2781,7 +2787,10 @@ function EntourageTabV2() {
       <EntourageAdmin headExtra={<STHLink onClick={() => setOpen(true)} />} />
       <ShowToHomeModal open={open} onClose={() => setOpen(false)} showKey="showEntourage"
         helper="If enabled, the entourage will also be shown on the home page."
-        sim={<EntourageView groups={entourage || []} />}>
+        sim={(() => { const ent = sampleOr(entourage, V2_SAMPLES.entourage); return (<>
+          {ent.sample && <SampleTag />}
+          <EntourageView groups={ent.items} />
+        </>); })()}>
         <HomeHeadFields k="entourage" defEyebrow="With Us" defTitle="The Entourage" />
       </ShowToHomeModal>
     </div>
