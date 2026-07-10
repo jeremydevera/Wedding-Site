@@ -22,7 +22,8 @@ import { MAP_STYLES, mapStyleKey, mapStyleFilter } from "@/lib/mapStyles.js";
 import { ClientsAdmin, R2LibraryAdmin, SuperOverview, SupportAdmin } from "@/admin/superadmin.jsx";
 import { CloudflareHealth } from "@/admin/CloudflareHealth.jsx";
 import { LocationPicker } from "@/ui/location-picker.jsx";
-import { ScheduleView } from "@/pages/PublicPages.jsx";
+import { EntourageView, HomeDetailsCarousel, HomeFaqList, ScheduleView } from "@/pages/PublicPages.jsx";
+import { VinylPlayer } from "@/features/music.jsx";
 import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
 import { MediaPickerModal } from "@/admin/MediaPicker.jsx";
 import { SetupWizard } from "@/admin/wizard.jsx";
@@ -1453,7 +1454,7 @@ export function FaqEditor({ open, index, item, onClose }) {
   );
 }
 
-export function DetailsAdmin() {
+export function DetailsAdmin({ headExtraTiles = null, headExtraFaq = null }) {
   const { detailCards, faq } = useStore();
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const [tab, setTab] = useState("tiles");
@@ -1477,7 +1478,7 @@ export function DetailsAdmin() {
       {tab === "tiles" && (
       <div className="panel">
         <div className="panel__head">
-          <div className="panel__title">Details <span style={{ color: "var(--muted)", fontSize: 15 }}>({tiles.length})</span></div>
+          <div className="panel__title">Details <span style={{ color: "var(--muted)", fontSize: 15 }}>({tiles.length})</span>{headExtraTiles}</div>
           <Button variant="primary" size="sm" onClick={() => openTile(null)}>+ Add tile</Button>
         </div>
         <div className="panel__body--flush table-wrap">
@@ -1508,7 +1509,7 @@ export function DetailsAdmin() {
       {tab === "faq" && (
       <div className="panel">
         <div className="panel__head">
-          <div className="panel__title">FAQ <span style={{ color: "var(--muted)", fontSize: 15 }}>({faqs.length})</span></div>
+          <div className="panel__title">FAQ <span style={{ color: "var(--muted)", fontSize: 15 }}>({faqs.length})</span>{headExtraFaq}</div>
           <Button variant="primary" size="sm" onClick={() => openFaq(null)}>+ Add question</Button>
         </div>
         <div className="panel__body--flush table-wrap">
@@ -1545,7 +1546,7 @@ export function DetailsAdmin() {
 // Venue & Map admin: manage a LIST of venues (each its own map + tiles), plus
 // choose which venue's map + tiles show on the home page. Back-compat: existing
 // single-map clients arrive as one venue (see mappers.venuesFrom).
-export function VenueAdmin({ section = "editor", headRight = null, extraTop = null }) {
+export function VenueAdmin({ section = "editor", headRight = null, extraTop = null, headExtra = null }) {
   const { settings, venues } = useStore();
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const list = venues || [];
@@ -1676,7 +1677,7 @@ export function VenueAdmin({ section = "editor", headRight = null, extraTop = nu
     <div>
       <div className="panel">
         <div className="panel__head">
-          <div className="panel__title">Locations &amp; maps <span style={{ color: "var(--muted)", fontSize: 15 }}>({list.length})</span></div>
+          <div className="panel__title">Locations &amp; maps <span style={{ color: "var(--muted)", fontSize: 15 }}>({list.length})</span>{headExtra}</div>
           <Button variant="primary" size="sm" onClick={addVenue}>+ Add location</Button>
         </div>
         <div className="panel__body--flush table-wrap">
@@ -2543,6 +2544,210 @@ function HomeHeadFields({ k, defEyebrow, defTitle }) {
 // `section` (accessV2): render ONE folder's body inline inside that feature's
 // own top-level tab (no folder chips) — the "Home section" panel of the spec.
 // Without it, the classic multi-folder Home tab renders as always.
+// accessV2 shared pieces: the "Show to Home?" text link (sits beside a panel
+// title) and the modal shell — uppercase checkbox + helper, fields + live
+// simulator only while enabled, Save commits staged changes and closes.
+function STHLink({ onClick }) {
+  return (
+    <a href="#" onClick={(e) => { e.preventDefault(); onClick(); }}
+      style={{ marginLeft: 14, fontSize: 13, fontWeight: 600, color: "var(--accent, #1E5BD6)", textDecoration: "underline", textUnderlineOffset: 3, cursor: "pointer", fontFamily: "var(--font-body)" }}>
+      Show to Home?
+    </a>
+  );
+}
+function ShowToHomeModal({ open, onClose, showKey, defaultOn = true, helper, children, sim }) {
+  const { settings } = useStore();
+  const { saving, dirty, save } = React.useContext(AdminSaveCtx);
+  const f = settings;
+  const on = defaultOn ? f[showKey] !== false : f[showKey] === true;
+  return (
+    <Modal open={open} onClose={onClose} label="Show to Home" wide>
+      <div style={{ padding: "0 0 14px" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+          <input type="checkbox" checked={on} onChange={(e) => Store.updateSettings({ [showKey]: e.target.checked })} style={{ width: 17, height: 17, accentColor: "var(--accent)" }} />
+          <span className="panel__title" style={{ textTransform: "uppercase", letterSpacing: ".04em", fontSize: 17 }}>Show to Home</span>
+        </label>
+        <p style={{ margin: "6px 0 0 27px", color: "var(--muted)", fontSize: 13 }}>{helper}</p>
+      </div>
+      {on && (
+        <div className="v2-design v2-design--split">
+          <div className="v2-design__form">{children}</div>
+          <aside className="v2-design__sim" aria-label="Home page preview">
+            <div className="v2-design__simlabel">Live preview — on Home</div>
+            <div className="v2-sim-frame" style={{ ...((THEMES[f.theme] || {}).vars || {}) }}>{sim}</div>
+          </aside>
+        </div>
+      )}
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 18, paddingTop: 14, borderTop: "1px solid var(--line)" }}>
+        <Button variant="ghost" onClick={onClose}>Close</Button>
+        <Button variant="primary" disabled={saving || !dirty} onClick={async () => { await save(); onClose(); }}>{saving ? "Saving…" : "Save changes"}</Button>
+      </div>
+    </Modal>
+  );
+}
+// Simulator heading (matches the public SectionHead of a home section).
+function SimHead({ heads, defEyebrow, defTitle }) {
+  const h = heads || {};
+  return (
+    <div className="sec-head sec-head--center" style={{ marginBottom: 18 }}>
+      <div className="eyebrow">{h.eyebrow ?? defEyebrow}</div>
+      <h2 className="sec-head__title" style={{ fontSize: 30 }}>{h.title ?? defTitle}</h2>
+    </div>
+  );
+}
+
+// accessV2 Details tab: the Details/FAQ CRUD (DetailsAdmin's own folders) with
+// a Show-to-Home link + modal per folder, plus the Attire panel (attire lives
+// inside the Details module under v2).
+function DetailsTabV2() {
+  const { settings, detailCards, faq } = useStore();
+  const f = settings;
+  const [openD, setOpenD] = useState(false);
+  const [openF, setOpenF] = useState(false);
+  const cards = (detailCards || []).filter((c) => (c.title || "").trim() || (c.body || "").trim());
+  const homeFaqs = (Array.isArray(faq) ? faq : []).filter((x) => x.home !== false);
+  return (
+    <div>
+      <DetailsAdmin headExtraTiles={<STHLink onClick={() => setOpenD(true)} />} headExtraFaq={<STHLink onClick={() => setOpenF(true)} />} />
+      <HomeAdmin section="attire" />
+      <ShowToHomeModal open={openD} onClose={() => setOpenD(false)} showKey="showHomeDetails" defaultOn={false}
+        helper="If enabled, the detail cards will also be shown on the home page."
+        sim={<>
+          <SimHead heads={(f.homeHeads || {}).details} defEyebrow="Details" defTitle="The details" />
+          {(f.homeDetailsLayout || "vertical") === "horizontal"
+            ? <HomeDetailsCarousel cards={cards} />
+            : (
+              <div className="home-details-stack">
+                {cards.map((c, i) => (
+                  <article className="home-dcard" key={i}>
+                    <span className="home-dcard__no" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+                    <div className="home-dcard__eyebrow">{(Icon[c.icon] || Icon.rings)({})}<i className="home-dcard__tick" aria-hidden="true" /></div>
+                    <h3 className="home-dcard__title">{c.title}</h3>
+                    <p className="home-dcard__body">{c.body}</p>
+                  </article>
+                ))}
+              </div>
+            )}
+        </>}>
+        <HomeHeadFields k="details" defEyebrow="Details" defTitle="The details" />
+        <Field label="Cards layout" id="hd-layout" hint="How the detail cards flow on the home page.">
+          <Select id="hd-layout" value={f.homeDetailsLayout || "vertical"} onChange={(e) => Store.updateSettings({ homeDetailsLayout: e.target.value })}>
+            <option value="vertical">Vertical</option>
+            <option value="horizontal">Horizontal</option>
+          </Select>
+        </Field>
+      </ShowToHomeModal>
+      <ShowToHomeModal open={openF} onClose={() => setOpenF(false)} showKey="showHomeFaq" defaultOn={false}
+        helper="If enabled, the FAQ will also be shown on the home page."
+        sim={<>
+          <SimHead heads={(f.homeHeads || {}).faq} defEyebrow="Good to know" defTitle="Frequently asked" />
+          <HomeFaqList faq={homeFaqs} />
+        </>}>
+        <HomeHeadFields k="faq" defEyebrow="Good to know" defTitle="Frequently asked" />
+        <div className="field__label" style={{ margin: "4px 0 8px" }}>Questions on home</div>
+        {(Array.isArray(faq) ? faq : []).map((item, i) => (
+          <label key={i} style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 14, marginBottom: 8, cursor: "pointer" }}>
+            <input type="checkbox" checked={item.home !== false} onChange={(e) => Store.updateFaqItem(i, { home: e.target.checked })} style={{ marginTop: 2, accentColor: "var(--accent)" }} />
+            <span>{item.q}</span>
+          </label>
+        ))}
+        {(Array.isArray(faq) ? faq : []).length === 0 && <p style={{ color: "var(--muted)", fontSize: 13 }}>No questions yet — add them in the FAQ folder.</p>}
+      </ShowToHomeModal>
+    </div>
+  );
+}
+
+// accessV2 Venue & Map tab: locations CRUD + Show-to-Home modal (which maps
+// show on home + tiles toggle) with a real map-embed preview.
+function VenueTabV2() {
+  const { settings, venues } = useStore();
+  const f = settings;
+  const [open, setOpen] = useState(false);
+  const list = venues || [];
+  const selIds = Array.isArray(f.homeVenueIds) ? f.homeVenueIds : (f.homeVenueId ? [f.homeVenueId] : (list[0] ? [list[0].id] : []));
+  const toggleVenue = (id, on) => Store.updateSettings({ homeVenueIds: on ? [...new Set([...selIds, id])] : selIds.filter((x) => x !== id) });
+  const shown = list.filter((v) => selIds.includes(v.id));
+  return (
+    <div>
+      <VenueAdmin headExtra={<STHLink onClick={() => setOpen(true)} />} />
+      <ShowToHomeModal open={open} onClose={() => setOpen(false)} showKey="showMap"
+        helper="If enabled, the venue map will also be shown on the home page."
+        sim={<>
+          <SimHead heads={(f.homeHeads || {}).maps} defEyebrow="The Venue" defTitle="Where we'll celebrate" />
+          {shown.length ? shown.slice(0, 1).map((v) => (
+            <div key={v.id} style={{ borderRadius: 12, overflow: "hidden", border: "1px solid var(--line)" }}>
+              <iframe title="Map preview" src={mapEmbedUrl((v.mapQuery && v.mapQuery.trim()) || v.address, v.mapLat, v.mapLng)} style={{ width: "100%", height: 260, border: 0, display: "block" }} loading="lazy" />
+            </div>
+          )) : <p style={{ color: "var(--muted)", fontSize: 13, textAlign: "center" }}>No location selected.</p>}
+          {shown.length > 1 && <p style={{ color: "var(--muted)", fontSize: 12, textAlign: "center", marginTop: 10 }}>+{shown.length - 1} more map{shown.length > 2 ? "s" : ""} in a carousel on the home page.</p>}
+        </>}>
+        <HomeHeadFields k="maps" defEyebrow="The Venue" defTitle="Where we'll celebrate" />
+        <div className="field__label" style={{ margin: "4px 0 8px" }}>Maps to show on home ({shown.length} of {list.length})</div>
+        {list.map((v, i) => (
+          <label key={v.id || i} style={{ display: "flex", gap: 9, alignItems: "center", fontSize: 14, marginBottom: 8, cursor: "pointer" }}>
+            <input type="checkbox" checked={selIds.includes(v.id)} onChange={(e) => toggleVenue(v.id, e.target.checked)} style={{ accentColor: "var(--accent)" }} />
+            <span>{v.name || v.address || `Location ${i + 1}`}</span>
+          </label>
+        ))}
+        {list.length === 0 && <p style={{ color: "var(--muted)", fontSize: 13 }}>No locations yet — add them above.</p>}
+        <div style={{ marginTop: 8 }}>
+          <AdminToggle label="Show each location's tiles under its map" desc="Off = maps only."
+            checked={f.homeShowTiles === true} onChange={(v) => Store.updateSettings({ homeShowTiles: v })} />
+        </div>
+      </ShowToHomeModal>
+    </div>
+  );
+}
+
+// accessV2 Music playlist tab: player options + tracks CRUD + Show-to-Home
+// modal with the REAL player as the preview.
+function MusicTabV2() {
+  const { settings, playlist } = useStore();
+  const f = settings;
+  const toggleShow = (k, v) => Store.updateSettings({ [k]: v });
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <R2MigratePanel />
+      <MusicAdmin headExtra={<STHLink onClick={() => setOpen(true)} />} />
+      <ShowToHomeModal open={open} onClose={() => setOpen(false)} showKey="showMusic"
+        helper="If enabled, the music player will also be shown on the home page."
+        sim={<>
+          <SimHead heads={(f.homeHeads || {}).music} defEyebrow="Our Song" defTitle="Our Playlist" />
+          <VinylPlayer tracks={playlist || []} />
+        </>}>
+        <HomeHeadFields k="music" defEyebrow="Our Song" defTitle="Our Playlist" />
+        <Field label="Player style" id="mp-skin">
+          <Select id="mp-skin" value={f.playerSkin || "vinyl"} onChange={(e) => toggleShow("playerSkin", e.target.value)}>
+            <option value="vinyl">Vinyl</option>
+            <option value="device">Retro Device</option>
+          </Select>
+        </Field>
+        <AdminToggle label="Autoplay music on load" desc="Start the playlist automatically (on the first tap or scroll). When off, guests press play themselves."
+          checked={f.musicAutoplay !== false} onChange={(v) => toggleShow("musicAutoplay", v)} />
+      </ShowToHomeModal>
+    </div>
+  );
+}
+
+// accessV2 Entourage tab: groups CRUD + Show-to-Home modal with the REAL
+// entourage section as the preview.
+function EntourageTabV2() {
+  const { settings, entourage } = useStore();
+  const f = settings;
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <EntourageAdmin headExtra={<STHLink onClick={() => setOpen(true)} />} />
+      <ShowToHomeModal open={open} onClose={() => setOpen(false)} showKey="showEntourage"
+        helper="If enabled, the entourage will also be shown on the home page."
+        sim={<EntourageView groups={entourage || []} />}>
+        <HomeHeadFields k="entourage" defEyebrow="With Us" defTitle="The Entourage" />
+      </ShowToHomeModal>
+    </div>
+  );
+}
+
 // accessV2 Schedule tab: the Events CRUD plus a "Show to Home?" link (top
 // right, above the table — my call per Jeremy: no folder, a MODAL instead).
 // The modal holds the master checkbox, header overrides, the layout dropdown
@@ -2971,7 +3176,7 @@ export function EntourageGroupEditor({ open, group, onClose }) {
   );
 }
 
-export function EntourageAdmin({ headRight, extraTop = null }) {
+export function EntourageAdmin({ headRight, extraTop = null, headExtra = null }) {
   const { entourage } = useStore();
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const groups = entourage || [];
@@ -2986,7 +3191,7 @@ export function EntourageAdmin({ headRight, extraTop = null }) {
   return (
     <div className="panel">
       <div className="panel__head">
-        <div className="panel__title">Entourage <span style={{ color: "var(--muted)", fontSize: 15 }}>({groups.length})</span></div>
+        <div className="panel__title">Entourage <span style={{ color: "var(--muted)", fontSize: 15 }}>({groups.length})</span>{headExtra}</div>
         {headRight}
       </div>
       {extraTop && <div style={{ padding: "14px 16px 0" }}>{extraTop}</div>}
@@ -3235,7 +3440,7 @@ export function R2MigratePanel() {
   );
 }
 
-export function MusicAdmin() {
+export function MusicAdmin({ headExtra = null }) {
   const { playlist, clientId } = useStore();
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const tracks = playlist || [];
@@ -3281,7 +3486,7 @@ export function MusicAdmin() {
   return (
     <div className="panel">
       <div className="panel__head">
-        <div className="panel__title">Music Playlist <span style={{ color: "var(--muted)", fontSize: 15 }}>({tracks.length})</span></div>
+        <div className="panel__title">Music Playlist <span style={{ color: "var(--muted)", fontSize: 15 }}>({tracks.length})</span>{headExtra}</div>
         <Button variant="primary" size="sm" disabled={uploading} onClick={() => setPickerOpen(true)}>{uploading ? "Uploading…" : "+ Add music"}</Button>
         <input ref={fileRef} type="file" accept={AUDIO_ACCEPT} multiple style={{ display: "none" }} onChange={(e) => onFiles(e.target.files)} />
       </div>
@@ -3815,12 +4020,12 @@ export function AdminApp() {
           {activeTab === "guestbook" && <GuestbookAdmin />}
           {activeTab === "schedule" && (settings.accessV2 === true ? <ScheduleTabV2 /> : <ScheduleAdmin />)}
           {activeTab === "quiz" && <QuizAdmin />}
-          {activeTab === "details" && (<>{settings.accessV2 === true && <><HomeAdmin section="details" /><HomeAdmin section="faq" /></>}<DetailsAdmin />{settings.accessV2 === true && <HomeAdmin section="attire" />}</>)}
+          {activeTab === "details" && (settings.accessV2 === true ? <DetailsTabV2 /> : <DetailsAdmin />)}
           {activeTab === "story" && <StoryAdmin />}
-          {activeTab === "venue" && (<>{settings.accessV2 === true && <HomeAdmin section="maps" />}<VenueAdmin /></>)}
+          {activeTab === "venue" && (settings.accessV2 === true ? <VenueTabV2 /> : <VenueAdmin />)}
           {/* accessV2 promoted tabs (HomeSectionPanel lands with them in T5) */}
-          {settings.accessV2 === true && activeTab === "music" && <HomeAdmin section="music" />}
-          {settings.accessV2 === true && activeTab === "entourage" && <HomeAdmin section="entourage" />}
+          {settings.accessV2 === true && activeTab === "music" && <MusicTabV2 />}
+          {settings.accessV2 === true && activeTab === "entourage" && <EntourageTabV2 />}
           {activeTab === "qr" && <QrAdmin />}
           {activeTab === "settings" && <SettingsAdmin />}
           {activeTab === "overview" && <SuperOverview />}

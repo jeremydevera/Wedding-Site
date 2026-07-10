@@ -683,7 +683,7 @@ export function Home() {
 // Public attire-guide section: each group has an example image and a colour
 // palette. Renders nothing when there are no groups with any content.
 // Home FAQ accordion — same faq-item markup as the Details page, own open state.
-function HomeFaqList({ faq }) {
+export function HomeFaqList({ faq }) {
   const [open, setOpen] = useState(-1);
   return (
     <div>
@@ -901,7 +901,7 @@ function RailNav({ n, active, toItem, itemNoun = "item" }) {
 // Home Details, horizontal layout: same carousel mechanics as the horizontal
 // timeline (scroll rail + frosted chevron/dot pill). On desktop the row becomes
 // a centered wrap-grid (CSS) — no overflow, so the pill hides itself there.
-function HomeDetailsCarousel({ cards }) {
+export function HomeDetailsCarousel({ cards }) {
   const { ref, active, overflow, toItem } = useRailNav(cards.length);
   return (
     <div className="home-details-hwrap">
