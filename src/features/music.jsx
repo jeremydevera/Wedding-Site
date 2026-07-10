@@ -1,5 +1,6 @@
 import React from "react";
 import { useStore } from "@/lib/store.jsx";
+import { featureVisible } from "@/lib/roles.js";
 import { cropTransform, mediaUrl } from "@/lib/media.js";
 const { useState, useEffect, useRef } = React;
 
