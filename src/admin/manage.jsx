@@ -2578,8 +2578,8 @@ export function HomeAdmin() {
                 <AdminToggle label="Apply tint over the photo" desc="Keeps your names readable on busy photos."
                   checked={f.heroTintOn !== false} onChange={(v) => toggleShow("heroTintOn", v)} />
                 {f.heroTintOn !== false && (
-                  <Field label={`Tint strength — ${f.heroTint == null ? 55 : f.heroTint}%`} id="s-herotint">
-                    <input id="s-herotint" type="range" min={0} max={100} value={f.heroTint == null ? 55 : f.heroTint} onChange={(e) => toggleShow("heroTint", +e.target.value)} style={{ width: "100%", accentColor: "var(--accent)" }} />
+                  <Field label={`Tint strength — ${f.heroTint == null ? 55 : f.heroTint}%`} id="s-herotint" hint="0% shows the bare photo, 100% is a deep wash">
+                    <input id="s-herotint" type="range" min="0" max="100" step="5" value={f.heroTint == null ? 55 : f.heroTint} onChange={(e) => toggleShow("heroTint", parseInt(e.target.value, 10))} style={{ width: "100%", accentColor: "var(--accent)" }} />
                   </Field>
                 )}
               </div>

@@ -17,11 +17,12 @@ const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 export function HeroBg() {
   const { settings } = useStore();
   if (settings.heroImage) {
-    // Owner-tuned tint: off hides the scrim entirely; a set strength scales it.
-    // Unset keeps the theme's default look (no inline style).
+    // Same strength semantics as the Olive Envelope background tint: off = no
+    // scrim, otherwise (heroTint ?? 55)/100 scales the wash (55 = envelope's
+    // default).
     const tintStyle = settings.heroTintOn === false
       ? { display: "none" }
-      : (settings.heroTint == null ? undefined : { opacity: Math.max(0, Math.min(100, +settings.heroTint)) / 100 });
+      : { opacity: Math.max(0, Math.min(100, settings.heroTint == null ? 55 : +settings.heroTint)) / 100 };
     return (
       <div className="hero__media">
         <img src={mediaUrl(settings.heroImage)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />

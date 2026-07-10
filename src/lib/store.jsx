@@ -57,7 +57,7 @@ export const DEFAULT_SETTINGS = {
   // the theme's default look. siteBgBeta gates the Home → Couple & Event
   // uploader panel (per-client beta flag, set by the superadmin).
   heroTintOn: true,
-  heroTint: null,
+  heroTint: 55, // same default wash strength as the Olive Envelope background tint
   siteBgBeta: false,
   frameImage: "",
   frameImageCrop: null, // {z,dx,dy} pan/zoom for a VIDEO frameImage (see cropTransform)
