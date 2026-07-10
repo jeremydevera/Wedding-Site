@@ -370,7 +370,7 @@ function GuestForm({ initial, companions, rsvpDiet, onSave, onCancel }) {
             <div>
               <div style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: ".03em" }}>Wait for their RSVP</div>
               <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>On — wait for their reply.</div>
-              <div style={{ color: "var(--muted)", fontSize: 13 }}>Off — you're sure they'll attend.</div>
+              <div style={{ color: "var(--muted)", fontSize: 13 }}>Off — you're sure they'll attend (e.g. parents, siblings).</div>
             </div>
           </div>
         </>
