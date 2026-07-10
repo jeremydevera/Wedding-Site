@@ -22,8 +22,7 @@ import { MAP_STYLES, mapStyleKey, mapStyleFilter } from "@/lib/mapStyles.js";
 import { ClientsAdmin, R2LibraryAdmin, SuperOverview, SupportAdmin } from "@/admin/superadmin.jsx";
 import { CloudflareHealth } from "@/admin/CloudflareHealth.jsx";
 import { LocationPicker } from "@/ui/location-picker.jsx";
-import { EntourageView, HomeDetailsCarousel, HomeFaqList, ScheduleView } from "@/pages/PublicPages.jsx";
-import { VinylPlayer } from "@/features/music.jsx";
+
 import { DEFAULT_EVENT_TYPE, themesForEvent } from "@/config/eventTypes.js";
 import { MediaPickerModal } from "@/admin/MediaPicker.jsx";
 import { SetupWizard } from "@/admin/wizard.jsx";
@@ -2547,72 +2546,63 @@ function HomeHeadFields({ k, defEyebrow, defTitle }) {
 // accessV2 shared pieces: the "Show to Home?" text link (sits beside a panel
 // title) and the modal shell — uppercase checkbox + helper, fields + live
 // simulator only while enabled, Save commits staged changes and closes.
-// Preview-only sample content (spec 2026-07-11-preview-sample-data): shown in
-// the Show-to-Home simulators when the client's module is EMPTY, so the
-// preview always demonstrates the layout. Never written to the Store, never
-// saved, never rendered on the public site.
-const V2_SAMPLES = {
-  schedule: [
-    { time: "3:00 PM", title: "Wedding Ceremony", desc: "Exchange of vows", loc: "Main chapel" },
-    { time: "6:00 PM", title: "Dinner", desc: "Reception dinner with toasts", loc: "Grand ballroom" },
-    { time: "9:00 PM", title: "Party", desc: "Dancing till late", loc: "Garden pavilion" },
-  ],
-  detailCards: [
-    { title: "Parking", body: "Complimentary valet at the main entrance from 2:00 PM.", icon: "pin" },
-    { title: "Dress Code", body: "Formal attire — soft neutrals encouraged.", icon: "rings" },
-    { title: "Gifts", body: "Your presence is the present; a wishing well will be available.", icon: "heart" },
-  ],
-  faq: [
-    { q: "Can I bring a plus one?", a: "Check your invitation — seats are reserved by name." },
-    { q: "Is there parking at the venue?", a: "Yes, free valet parking from 2:00 PM." },
-    { q: "What time should I arrive?", a: "Doors open 30 minutes before the ceremony." },
-  ],
-  venue: { name: "Sample venue", address: "Manila Cathedral, Intramuros, Manila", mapQuery: "Manila Cathedral, Intramuros, Manila" },
-  playlist: [
-    { id: "s1", title: "Perfect", artist: "Ed Sheeran", url: "" },
-    { id: "s2", title: "At Last", artist: "Etta James", url: "" },
-  ],
-  entourage: [
-    { id: "g1", title: "Principal Sponsors", people: [{ id: "p1", name: "Maria Santos" }, { id: "p2", name: "Jose Cruz" }] },
-    { id: "g2", title: "Bridesmaids", people: [{ id: "p3", name: "Ana Reyes" }, { id: "p4", name: "Liza Ramos" }] },
-  ],
-};
-// All-or-nothing fallback: real list wins with >=1 item.
-const sampleOr = (list, samples) => ((list || []).length ? { items: list, sample: false } : { items: samples, sample: true });
+// Show-to-Home emulator — same mechanics as the Settings → Theme preview:
+// the REAL home page in an iframe at true device width (1280 desktop / 390
+// mobile, Desktop|Mobile toggle), scaled to fit. It receives the STAGED
+// settings + the __previewSamples flag via postMessage and scrolls to the
+// module's home section. Display-only; nothing persists.
+function SectionPreviewFrame({ scrollTo, sampleTag = false }) {
+  const { settings } = useStore();
+  const ref = useRef(null);
+  const wrapRef = useRef(null);
+  const [device, setDevice] = useState("desktop");
+  const [scale, setScale] = useState(0.35);
+  const baseW = device === "desktop" ? 1280 : 390;
+  const baseH = device === "desktop" ? 800 : 780;
+  const MAX_H = 460;
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const measure = () => {
+      const w = el.clientWidth || baseW;
+      setScale(Math.min(w / baseW, MAX_H / baseH, 1));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [baseW, baseH]);
+  const post = useCallback(() => {
+    const w = ref.current && ref.current.contentWindow;
+    if (!w) return;
+    try { w.postMessage({ type: "evermore:preview", settingsPatch: { ...settings, __previewSamples: true }, scrollTo }, window.location.origin); } catch (_) {}
+  }, [settings, scrollTo]);
+  useEffect(() => { post(); }, [post]);
+  useEffect(() => {
+    const onReady = (e) => { if (e.origin === window.location.origin && e.data && e.data.type === "evermore:preview-ready") post(); };
+    window.addEventListener("message", onReady);
+    return () => window.removeEventListener("message", onReady);
+  }, [post]);
+  return (
+    <div style={{ width: "100%" }}>
+      <div className="seg" style={{ display: "flex", width: "fit-content", margin: "0 auto 12px" }}>
+        <button type="button" className={device === "desktop" ? "on" : ""} onClick={() => setDevice("desktop")}>Desktop</button>
+        <button type="button" className={device === "mobile" ? "on" : ""} onClick={() => setDevice("mobile")}>Mobile</button>
+      </div>
+      <div ref={wrapRef} style={{ width: "100%", position: "relative" }}>
+        {sampleTag && <SampleTag />}
+        <div style={{ width: Math.round(baseW * scale), height: Math.round(baseH * scale), margin: "0 auto", overflow: "hidden", borderRadius: 12, border: "1px solid var(--line, #e5e7eb)", boxShadow: "0 8px 28px -14px rgba(0,0,0,.35)", background: "#fff" }}>
+          <iframe ref={ref} title="Section preview" src="/?preview=1" loading="lazy" onLoad={post}
+            style={{ width: baseW, height: baseH, border: 0, transform: `scale(${scale})`, transformOrigin: "top left", pointerEvents: "none" }} />
+        </div>
+      </div>
+    </div>
+  );
+}
 function SampleTag() {
   return (
     <div style={{ position: "absolute", top: 10, right: 10, zIndex: 2, background: "rgba(90, 96, 108, .92)", color: "#fff", fontSize: 11, fontWeight: 600, letterSpacing: ".04em", padding: "4px 10px", borderRadius: 999 }}>
       Sample data — your real content will appear here
-    </div>
-  );
-}
-
-// Device-framed preview: on a phone-sized admin the preview sits inside a
-// drawn PHONE (and, since the real viewport is mobile, the public components
-// naturally render their mobile styles); on desktop it sits inside a LAPTOP
-// and renders desktop mode. Frame follows the admin's viewport live.
-function useIsPhoneViewport() {
-  const canMQ = typeof window !== "undefined" && typeof window.matchMedia === "function";
-  const [isPhone, setIsPhone] = useState(() => canMQ && window.matchMedia("(max-width: 860px)").matches);
-  useEffect(() => {
-    if (!canMQ) return;
-    const mq = window.matchMedia("(max-width: 860px)");
-    const fn = (e) => setIsPhone(e.matches);
-    mq.addEventListener ? mq.addEventListener("change", fn) : mq.addListener(fn);
-    return () => { mq.removeEventListener ? mq.removeEventListener("change", fn) : mq.removeListener(fn); };
-  }, [canMQ]);
-  return isPhone;
-}
-function DeviceFrame({ isPhone, children }) {
-  return isPhone ? (
-    <div className="dev-phone">
-      <span className="dev-phone__notch" aria-hidden="true" />
-      <div className="dev-phone__screen">{children}</div>
-    </div>
-  ) : (
-    <div className="dev-laptop">
-      <div className="dev-laptop__screen">{children}</div>
-      <div className="dev-laptop__base" aria-hidden="true" />
     </div>
   );
 }
@@ -2625,10 +2615,9 @@ function STHLink({ onClick }) {
     </a>
   );
 }
-function ShowToHomeModal({ open, onClose, showKey, defaultOn = true, helper, children, sim }) {
+function ShowToHomeModal({ open, onClose, showKey, defaultOn = true, helper, children, scrollTo, sampleTag = false }) {
   const { settings } = useStore();
   const { saving, dirty, save } = React.useContext(AdminSaveCtx);
-  const isPhone = useIsPhoneViewport();
   const f = settings;
   const on = defaultOn ? f[showKey] !== false : f[showKey] === true;
   return (
@@ -2644,10 +2633,8 @@ function ShowToHomeModal({ open, onClose, showKey, defaultOn = true, helper, chi
         <div className="v2-design v2-design--split">
           <div className="v2-design__form">{children}</div>
           <aside className="v2-design__sim" aria-label="Home page preview">
-            <div className="v2-design__simlabel">Live preview — on Home ({isPhone ? "mobile" : "desktop"})</div>
-            <DeviceFrame isPhone={isPhone}>
-              <div className="v2-sim-frame v2-sim-frame--device" style={{ position: "relative", ...((THEMES[f.theme] || {}).vars || {}) }}>{sim}</div>
-            </DeviceFrame>
+            <div className="v2-design__simlabel">Live preview — on Home</div>
+            {open && <SectionPreviewFrame scrollTo={scrollTo} sampleTag={sampleTag} />}
           </aside>
         </div>
       )}
@@ -2658,17 +2645,6 @@ function ShowToHomeModal({ open, onClose, showKey, defaultOn = true, helper, chi
     </Modal>
   );
 }
-// Simulator heading (matches the public SectionHead of a home section).
-function SimHead({ heads, defEyebrow, defTitle }) {
-  const h = heads || {};
-  return (
-    <div className="sec-head sec-head--center" style={{ marginBottom: 18 }}>
-      <div className="eyebrow">{h.eyebrow ?? defEyebrow}</div>
-      <h2 className="sec-head__title" style={{ fontSize: 30 }}>{h.title ?? defTitle}</h2>
-    </div>
-  );
-}
-
 // accessV2 Details tab: the Details/FAQ CRUD (DetailsAdmin's own folders) with
 // a Show-to-Home link + modal per folder, plus the Attire panel (attire lives
 // inside the Details module under v2).
@@ -2679,32 +2655,14 @@ function DetailsTabV2() {
   const [openF, setOpenF] = useState(false);
   const cards = (detailCards || []).filter((c) => (c.title || "").trim() || (c.body || "").trim());
   const homeFaqs = (Array.isArray(faq) ? faq : []).filter((x) => x.home !== false);
-  const dc = sampleOr(cards, V2_SAMPLES.detailCards);
-  const fq = sampleOr(homeFaqs, V2_SAMPLES.faq);
+
   return (
     <div>
       <DetailsAdmin headExtraTiles={<STHLink onClick={() => setOpenD(true)} />} headExtraFaq={<STHLink onClick={() => setOpenF(true)} />} />
       <HomeAdmin section="attire" />
       <ShowToHomeModal open={openD} onClose={() => setOpenD(false)} showKey="showHomeDetails" defaultOn={false}
         helper="If enabled, the detail cards will also be shown on the home page."
-        sim={<>
-          {dc.sample && <SampleTag />}
-          <SimHead heads={(f.homeHeads || {}).details} defEyebrow="Details" defTitle="The details" />
-          {(f.homeDetailsLayout || "vertical") === "horizontal"
-            ? <HomeDetailsCarousel cards={dc.items} />
-            : (
-              <div className="home-details-stack">
-                {dc.items.map((c, i) => (
-                  <article className="home-dcard" key={i}>
-                    <span className="home-dcard__no" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
-                    <div className="home-dcard__eyebrow">{(Icon[c.icon] || Icon.rings)({})}<i className="home-dcard__tick" aria-hidden="true" /></div>
-                    <h3 className="home-dcard__title">{c.title}</h3>
-                    <p className="home-dcard__body">{c.body}</p>
-                  </article>
-                ))}
-              </div>
-            )}
-        </>}>
+        scrollTo="home-details" sampleTag={cards.length === 0}>
         <HomeHeadFields k="details" defEyebrow="Details" defTitle="The details" />
         <Field label="Cards layout" id="hd-layout" hint="How the detail cards flow on the home page.">
           <Select id="hd-layout" value={f.homeDetailsLayout || "vertical"} onChange={(e) => Store.updateSettings({ homeDetailsLayout: e.target.value })}>
@@ -2715,11 +2673,7 @@ function DetailsTabV2() {
       </ShowToHomeModal>
       <ShowToHomeModal open={openF} onClose={() => setOpenF(false)} showKey="showHomeFaq" defaultOn={false}
         helper="If enabled, the FAQ will also be shown on the home page."
-        sim={<>
-          {fq.sample && <SampleTag />}
-          <SimHead heads={(f.homeHeads || {}).faq} defEyebrow="Good to know" defTitle="Frequently asked" />
-          <HomeFaqList faq={fq.items} />
-        </>}>
+        scrollTo="home-faq" sampleTag={homeFaqs.length === 0}>
         <HomeHeadFields k="faq" defEyebrow="Good to know" defTitle="Frequently asked" />
         <div className="field__label" style={{ margin: "4px 0 8px" }}>Questions on home</div>
         {(Array.isArray(faq) ? faq : []).map((item, i) => (
@@ -2749,16 +2703,7 @@ function VenueTabV2() {
       <VenueAdmin headExtra={<STHLink onClick={() => setOpen(true)} />} />
       <ShowToHomeModal open={open} onClose={() => setOpen(false)} showKey="showMap"
         helper="If enabled, the venue map will also be shown on the home page."
-        sim={<>
-          <SimHead heads={(f.homeHeads || {}).maps} defEyebrow="The Venue" defTitle="Where we'll celebrate" />
-          {shown.length === 0 && <SampleTag />}
-          {(shown.length ? shown.slice(0, 1) : [V2_SAMPLES.venue]).map((v, i) => (
-            <div key={v.id || i} style={{ borderRadius: 12, overflow: "hidden", border: "1px solid var(--line)" }}>
-              <iframe title="Map preview" src={mapEmbedUrl((v.mapQuery && v.mapQuery.trim()) || v.address, v.mapLat, v.mapLng)} style={{ width: "100%", height: 260, border: 0, display: "block" }} loading="lazy" />
-            </div>
-          ))}
-          {shown.length > 1 && <p style={{ color: "var(--muted)", fontSize: 12, textAlign: "center", marginTop: 10 }}>+{shown.length - 1} more map{shown.length > 2 ? "s" : ""} in a carousel on the home page.</p>}
-        </>}>
+        scrollTo="home-map" sampleTag={shown.length === 0}>
         <HomeHeadFields k="maps" defEyebrow="The Venue" defTitle="Where we'll celebrate" />
         <div className="field__label" style={{ margin: "4px 0 8px" }}>Maps to show on home ({shown.length} of {list.length})</div>
         {list.map((v, i) => (
@@ -2790,11 +2735,7 @@ function MusicTabV2() {
       <MusicAdmin headExtra={<STHLink onClick={() => setOpen(true)} />} />
       <ShowToHomeModal open={open} onClose={() => setOpen(false)} showKey="showMusic"
         helper="If enabled, the music player will also be shown on the home page."
-        sim={(() => { const pl = sampleOr(playlist, V2_SAMPLES.playlist); return (<>
-          {pl.sample && <SampleTag />}
-          <SimHead heads={(f.homeHeads || {}).music} defEyebrow="Our Song" defTitle="Our Playlist" />
-          <VinylPlayer tracks={pl.items} />
-        </>); })()}>
+        scrollTo="home-playlist" sampleTag={(playlist || []).length === 0}>
         <HomeHeadFields k="music" defEyebrow="Our Song" defTitle="Our Playlist" />
         <Field label="Player style" id="mp-skin">
           <Select id="mp-skin" value={f.playerSkin || "vinyl"} onChange={(e) => toggleShow("playerSkin", e.target.value)}>
@@ -2820,10 +2761,7 @@ function EntourageTabV2() {
       <EntourageAdmin headExtra={<STHLink onClick={() => setOpen(true)} />} />
       <ShowToHomeModal open={open} onClose={() => setOpen(false)} showKey="showEntourage"
         helper="If enabled, the entourage will also be shown on the home page."
-        sim={(() => { const ent = sampleOr(entourage, V2_SAMPLES.entourage); return (<>
-          {ent.sample && <SampleTag />}
-          <EntourageView groups={ent.items} />
-        </>); })()}>
+        scrollTo="home-entourage" sampleTag={(entourage || []).filter((g) => g && (g.people || []).length).length === 0}>
         <HomeHeadFields k="entourage" defEyebrow="With Us" defTitle="The Entourage" />
       </ShowToHomeModal>
     </div>
@@ -2838,13 +2776,10 @@ function EntourageTabV2() {
 function ScheduleTabV2() {
   const { settings, schedule } = useStore();
   const { saving, dirty, save } = React.useContext(AdminSaveCtx);
-  const isPhone = useIsPhoneViewport();
   const f = settings;
   const toggleShow = (k, v) => Store.updateSettings({ [k]: v });
   const [open, setOpen] = useState(false);
   const on = f.showTimeline !== false;
-  const heads = (f.homeHeads || {}).schedule || {};
-  const sch = sampleOr(schedule, V2_SAMPLES.schedule);
   return (
     <div>
       <ScheduleAdmin headExtra={
@@ -2877,17 +2812,8 @@ function ScheduleTabV2() {
           {/* REAL simulator: the actual public ScheduleView, themed with the
               client's palette, fed the staged (unsaved) settings. */}
           <aside className="v2-design__sim" aria-label="Home page preview">
-            <div className="v2-design__simlabel">Live preview — schedule section on Home ({isPhone ? "mobile" : "desktop"})</div>
-            <DeviceFrame isPhone={isPhone}>
-            <div className="v2-sim-frame v2-sim-frame--device" style={{ position: "relative", ...((THEMES[f.theme] || {}).vars || {}) }}>
-              {sch.sample && <SampleTag />}
-              <div className="sec-head sec-head--center" style={{ marginBottom: 18 }}>
-                <div className="eyebrow">{heads.eyebrow ?? "The Day"}</div>
-                <h2 className="sec-head__title" style={{ fontSize: 30 }}>{heads.title ?? "A glimpse of the schedule"}</h2>
-              </div>
-              <ScheduleView items={(f.homeTimelineLayout || "vertical") === "horizontal" ? sch.items : sch.items.slice(0, 3)} style={(f.homeTimelineLayout || "vertical") === "horizontal" ? "horizontal" : "alt"} />
-            </div>
-            </DeviceFrame>
+            <div className="v2-design__simlabel">Live preview — on Home</div>
+            {open && <SectionPreviewFrame scrollTo="home-schedule" sampleTag={(schedule || []).length === 0} />}
           </aside>
         </div>
         )}

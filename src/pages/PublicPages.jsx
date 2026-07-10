@@ -5,6 +5,7 @@ import { cropTransform, mediaUrl } from "@/lib/media.js";
 import { useStore } from "@/lib/store.jsx";
 import { mapStyleFilter } from "@/lib/mapStyles.js";
 import { featureVisible, moduleEnabled, sectionLabel } from "@/lib/roles.js";
+import { PREVIEW_SAMPLES } from "@/lib/samples.js";
 import { egTintGradientFor, envColorFilterFor } from "@/themes";
 import { Button, Countdown, FloatingDecor, Icon, Placeholder, SectionHead, mapCoordStr, mapDirUrl, mapEmbedUrl, mapResolveQuery } from "@/ui/components.jsx";
 import { VinylPlayer } from "@/features/music.jsx";
@@ -480,7 +481,18 @@ export function Home() {
   // Guard against a non-array truthy schedule in tenant content (bad import /
   // manual DB edit): clientToState only falls back to seeds on falsiness, so an
   // object/string would reach .slice/.length below and white-screen the home.
-  const schedule = Array.isArray(scheduleRaw) ? scheduleRaw : [];
+  // Show-to-Home emulator: inside the admin preview iframe (__previewSamples)
+  // an EMPTY module falls back to sample content so the layout always shows.
+  // Never active on a real guest view.
+  const sampleMode = settings.__previewSamples === true;
+  const scheduleReal = Array.isArray(scheduleRaw) ? scheduleRaw : [];
+  const schedule = sampleMode && !scheduleReal.length ? PREVIEW_SAMPLES.schedule : scheduleReal;
+  const cardsReal = (detailCards || []).filter((c) => (c.title || "").trim() || (c.body || "").trim());
+  const cardsShown = sampleMode && !cardsReal.length ? PREVIEW_SAMPLES.detailCards : cardsReal;
+  const faqReal = (Array.isArray(faq) ? faq : []).filter((x) => x.home !== false);
+  const faqShown = sampleMode && !faqReal.length ? PREVIEW_SAMPLES.faq : faqReal;
+  const playlistShown = sampleMode && !(playlist || []).length ? PREVIEW_SAMPLES.playlist : playlist;
+  const entourageShown = sampleMode && !(entourage || []).filter((g) => g && (g.people || []).length).length ? PREVIEW_SAMPLES.entourage : entourage;
   const s = settings;
   // Home maps: every venue the owner ticked (homeVenueIds, in venue-list order).
   // Legacy fallback: homeVenueId, else the first venue; no venues at all falls
@@ -493,7 +505,9 @@ export function Home() {
       : (() => { const one = list.find((v) => v.id === s.homeVenueId) || list[0]; return one ? [one] : []; })();
     if (picked.length) return picked;
     const q = (s.mapQuery && s.mapQuery.trim()) || s.venueAddress;
-    return q ? [{ id: "legacy", mapQuery: q, mapLat: s.mapLat, mapLng: s.mapLng, address: s.venueAddress || s.venueName, cards: [] }] : [];
+    if (q) return [{ id: "legacy", mapQuery: q, mapLat: s.mapLat, mapLng: s.mapLng, address: s.venueAddress || s.venueName, cards: [] }];
+    if (sampleMode) return [{ id: "sample", mapQuery: PREVIEW_SAMPLES.venue.mapQuery, address: PREVIEW_SAMPLES.venue.address, name: PREVIEW_SAMPLES.venue.name, cards: [] }];
+    return [];
   })();
   // Per-venue tile selection: homeTiles[venueId] = [cardId,…]. Legacy fallback:
   // if homeTiles was never set but the old homeShowTiles flag is on, show all.
@@ -632,15 +646,15 @@ export function Home() {
       {/* DETAILS PREVIEW — opt-in (Home → Details), right after the schedule
           glimpse. Cards come from the Details tab; layout = vertical stack or a
           horizontally scrolling row. Hidden when the Details module is off. */}
-      {s.showHomeDetails === true && featureVisible(s, "details") && detailCards.filter((c) => (c.title || "").trim() || (c.body || "").trim()).length > 0 && (
+      {s.showHomeDetails === true && featureVisible(s, "details") && cardsShown.length > 0 && (
         <section className="block" id="home-details">
           <div className="container">
             <SectionHead center eyebrow={hh("details", sectionLabel("details", s.moduleLabels, "Details"), "").e} title={hh("details", "", "The details").t} />
             {s.homeDetailsLayout === "horizontal"
-              ? <HomeDetailsCarousel cards={detailCards.filter((c) => (c.title || "").trim() || (c.body || "").trim())} />
+              ? <HomeDetailsCarousel cards={cardsShown} />
               : (
                 <div className="home-details-stack">
-                  {detailCards.filter((c) => (c.title || "").trim() || (c.body || "").trim()).map((c, i) => (
+                  {cardsShown.map((c, i) => (
                     <article className="home-dcard" key={i}>
                       <span className="home-dcard__no" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
                       <div className="home-dcard__eyebrow">{(Icon[c.icon] || Icon.rings)({})}<i className="home-dcard__tick" aria-hidden="true" /></div>
@@ -659,11 +673,11 @@ export function Home() {
 
       {/* FAQ PREVIEW — opt-in (Home → FAQ), after the details preview. Questions
           come from the Details tab; hidden when the Details module is off. */}
-      {s.showHomeFaq === true && featureVisible(s, "details") && (Array.isArray(faq) ? faq : []).filter((f) => f.home !== false).length > 0 && (
+      {s.showHomeFaq === true && featureVisible(s, "details") && faqShown.length > 0 && (
         <section className="block block--tint" id="home-faq">
           <div className="container container--narrow">
             <SectionHead center eyebrow={hh("faq", "Good to know", "Frequently asked").e} title={hh("faq", "Good to know", "Frequently asked").t} />
-            <HomeFaqList faq={(Array.isArray(faq) ? faq : []).filter((f) => f.home !== false)} />
+            <HomeFaqList faq={faqShown} />
           </div>
         </section>
       )}
@@ -672,10 +686,10 @@ export function Home() {
       {s.showAttire !== false && (s.accessV2 !== true || featureVisible(s, "details")) && <AttireView groups={attire} />}
 
       {/* MUSIC — vinyl player now sits right after the schedule glimpse */}
-      {s.showMusic !== false && (s.accessV2 !== true || featureVisible(s, "music")) && <VinylPlayer tracks={playlist} />}
+      {s.showMusic !== false && (s.accessV2 !== true || featureVisible(s, "music")) && <VinylPlayer tracks={playlistShown} />}
 
       {/* ENTOURAGE — groups of people (Groomsmen, Bridesmaids, …) */}
-      {s.showEntourage !== false && (s.accessV2 !== true || featureVisible(s, "entourage")) && <EntourageView groups={entourage} />}
+      {s.showEntourage !== false && (s.accessV2 !== true || featureVisible(s, "entourage")) && <EntourageView groups={entourageShown} />}
     </div>
   );
 }

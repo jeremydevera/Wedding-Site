@@ -401,6 +401,12 @@ export function App() {
       if (d.envColor !== undefined) patch.envColor = d.envColor;
       if (d.envColorCustom !== undefined) patch.envColorCustom = d.envColorCustom;
       if (d.envMatchSite !== undefined) patch.envMatchSite = d.envMatchSite;
+      // Show-to-Home emulator: a full staged-settings snapshot (+ the
+      // __previewSamples flag) and an optional section to scroll to.
+      if (d.settingsPatch && typeof d.settingsPatch === "object") Object.assign(patch, d.settingsPatch);
+      if (typeof d.scrollTo === "string" && d.scrollTo) {
+        setTimeout(() => { try { const el = document.getElementById(d.scrollTo); if (el) el.scrollIntoView({ block: "start" }); } catch (_) {} }, 400);
+      }
       if (Object.keys(patch).length) { previewPatchRef.current = { ...(previewPatchRef.current || {}), ...patch }; Store.previewSettings(patch); }
     };
     window.addEventListener("message", onMsg);
