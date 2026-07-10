@@ -39,6 +39,10 @@ export const DEFAULT_SETTINGS = {
   // Master switch for the invited-guest list feature. When on, the admin gains a
   // "Guests" tab to manage invites + track replies. Public RSVP form is unaffected.
   strictRsvp: false,
+  // Feature Permissions v2 trial (spec 2026-07-11). accessV2 flips a client to
+  // the features map; null map = FEATURE_DEFAULTS via featureLevel().
+  accessV2: false,
+  features: null,
   rsvpRequirePhone: false, // RSVP form: phone becomes a required field
   // Per-module display-name overrides for the guest nav tabs. Empty object = use
   // the default labels; a per-key value (e.g. { guestbook: "Well Wishes" }) renames
