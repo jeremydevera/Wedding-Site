@@ -208,6 +208,11 @@ body.env-sealed main { padding-top: 0; }
 [data-theme="classic"] .hero__tint--themed, [data-theme="classic3"] .hero__tint--themed, [data-theme="glass"] .hero__tint--themed { background: radial-gradient(120% 80% at 50% 46%, color-mix(in oklch, var(--accent) 7%, transparent), transparent 70%); }
 [data-theme="classic"] .hero, [data-theme="classic3"] .hero, [data-theme="glass"] .hero { --accent-ink: var(--ink); }
 [data-theme="classic"] .hero__names, [data-theme="classic3"] .hero__names, [data-theme="glass"] .hero__names { text-shadow: none; }
+/* Uploaded hero photo that reads DARK (photo brightness × tint wash): flip the
+   hero text light so names stay readable — wins over the per-theme dark-ink
+   rules above by source order. */
+.hero.hero--on-photo { --accent-ink: #fdfbf6; }
+.hero.hero--on-photo .hero__names { color: var(--accent-ink); text-shadow: 0 2px 30px rgba(0, 0, 0, .35); }
 /* Olive Envelope theme — the themed hero uses the invitation's wedding photo */
 [data-theme="envelope"] .hero__media--themed {
   background: url("/assets/invite/bg-wedding.jpg") center 46% / cover no-repeat;

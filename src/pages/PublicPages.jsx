@@ -14,6 +14,42 @@ const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 // pages/PublicPages.jsx — Home + content pages (Details, Story, Schedule, Venue, FAQ)
 // ============================================================================
 
+// Uploaded hero photo: decide whether the hero text needs to flip LIGHT.
+// Effective brightness = the photo's average luminance dimmed by the tint wash
+// (the wash is near-black, so strength scales brightness down linearly). Dark
+// result -> light text. Beta-gated with the uploader (siteBgBeta).
+export function useHeroTextLight(s) {
+  const [light, setLight] = useState(false);
+  const img = s.heroImage, on = s.heroTintOn !== false;
+  const t = Math.max(0, Math.min(100, s.heroTint == null ? 55 : +s.heroTint));
+  useEffect(() => {
+    if (!img || s.siteBgBeta !== true) { setLight(false); return; }
+    let dead = false;
+    const el = new Image();
+    el.onload = () => {
+      if (dead) return;
+      try {
+        const c = document.createElement("canvas");
+        c.width = 16; c.height = 16;
+        const ctx = c.getContext("2d");
+        ctx.drawImage(el, 0, 0, 16, 16);
+        const d = ctx.getImageData(0, 0, 16, 16).data;
+        let sum = 0;
+        for (let i = 0; i < d.length; i += 4) sum += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+        const luma = sum / (d.length / 4);
+        const eff = luma * (1 - (on ? t : 0) / 100);
+        setLight(eff < 140);
+      } catch (_) {
+        setLight(on && t >= 50); // can't sample — trust a strong wash to be dark
+      }
+    };
+    el.onerror = () => { if (!dead) setLight(on && t >= 50); };
+    el.src = mediaUrl(img);
+    return () => { dead = true; };
+  }, [img, on, t, s.siteBgBeta]);
+  return light;
+}
+
 export function HeroBg() {
   const { settings } = useStore();
   if (settings.heroImage) {
@@ -434,6 +470,7 @@ function HomeMapsCarousel({ maps }) {
 
 export function Home() {
   const { settings, story, schedule: scheduleRaw, entourage, attire, playlist, venues, detailCards, faq } = useStore();
+  const heroTextLight = useHeroTextLight(settings);
   // Per-section home header overrides (Home → each folder → "Section header").
   // Blank/absent falls back to the stock copy, so new clients look unchanged.
   const hh = (k, defEyebrow, defTitle) => {
@@ -504,7 +541,7 @@ export function Home() {
       {s.theme === "envelope" ? (
         <EnvelopeHero />
       ) : (
-      <header className="hero">
+      <header className={"hero" + (heroTextLight ? " hero--on-photo" : "")}>
         <HeroBg />
         <div className="hero__inner">
           <div className="eyebrow hero__eyebrow eyebrow--solo">{s.tagline}</div>
