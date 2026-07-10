@@ -53,6 +53,12 @@ export const DEFAULT_SETTINGS = {
   autoApproveMedia: true,
   autoApproveGuestbook: true,
   heroImage: "",
+  // Hero background tint (basic themes): on/off + strength %. null strength =
+  // the theme's default look. siteBgBeta gates the Home → Couple & Event
+  // uploader panel (per-client beta flag, set by the superadmin).
+  heroTintOn: true,
+  heroTint: null,
+  siteBgBeta: false,
   frameImage: "",
   frameImageCrop: null, // {z,dx,dy} pan/zoom for a VIDEO frameImage (see cropTransform)
   envBgImage: "",

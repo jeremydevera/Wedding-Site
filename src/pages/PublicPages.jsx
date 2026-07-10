@@ -17,10 +17,15 @@ const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 export function HeroBg() {
   const { settings } = useStore();
   if (settings.heroImage) {
+    // Owner-tuned tint: off hides the scrim entirely; a set strength scales it.
+    // Unset keeps the theme's default look (no inline style).
+    const tintStyle = settings.heroTintOn === false
+      ? { display: "none" }
+      : (settings.heroTint == null ? undefined : { opacity: Math.max(0, Math.min(100, +settings.heroTint)) / 100 });
     return (
       <div className="hero__media">
         <img src={mediaUrl(settings.heroImage)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        <div className="hero__tint" />
+        <div className="hero__tint" style={tintStyle} />
       </div>
     );
   }

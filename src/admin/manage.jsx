@@ -2559,6 +2559,26 @@ export function HomeAdmin() {
               <Field label="Hashtag" id="s-hash"><Input id="s-hash" value={f.hashtag} onChange={set("hashtag")} /></Field>
             </div>
           </div>
+          {/* Hero background + tint for the basic (non-premium) themes. Beta:
+              only clients with siteBgBeta on see this panel. */}
+          {f.siteBgBeta === true && !isPremiumTheme(f.theme) && (
+            <div className="panel">
+              <div className="panel__head"><div className="panel__title">Hero background</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Photo behind your names at the top of the home page</span></div>
+              <div className="panel__body" style={{ maxWidth: 900, margin: "0 auto" }}>
+                <ImageUploadField purpose="hero" label="Background image" ratio="16 / 9" value={f.heroImage} onChange={(v) => setKey("heroImage", v)}
+                  tintStrength={f.heroTintOn !== false ? (f.heroTint == null ? 55 : f.heroTint) : 0}
+                  tintGradient={"linear-gradient(180deg, rgba(15, 18, 10, .8), rgba(15, 18, 10, .45))"} />
+                <p style={{ fontSize: 12, color: "var(--muted)", marginTop: -2 }}>Leave empty to keep the themed gradient background.</p>
+                <AdminToggle label="Apply tint over the photo" desc="Keeps your names readable on busy photos."
+                  checked={f.heroTintOn !== false} onChange={(v) => setKey("heroTintOn", v)} />
+                {f.heroTintOn !== false && (
+                  <Field label={`Tint strength — ${f.heroTint == null ? 55 : f.heroTint}%`} id="s-herotint">
+                    <input id="s-herotint" type="range" min={0} max={100} value={f.heroTint == null ? 55 : f.heroTint} onChange={(e) => setKey("heroTint", +e.target.value)} style={{ width: "100%", accentColor: "var(--accent)" }} />
+                  </Field>
+                )}
+              </div>
+            </div>
+          )}
           <SaveFooter />
         </>
       )}
