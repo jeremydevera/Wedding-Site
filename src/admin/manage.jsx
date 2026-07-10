@@ -2543,71 +2543,68 @@ function HomeHeadFields({ k, defEyebrow, defTitle }) {
 // `section` (accessV2): render ONE folder's body inline inside that feature's
 // own top-level tab (no folder chips) — the "Home section" panel of the spec.
 // Without it, the classic multi-folder Home tab renders as always.
-// accessV2 Schedule tab: two folders — Events (the schedule CRUD) and Design
-// (how the schedule shows on the HOME page). Design leads with one master
-// "Show to Home" switch; everything under it (headers + layout) is disabled
-// until it's on (native <fieldset disabled>).
+// accessV2 Schedule tab: the Events CRUD plus a "Show to Home?" link (top
+// right, above the table — my call per Jeremy: no folder, a MODAL instead).
+// The modal holds the master checkbox, header overrides, the layout dropdown
+// and the REAL live simulator of the home schedule section; fields stage into
+// the store and the modal's own Save commits them.
 function ScheduleTabV2() {
   const { settings, schedule } = useStore();
+  const { saving, dirty, save } = React.useContext(AdminSaveCtx);
   const f = settings;
   const toggleShow = (k, v) => Store.updateSettings({ [k]: v });
-  const [tab, setTab] = useState("events");
+  const [open, setOpen] = useState(false);
   const on = f.showTimeline !== false;
+  const heads = (f.homeHeads || {}).schedule || {};
   return (
     <div>
-      <div className="folders">
-        {[["events", "Events", "calendar"], ["design", "Design", "grid"]].map(([k, l, ic]) => (
-          <button key={k} className={"folder" + (tab === k ? " folder--active" : "")} onClick={() => setTab(k)}>
-            {Icon[ic] ? Icon[ic]({}) : null} {l}
-          </button>
-        ))}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
+        <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>{Icon.home({})} Show to Home?</Button>
       </div>
-      {tab === "events" && <ScheduleAdmin />}
-      {tab === "design" && (
-        <>
-          <div className="panel">
-            <div className="panel__head">
-              <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-                <input type="checkbox" checked={on} onChange={(e) => toggleShow("showTimeline", e.target.checked)} style={{ width: 17, height: 17, accentColor: "var(--accent)" }} />
-                <span className="panel__title">Show to Home</span>
-              </label>
-            </div>
-            <div className="panel__body v2-design v2-design--split">
-              <div className="v2-design__form">
-                <fieldset disabled={!on} style={{ border: 0, padding: 0, margin: 0, opacity: on ? 1 : 0.45, transition: "opacity .15s ease" }}>
-                  <HomeHeadFields k="schedule" defEyebrow="The Day" defTitle="A glimpse of the schedule" />
-                  <Field label="Timeline layout" id="tl-layout" hint="How the schedule glimpse flows on the home page.">
-                    <Select id="tl-layout" value={f.homeTimelineLayout || "vertical"} onChange={(e) => toggleShow("homeTimelineLayout", e.target.value)}>
-                      <option value="vertical">Vertical</option>
-                      <option value="horizontal">Horizontal</option>
-                    </Select>
-                  </Field>
-                </fieldset>
-              </div>
-              {/* REAL simulator: the actual public ScheduleView, themed with the
-                  client's palette, fed the staged (unsaved) settings — headers,
-                  layout and events update live as you type. */}
-              <aside className="v2-design__sim" aria-label="Home page preview">
-                <div className="v2-design__simlabel">Live preview — schedule section on Home</div>
-                <div className="v2-sim-frame" style={{ ...((THEMES[f.theme] || {}).vars || {}) }}>
-                  {on ? (
-                    <>
-                      <div className="sec-head sec-head--center" style={{ marginBottom: 18 }}>
-                        <div className="eyebrow">{((f.homeHeads || {}).schedule || {}).eyebrow ?? "The Day"}</div>
-                        <h2 className="sec-head__title" style={{ fontSize: 30 }}>{((f.homeHeads || {}).schedule || {}).title ?? "A glimpse of the schedule"}</h2>
-                      </div>
-                      <ScheduleView items={(f.homeTimelineLayout || "vertical") === "horizontal" ? schedule : (schedule || []).slice(0, 3)} style={(f.homeTimelineLayout || "vertical") === "horizontal" ? "horizontal" : "alt"} />
-                    </>
-                  ) : (
-                    <div style={{ color: "var(--muted)", fontSize: 14, textAlign: "center", padding: "40px 0" }}>Hidden on the home page — tick “Show to Home” to preview.</div>
-                  )}
-                </div>
-              </aside>
-            </div>
+      <ScheduleAdmin />
+      <Modal open={open} onClose={() => setOpen(false)} label="Show to Home" wide>
+        <div className="panel__head" style={{ padding: "0 0 14px" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+            <input type="checkbox" checked={on} onChange={(e) => toggleShow("showTimeline", e.target.checked)} style={{ width: 17, height: 17, accentColor: "var(--accent)" }} />
+            <span className="panel__title">Show to Home</span>
+          </label>
+        </div>
+        <div className="v2-design v2-design--split">
+          <div className="v2-design__form">
+            <fieldset disabled={!on} style={{ border: 0, padding: 0, margin: 0, opacity: on ? 1 : 0.45, transition: "opacity .15s ease" }}>
+              <HomeHeadFields k="schedule" defEyebrow="The Day" defTitle="A glimpse of the schedule" />
+              <Field label="Timeline layout" id="tl-layout" hint="How the schedule glimpse flows on the home page.">
+                <Select id="tl-layout" value={f.homeTimelineLayout || "vertical"} onChange={(e) => toggleShow("homeTimelineLayout", e.target.value)}>
+                  <option value="vertical">Vertical</option>
+                  <option value="horizontal">Horizontal</option>
+                </Select>
+              </Field>
+            </fieldset>
           </div>
-          <SaveFooter />
-        </>
-      )}
+          {/* REAL simulator: the actual public ScheduleView, themed with the
+              client's palette, fed the staged (unsaved) settings. */}
+          <aside className="v2-design__sim" aria-label="Home page preview">
+            <div className="v2-design__simlabel">Live preview — schedule section on Home</div>
+            <div className="v2-sim-frame" style={{ ...((THEMES[f.theme] || {}).vars || {}) }}>
+              {on ? (
+                <>
+                  <div className="sec-head sec-head--center" style={{ marginBottom: 18 }}>
+                    <div className="eyebrow">{heads.eyebrow ?? "The Day"}</div>
+                    <h2 className="sec-head__title" style={{ fontSize: 30 }}>{heads.title ?? "A glimpse of the schedule"}</h2>
+                  </div>
+                  <ScheduleView items={(f.homeTimelineLayout || "vertical") === "horizontal" ? schedule : (schedule || []).slice(0, 3)} style={(f.homeTimelineLayout || "vertical") === "horizontal" ? "horizontal" : "alt"} />
+                </>
+              ) : (
+                <div style={{ color: "var(--muted)", fontSize: 14, textAlign: "center", padding: "40px 0" }}>Hidden on the home page — tick “Show to Home” to preview.</div>
+              )}
+            </div>
+          </aside>
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 18, paddingTop: 14, borderTop: "1px solid var(--line)" }}>
+          <Button variant="ghost" onClick={() => setOpen(false)}>Close</Button>
+          <Button variant="primary" disabled={saving || !dirty} onClick={async () => { await save(); setOpen(false); }}>{saving ? "Saving…" : "Save changes"}</Button>
+        </div>
+      </Modal>
     </div>
   );
 }
