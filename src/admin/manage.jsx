@@ -369,7 +369,8 @@ function GuestForm({ initial, companions, rsvpDiet, onSave, onCancel }) {
             <input type="checkbox" checked={f.status === "none"} onChange={(e) => setF((s) => ({ ...s, status: e.target.checked ? "none" : "attending" }))} style={{ width: 16, height: 16, flex: "none", marginTop: 2, accentColor: "var(--accent)" }} />
             <div>
               <div style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: ".03em" }}>Wait for their RSVP</div>
-              <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>On — you'll wait for their reply; they stay "No reply" until they respond. Off — you're sure they'll attend, so they're counted as attending right away.</div>
+              <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>On — wait for their reply.</div>
+              <div style={{ color: "var(--muted)", fontSize: 13 }}>Off — you're sure they'll attend.</div>
             </div>
           </div>
         </>
