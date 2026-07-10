@@ -2609,7 +2609,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* accessV2 Design folder: one column, fields capped to half the screen on
    desktop (mobile stays full width). */
 .v2-design .field-row--2 { grid-template-columns: 1fr; }
-@media (min-width: 861px) { .v2-design > fieldset, .v2-design > div { max-width: 50vw; } }
+@media (min-width: 861px) { .v2-design > fieldset, .v2-design > div { max-width: 50%; } }
 
 /* apply wizard: section stepper (one tile per step; done tiles jump back) */
 .apply-steps { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
