@@ -2546,6 +2546,22 @@ function HomeHeadFields({ k, defEyebrow, defTitle }) {
 // accessV2 shared pieces: the "Show to Home?" text link (sits beside a panel
 // title) and the modal shell — uppercase checkbox + helper, fields + live
 // simulator only while enabled, Save commits staged changes and closes.
+// Drawn device chrome around the emulator: phone shell (notch) for Mobile,
+// laptop bezel + base for Desktop.
+function DeviceFrame({ isPhone, children }) {
+  return isPhone ? (
+    <div className="dev-phone">
+      <span className="dev-phone__notch" aria-hidden="true" />
+      <div className="dev-phone__screen">{children}</div>
+    </div>
+  ) : (
+    <div className="dev-laptop">
+      <div className="dev-laptop__screen">{children}</div>
+      <div className="dev-laptop__base" aria-hidden="true" />
+    </div>
+  );
+}
+
 // Show-to-Home emulator — same mechanics as the Settings → Theme preview:
 // the REAL home page in an iframe at true device width (1280 desktop / 390
 // mobile, Desktop|Mobile toggle), scaled to fit. It receives the STAGED
@@ -2564,7 +2580,7 @@ function SectionPreviewFrame({ scrollTo, sampleTag = false }) {
     const el = wrapRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
     const measure = () => {
-      const w = el.clientWidth || baseW;
+      const w = Math.max(120, (el.clientWidth || baseW) - 28); // minus device-shell padding
       setScale(Math.min(w / baseW, MAX_H / baseH, 1));
     };
     measure();
@@ -2593,9 +2609,13 @@ function SectionPreviewFrame({ scrollTo, sampleTag = false }) {
       </div>
       <div ref={wrapRef} style={{ width: "100%", position: "relative" }}>
         {sampleTag && <SampleTag />}
-        <div style={{ width: Math.round(baseW * scale), height: Math.round(baseH * scale), margin: "0 auto", overflow: "hidden", borderRadius: 12, border: "1px solid var(--line, #e5e7eb)", boxShadow: "0 8px 28px -14px rgba(0,0,0,.35)", background: "#fff" }}>
-          <iframe ref={ref} title="Section preview" src="/?preview=1" loading="lazy" onLoad={post}
-            style={{ width: baseW, height: baseH, border: 0, transform: `scale(${scale})`, transformOrigin: "top left", pointerEvents: "none" }} />
+        <div style={{ width: "fit-content", margin: "0 auto" }}>
+          <DeviceFrame isPhone={device === "mobile"}>
+            <div style={{ width: Math.round(baseW * scale), height: Math.round(baseH * scale), overflow: "hidden", background: "#fff" }}>
+              <iframe ref={ref} title="Section preview" src="/?preview=1" loading="lazy" onLoad={post}
+                style={{ width: baseW, height: baseH, border: 0, transform: `scale(${scale})`, transformOrigin: "top left", pointerEvents: "none" }} />
+            </div>
+          </DeviceFrame>
         </div>
       </div>
     </div>
