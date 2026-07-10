@@ -1335,7 +1335,7 @@ export function ScheduleEditor({ open, index, item, onClose }) {
   );
 }
 
-export function ScheduleAdmin() {
+export function ScheduleAdmin({ headExtra = null }) {
   const { schedule } = useStore();
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -1347,7 +1347,7 @@ export function ScheduleAdmin() {
   return (
     <div className="panel">
       <div className="panel__head">
-        <div className="panel__title">Wedding Day Schedule <span style={{ color: "var(--muted)", fontSize: 15 }}>({schedule.length})</span></div>
+        <div className="panel__title">Wedding Day Schedule <span style={{ color: "var(--muted)", fontSize: 15 }}>({schedule.length})</span>{headExtra}</div>
         <Button variant="primary" size="sm" onClick={openNew}>+ Add item</Button>
       </div>
       <div className="panel__body--flush table-wrap">
@@ -2558,10 +2558,12 @@ function ScheduleTabV2() {
   const heads = (f.homeHeads || {}).schedule || {};
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
-        <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>{Icon.home({})} Show to Home?</Button>
-      </div>
-      <ScheduleAdmin />
+      <ScheduleAdmin headExtra={
+        <a href="#" onClick={(e) => { e.preventDefault(); setOpen(true); }}
+          style={{ marginLeft: 14, fontSize: 13, fontWeight: 600, color: "var(--accent, #1E5BD6)", textDecoration: "underline", textUnderlineOffset: 3, cursor: "pointer", fontFamily: "var(--font-body)" }}>
+          Show to Home?
+        </a>
+      } />
       <Modal open={open} onClose={() => setOpen(false)} label="Show to Home" wide>
         <div className="panel__head" style={{ padding: "0 0 14px" }}>
           <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
