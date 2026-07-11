@@ -1347,7 +1347,7 @@ export function ScheduleAdmin({ headExtra = null }) {
   return (
     <div className="panel">
       <div className="panel__head">
-        <div className="panel__title">Wedding Day Schedule <span style={{ color: "var(--muted)", fontSize: 15 }}>({schedule.length})</span>{headExtra}</div>
+        <div className="panel__title">Schedule <span style={{ color: "var(--muted)", fontSize: 15 }}>({schedule.length})</span>{headExtra}</div>
         <Button variant="primary" size="sm" onClick={openNew}>+ Add item</Button>
       </div>
       <div className="panel__body--flush table-wrap">
