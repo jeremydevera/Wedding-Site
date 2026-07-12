@@ -385,7 +385,7 @@ export function confirmDialog(opts) {
 // onApply(null, { z, dx, dy }) — fractions of the crop box that renderers apply
 // as a CSS transform (see cropTransform in lib/media.js). `initialParams` seeds
 // the view so re-cropping a video starts from the saved position.
-export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, initialParams }) {
+export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, livePreview, initialParams }) {
   // DEFECT-2026-07-09-C: the plain preview <img> caches the media response
   // WITHOUT CORS headers (no Vary/ACAO on the plain fetch); this CORS-mode
   // <img> then reuses that cached copy and the browser blocks it — black crop
@@ -477,11 +477,11 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
 
   // live oval-frame preview — recompute as the user drags / zooms
   useEffect(() => {
-    if (!frameSrc || !open || !nat.w) return;
+    if ((!frameSrc && !livePreview) || !open || !nat.w) return;
     const raf = requestAnimationFrame(() => { const c = drawCrop(); if (!c) return; try { setLive(c.toDataURL("image/jpeg", 0.85)); } catch (e) { /* tainted canvas (cross-origin, no CORS) — skip live preview */ } });
     return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line
-  }, [off.x, off.y, scale, nat.w, frameSrc, open]);
+  }, [off.x, off.y, scale, nat.w, frameSrc, livePreview, open]);
 
   function apply() {
     if (isVideo) {
@@ -498,9 +498,9 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
 
   if (!open) return null;
   return (
-    <Modal open={open} onClose={onCancel} label="Crop photo" wide={!!frameSrc}>
+    <Modal open={open} onClose={onCancel} label="Crop photo" wide={!!frameSrc || !!livePreview}>
       <SectionHead eyebrow="Adjust" title="Crop photo" />
-      <p style={{ color: "var(--muted)", fontSize: 14, marginTop: -16, marginBottom: 16 }}>Drag to reposition, slide to zoom. {frameSrc ? "The preview shows exactly how it sits in the frame." : "The shaded frame is what guests will see."}</p>
+      <p style={{ color: "var(--muted)", fontSize: 14, marginTop: -16, marginBottom: 16 }}>Drag to reposition, slide to zoom. {(frameSrc || livePreview) ? "The preview shows exactly how it sits in the frame." : "The shaded frame is what guests will see."}</p>
       <div className="crop">
         <div style={{ display: "flex", gap: 22, alignItems: "flex-start", flexWrap: "wrap", justifyContent: "center", width: "100%" }}>
           <div className="crop__view" style={{ width: W, height: H }} onPointerDown={onDown}>
@@ -516,6 +516,12 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
                 <img src={live || src} alt="" style={{ position: "absolute", left: "20.6%", top: "14.9%", width: "78%", height: "75%", objectFit: "cover", display: "block" }} />
                 <img src={frameSrc} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "auto", display: "block" }} />
               </div>
+            </div>
+          )}
+          {!frameSrc && livePreview && (
+            <div style={{ flex: "none", textAlign: "center" }}>
+              <span className="field__label" style={{ display: "block", marginBottom: 8 }}>In the player</span>
+              {livePreview(live || src)}
             </div>
           )}
         </div>

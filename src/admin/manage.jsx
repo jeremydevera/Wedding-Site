@@ -160,6 +160,24 @@ const IMG_EXT_RE = /\.(png|jpe?g|webp|gif|avif|bmp)$/i;
 // extension before sending — otherwise the server 415s and R2 can't serve it as
 // an animatable gif/playable video.
 const EXT_MIME = { gif: "image/gif", mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime", m4v: "video/x-m4v", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", avif: "image/avif" };
+// The Retro Device screen, miniaturized, as the crop modal's live preview —
+// the owner sees EXACTLY how their cover sits behind the Now Playing panel.
+// Mirrors .dp-screen / .dp-screen__text / .dp-progress proportions.
+function RetroScreenPreview(liveUrl) {
+  return (
+    <div style={{ position: "relative", width: 220, aspectRatio: "345 / 313", borderRadius: 18, overflow: "hidden", border: "3px solid #1e1e1e", background: "#0b0b0e", boxShadow: "0 10px 24px -12px rgba(0,0,0,.5)" }}>
+      {liveUrl && <img src={liveUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.4) 100%)" }} />
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "18px 10px 12px", background: "linear-gradient(180deg, rgba(2,2,2,0) 0%, rgba(2,2,2,0.35) 35%, rgba(2,2,2,0.7) 70%, rgba(2,2,2,0.88) 100%)", textAlign: "left" }}>
+        <div style={{ color: "rgba(255,255,255,.75)", fontSize: 7, letterSpacing: ".18em", fontWeight: 700 }}>NOW PLAYING</div>
+        <div style={{ color: "#fff", fontSize: 13, fontWeight: 700, lineHeight: 1.2 }}>Your song title</div>
+        <div style={{ color: "rgba(255,255,255,.8)", fontSize: 9 }}>Artist</div>
+        <div style={{ marginTop: 6, height: 3, borderRadius: 3, background: "rgba(255,255,255,.25)" }}><div style={{ width: "35%", height: "100%", borderRadius: 3, background: "#fff" }} /></div>
+      </div>
+    </div>
+  );
+}
+
 export function TrackCoverField({ value, onChange, cropValue = null, onCropChange = null }) {
   const { clientId } = useStore();
   const ref = useRef(null);
@@ -236,7 +254,7 @@ export function TrackCoverField({ value, onChange, cropValue = null, onCropChang
           else if (!/\.gif(\?|$)/i.test(key)) setCropSrc(mediaUrl(key));
         }}
       />
-      <CropModal open={!!cropSrc} src={cropSrc} aspect={1} initialParams={cropValue} onCancel={() => setCropSrc(null)} onApply={applyCrop} />
+      <CropModal open={!!cropSrc} src={cropSrc} aspect={345 / 313} livePreview={RetroScreenPreview} initialParams={cropValue} onCancel={() => setCropSrc(null)} onApply={applyCrop} />
     </div>
   );
 }
