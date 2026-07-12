@@ -20,7 +20,7 @@ export const EVENT_TYPES = {
     terms: { host: "the couple", action: "We're getting married", rsvp: "Will you be there?" },
     sections: ["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"],
     defaultTheme: "classic",
-    themes: ["classic", "classic2", "classic3", "glass", "noir", "garden", "blush", "dusk", "burgundy", "lavender", "emerald", "terracotta", "champagne", "envelope"],
+    themes: ["classic", "classic2", "classic3", "glass", "noir", "garden", "blush", "dusk", "burgundy", "lavender", "emerald", "terracotta", "champagne", "envelope", "envelope2"],
   },
 
   birthday: {

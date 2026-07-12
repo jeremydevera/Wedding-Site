@@ -6,7 +6,7 @@ import { useStore } from "@/lib/store.jsx";
 import { mapStyleFilter } from "@/lib/mapStyles.js";
 import { featureVisible, moduleEnabled, sectionLabel } from "@/lib/roles.js";
 import { PREVIEW_SAMPLES } from "@/lib/samples.js";
-import { egTintGradientFor, envColorFilterFor } from "@/themes";
+import { egTintGradientFor, envColorFilterFor, isEnvelopeTheme } from "@/themes";
 import { Button, Countdown, FloatingDecor, Icon, Placeholder, SectionHead, mapCoordStr, mapDirUrl, mapEmbedUrl, mapResolveQuery } from "@/ui/components.jsx";
 import { VinylPlayer } from "@/features/music.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
@@ -552,7 +552,7 @@ export function Home() {
   return (
     <div>
       {/* HERO */}
-      {s.theme === "envelope" ? (
+      {isEnvelopeTheme(s.theme) ? (
         <EnvelopeHero />
       ) : (
       <header className={"hero" + (heroTextLight ? " hero--on-photo" : "")}>
@@ -573,7 +573,7 @@ export function Home() {
       )}
 
       {/* COUNTDOWN (envelope theme — the hero is replaced by the envelope) */}
-      {s.theme === "envelope" && (
+      {isEnvelopeTheme(s.theme) && (
         <section className="block eg-celebrate" id="home-countdown" style={{ textAlign: "center", paddingBottom: 96 }}>
           {/* IMPORTANT — DO NOT make this configurable. The Olive Envelope theme
               ALWAYS shows falling leaves, regardless of the client's decorStyle/
@@ -598,7 +598,7 @@ export function Home() {
       )}
 
       {/* WELCOME / invitation — RSVP button lives right under this section */}
-      {s.theme !== "envelope" && (
+      {!isEnvelopeTheme(s.theme) && (
       <section className="block" id="home-rsvp">
         <div className="container container--narrow rsvp-cta-inner" style={{ textAlign: "center" }}>
           <div className="divider-mark">{Icon.rings({})}</div>

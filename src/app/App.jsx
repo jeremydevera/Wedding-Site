@@ -5,7 +5,7 @@ import { onSiteScroll, scrollOffset, scrollToTop } from "@/lib/scroll.js";
 import { Store, useStore } from "@/lib/store.jsx";
 import { loadClientData } from "@/lib/api.js";
 import { resolveSubdomain } from "@/lib/tenant.js";
-import { FONT_OPTIONS, THEMES, THEME_FONTS, applyTheme, isPremiumTheme } from "@/themes";
+import { FONT_OPTIONS, THEMES, THEME_FONTS, applyTheme, isPremiumTheme, isEnvelopeTheme } from "@/themes";
 import { Button, ConfirmHost, FallingFx, FloatingDecor, Icon, Monogram, ToastHost, confirmDialog, toast } from "@/ui/components.jsx";
 import { FX_LIST } from "@/lib/falling-fx.js";
 import { TweakButton, TweakColor, TweakSection, TweakSelect, TweakText, TweakToggle, TweaksPanel } from "@/ui/tweaks-panel.jsx";
@@ -278,7 +278,7 @@ export function TweaksContent() {
       <TweakColor label="Accent" value={s.themeAccent || THEME_DEFAULT_ACCENT(s.theme)}
         options={ACCENT_OPTIONS} onChange={(v) => upd({ themeAccent: v })} />
 
-      {s.theme === "envelope" && (
+      {isEnvelopeTheme(s.theme) && (
         <>
           <TweakSection label="Envelope Frame" />
           <div className="twk-row" style={{ display: "block" }}>
@@ -307,7 +307,7 @@ export function TweaksContent() {
       <TweakText label="Hashtag" value={s.hashtag} onChange={(v) => upd({ hashtag: v })} />
       <TweakText label="Welcome line" value={s.welcome} onChange={(v) => upd({ welcome: v })} />
 
-      {s.theme !== "envelope" && (<>
+      {!isEnvelopeTheme(s.theme) && (<>
       <TweakSection label="Home" />
       <TweakToggle label="Floating decorations" value={s.decorOn} onChange={(v) => upd({ decorOn: v })} />
       <TweakSelect label="Decoration" value={s.decorStyle}
@@ -325,7 +325,7 @@ export function TweaksContent() {
 
 export function THEME_DEFAULT_ACCENT(themeKey) {
   // approximate hex of each theme's accent so the swatch shows a selection
-  return ({ classic: "#5b7560", classic2: "#3a3f47", classic3: "#6b7079", glass: "#5f78a6", noir: "#b08d57", garden: "#3f7a52", blush: "#b06a72", dusk: "#5f7d9c", burgundy: "#7d2f3c", lavender: "#8f7fb0", emerald: "#2f7a5a", terracotta: "#c06a44", champagne: "#b08d57", envelope: "#5c6b3c" })[themeKey] || "#5b7560";
+  return ({ classic: "#5b7560", classic2: "#3a3f47", classic3: "#6b7079", glass: "#5f78a6", noir: "#b08d57", garden: "#3f7a52", blush: "#b06a72", dusk: "#5f7d9c", burgundy: "#7d2f3c", lavender: "#8f7fb0", emerald: "#2f7a5a", terracotta: "#c06a44", champagne: "#b08d57", envelope: "#5c6b3c", envelope2: "#5c6b3c" })[themeKey] || "#5b7560";
 }
 
 // Pure render decision for the app root — testable without React/network.
@@ -500,7 +500,7 @@ export function App() {
             <main key={route}><ActivePage section={route} /></main>
             <Footer />
           </div>
-          {settings.decorOn && route === "home" && settings.theme !== "envelope" && (
+          {settings.decorOn && route === "home" && !isEnvelopeTheme(settings.theme) && (
             String(settings.decorStyle).startsWith("fx-")
               ? <FallingFx id={settings.decorStyle.slice(3)} />
               : <FloatingDecor on style={settings.decorStyle} />

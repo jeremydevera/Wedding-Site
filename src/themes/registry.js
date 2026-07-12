@@ -300,6 +300,30 @@ export const THEMES = {
       "--hero-tint": "oklch(0.3 0.06 126 / 0.46)",
     },
   },
+  // Envelope 2 — a duplicate of Olive Envelope. Same look + full envelope
+  // behavior (art, premium arrange, tint/color system) via isEnvelopeTheme();
+  // kept as its own key so it can diverge later without touching the original.
+  envelope2: {
+    label: "Envelope 2",
+    blurb: "Olive paper, warm ivory, burgundy and cream. The invitation, brought to life.",
+    vars: {
+      "--bg": "oklch(0.963 0.014 96)",
+      "--surface": "oklch(0.99 0.008 96)",
+      "--surface-2": "oklch(0.94 0.02 100)",
+      "--ink": "oklch(0.3 0.035 125)",
+      "--ink-soft": "oklch(0.44 0.035 128)",
+      "--muted": "oklch(0.57 0.025 122)",
+      "--line": "oklch(0.87 0.022 105)",
+      "--accent": "oklch(0.48 0.075 124)",
+      "--accent-soft": "oklch(0.93 0.035 120)",
+      "--accent-ink": "oklch(0.98 0.012 96)",
+      "--gold": "oklch(0.5 0.13 25)",
+      "--font-display": "'Cormorant Garamond', serif",
+      "--font-body": "'EB Garamond', serif",
+      "--radius": "2px",
+      "--hero-tint": "oklch(0.3 0.06 126 / 0.46)",
+    },
+  },
   // Hidden design-only theme (NOT listed in eventTypes.themes, so it never
   // appears in the /apply wizard or the demo dropdown). Bespoke full-page
   // template rendered by theme === "roadtoforever". Applied to sandbox.
@@ -361,15 +385,22 @@ export const THEME_FONTS = {
   terracotta: { display: "Fraunces",            body: "Archivo" },
   champagne:  { display: "Italiana",            body: "Jost" },
   envelope:   { display: "Cormorant Garamond", body: "EB Garamond" },
+  envelope2:  { display: "Cormorant Garamond", body: "EB Garamond" },
   glass:      { display: "Jost",                body: "Nunito Sans" },
   roadtoforever: { display: "Cormorant Garamond", body: "Jost" },
 };
 // Per-theme button shape
 export const THEME_BTN = {
   classic: "4px", classic2: "0px", classic3: "2px", noir: "0px", garden: "999px", blush: "999px", dusk: "6px",
-  burgundy: "0px", lavender: "999px", emerald: "2px", terracotta: "12px", champagne: "0px", envelope: "2px", glass: "999px",
+  burgundy: "0px", lavender: "999px", emerald: "2px", terracotta: "12px", champagne: "0px", envelope: "2px", envelope2: "2px", glass: "999px",
   roadtoforever: "2px",
 };
+
+// Envelope family — the flagship "invitation" theme and its duplicates. Every
+// envelope-specific behavior (the full-page envelope art, premium arrange, the
+// paper-color + tint system, public hero replacement) branches on this, so a
+// new envelope-style theme only needs a THEMES entry + this predicate.
+export function isEnvelopeTheme(key) { return key === "envelope" || key === "envelope2"; }
 
 // Apply a theme + optional tweak overrides ({accent, gold, displayFont, bodyFont,
 // envColor, envColorCustom, envMatchSite}). For the envelope theme, a non-olive
@@ -381,7 +412,7 @@ export function applyTheme(themeKey, overrides = {}) {
   root.setAttribute("data-theme", themeKey);
   Object.entries(theme.vars).forEach(([k, v]) => root.style.setProperty(k, v));
   root.style.setProperty("--btn-radius", THEME_BTN[themeKey] || "4px");
-  if (themeKey === "envelope") {
+  if (isEnvelopeTheme(themeKey)) {
     const pal = envSitePalette(overrides.envColor, overrides.envColorCustom, overrides.envMatchSite);
     if (pal) Object.entries(pal).forEach(([k, v]) => root.style.setProperty(k, v));
   }
@@ -399,7 +430,7 @@ export function applyTheme(themeKey, overrides = {}) {
 }
 
 // Premium themes get extra capabilities (e.g. the layout Arrange tool).
-export const PREMIUM_THEMES = ["envelope"];
+export const PREMIUM_THEMES = ["envelope", "envelope2"];
 export function isPremiumTheme(key) { return PREMIUM_THEMES.indexOf(key) !== -1; }
 
 // Envelope background tint presets — each is a vertical 2-stop gradient (with alpha).

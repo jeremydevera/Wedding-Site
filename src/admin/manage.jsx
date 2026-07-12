@@ -1,7 +1,7 @@
 import React from "react";
 import { go } from "@/lib/nav.js";
 import { Store, useStore, uid } from "@/lib/store.jsx";
-import { EG_TINTS, ENV_COLORS, ENV_SEAL_MASK, ENV_SEAL_POS, THEMES, THEME_FONTS, egTintGradientFor, envColorFilterFor, isPremiumTheme } from "@/themes";
+import { EG_TINTS, ENV_COLORS, ENV_SEAL_MASK, ENV_SEAL_POS, THEMES, THEME_FONTS, egTintGradientFor, envColorFilterFor, isPremiumTheme, isEnvelopeTheme } from "@/themes";
 import { Button, CropModal, DecorPreview, FallingFx, Field, Icon, Input, Modal, Monogram, Pager, Placeholder, SectionHead, Select, Textarea, confirmDialog, mapEmbedUrl, mapSearchUrl, toast, usePaged } from "@/ui/components.jsx";
 import { FX_LIST } from "@/lib/falling-fx.js";
 import { Home } from "@/pages/PublicPages.jsx";
@@ -2193,7 +2193,7 @@ export function SettingsAdmin() {
 
           {/* Olive Envelope paper color — lives INSIDE the Theme card so it's
               part of the theme section (only shown when the envelope theme is on). */}
-          {f.theme === "envelope" && (
+          {isEnvelopeTheme(f.theme) && (
             <div style={{ marginTop: 20, paddingTop: 18, borderTop: "1px solid var(--line)" }}>
               <Field label="Envelope paper color" id="s-envcolor" hint="Recolors the envelope paper and lace — the wax seal stays cream. The falling leaves and everything inside the envelope are unchanged.">
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -2262,7 +2262,7 @@ export function SettingsAdmin() {
         <SaveFooter />
       </div>
 
-      {f.theme === "envelope" && (
+      {isEnvelopeTheme(f.theme) && (
       <div className="panel">
         <div className="panel__head"><div className="panel__title">Envelope Frame Photo</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Shows inside the oval frame on the opened envelope</span></div>
         <div className="panel__body" style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", maxWidth: 760, margin: "0 auto" }}>
@@ -2281,7 +2281,7 @@ export function SettingsAdmin() {
       )}
 
 
-      {f.theme === "envelope" && (
+      {isEnvelopeTheme(f.theme) && (
       <div className="panel">
         <div className="panel__head"><div className="panel__title">Title Size</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Size of &ldquo;A Love Letter From&rdquo; + your names on the cover</span></div>
         <div className="panel__body" style={{ maxWidth: 760 }}>
@@ -2304,7 +2304,7 @@ export function SettingsAdmin() {
       </div>
       )}
 
-      {f.theme === "envelope" && (
+      {isEnvelopeTheme(f.theme) && (
       <div className="panel">
         <div className="panel__head"><div className="panel__title">Envelope Background</div><span style={{ color: "var(--muted)", fontSize: 14 }}>The photo behind the envelope on the opening screen</span></div>
         <div className="panel__body">
