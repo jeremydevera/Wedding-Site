@@ -146,9 +146,10 @@ export function Nav({ route }) {
         <optgroup label="Themes">
           {Object.keys(THEMES).filter((k) => !isPremiumTheme(k) && k !== "roadtoforever").map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
         </optgroup>
-        <optgroup label="✦ Premium">
-          {Object.keys(THEMES).filter((k) => isPremiumTheme(k) && k !== "roadtoforever").map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
-        </optgroup>
+        {/* Premium themes hidden from the demo picker for now (owner request
+            2026-07-12). If the demo's SAVED theme is premium (Olive Envelope),
+            keep it as a disabled option so the select still shows its name. */}
+        {isPremiumTheme(settings.theme) && <option value={settings.theme} disabled>{THEMES[settings.theme] ? THEMES[settings.theme].label : settings.theme}</option>}
       </select>
     </label>
   );
