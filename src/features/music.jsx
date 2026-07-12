@@ -287,9 +287,6 @@ function DevicePlayer({ tracks }) {
                 <div className="dp-title">{cur.title}</div>
                 <div className="dp-artist">{cur.artist || " "}</div>
               </div>
-              <div className="dp-progress" onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); seekFrac((e.clientX - r.left) / r.width); }} role="progressbar" aria-valuenow={Math.round(frac * 100)}>
-                <span className="dp-fill" style={{ width: (frac * 100) + "%" }} />
-              </div>
             </div>
 
             <div className="dp-wheel">

@@ -172,7 +172,6 @@ function RetroScreenPreview(liveUrl) {
         <div style={{ color: "rgba(255,255,255,.75)", fontSize: 7, letterSpacing: ".18em", fontWeight: 700 }}>NOW PLAYING</div>
         <div style={{ color: "#fff", fontSize: 13, fontWeight: 700, lineHeight: 1.2 }}>Your song title</div>
         <div style={{ color: "rgba(255,255,255,.8)", fontSize: 9 }}>Artist</div>
-        <div style={{ marginTop: 6, height: 3, borderRadius: 3, background: "rgba(255,255,255,.25)" }}><div style={{ width: "35%", height: "100%", borderRadius: 3, background: "#fff" }} /></div>
       </div>
     </div>
   );
