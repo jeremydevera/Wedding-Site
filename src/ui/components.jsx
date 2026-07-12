@@ -397,6 +397,7 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
   const [off, setOff] = useState({ x: 0, y: 0 });
   const [nat, setNat] = useState({ w: 0, h: 0 });
   const [live, setLive] = useState(null);
+  const [mediaTick, setMediaTick] = useState(0); // bumps when the crop media finishes loading
   const imgRef = useRef(null);
   const W = 340;
   const H = Math.round(W / (aspect || 1));
@@ -452,6 +453,7 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
   function drawCrop() {
     const im = imgRef.current;
     if (!im || !nat.w) return null;
+    if (im.tagName === "IMG" && !im.complete) return null; // still decoding — caller falls back to the raw src
     const srcX = -off.x / scale, srcY = -off.y / scale, srcW = W / scale, srcH = H / scale;
     const outW = Math.min(1400, Math.round(srcW));
     const outH = Math.round(outW / (aspect || 1));
@@ -481,7 +483,7 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
     const raf = requestAnimationFrame(() => { const c = drawCrop(); if (!c) return; try { setLive(c.toDataURL("image/jpeg", 0.85)); } catch (e) { /* tainted canvas (cross-origin, no CORS) — skip live preview */ } });
     return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line
-  }, [off.x, off.y, scale, nat.w, frameSrc, livePreview, open]);
+  }, [off.x, off.y, scale, nat.w, frameSrc, livePreview, open, mediaTick]);
 
   function apply() {
     if (isVideo) {
@@ -506,7 +508,7 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
           <div className="crop__view" style={{ width: W, height: H }} onPointerDown={onDown}>
             {src && (isVideo
               ? <video ref={imgRef} src={src} muted loop autoPlay playsInline draggable="false" onLoadedMetadata={(e) => setNat({ w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })} style={{ position: "absolute", left: off.x, top: off.y, width: dispW, height: dispH, maxWidth: "none" }} />
-              : <img ref={imgRef} src={corsSrc} alt="" draggable="false" crossOrigin="anonymous" style={{ position: "absolute", left: off.x, top: off.y, width: dispW, height: dispH, maxWidth: "none" }} />)}
+              : <img ref={imgRef} src={corsSrc} alt="" draggable="false" crossOrigin="anonymous" onLoad={() => setMediaTick((t) => t + 1)} style={{ position: "absolute", left: off.x, top: off.y, width: dispW, height: dispH, maxWidth: "none" }} />)}
             <div className="crop__frame" />
           </div>
           {frameSrc && (
