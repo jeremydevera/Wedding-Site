@@ -3385,7 +3385,10 @@ const AUDIO_ACCEPT = "audio/*,.mp3,.m4a,.aac,.wav,.ogg,.oga,.opus,.flac";
 
 export function TrackEditor({ open, track, onClose }) {
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
-  const { clientId } = useStore();
+  const { clientId, settings } = useStore();
+  // Covers only ever show on the Retro Device screen — hide the whole cover
+  // uploader on the Vinyl skin so owners aren't uploading art that never shows.
+  const coversApply = settings.playerSkin === "device";
   const [f, setF] = useState({ title: "", artist: "", url: "", art: "", artCrop: null });
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef(null);
@@ -3433,6 +3436,7 @@ export function TrackEditor({ open, track, onClose }) {
         onUploadNew={() => fileRef.current && fileRef.current.click()}
         onPick={(key) => setF((p) => ({ ...p, url: key }))}
       />
+      {coversApply && (
       <Field label="Cover image" id="trk-art" hint="Shown on the Retro Device player screen. Image, GIF, or MP4 — square works best. Optional; falls back to a themed gradient.">
         {/* Cover sets the form only; it persists to the DB on "Save track" (the
             modal's own button, right below) — consistent with every other field,
@@ -3440,6 +3444,7 @@ export function TrackEditor({ open, track, onClose }) {
         <TrackCoverField value={f.art} onChange={(v) => setF((p) => ({ ...p, art: v || "" }))}
           cropValue={f.artCrop || null} onCropChange={(c) => setF((p) => ({ ...p, artCrop: c }))} />
       </Field>
+      )}
       <div style={{ display: "flex", gap: 12, marginTop: 8, justifyContent: "flex-end" }}>
         <Button variant="ghost" onClick={onClose}>Cancel</Button>
         <Button variant="primary" onClick={save} disabled={uploading}>Save track</Button>
