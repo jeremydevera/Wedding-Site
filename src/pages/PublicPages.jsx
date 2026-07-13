@@ -134,6 +134,12 @@ export function EnvelopeHero() {
   const { settings } = useStore();
   const s = settings;
   const [open, setOpen] = React.useState(false);
+  // Envelope 2 swaps the sealed COVER for its own finished art (lace ivory with
+  // a baked-in wax seal). That image isn't the olive base paper, so it skips the
+  // recolor + seal overlays. The open state (card/frame/flowers) is unchanged.
+  const isEnv2 = s.theme === "envelope2";
+  const sealedSrc = isEnv2 ? "/assets/invite/env2-closed.png" : "/assets/invite/env-closed.webp";
+  const sealedAlt = isEnv2 ? "Sealed ivory lace envelope with a wax seal" : "Sealed olive envelope with lace trim and wax seal";
 
   // first screen = envelope only: lock scroll AND hide the nav until it's opened
   const [ready, setReady] = React.useState(false);
@@ -151,7 +157,7 @@ export function EnvelopeHero() {
       im.src = src;
       return (im.decode ? im.decode() : Promise.resolve()).catch(() => {});
     };
-    Promise.all([decode("/assets/invite/env-closed.webp"), decode("/assets/invite/seal-closed-v2.png")])
+    Promise.all([decode(sealedSrc), ...(isEnv2 ? [] : [decode("/assets/invite/seal-closed-v2.png")])])
       .then(() => { if (!dead) setArtReady(true); });
     const t = setTimeout(() => { if (!dead) setArtReady(true); }, 4000);
     return () => { dead = true; clearTimeout(t); };
@@ -263,8 +269,8 @@ export function EnvelopeHero() {
         {/* Sealed envelope */}
         <div className={"eg-page" + (open ? "" : " is-active")}>
           <div className={"inv-sealed-wrap eg-sealed" + (ready ? " is-ready" : "")} style={{ opacity: artReady ? 1 : 0, transition: "opacity .45s ease" }}>
-            <img ref={artRef} className="inv-sealed-art" src="/assets/invite/env-closed.webp" alt="Sealed olive envelope with lace trim and wax seal" onLoad={triggerReady} />
-            {envRecolorOverlay(s, "sealed")}
+            <img ref={artRef} className="inv-sealed-art" src={sealedSrc} alt={sealedAlt} onLoad={triggerReady} />
+            {!isEnv2 && envRecolorOverlay(s, "sealed")}
             <div className="inv-letter-from">
               <span className="inv-lf-label">A Love Letter From</span>
               <span className="inv-lf-names"><span className="inv-lf-type">{s.partnerA} &amp; {s.partnerB}</span></span>
