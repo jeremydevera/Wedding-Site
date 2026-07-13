@@ -1847,12 +1847,12 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
    flat circle baked into env2-closed.png — position measured on the artwork
    (circle center ~50.9% / 65.4%, ~11% wide; overlay slightly larger to cover
    the baked seal's shadow). Keeps --sealed so the mobile art-nudge tracks. */
-img.inv-seal-img--env2 { left: 50.6%; top: 64.5%; width: 14%; transform: translate(-50%, -50%); }
+img.inv-seal-img--env2 { left: 50.6%; top: 63.4%; width: 8.6%; transform: translate(-50%, -50%); }
 /* Envelope 2's seal is ROUND and a touch lower than olive's oval, so size the
    click hotspot + pulse ring to match it (olive's is a tall 13%x26% oval at
    49.4%/56.99% — too big + off-centre here). Higher specificity than the mobile
    .eg-sealed rule so it wins everywhere. */
-[data-theme="envelope2"] .eg-sealed .inv-seal-hotspot { left: 50.6%; top: 64.5%; width: 13%; height: 13%; transform: translate(-50%, -50%); }
+[data-theme="envelope2"] .eg-sealed .inv-seal-hotspot { left: 50.6%; top: 63.4%; width: 9%; height: 16%; transform: translate(-50%, -50%); }
 .inv-seal-hotspot {
   position: absolute; left: 49.4%; top: 56.99%; width: 13%; height: 26%;
   transform: translate(-50%, -50%); border: 0; background: transparent; padding: 0; margin: 0;
