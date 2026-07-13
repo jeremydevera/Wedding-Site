@@ -130,10 +130,30 @@ function envRecolorOverlay(s, kind) {
   </>);
 }
 
+// sRGB <-> HSL for the uniform recolor below.
+function _rgb2hsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b); let h, s, l = (mx + mn) / 2;
+  if (mx === mn) { h = s = 0; } else {
+    const dd = mx - mn; s = l > 0.5 ? dd / (2 - mx - mn) : dd / (mx + mn);
+    switch (mx) { case r: h = (g - b) / dd + (g < b ? 6 : 0); break; case g: h = (b - r) / dd + 2; break; default: h = (r - g) / dd + 4; }
+    h /= 6;
+  }
+  return [h, s, l];
+}
+function _hsl2rgb(h, s, l) {
+  if (s === 0) { const v = l * 255; return [v, v, v]; }
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+  const hk = (t) => { if (t < 0) t += 1; if (t > 1) t -= 1; if (t < 1 / 6) return p + (q - p) * 6 * t; if (t < 1 / 2) return q; if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6; return p; };
+  return [hk(h + 1 / 3) * 255, hk(h) * 255, hk(h - 1 / 3) * 255];
+}
+
 // Envelope 2's sealed cover is a near-white lace image. The olive hue-rotate
-// filters can't recolor a white base, so we recolor on a <canvas>: paper takes
-// the target color (from the Settings -> Theme envelope color), lace + seal
-// stay light, driven live by env2TintFor(). Same picker + site palette as olive.
+// filters can't recolor a white base (white has no hue to shift), so we do the
+// SAME uniform-hue recolor olive gets, on a <canvas>: every pixel is mapped to
+// the chosen hue with its lightness driven by the original luminance — so paper
+// grain, lace pattern AND the wax seal all take the color while texture is
+// preserved. Driven live by env2TintFor() (same picker + site palette as olive).
 function Env2Cover({ src, tint, artRef, onReady }) {
   const cRef = React.useRef(null);
   const baseRef = React.useRef(null);
@@ -146,20 +166,15 @@ function Env2Cover({ src, tint, artRef, onReady }) {
     ctx.drawImage(img, 0, 0);
     const rgb = tint ? hexToRgb(tint) : null;
     if (!rgb) return; // olive/no tint -> show the ivory as-is
+    const [th, ts] = _rgb2hsl(rgb[0], rgb[1], rgb[2]);
+    const S = Math.max(ts, 0.6); // ensure the paper reads as coloured, not washed out
     const im = ctx.getImageData(0, 0, W, H); const d = im.data;
-    // wax seal preserve disc (fractions of the 1600x899 base) + soft ring
-    const scx = 0.5 * W, scy = 0.6185 * H, sr = 0.0575 * W, soft = 0.012 * W;
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      const i = (y * W + x) * 4; if (!d[i + 3]) continue;
-      const dist = Math.hypot(x - scx, y - scy);
-      if (dist < sr) continue; // seal keeps its cream
-      const r = d[i], g = d[i + 1], b = d[i + 2];
-      const L = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-      let nr, ng, nb;
-      if (L <= 0.88) { const k = 0.34 + 0.66 * (L / 0.88); nr = rgb[0] * k; ng = rgb[1] * k; nb = rgb[2] * k; }
-      else { const t = Math.min(1, (L - 0.88) / 0.115); const s = t * t * (3 - 2 * t); nr = rgb[0] + (255 - rgb[0]) * s; ng = rgb[1] + (255 - rgb[1]) * s; nb = rgb[2] + (255 - rgb[2]) * s; }
-      let bt = 1; if (dist < sr + soft) bt = (dist - sr) / soft; // feather the seal edge
-      d[i] = r + (nr - r) * bt; d[i + 1] = g + (ng - g) * bt; d[i + 2] = b + (nb - b) * bt;
+    for (let i = 0; i < d.length; i += 4) {
+      if (!d[i + 3]) continue;
+      const pl = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255;
+      const L = 0.15 + 0.52 * pl; // compress toward mid so light paper becomes rich colour
+      const [nr, ng, nb] = _hsl2rgb(th, S, L);
+      d[i] = nr; d[i + 1] = ng; d[i + 2] = nb;
     }
     ctx.putImageData(im, 0, 0);
   }, [tint]);
