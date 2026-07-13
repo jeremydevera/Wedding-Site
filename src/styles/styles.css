@@ -1847,7 +1847,7 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
    flat circle baked into env2-closed.png — position measured on the artwork
    (circle center ~50.9% / 65.4%, ~11% wide; overlay slightly larger to cover
    the baked seal's shadow). Keeps --sealed so the mobile art-nudge tracks. */
-img.inv-seal-img--env2 { left: 50.94%; top: 65.4%; width: 12.4%; transform: translate(-50%, -50%); }
+img.inv-seal-img--env2 { left: 50%; top: 57.9%; width: 14%; transform: translate(-50%, -50%); }
 .inv-seal-hotspot {
   position: absolute; left: 49.4%; top: 56.99%; width: 13%; height: 26%;
   transform: translate(-50%, -50%); border: 0; background: transparent; padding: 0; margin: 0;
