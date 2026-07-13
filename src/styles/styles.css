@@ -2035,8 +2035,10 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    visible pixelation on large screens. Show it near native scale; safe now that
    the art's black corner triangles are painted out. */
 [data-theme="envelope2"] .eg-sealed { width: max(103vw, 185vh); }
-/* env2 seal sits lower than olive's — keep the tap cue below it */
-[data-theme="envelope2"] .eg-sealed .inv-open-cue { top: 76%; }
+/* env2 seal sits lower than olive's — keep the tap cue below it. Ivory paper:
+   cream text is invisible — use pressed dark-olive ink with a light emboss. */
+[data-theme="envelope2"] .eg-sealed .inv-open-cue { top: 76%; color: #877c55; text-shadow: 0 1px 0 rgba(255, 255, 255, .5); }
+[data-theme="envelope2"] .eg-sealed .inv-letter-from { color: #6d6140; text-shadow: 0 1px 0 rgba(255, 255, 255, .55); }
 /* cover hero is much larger than the contain wrap, so scale its overlay text down + keep the cue on-screen */
 /* cqw is sized off max(142vw,215vh); on tall/narrow phones the 215vh term blows
    the overlay text past the viewport (clips "…From"). Cap against vw so it fits. */
