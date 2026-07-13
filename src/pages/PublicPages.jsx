@@ -120,8 +120,9 @@ export function egTintVars(s) {
 function envRecolorOverlay(s, kind, artSrc) {
   const recolor = envColorFilterFor(s.envColor, s.envColorCustom);
   if (kind === "sealed") return (<>
-    {recolor ? <img className="inv-art-recolor inv-art-recolor--sealed" src={artSrc || "/assets/invite/env-closed.webp"} alt="" aria-hidden="true" /> : null}
-    {/* env2 (artSrc set) has its wax seal baked into the art, so no separate seal image */}
+    {recolor ? <img className={"inv-art-recolor inv-art-recolor--sealed" + (artSrc ? " inv-art-recolor--nomask" : "")} src={artSrc || "/assets/invite/env-closed.webp"} alt="" aria-hidden="true" /> : null}
+    {/* env2 (artSrc set) colors the whole cover incl. the seal — no seal cut-out,
+        no separate cream seal image (olive keeps its seal cream via those). */}
     {!artSrc && <img className="inv-seal-img inv-seal-img--sealed" src="/assets/invite/seal-closed-v2.png" alt="" aria-hidden="true" />}
   </>);
   if (!recolor) return null;

@@ -1830,6 +1830,9 @@ img.inv-art-recolor--front {
   -webkit-mask-image: radial-gradient(3.5% 8% at 50.44% 70.7%, transparent 60%, #000 100%);
   mask-image: radial-gradient(3.5% 8% at 50.44% 70.7%, transparent 60%, #000 100%);
 }
+/* Envelope 2 colors the whole cover incl. the wax seal — drop the seal cut-out
+   mask so the recolor overlay covers the seal too. */
+img.inv-art-recolor--nomask { -webkit-mask-image: none; mask-image: none; }
 /* The wax seal as its OWN image (cut from the art with a feathered edge) laid
    unfiltered on top of the recolor overlay — the seal stays pixel-identical to
    the original for any paper color; the mask hole above is just the fallback. */
