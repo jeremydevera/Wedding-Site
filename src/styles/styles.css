@@ -2034,7 +2034,8 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* Envelope 2: the art is 1600px — the shared 142vw/215vh zoom upscales it into
    visible pixelation on large screens. Show it near native scale; safe now that
    the art's black corner triangles are painted out. */
-[data-theme="envelope2"] .eg-sealed { width: max(103vw, 185vh); }
+/* Env2's sealed cover fills the whole screen like Olive Envelope (owner request). */
+[data-theme="envelope2"] .eg-sealed { width: max(142vw, 215vh); }
 /* env2 seal sits lower than olive's — keep the tap cue below it. The burgundy
    paper is dark, so the base cream text works as-is. */
 [data-theme="envelope2"] .eg-sealed .inv-open-cue { top: 72%; }
