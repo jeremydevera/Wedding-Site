@@ -200,7 +200,7 @@ export function EnvelopeHero() {
       anim.onfinish = () => { el.style.clipPath = "none"; anim.cancel(); }; // cancel so forwards-fill can't override the unclipped resting state
     };
     type(".inv-lf-label", 18, 900, 300);
-    type(".inv-lf-type", 14, 1100, 1300);
+    type(".inv-lf-type", 14, 1100, isEnv2 ? 400 : 1300); // env2 has no label line — names type first
   }, [ready]);
   React.useEffect(() => {
     if (!open) {
@@ -279,11 +279,11 @@ export function EnvelopeHero() {
                 pointed at the env2 art, so both themes share one function. */}
             {isEnv2 ? envRecolorOverlay(s, "sealed", sealedSrc) : envRecolorOverlay(s, "sealed")}
             <div className="inv-letter-from">
-              <span className="inv-lf-label">A Love Letter From</span>
+              {!isEnv2 && <span className="inv-lf-label">A Love Letter From</span>}
               <span className="inv-lf-names"><span className="inv-lf-type">{s.partnerA} &amp; {s.partnerB}</span></span>
             </div>
-            <button className="inv-seal-hotspot" type="button" aria-label="Open the invitation" onClick={() => setOpen(true)} />
-            <span className="inv-open-cue" onClick={() => setOpen(true)} role="button">Open the invitation</span>
+            <button className="inv-seal-hotspot" type="button" aria-label={isEnv2 ? "Break the seal" : "Open the invitation"} onClick={() => setOpen(true)} />
+            <span className="inv-open-cue" onClick={() => setOpen(true)} role="button">{isEnv2 ? "Break the seal" : "Open the invitation"}</span>
           </div>
         </div>
 
