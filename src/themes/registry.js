@@ -487,6 +487,19 @@ export function envColorFilter(key) {
   return (ENV_COLORS[key] || ENV_COLORS.olive).filter;
 }
 
+// Envelope 2 tints a near-white lace image, which the olive hue-rotate filters
+// can't recolor (white has no hue to shift). Instead we recolor its cover on a
+// canvas toward a target PAPER color. This resolves that target hex from the
+// same envColor / envColorCustom settings the olive picker already writes, so
+// the one picker drives both themes. Olive is the env2 image's own neutral, so
+// it returns "" (no tint) — the ivory shows as-is.
+export function env2TintFor(envColor, envColorCustom) {
+  if (envColor === "custom") return envColorCustom || "";
+  if (!envColor || envColor === "olive") return "";
+  const c = ENV_COLORS[envColor];
+  return (c && c.dot) || "";
+}
+
 // ---- Custom envelope color -------------------------------------------------
 // The envelope art is one olive image; a custom color is achieved by SOLVING for
 // the hue-rotate/saturate/brightness chain that maps the olive paper mid-tone to

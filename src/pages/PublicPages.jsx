@@ -6,7 +6,7 @@ import { useStore } from "@/lib/store.jsx";
 import { mapStyleFilter } from "@/lib/mapStyles.js";
 import { featureVisible, moduleEnabled, sectionLabel } from "@/lib/roles.js";
 import { PREVIEW_SAMPLES } from "@/lib/samples.js";
-import { egTintGradientFor, envColorFilterFor, isEnvelopeTheme } from "@/themes";
+import { egTintGradientFor, envColorFilterFor, isEnvelopeTheme, env2TintFor, hexToRgb } from "@/themes";
 import { Button, Countdown, FloatingDecor, Icon, Placeholder, SectionHead, mapCoordStr, mapDirUrl, mapEmbedUrl, mapResolveQuery } from "@/ui/components.jsx";
 import { VinylPlayer } from "@/features/music.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
@@ -130,16 +130,59 @@ function envRecolorOverlay(s, kind) {
   </>);
 }
 
+// Envelope 2's sealed cover is a near-white lace image. The olive hue-rotate
+// filters can't recolor a white base, so we recolor on a <canvas>: paper takes
+// the target color (from the Settings -> Theme envelope color), lace + seal
+// stay light, driven live by env2TintFor(). Same picker + site palette as olive.
+function Env2Cover({ src, tint, artRef, onReady }) {
+  const cRef = React.useRef(null);
+  const baseRef = React.useRef(null);
+  const draw = React.useCallback(() => {
+    const img = baseRef.current, cv = cRef.current;
+    if (!img || !cv) return;
+    const W = img.naturalWidth, H = img.naturalHeight;
+    cv.width = W; cv.height = H;
+    const ctx = cv.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+    const rgb = tint ? hexToRgb(tint) : null;
+    if (!rgb) return; // olive/no tint -> show the ivory as-is
+    const im = ctx.getImageData(0, 0, W, H); const d = im.data;
+    // wax seal preserve disc (fractions of the 1600x899 base) + soft ring
+    const scx = 0.5 * W, scy = 0.6185 * H, sr = 0.0575 * W, soft = 0.012 * W;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4; if (!d[i + 3]) continue;
+      const dist = Math.hypot(x - scx, y - scy);
+      if (dist < sr) continue; // seal keeps its cream
+      const r = d[i], g = d[i + 1], b = d[i + 2];
+      const L = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      let nr, ng, nb;
+      if (L <= 0.88) { const k = 0.34 + 0.66 * (L / 0.88); nr = rgb[0] * k; ng = rgb[1] * k; nb = rgb[2] * k; }
+      else { const t = Math.min(1, (L - 0.88) / 0.115); const s = t * t * (3 - 2 * t); nr = rgb[0] + (255 - rgb[0]) * s; ng = rgb[1] + (255 - rgb[1]) * s; nb = rgb[2] + (255 - rgb[2]) * s; }
+      let bt = 1; if (dist < sr + soft) bt = (dist - sr) / soft; // feather the seal edge
+      d[i] = r + (nr - r) * bt; d[i + 1] = g + (ng - g) * bt; d[i + 2] = b + (nb - b) * bt;
+    }
+    ctx.putImageData(im, 0, 0);
+  }, [tint]);
+  React.useEffect(() => {
+    const img = new Image();
+    img.onload = () => { baseRef.current = img; draw(); onReady && onReady(); };
+    img.src = src;
+  }, [src]); // eslint-disable-line react-hooks/exhaustive-deps
+  React.useEffect(() => { draw(); }, [tint, draw]);
+  return <canvas ref={(el) => { cRef.current = el; if (artRef) artRef.current = el; }} className="inv-sealed-art" role="img" aria-label="Sealed lace envelope" />;
+}
+
 export function EnvelopeHero() {
   const { settings } = useStore();
   const s = settings;
   const [open, setOpen] = React.useState(false);
-  // Envelope 2 swaps the sealed COVER for its own finished art (lace ivory with
-  // a baked-in wax seal). That image isn't the olive base paper, so it skips the
-  // recolor + seal overlays. The open state (card/frame/flowers) is unchanged.
+  // Envelope 2 uses its own lace-ivory cover, recolored live on a canvas by the
+  // Settings -> Theme envelope color (paper takes the color, seal stays light).
+  // The open state (card/frame/flowers) is unchanged.
   const isEnv2 = s.theme === "envelope2";
   const sealedSrc = isEnv2 ? "/assets/invite/env2-closed.png" : "/assets/invite/env-closed.webp";
   const sealedAlt = isEnv2 ? "Sealed ivory lace envelope with a wax seal" : "Sealed olive envelope with lace trim and wax seal";
+  const env2Tint = isEnv2 ? env2TintFor(s.envColor, s.envColorCustom) : "";
 
   // first screen = envelope only: lock scroll AND hide the nav until it's opened
   const [ready, setReady] = React.useState(false);
@@ -269,7 +312,9 @@ export function EnvelopeHero() {
         {/* Sealed envelope */}
         <div className={"eg-page" + (open ? "" : " is-active")}>
           <div className={"inv-sealed-wrap eg-sealed" + (ready ? " is-ready" : "")} style={{ opacity: artReady ? 1 : 0, transition: "opacity .45s ease" }}>
-            <img ref={artRef} className="inv-sealed-art" src={sealedSrc} alt={sealedAlt} onLoad={triggerReady} />
+            {isEnv2
+              ? <Env2Cover src={sealedSrc} tint={env2Tint} artRef={artRef} onReady={triggerReady} />
+              : <img ref={artRef} className="inv-sealed-art" src={sealedSrc} alt={sealedAlt} onLoad={triggerReady} />}
             {!isEnv2 && envRecolorOverlay(s, "sealed")}
             <div className="inv-letter-from">
               <span className="inv-lf-label">A Love Letter From</span>
