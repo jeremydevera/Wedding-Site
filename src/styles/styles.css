@@ -2031,6 +2031,10 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 @keyframes egIntroUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes egIntroRule { from { opacity: 0; width: 0; } to { opacity: .9; width: min(70%, 280px); } }
 .eg-sealed { width: max(142vw, 215vh); flex: none; }
+/* Envelope 2: the art is 1600px — the shared 142vw/215vh zoom upscales it into
+   visible pixelation on large screens. Show it near native scale; safe now that
+   the art's black corner triangles are painted out. */
+[data-theme="envelope2"] .eg-sealed { width: max(103vw, 185vh); }
 /* cover hero is much larger than the contain wrap, so scale its overlay text down + keep the cue on-screen */
 /* cqw is sized off max(142vw,215vh); on tall/narrow phones the 215vh term blows
    the overlay text past the viewport (clips "…From"). Cap against vw so it fits. */
