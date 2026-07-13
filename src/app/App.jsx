@@ -144,12 +144,15 @@ export function Nav({ route }) {
       <span className="nav__themepick-label">Theme</span>
       <select value={settings.theme} aria-label="Preview a theme" onChange={(e) => pickTheme(e.target.value)}>
         <optgroup label="Themes">
-          {Object.keys(THEMES).filter((k) => !isPremiumTheme(k) && k !== "roadtoforever").map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
+          {/* Olive Envelope IS selectable in the demo picker (owner request
+              2026-07-13). Other premium themes (Envelope 2 — a WIP duplicate)
+              and the hidden roadtoforever stay out. */}
+          {Object.keys(THEMES).filter((k) => k !== "roadtoforever" && (!isPremiumTheme(k) || k === "envelope")).map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
         </optgroup>
-        {/* Premium themes hidden from the demo picker for now (owner request
-            2026-07-12). If the demo's SAVED theme is premium (Olive Envelope),
-            keep it as a disabled option so the select still shows its name. */}
-        {isPremiumTheme(settings.theme) && <option value={settings.theme} disabled>{THEMES[settings.theme] ? THEMES[settings.theme].label : settings.theme}</option>}
+        {/* If the demo's SAVED theme is a premium theme NOT shown above (e.g.
+            Envelope 2), keep it as a disabled option so the select still shows
+            its name. */}
+        {isPremiumTheme(settings.theme) && settings.theme !== "envelope" && <option value={settings.theme} disabled>{THEMES[settings.theme] ? THEMES[settings.theme].label : settings.theme}</option>}
       </select>
     </label>
   );
