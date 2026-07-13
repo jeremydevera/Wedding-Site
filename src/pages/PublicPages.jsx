@@ -120,7 +120,10 @@ export function egTintVars(s) {
 function envRecolorOverlay(s, kind, artSrc) {
   const recolor = envColorFilterFor(s.envColor, s.envColorCustom);
   if (kind === "sealed") return (<>
-    {recolor ? <img className={"inv-art-recolor inv-art-recolor--sealed" + (artSrc ? " inv-art-recolor--nomask" : "")} src={artSrc || "/assets/invite/env-closed.webp"} alt="" aria-hidden="true" /> : null}
+    {/* env2's ivory cover is far lighter than the olive art the color chains
+        were solved for — same filter lands ~2x too bright. Extra darkening
+        (inline, env2 only) brings picked colors down to swatch depth. */}
+    {recolor ? <img className={"inv-art-recolor inv-art-recolor--sealed" + (artSrc ? " inv-art-recolor--nomask" : "")} src={artSrc || "/assets/invite/env-closed.webp"} style={artSrc ? { filter: `${recolor} brightness(0.6)` } : undefined} alt="" aria-hidden="true" /> : null}
     {/* env2: the owner-supplied plain cream seal (seal-env2.png) overlays the
         flat circle baked into the art — unfiltered, so it stays cream under any
         recolor. Olive keeps its own cut-out seal. */}
@@ -276,7 +279,7 @@ export function EnvelopeHero() {
       <div className="eg-stage">
         {/* Sealed envelope */}
         <div className={"eg-page" + (open ? "" : " is-active")}>
-          <div className={"inv-sealed-wrap eg-sealed" + (ready ? " is-ready" : "")} style={{ opacity: artReady ? 1 : 0, transition: "opacity .45s ease" }}>
+          <div className={"inv-sealed-wrap eg-sealed" + (ready ? " is-ready" : "") + (isEnv2 && envColorFilterFor(s.envColor, s.envColorCustom) ? " eg-sealed--env2tint" : "")} style={{ opacity: artReady ? 1 : 0, transition: "opacity .45s ease" }}>
             <img ref={artRef} className="inv-sealed-art" src={sealedSrc} alt={sealedAlt} onLoad={triggerReady} />
             {/* Envelope 2 now runs through the SAME olive recolor path
                 (envColorFilterFor -> --eg-env-recolor -> .inv-art-recolor), just

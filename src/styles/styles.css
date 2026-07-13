@@ -2039,6 +2039,10 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    cream text is invisible — use pressed dark-olive ink with a light emboss. */
 [data-theme="envelope2"] .eg-sealed .inv-open-cue { top: 76%; color: #877c55; text-shadow: 0 1px 0 rgba(255, 255, 255, .5); }
 [data-theme="envelope2"] .eg-sealed .inv-letter-from { color: #6d6140; text-shadow: 0 1px 0 rgba(255, 255, 255, .55); }
+/* …but when an envelope color is set the paper recolors dark — flip back to
+   the cream-on-dark treatment the olive cover uses. */
+[data-theme="envelope2"] .eg-sealed--env2tint .inv-letter-from { color: #f3ebdb; text-shadow: 0 1px 3px rgba(0, 0, 0, .4); }
+[data-theme="envelope2"] .eg-sealed--env2tint .inv-open-cue { color: #efe6d4; text-shadow: 0 1px 2px rgba(0, 0, 0, .3); }
 /* cover hero is much larger than the contain wrap, so scale its overlay text down + keep the cue on-screen */
 /* cqw is sized off max(142vw,215vh); on tall/narrow phones the 215vh term blows
    the overlay text past the viewport (clips "…From"). Cap against vw so it fits. */
