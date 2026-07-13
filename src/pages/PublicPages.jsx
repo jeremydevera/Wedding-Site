@@ -6,7 +6,7 @@ import { useStore } from "@/lib/store.jsx";
 import { mapStyleFilter } from "@/lib/mapStyles.js";
 import { featureVisible, moduleEnabled, sectionLabel } from "@/lib/roles.js";
 import { PREVIEW_SAMPLES } from "@/lib/samples.js";
-import { egTintGradientFor, envColorFilterFor, isEnvelopeTheme } from "@/themes";
+import { egTintGradientFor, envColorFilterFor, env2ColorFilterFor, isEnvelopeTheme } from "@/themes";
 import { Button, Countdown, FloatingDecor, Icon, Placeholder, SectionHead, mapCoordStr, mapDirUrl, mapEmbedUrl, mapResolveQuery } from "@/ui/components.jsx";
 import { VinylPlayer } from "@/features/music.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
@@ -118,9 +118,15 @@ export function egTintVars(s) {
 // original artwork no matter the paper color. The sealed-cover seal renders
 // even WITHOUT a recolor: it carries the "pump" click-affordance animation.
 function envRecolorOverlay(s, kind, artSrc) {
-  const recolor = envColorFilterFor(s.envColor, s.envColorCustom);
+  // env2's sealed cover is IVORY cutout art — it needs the sepia-based ivory
+  // chain (env2ColorFilterFor), applied inline so the shared --eg-env-recolor
+  // var (tuned for the olive art; also used by the open-state front pocket)
+  // never touches it. Everything else keeps the olive chain.
+  const recolor = (kind === "sealed" && artSrc)
+    ? env2ColorFilterFor(s.envColor, s.envColorCustom)
+    : envColorFilterFor(s.envColor, s.envColorCustom);
   if (kind === "sealed") return (<>
-    {recolor ? <img className={"inv-art-recolor inv-art-recolor--sealed" + (artSrc ? " inv-art-recolor--nomask" : "")} src={artSrc || "/assets/invite/env-closed.webp"} alt="" aria-hidden="true" /> : null}
+    {recolor ? <img className={"inv-art-recolor inv-art-recolor--sealed" + (artSrc ? " inv-art-recolor--nomask" : "")} src={artSrc || "/assets/invite/env-closed.webp"} style={artSrc ? { filter: recolor } : undefined} alt="" aria-hidden="true" /> : null}
     {/* env2: the owner-supplied plain cream seal (seal-env2.png) overlays the
         flat circle baked into the art — unfiltered, so it stays cream under any
         recolor. Olive keeps its own cut-out seal. */}

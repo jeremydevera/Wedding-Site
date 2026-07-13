@@ -542,6 +542,48 @@ function solveEnvFilter(target) {
   for (let d = d0 - 6; d <= d0 + 6; d += 1) for (let s = Math.max(0.05, s0 - 0.1); s <= s0 + 0.1001; s += 0.025) consider(d, s);
   return best;
 }
+// ---- Envelope 2 (ivory cutout art) ------------------------------------------
+// The env2 cover is near-neutral IVORY — hue-rotate alone can't color it (no
+// chroma to shift; that's what made picked colors render blown-out bright when
+// env2 ran through the olive chain). Chain instead: pre-dim so sepia can't
+// clamp at white -> sepia(1) injects warm chroma -> hue-rotate/saturate steer
+// it -> least-squares brightness. Solved against the ivory paper mid-tone,
+// mirroring solveEnvFilter.
+const ENV2_BASE_PAPER = [245, 240, 228]; // ivory paper mid-tone sampled from the cutout
+const ENV2_PREDIM = 0.62;
+const SEPIA_MAT = [0.393, 0.769, 0.189, 0.349, 0.686, 0.168, 0.272, 0.534, 0.131];
+function solveEnv2Filter(target) {
+  const dimmed = ENV2_BASE_PAPER.map((x) => x * ENV2_PREDIM);
+  const v0 = applyMat(dimmed, SEPIA_MAT).map((x) => Math.max(0, Math.min(255, x)));
+  let best = { err: Infinity, d: 0, s: 1, b: 1 };
+  const consider = (d, s) => {
+    const v = applyMat(applyMat(v0, hueMat(d)), satMat(s));
+    const b = Math.max(0.3, Math.min(2.2, (v[0] * target[0] + v[1] * target[1] + v[2] * target[2]) / (v[0] * v[0] + v[1] * v[1] + v[2] * v[2] || 1)));
+    const err = v.reduce((e, x, i) => e + (x * b - target[i]) ** 2, 0);
+    if (err < best.err) best = { err, d, s, b };
+  };
+  for (let d = 0; d < 360; d += 6) for (let s = 0.1; s <= 2.001; s += 0.1) consider(d, s);
+  const { d: d0, s: s0 } = best;
+  for (let d = d0 - 6; d <= d0 + 6; d += 1) for (let s = Math.max(0.05, s0 - 0.1); s <= s0 + 0.1001; s += 0.025) consider(d, s);
+  return best;
+}
+const _env2FilterCache = new Map();
+// CSS filter chain recoloring the IVORY env2 cover to the picked paper color.
+// "" for olive/absent (ivory shows as-is) or an invalid custom hex.
+export function env2ColorFilterFor(envColor, envColorCustom) {
+  const hex = env2TintFor(envColor, envColorCustom);
+  if (!hex) return "";
+  const rgb = hexToRgb(hex);
+  if (!rgb) return "";
+  const key = hex.toLowerCase();
+  if (!_env2FilterCache.has(key)) {
+    const { d, s, b } = solveEnv2Filter(rgb);
+    const deg = ((Math.round(d) % 360) + 360) % 360;
+    _env2FilterCache.set(key, `brightness(${ENV2_PREDIM}) sepia(1) hue-rotate(${deg}deg) saturate(${s.toFixed(3)}) brightness(${b.toFixed(3)})`);
+  }
+  return _env2FilterCache.get(key);
+}
+
 const _customFilterCache = new Map();
 // CSS filter chain for an arbitrary paper color (hex). "" when hex is invalid.
 export function envCustomFilter(hex) {
