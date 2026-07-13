@@ -2038,7 +2038,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* env2: the burgundy art is the envelope FACE (aspect 1.71). Desktop shows the
    whole envelope as a card over the theme background (contain); mobile covers
    the viewport like the olive theme. */
-[data-theme="envelope2"] .eg-sealed { width: min(131vw, 223vh); }
+[data-theme="envelope2"] .eg-sealed { width: min(100vw, 171vh); }
 @media (max-width: 860px) {
   [data-theme="envelope2"] .eg-sealed { width: max(100vw, 172svh); }
 }
