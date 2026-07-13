@@ -169,12 +169,18 @@ function Env2Cover({ src, tint, artRef, onReady }) {
     const [th, ts] = _rgb2hsl(rgb[0], rgb[1], rgb[2]);
     const S = Math.max(ts, 0.6); // ensure the paper reads as coloured, not washed out
     const im = ctx.getImageData(0, 0, W, H); const d = im.data;
-    for (let i = 0; i < d.length; i += 4) {
-      if (!d[i + 3]) continue;
+    // Keep the wax seal cream — same behaviour as Olive Envelope (its recolor
+    // masks the seal). Tight disc over the wax + a soft ring so the edge blends.
+    const scx = 0.5 * W, scy = 0.6185 * H, sr = 0.056 * W, soft = 0.012 * W;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4; if (!d[i + 3]) continue;
+      const dist = Math.hypot(x - scx, y - scy);
+      if (dist < sr) continue; // seal stays cream
       const pl = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255;
       const L = 0.15 + 0.52 * pl; // compress toward mid so light paper becomes rich colour
       const [nr, ng, nb] = _hsl2rgb(th, S, L);
-      d[i] = nr; d[i + 1] = ng; d[i + 2] = nb;
+      let bt = 1; if (dist < sr + soft) bt = (dist - sr) / soft; // feather seal edge
+      d[i] = d[i] + (nr - d[i]) * bt; d[i + 1] = d[i + 1] + (ng - d[i + 1]) * bt; d[i + 2] = d[i + 2] + (nb - d[i + 2]) * bt;
     }
     ctx.putImageData(im, 0, 0);
   }, [tint]);
