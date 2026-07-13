@@ -121,9 +121,12 @@ function envRecolorOverlay(s, kind, artSrc) {
   const recolor = envColorFilterFor(s.envColor, s.envColorCustom);
   if (kind === "sealed") return (<>
     {recolor ? <img className={"inv-art-recolor inv-art-recolor--sealed" + (artSrc ? " inv-art-recolor--nomask" : "")} src={artSrc || "/assets/invite/env-closed.webp"} alt="" aria-hidden="true" /> : null}
-    {/* env2 (artSrc set) colors the whole cover incl. the seal — no seal cut-out,
-        no separate cream seal image (olive keeps its seal cream via those). */}
-    {!artSrc && <img className="inv-seal-img inv-seal-img--sealed" src="/assets/invite/seal-closed-v2.png" alt="" aria-hidden="true" />}
+    {/* env2: the owner-supplied plain cream seal (seal-env2.png) overlays the
+        flat circle baked into the art — unfiltered, so it stays cream under any
+        recolor. Olive keeps its own cut-out seal. */}
+    {artSrc
+      ? <img className="inv-seal-img inv-seal-img--sealed inv-seal-img--env2" src="/assets/invite/seal-env2.png" alt="" aria-hidden="true" />
+      : <img className="inv-seal-img inv-seal-img--sealed" src="/assets/invite/seal-closed-v2.png" alt="" aria-hidden="true" />}
   </>);
   if (!recolor) return null;
   return (<>
@@ -158,7 +161,7 @@ export function EnvelopeHero() {
       im.src = src;
       return (im.decode ? im.decode() : Promise.resolve()).catch(() => {});
     };
-    Promise.all([decode(sealedSrc), ...(isEnv2 ? [] : [decode("/assets/invite/seal-closed-v2.png")])])
+    Promise.all([decode(sealedSrc), decode(isEnv2 ? "/assets/invite/seal-env2.png" : "/assets/invite/seal-closed-v2.png")])
       .then(() => { if (!dead) setArtReady(true); });
     const t = setTimeout(() => { if (!dead) setArtReady(true); }, 4000);
     return () => { dead = true; clearTimeout(t); };
