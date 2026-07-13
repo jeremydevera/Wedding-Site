@@ -2038,6 +2038,14 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* env2 seal sits lower than olive's — keep the tap cue below it. The burgundy
    paper is dark, so the base cream text works as-is. */
 [data-theme="envelope2"] .eg-sealed .inv-open-cue { top: 72%; }
+/* env2: couple initials embossed into the wax oval — same letterpress
+   treatment as the names, sized/positioned to the seal (50.6% / 55.8%). */
+[data-theme="envelope2"] .eg-sealed .inv-seal-mono {
+  position: absolute; left: 50.6%; top: 55.8%; transform: translate(-50%, -50%);
+  font-family: "Great Vibes", cursive; font-size: 2.2cqw; line-height: 1;
+  color: rgba(22, 5, 11, .55); text-shadow: 0 1px 0 rgba(255, 236, 236, .3);
+  pointer-events: none; white-space: nowrap; z-index: 2;
+}
 /* env2 cover names: letterpress emboss — ink a touch darker than the paper,
    lower lip catching the light. Translucent black/white so it survives any
    envelope recolor. */
@@ -2089,6 +2097,8 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   .eg-sealed .inv-seal-img--sealed { transform: translate(calc(-50% + 0.7cqw), -50%); }
   /* pulse ring hotspot must follow the same offset so the ring stays centered on the seal */
   .eg-sealed .inv-seal-hotspot { transform: translate(calc(-50% + 0.7cqw), -50%); }
+  /* env2 wax monogram follows the shifted art too */
+  [data-theme="envelope2"] .eg-sealed .inv-seal-mono { transform: translate(calc(-50% + 0.7cqw), -50%); }
 }
 .eg-open { width: min(1140px, 100vw, 105vh); flex: none; transition: width .6s ease; }
 .eg-cue {

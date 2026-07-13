@@ -283,6 +283,12 @@ export function EnvelopeHero() {
                 (envColorFilterFor -> --eg-env-recolor -> .inv-art-recolor), just
                 pointed at the env2 art, so both themes share one function. */}
             {isEnv2 ? envRecolorOverlay(s, "sealed", sealedSrc) : envRecolorOverlay(s, "sealed")}
+            {/* env2: the couple's initials embossed into the wax oval */}
+            {isEnv2 && ((s.partnerA || "").trim() || (s.partnerB || "").trim()) ? (
+              <span className="inv-seal-mono" aria-hidden="true">
+                {[(s.partnerA || "").trim().charAt(0).toUpperCase(), (s.partnerB || "").trim().charAt(0).toUpperCase()].filter(Boolean).join(" & ")}
+              </span>
+            ) : null}
             <div className="inv-letter-from">
               {!isEnv2 && <span className="inv-lf-label">A Love Letter From</span>}
               <span className="inv-lf-names"><span className="inv-lf-type">{s.partnerA} &amp; {s.partnerB}</span></span>
