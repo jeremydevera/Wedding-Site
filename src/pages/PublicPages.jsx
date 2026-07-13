@@ -120,15 +120,13 @@ export function egTintVars(s) {
 function envRecolorOverlay(s, kind, artSrc) {
   const recolor = envColorFilterFor(s.envColor, s.envColorCustom);
   if (kind === "sealed") return (<>
-    {/* env2's ivory cover is far lighter than the olive art the color chains
-        were solved for — same filter lands ~2x too bright. Extra darkening
-        (inline, env2 only) brings picked colors down to swatch depth. */}
-    {recolor ? <img className={"inv-art-recolor inv-art-recolor--sealed" + (artSrc ? " inv-art-recolor--nomask" : "")} src={artSrc || "/assets/invite/env-closed.webp"} style={artSrc ? { filter: `${recolor} brightness(0.6)` } : undefined} alt="" aria-hidden="true" /> : null}
-    {/* env2: the owner-supplied plain cream seal (seal-env2.png) overlays the
-        flat circle baked into the art — unfiltered, so it stays cream under any
-        recolor. Olive keeps its own cut-out seal. */}
+    {recolor ? <img className={"inv-art-recolor inv-art-recolor--sealed" + (artSrc ? " inv-art-recolor--nomask" : "")} src={artSrc || "/assets/invite/env-closed.webp"} alt="" aria-hidden="true" /> : null}
+    {/* env2 (burgundy cutout art) carries its own decorative oval seal baked in
+        — no overlay image; the hotspot pulse is the click affordance. Olive
+        keeps its cut-out seal (it carries the pump animation + stays cream
+        under recolor). */}
     {artSrc
-      ? <img className="inv-seal-img inv-seal-img--sealed inv-seal-img--env2" src="/assets/invite/seal-env2.png" alt="" aria-hidden="true" />
+      ? null
       : <img className="inv-seal-img inv-seal-img--sealed" src="/assets/invite/seal-closed-v2.png" alt="" aria-hidden="true" />}
   </>);
   if (!recolor) return null;
@@ -147,7 +145,7 @@ export function EnvelopeHero() {
   // The open state (card/frame/flowers) is unchanged.
   const isEnv2 = s.theme === "envelope2";
   const sealedSrc = isEnv2 ? "/assets/invite/env2-closed.png" : "/assets/invite/env-closed.webp";
-  const sealedAlt = isEnv2 ? "Sealed ivory lace envelope with a wax seal" : "Sealed olive envelope with lace trim and wax seal";
+  const sealedAlt = isEnv2 ? "Sealed burgundy lace envelope with a wax seal" : "Sealed olive envelope with lace trim and wax seal";
   // Open-state front pocket: env2 uses its own open envelope (olive-toned, fit to
   // the olive pocket's box so the card/heart/flowers still line up).
   const frontSrc = isEnv2 ? "/assets/invite/env2-front.png" : "/assets/invite/p2-envelope-front.png";
@@ -168,7 +166,7 @@ export function EnvelopeHero() {
       im.src = src;
       return (im.decode ? im.decode() : Promise.resolve()).catch(() => {});
     };
-    Promise.all([decode(sealedSrc), decode(isEnv2 ? "/assets/invite/seal-env2.png" : "/assets/invite/seal-closed-v2.png")])
+    Promise.all([decode(sealedSrc), ...(isEnv2 ? [] : [decode("/assets/invite/seal-closed-v2.png")])])
       .then(() => { if (!dead) setArtReady(true); });
     const t = setTimeout(() => { if (!dead) setArtReady(true); }, 4000);
     return () => { dead = true; clearTimeout(t); };
@@ -279,7 +277,7 @@ export function EnvelopeHero() {
       <div className="eg-stage">
         {/* Sealed envelope */}
         <div className={"eg-page" + (open ? "" : " is-active")}>
-          <div className={"inv-sealed-wrap eg-sealed" + (ready ? " is-ready" : "") + (isEnv2 && envColorFilterFor(s.envColor, s.envColorCustom) ? " eg-sealed--env2tint" : "")} style={{ opacity: artReady ? 1 : 0, transition: "opacity .45s ease" }}>
+          <div className={"inv-sealed-wrap eg-sealed" + (ready ? " is-ready" : "")} style={{ opacity: artReady ? 1 : 0, transition: "opacity .45s ease" }}>
             <img ref={artRef} className="inv-sealed-art" src={sealedSrc} alt={sealedAlt} onLoad={triggerReady} />
             {/* Envelope 2 now runs through the SAME olive recolor path
                 (envColorFilterFor -> --eg-env-recolor -> .inv-art-recolor), just
