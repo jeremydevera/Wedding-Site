@@ -136,8 +136,9 @@ function envRecolorOverlay(s, kind, artSrc) {
   </>);
   if (!recolor) return null;
   return (<>
-    <img className="inv-l-front inv-art-recolor inv-art-recolor--front" src="/assets/invite/p2-envelope-front.png" alt="" aria-hidden="true" />
-    <img className="inv-seal-img inv-seal-img--front" src="/assets/invite/seal-front-v2.png" alt="" aria-hidden="true" />
+    <img className={"inv-l-front inv-art-recolor inv-art-recolor--front" + (artSrc ? " inv-art-recolor--nomask" : "")} src={artSrc || "/assets/invite/p2-envelope-front.png"} alt="" aria-hidden="true" />
+    {/* env2's open envelope has no separate seal on the front pocket */}
+    {!artSrc && <img className="inv-seal-img inv-seal-img--front" src="/assets/invite/seal-front-v2.png" alt="" aria-hidden="true" />}
   </>);
 }
 export function EnvelopeHero() {
@@ -150,6 +151,9 @@ export function EnvelopeHero() {
   const isEnv2 = s.theme === "envelope2";
   const sealedSrc = isEnv2 ? "/assets/invite/env2-closed.png" : "/assets/invite/env-closed.webp";
   const sealedAlt = isEnv2 ? "Sealed ivory lace envelope with a wax seal" : "Sealed olive envelope with lace trim and wax seal";
+  // Open-state front pocket: env2 uses its own open envelope (olive-toned, fit to
+  // the olive pocket's box so the card/heart/flowers still line up).
+  const frontSrc = isEnv2 ? "/assets/invite/env2-front.png" : "/assets/invite/p2-envelope-front.png";
 
   // first screen = envelope only: lock scroll AND hide the nav until it's opened
   const [ready, setReady] = React.useState(false);
@@ -315,8 +319,8 @@ export function EnvelopeHero() {
               <img src="/assets/invite/p2-heart.webp" alt="Burgundy lace heart" />
               <span className="inv-heart-text">{(s.heartText || "").trim()}</span>
             </div>
-            <img className="inv-l-front" src="/assets/invite/p2-envelope-front.png" alt="Olive envelope front pocket" />
-            {envRecolorOverlay(s, "front")}
+            <img className="inv-l-front" src={frontSrc} alt={isEnv2 ? "Open cream envelope pocket" : "Olive envelope front pocket"} />
+            {isEnv2 ? envRecolorOverlay(s, "front", frontSrc) : envRecolorOverlay(s, "front")}
             <img className="inv-l-flower" src="/assets/invite/p2-flowers.png" alt="Floral spray of calla lilies, anthurium, orchids and amaranthus" />
           </div>
         </div>
