@@ -1852,7 +1852,7 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
    click hotspot + pulse ring to match it (olive's is a tall 13%x26% oval at
    49.4%/56.99% — too big + off-centre here). Higher specificity than the mobile
    .eg-sealed rule so it wins everywhere. */
-[data-theme="envelope2"] .eg-sealed .inv-seal-hotspot { left: 50.6%; top: 55.8%; width: 7.5%; height: 17%; transform: translate(-50%, -50%); }
+[data-theme="envelope2"] .eg-sealed .inv-seal-hotspot { left: 49.4%; top: 61.4%; width: 11.5%; height: 30.5%; transform: translate(-50%, -50%); }
 .inv-seal-hotspot {
   position: absolute; left: 49.4%; top: 56.99%; width: 13%; height: 26%;
   transform: translate(-50%, -50%); border: 0; background: transparent; padding: 0; margin: 0;
@@ -2038,13 +2038,13 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 [data-theme="envelope2"] .eg-sealed { width: max(142vw, 215vh); }
 /* env2 seal sits lower than olive's — keep the tap cue below it. The burgundy
    paper is dark, so the base cream text works as-is. */
-[data-theme="envelope2"] .eg-sealed .inv-open-cue { top: 72%; }
+[data-theme="envelope2"] .eg-sealed .inv-open-cue { top: 83%; }
 /* env2: couple initials embossed into the wax oval — same letterpress
    treatment as the names, sized/positioned to the seal (50.6% / 55.8%). */
 [data-theme="envelope2"] .eg-sealed .inv-seal-mono {
-  position: absolute; left: 50.6%; top: 55.8%; transform: translate(-50%, -50%);
+  position: absolute; left: 49.4%; top: 61.4%; transform: translate(-50%, -50%);
   display: flex; flex-direction: column; align-items: center;
-  font-family: "Great Vibes", cursive; font-size: 1.6cqw; line-height: 0.9;
+  font-family: "Great Vibes", cursive; font-size: 2.6cqw; line-height: 0.9;
   color: rgba(22, 5, 11, .55); text-shadow: 0 1px 0 rgba(255, 236, 236, .3);
   pointer-events: none; white-space: nowrap; z-index: 2;
 }
