@@ -148,7 +148,7 @@ export function EnvelopeHero() {
   const sealedAlt = isEnv2 ? "Sealed burgundy lace envelope with a wax seal" : "Sealed olive envelope with lace trim and wax seal";
   // Open-state front pocket: env2 uses its own open envelope (olive-toned, fit to
   // the olive pocket's box so the card/heart/flowers still line up).
-  const frontSrc = isEnv2 ? "/assets/invite/env2-front.png" : "/assets/invite/p2-envelope-front.png";
+  const frontSrc = isEnv2 ? "/assets/invite/red-envelope-front.png" : "/assets/invite/p2-envelope-front.png";
 
   // first screen = envelope only: lock scroll AND hide the nav until it's opened
   const [ready, setReady] = React.useState(false);
@@ -324,7 +324,7 @@ export function EnvelopeHero() {
               <img src="/assets/invite/p2-heart.webp" alt="Burgundy lace heart" />
               <span className="inv-heart-text">{(s.heartText || "").trim()}</span>
             </div>
-            <img className="inv-l-front" src={frontSrc} alt={isEnv2 ? "Open cream envelope pocket" : "Olive envelope front pocket"} />
+            <img className="inv-l-front" src={frontSrc} alt={isEnv2 ? "Open burgundy envelope pocket" : "Olive envelope front pocket"} />
             {isEnv2 ? envRecolorOverlay(s, "front", frontSrc) : envRecolorOverlay(s, "front")}
             <img className="inv-l-flower" src="/assets/invite/p2-flowers.png" alt="Floral spray of calla lilies, anthurium, orchids and amaranthus" />
           </div>
