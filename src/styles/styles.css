@@ -2118,6 +2118,12 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    one-line title so the lower name clears the lace V; tight leading. */
 .inv-lf-stack { display: flex; flex-direction: column; align-items: center; font-size: .78em; line-height: 1; }
 .inv-lf-stack__amp { font-size: .55em; line-height: 1.15; opacity: .85; }
+/* Mobile: the cover text is capped by the vw terms (the cqw terms are huge on
+   phones) — raise the caps so the title/sub read larger (owner request). */
+@media (max-width: 860px) {
+  [data-theme="envelope2"] .eg-sealed .inv-lf-names { font-size: min(calc(var(--eg-title-cqw, 2.3) * 3cqw), 14vw); }
+  [data-theme="envelope2"] .eg-sealed .inv-lf-sub { font-size: min(2cqw, 4.6vw); }
+}
 .eg-sealed .inv-open-cue { font-size: 3.8vw; font-size: min(1.6cqw, 3.8vw); top: 75%; }
 /* Mobile: the sealed cover is blown up (215vh term wins on tall/narrow phones), so the
    wax seal — authored at 49.3% of the artwork, ~0.7% left of the image's geometric center —
