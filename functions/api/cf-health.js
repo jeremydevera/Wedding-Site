@@ -144,16 +144,19 @@ export async function onRequestGet(context) {
   // (100 free / 250 Pro / 500 Business). Same "Cloudflare Pages: Read" permission
   // as builds; soft-fails to null (tile shows the token hint) until it exists.
   const fetchDomainCount = async () => {
-    try {
+    const tryUrl = async (qs) => {
       const r = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${acct}/pages/projects/wedding-site/domains?per_page=100`,
+        `https://api.cloudflare.com/client/v4/accounts/${acct}/pages/projects/wedding-site/domains${qs}`,
         { headers: { authorization: `Bearer ${CF_TOKEN}` } },
       );
       if (!r.ok) return null;
       const jr = await r.json();
       const total = jr.result_info && Number.isFinite(+jr.result_info.total_count) ? +jr.result_info.total_count : null;
       return total != null ? total : (Array.isArray(jr.result) ? jr.result.length : null);
-    } catch { return null; }
+    };
+    // per_page first (covers projects with >25 domains); some API versions
+    // reject unknown params, so fall back to the bare endpoint.
+    try { return (await tryUrl("?per_page=100")) ?? (await tryUrl("")); } catch { return null; }
   };
 
   // Supabase DB size — superadmin-only RPC (0025), called with the CALLER's JWT
