@@ -1896,6 +1896,10 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
 .inv-l-framegroup { left: 7.18%; top: -17.02%; width: 47%; }
 .inv-l-framegroup > img.inv-frame-img { display: block; width: 100%; height: auto; position: relative; z-index: 3; }
 .inv-l-video { position: absolute; left: 20.6%; top: 14.9%; width: 78%; height: 75%; z-index: 1; overflow: hidden; }
+/* env2's white-frame.png is a square canvas with a CENTERED oval opening
+   (hole: x 30.3-69.4%, y 25.1-78.3%) — the stock video box is tuned to the
+   peony frame's right-side oval. ~2% overlap tucks the media under the rim. */
+[data-theme="envelope2"] .inv-l-video { left: 28.5%; top: 23%; width: 42.5%; height: 57.5%; }
 .inv-l-heart { left: 28.7%;   top: 50%;   width: 42%;   z-index: 5; }
 .inv-l-front { left: 6%;    top: 30%;   width: 84%;   z-index: 6; }
 .inv-l-flower{ left: 65.8%; top: 28.4%;  width: 26%;   z-index: 7; }

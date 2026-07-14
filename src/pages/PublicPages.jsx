@@ -318,7 +318,7 @@ export function EnvelopeHero() {
               <div className="inv-l-video" aria-hidden="true">
                 <FrameMedia s={s} />
               </div>
-              <img className="inv-frame-img" src="/assets/invite/p2-frame.png" alt="Cream oval frame with embossed peony" />
+              <img className="inv-frame-img" src={isEnv2 ? "/assets/invite/white-frame.png" : "/assets/invite/p2-frame.png"} alt={isEnv2 ? "Ornate white oval frame with floral crests" : "Cream oval frame with embossed peony"} />
             </div>
             <div className="inv-l-heart">
               <img src="/assets/invite/p2-heart.webp" alt="Burgundy lace heart" />
