@@ -297,8 +297,8 @@ export function EnvelopeHero() {
               <span className="inv-lf-names"><span className="inv-lf-type">{s.partnerA} &amp; {s.partnerB}</span></span>
               {isEnv2 && <span className="inv-lf-sub">We are getting married</span>}
             </div>
-            <button className="inv-seal-hotspot" type="button" aria-label={isEnv2 ? "Tap to open" : "Open the invitation"} onClick={() => setOpen(true)} />
-            <span className="inv-open-cue" onClick={() => setOpen(true)} role="button">{isEnv2 ? "Tap to open" : "Open the invitation"}</span>
+            <button className="inv-seal-hotspot" type="button" aria-label={isEnv2 ? "Click to open" : "Open the invitation"} onClick={() => setOpen(true)} />
+            <span className="inv-open-cue" onClick={() => setOpen(true)} role="button">{isEnv2 ? "Click to open" : "Open the invitation"}</span>
           </div>
         </div>
 
