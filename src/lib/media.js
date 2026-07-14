@@ -25,22 +25,38 @@ export function mediaUrl(stored) {
 // the crop modal ({ z, dx, dy } as fractions of the clipping box) applied to a
 // cover-fitted <video> inside an overflow:hidden box. Returns undefined when
 // there's nothing to apply, so spreading into style={} is always safe.
-//
-// clampCover: cap the pan so the media always covers the whole box
-// (|dx|,|dy| <= (z-1)/2 — the coverage bound when the media exactly fits the
-// box at z=1; cover-fit only ever gives MORE slack, so this can never expose
-// an edge). Opt-in: env2's frame box differs from the box a crop may have been
-// authored in, so replayed params could otherwise pan the media off the hole.
-// Olive callers stay unclamped — existing client crops render untouched.
-export function cropTransform(crop, clampCover = false) {
+export function cropTransform(crop) {
   if (!crop || typeof crop !== "object") return undefined;
-  const z = +crop.z || 1;
-  let dx = +crop.dx || 0, dy = +crop.dy || 0;
-  if (clampCover) {
-    const lim = Math.max(0, (z - 1) / 2);
-    dx = Math.max(-lim, Math.min(lim, dx));
-    dy = Math.max(-lim, Math.min(lim, dy));
-  }
+  const z = +crop.z || 1, dx = +crop.dx || 0, dy = +crop.dy || 0;
   if (z === 1 && !dx && !dy) return undefined;
   return { transform: `translate(${(dx * 100).toFixed(3)}%, ${(dy * 100).toFixed(3)}%) scale(${z})`, transformOrigin: "50% 50%" };
+}
+
+// Faithful renderer for crop-modal params. The modal pans the MEDIA (at its
+// cover size) inside a fixed box, but translate-on-a-cover-fitted element
+// crops the media's overflow away first — so a legit pan of a wide video in a
+// portrait box (slack the modal allows even at z=1) renders as an empty strip
+// instead of a pan. This maps {z,dx,dy} + the media/box aspects to an
+// absolutely positioned element at the media's true cover size, clamped so
+// the box is always covered (stale params saved against a differently-shaped
+// box can't expose an edge). For a <video>/<img> inside an overflow:hidden
+// position:absolute box.
+export function cropBoxStyle(crop, mediaAspect, boxAspect) {
+  if (!mediaAspect || !boxAspect) return undefined;
+  const z = Math.max(1, +(crop && crop.z) || 1);
+  const r = mediaAspect / boxAspect;
+  const w = Math.max(1, r) * z, h = Math.max(1, 1 / r) * z;
+  let left = (+(crop && crop.dx) || 0) + (1 - w) / 2;
+  let top = (+(crop && crop.dy) || 0) + (1 - h) / 2;
+  left = Math.min(0, Math.max(1 - w, left));
+  top = Math.min(0, Math.max(1 - h, top));
+  return {
+    position: "absolute",
+    left: (left * 100).toFixed(3) + "%",
+    top: (top * 100).toFixed(3) + "%",
+    width: (w * 100).toFixed(3) + "%",
+    height: (h * 100).toFixed(3) + "%",
+    maxWidth: "none",
+    objectFit: "fill", // element already has the media's own aspect
+  };
 }

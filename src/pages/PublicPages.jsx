@@ -1,7 +1,7 @@
 import React from "react";
 import { go } from "@/lib/nav.js";
 import { onSiteScroll, scrollOffset, siteScrollEl } from "@/lib/scroll.js";
-import { cropTransform, mediaUrl } from "@/lib/media.js";
+import { cropBoxStyle, cropTransform, mediaUrl } from "@/lib/media.js";
 import { useStore } from "@/lib/store.jsx";
 import { mapStyleFilter } from "@/lib/mapStyles.js";
 import { featureVisible, moduleEnabled, sectionLabel } from "@/lib/roles.js";
@@ -350,14 +350,21 @@ export function EnvelopeHero() {
 // Media inside the envelope's oval frame: the owner can set an image, GIF, or
 // MP4 (Settings -> Theme -> Envelope Frame Photo). Falls back to the default
 // animated GIF. CSS covers both tags (.inv-l-video video/img).
+// env2's .inv-l-video window: 42.5% x 57.5% of the square white-frame canvas.
+const ENV2_FRAME_BOX_ASPECT = 42.5 / 57.5;
 function FrameMedia({ s }) {
   const src = mediaUrl(s.frameImage) || "/assets/invite/frame-video.gif";
-  // env2: clamp the pan so a crop authored in the olive box can never pull the
-  // media off env2's (differently shaped) oval — no visible media edge.
-  const clampCover = s.theme === "envelope2";
-  return /\.(mp4|webm|mov|m4v)(\?|$)/i.test(src)
-    ? <video src={src} muted loop autoPlay playsInline style={cropTransform(s.frameImageCrop, clampCover)} />
-    : <img src={src} alt="" />;
+  const isEnv2 = s.theme === "envelope2";
+  const [nat, setNat] = React.useState(null);
+  if (!/\.(mp4|webm|mov|m4v)(\?|$)/i.test(src)) return <img src={src} alt="" />;
+  // env2: render the crop the way the modal previews it — the element at the
+  // video's true cover size, positioned + clamped (cropBoxStyle). The olive
+  // translate path stays byte-identical for existing clients.
+  const style = isEnv2
+    ? (nat ? cropBoxStyle(s.frameImageCrop, nat.w / nat.h, ENV2_FRAME_BOX_ASPECT) : undefined)
+    : cropTransform(s.frameImageCrop);
+  return <video src={src} muted loop autoPlay playsInline style={style}
+    onLoadedMetadata={isEnv2 ? ((e) => setNat({ w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })) : undefined} />;
 }
 
 export function EnvelopeInvite() {
