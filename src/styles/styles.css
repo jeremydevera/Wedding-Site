@@ -1985,6 +1985,10 @@ body.env-sealed { position: fixed; inset: 0; width: 100%; overflow: hidden; over
 /* block the drag gesture itself on the sealed cover so iOS can't rubber-band */
 body.env-sealed .eg-hero { touch-action: none; }
 html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
+/* Mobile: the live scroller is .site-scroll (the pinned-header shell), not the
+   document, so the body/html overflow lock above doesn't stop it — the sealed
+   cover could still be scrolled. Lock the shell scroller too while sealed. */
+@media (max-width: 860px) { body.env-sealed .site-scroll { overflow: hidden; } }
 .eg-bg {
   position: absolute; inset: 0; z-index: 0;
   background: url("/assets/invite/bg-wedding.jpg") center 46% / cover no-repeat;

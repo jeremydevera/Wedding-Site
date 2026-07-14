@@ -189,8 +189,7 @@ export function EnvelopeHero() {
     if (!root) return;
     // The cover type-on is exempt from prefers-reduced-motion by design (owner's
     // choice) — it's a gentle text wipe; other motion still respects the setting.
-    const type = (sel, count, dur, delay) => {
-      const el = root.querySelector(sel);
+    const typeEl = (el, count, dur, delay) => {
       if (!el) return;
       if (!el.animate) { el.style.clipPath = "none"; return; }
       // Force the hidden start + reflow so the reveal ALWAYS plays — otherwise a
@@ -204,8 +203,24 @@ export function EnvelopeHero() {
       );
       anim.onfinish = () => { el.style.clipPath = "none"; anim.cancel(); }; // cancel so forwards-fill can't override the unclipped resting state
     };
-    type(".inv-lf-label", 18, 900, 300);
-    type(".inv-lf-type", 14, 1100, isEnv2 ? 400 : 1300); // env2 has no label line — names type first
+    const type = (sel, count, dur, delay) => typeEl(root.querySelector(sel), count, dur, delay);
+    // env2 stacked names (name / & / name): reveal LINE BY LINE, not all at once.
+    const stack = isEnv2 ? root.querySelector(".inv-lf-type.inv-lf-stack") : null;
+    if (stack) {
+      const lines = Array.prototype.slice.call(stack.querySelectorAll(":scope > span"));
+      // Hide each line WHILE the container is still CSS-clipped, then unclip the
+      // container so only the per-line wipes are visible (no all-at-once flash).
+      lines.forEach((l) => { if (l.animate) l.style.clipPath = "inset(-18% 100% -18% 0)"; });
+      stack.style.clipPath = "none";
+      void stack.offsetWidth;
+      lines.forEach((line, i) => {
+        const n = Math.max(4, ((line.textContent || "").trim().length) || 4);
+        typeEl(line, n, 620, 400 + i * 680); // 400ms start, +680ms per line
+      });
+    } else {
+      type(".inv-lf-label", 18, 900, 300);
+      type(".inv-lf-type", 14, 1100, isEnv2 ? 400 : 1300); // env2 has no label line — names type first
+    }
   }, [ready]);
   React.useEffect(() => {
     if (!open) {
