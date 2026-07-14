@@ -145,7 +145,7 @@ export function EnvelopeHero() {
   // The open state (card/frame/flowers) is unchanged.
   const isEnv2 = s.theme === "envelope2";
   const sealedSrc = isEnv2 ? "/assets/invite/env2-closed.png" : "/assets/invite/env-closed.webp";
-  const sealedAlt = isEnv2 ? "Sealed burgundy lace envelope with a wax seal" : "Sealed olive envelope with lace trim and wax seal";
+  const sealedAlt = isEnv2 ? "Sealed cream lace envelope with a wax seal" : "Sealed olive envelope with lace trim and wax seal";
   // Open-state front pocket: env2 uses its own open envelope (olive-toned, fit to
   // the olive pocket's box so the card/heart/flowers still line up).
   const frontSrc = isEnv2 ? "/assets/invite/env2-front.png" : "/assets/invite/p2-envelope-front.png";

@@ -1847,12 +1847,19 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
    flat circle baked into env2-closed.png — position measured on the artwork
    (circle center ~50.9% / 65.4%, ~11% wide; overlay slightly larger to cover
    the baked seal's shadow). Keeps --sealed so the mobile art-nudge tracks. */
-/* env2's burgundy art has its own oval seal baked in — no overlay image. */
+/* env2's cream lace art has its own oval seal baked in — no overlay image. */
 /* Envelope 2's seal is ROUND and a touch lower than olive's oval, so size the
    click hotspot + pulse ring to match it (olive's is a tall 13%x26% oval at
    49.4%/56.99% — too big + off-centre here). Higher specificity than the mobile
    .eg-sealed rule so it wins everywhere. */
-[data-theme="envelope2"] .eg-sealed .inv-seal-hotspot { left: 49.4%; top: 63.2%; width: 12%; height: 31%; transform: translate(-50%, -50%); }
+[data-theme="envelope2"] .eg-sealed .inv-seal-hotspot { left: 50%; top: 63.4%; width: 15%; height: 31%; transform: translate(-50%, -50%); }
+/* cream paper: the shared cream pulse ring is invisible — use a warm-brown ring */
+[data-theme="envelope2"] .inv-seal-hotspot::after { animation-name: invSealPulseDark; }
+@keyframes invSealPulseDark {
+  0%   { box-shadow: 0 0 0 0 rgba(122, 96, 62, .4); }
+  70%  { box-shadow: 0 0 0 18px rgba(122, 96, 62, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(122, 96, 62, 0); }
+}
 .inv-seal-hotspot {
   position: absolute; left: 49.4%; top: 56.99%; width: 13%; height: 26%;
   transform: translate(-50%, -50%); border: 0; background: transparent; padding: 0; margin: 0;
@@ -2035,7 +2042,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    visible pixelation on large screens. Show it near native scale; safe now that
    the art's black corner triangles are painted out. */
 /* Env2's sealed cover fills the whole screen like Olive Envelope (owner request). */
-/* env2: the burgundy art is the envelope FACE (aspect 1.71). Desktop shows the
+/* env2: the cream lace art is the envelope FACE (aspect 1.73). Desktop shows the
    whole envelope as a card over the theme background (contain); mobile covers
    the viewport like the olive theme. */
 [data-theme="envelope2"] .eg-sealed { width: min(86vw, 149vh); }
@@ -2043,16 +2050,21 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   /* cover the whole phone screen, anchored to the TOP (crop at the bottom) */
   [data-theme="envelope2"] .eg-sealed { width: max(100vw, 175svh); align-self: flex-start; }
 }
-/* env2 seal sits lower than olive's — keep the tap cue below it. The burgundy
-   paper is dark, so the base cream text works as-is. */
-[data-theme="envelope2"] .eg-sealed .inv-open-cue { top: 85%; }
+/* env2 seal sits lower than olive's — keep the tap cue below it. The cream
+   paper is LIGHT, so the base cream text vanishes — flip the cue to warm brown. */
+[data-theme="envelope2"] .eg-sealed .inv-open-cue {
+  /* below the lace pendant (its tip ends at 94.9%) — plain paper, so the dark
+     cue reads cleanly; a soft cream halo keeps it legible under any recolor */
+  top: 95.5%; color: rgba(80, 60, 36, .95);
+  text-shadow: 0 0 3px rgba(255, 253, 245, .9), 0 0 8px rgba(255, 253, 245, .7);
+}
 /* env2: couple initials embossed into the wax oval — same letterpress
-   treatment as the names, sized/positioned to the seal (50.6% / 55.8%). */
+   treatment as the names, sized/positioned to the seal (50% / 63.4%). */
 [data-theme="envelope2"] .eg-sealed .inv-seal-mono {
-  position: absolute; left: 49.4%; top: 63.2%; transform: translate(-50%, -50%);
+  position: absolute; left: 50%; top: 63.4%; transform: translate(-50%, -50%);
   display: flex; flex-direction: column; align-items: center;
   font-family: "Great Vibes", cursive; font-size: 2.6cqw; line-height: 0.9;
-  color: rgba(22, 5, 11, .55); text-shadow: 0 1px 0 rgba(255, 236, 236, .3);
+  color: rgba(96, 70, 42, .6); text-shadow: 0 1px 0 rgba(255, 255, 248, .7);
   pointer-events: none; white-space: nowrap; z-index: 2;
 }
 .inv-seal-mono__a { transform: translateX(-0.3em); }
@@ -2061,14 +2073,18 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    lower lip catching the light. Translucent black/white so it survives any
    envelope recolor. */
 [data-theme="envelope2"] .eg-sealed .inv-lf-names {
-  color: rgba(22, 5, 11, .58);
-  text-shadow: 0 1px 0 rgba(255, 236, 236, .28);
+  color: rgba(96, 70, 42, .62);
+  text-shadow: 0 1px 0 rgba(255, 255, 248, .65);
 }
 /* "We are getting married" under the names (env2 only) — fades in after the
    names finish typing on. */
 .eg-sealed .inv-lf-sub {
   font-family: "Cormorant Garamond", Georgia, serif; font-variant: small-caps;
   letter-spacing: .24em; font-size: min(1.5cqw, 3.6vw); line-height: 1.3; opacity: 0;
+}
+/* env2 cream paper: the sub line inherits the cover's cream text — flip it dark. */
+[data-theme="envelope2"] .eg-sealed .inv-lf-sub {
+  color: rgba(104, 80, 50, .8); text-shadow: 0 1px 0 rgba(255, 255, 248, .55);
 }
 .eg-sealed.is-ready .inv-lf-sub { animation: lfSubIn .9s ease 1.8s forwards; }
 @keyframes lfSubIn { to { opacity: 1; } }
@@ -2108,8 +2124,11 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   .eg-sealed .inv-seal-img--sealed { transform: translate(calc(-50% + 0.7cqw), -50%); }
   /* pulse ring hotspot must follow the same offset so the ring stays centered on the seal */
   .eg-sealed .inv-seal-hotspot { transform: translate(calc(-50% + 0.7cqw), -50%); }
-  /* env2 wax monogram follows the shifted art too */
-  [data-theme="envelope2"] .eg-sealed .inv-seal-mono { transform: translate(calc(-50% + 0.7cqw), -50%); }
+  /* env2's cream art has its seal at exactly 50% — no nudge needed; cancel the
+     olive-tuned art shift AND the hotspot compensation so everything stays put */
+  [data-theme="envelope2"] .eg-sealed .inv-sealed-art,
+  [data-theme="envelope2"] .eg-sealed .inv-art-recolor--sealed { transform: none; }
+  [data-theme="envelope2"] .eg-sealed .inv-seal-hotspot { transform: translate(-50%, -50%); }
 }
 .eg-open { width: min(1140px, 100vw, 105vh); flex: none; transition: width .6s ease; }
 .eg-cue {
