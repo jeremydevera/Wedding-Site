@@ -59,7 +59,7 @@ export function SaveFooter() {
 // ============================================================================
 
 // Reusable image uploader for admin (hero, story milestones)
-export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", framePreview, defaultPreview, tintStrength, tintGradient, purpose = "misc", allowVideo = false, cropValue = null, onCropChange = null }) {
+export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", framePreview, frameGeom, defaultPreview, tintStrength, tintGradient, purpose = "misc", allowVideo = false, cropValue = null, onCropChange = null }) {
   const { clientId } = useStore();
   const ref = useRef(null);
   const [cropSrc, setCropSrc] = useState(null);
@@ -145,7 +145,7 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
         onUploadNew={() => ref.current && ref.current.click()}
         onPick={(key) => { commit(key); if (onCropChange && VIDEO_RE.test(key)) setCropSrc(mediaUrl(key)); }}
       />
-      <CropModal open={!!cropSrc} src={cropSrc} aspect={aspect} frameSrc={framePreview} initialParams={cropValue} onCancel={() => setCropSrc(null)} onApply={applyCrop} />
+      <CropModal open={!!cropSrc} src={cropSrc} aspect={aspect} frameSrc={framePreview} frameGeom={frameGeom} initialParams={cropValue} onCancel={() => setCropSrc(null)} onApply={applyCrop} />
     </div>
   );
 }
@@ -2266,10 +2266,18 @@ export function SettingsAdmin() {
       <div className="panel">
         <div className="panel__head"><div className="panel__title">Envelope Frame Photo</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Shows inside the oval frame on the opened envelope</span></div>
         <div className="panel__body" style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", maxWidth: 760, margin: "0 auto" }}>
-          <ImageUploadField purpose="frame" label="Photo inside the oval frame" ratio="1 / 1" allowVideo framePreview="/assets/invite/p2-frame.png" defaultPreview="/assets/invite/frame-video.gif"
+          {/* env2's white frame has a CENTERED portrait oval (site box 42.5% x 57.5%
+              of a square canvas), unlike olive's near-square right-side oval — so the
+              crop box, preview frame and preview geometry all follow the theme. A crop
+              made in the matching box maps 1:1 onto the site (no media edge can show). */}
+          <ImageUploadField purpose="frame" label="Photo inside the oval frame"
+            ratio={f.theme === "envelope2" ? "425 / 575" : "1 / 1"} allowVideo
+            framePreview={f.theme === "envelope2" ? "/assets/invite/white-frame.png" : "/assets/invite/p2-frame.png"}
+            frameGeom={f.theme === "envelope2" ? { canvas: "940 / 940", left: "28.5%", top: "23%", width: "42.5%", height: "57.5%" } : undefined}
+            defaultPreview="/assets/invite/frame-video.gif"
             value={f.frameImage} onChange={(v) => setKey("frameImage", v)}
             cropValue={f.frameImageCrop || null} onCropChange={(c) => setKey("frameImageCrop", c)} />
-          <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 10, maxWidth: 360 }}>A square photo of the two of you works best. Leave empty to keep the default animated frame.</p>
+          <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 10, maxWidth: 360 }}>{f.theme === "envelope2" ? "A portrait photo of the two of you works best." : "A square photo of the two of you works best."} Leave empty to keep the default animated frame.</p>
           <div style={{ width: "100%", maxWidth: 360, marginTop: 18, textAlign: "left" }}>
             <Field label="Heart text" id="s-heart" hint="Shown inside the heart on the envelope. Leave blank to show no text.">
               <Input id="s-heart" value={f.heartText} onChange={(e) => setKey("heartText", e.target.value)} placeholder="Blank = no text (e.g. 19.09.2026)" />

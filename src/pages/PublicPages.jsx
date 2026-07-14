@@ -352,8 +352,11 @@ export function EnvelopeHero() {
 // animated GIF. CSS covers both tags (.inv-l-video video/img).
 function FrameMedia({ s }) {
   const src = mediaUrl(s.frameImage) || "/assets/invite/frame-video.gif";
+  // env2: clamp the pan so a crop authored in the olive box can never pull the
+  // media off env2's (differently shaped) oval — no visible media edge.
+  const clampCover = s.theme === "envelope2";
   return /\.(mp4|webm|mov|m4v)(\?|$)/i.test(src)
-    ? <video src={src} muted loop autoPlay playsInline style={cropTransform(s.frameImageCrop)} />
+    ? <video src={src} muted loop autoPlay playsInline style={cropTransform(s.frameImageCrop, clampCover)} />
     : <img src={src} alt="" />;
 }
 

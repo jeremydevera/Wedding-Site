@@ -25,9 +25,22 @@ export function mediaUrl(stored) {
 // the crop modal ({ z, dx, dy } as fractions of the clipping box) applied to a
 // cover-fitted <video> inside an overflow:hidden box. Returns undefined when
 // there's nothing to apply, so spreading into style={} is always safe.
-export function cropTransform(crop) {
+//
+// clampCover: cap the pan so the media always covers the whole box
+// (|dx|,|dy| <= (z-1)/2 — the coverage bound when the media exactly fits the
+// box at z=1; cover-fit only ever gives MORE slack, so this can never expose
+// an edge). Opt-in: env2's frame box differs from the box a crop may have been
+// authored in, so replayed params could otherwise pan the media off the hole.
+// Olive callers stay unclamped — existing client crops render untouched.
+export function cropTransform(crop, clampCover = false) {
   if (!crop || typeof crop !== "object") return undefined;
-  const z = +crop.z || 1, dx = +crop.dx || 0, dy = +crop.dy || 0;
+  const z = +crop.z || 1;
+  let dx = +crop.dx || 0, dy = +crop.dy || 0;
+  if (clampCover) {
+    const lim = Math.max(0, (z - 1) / 2);
+    dx = Math.max(-lim, Math.min(lim, dx));
+    dy = Math.max(-lim, Math.min(lim, dy));
+  }
   if (z === 1 && !dx && !dy) return undefined;
   return { transform: `translate(${(dx * 100).toFixed(3)}%, ${(dy * 100).toFixed(3)}%) scale(${z})`, transformOrigin: "50% 50%" };
 }

@@ -385,7 +385,11 @@ export function confirmDialog(opts) {
 // onApply(null, { z, dx, dy }) — fractions of the crop box that renderers apply
 // as a CSS transform (see cropTransform in lib/media.js). `initialParams` seeds
 // the view so re-cropping a video starts from the saved position.
-export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, livePreview, initialParams }) {
+// frameGeom: geometry of the "In the frame" live preview — the frame art's
+// canvas aspect + the media window inside it (mirrors the site's .inv-l-video
+// box for that theme). Defaults to the olive peony frame.
+const FRAME_GEOM_OLIVE = { canvas: "766 / 800", left: "20.6%", top: "14.9%", width: "78%", height: "75%" };
+export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, livePreview, initialParams, frameGeom }) {
   // DEFECT-2026-07-09-C: the plain preview <img> caches the media response
   // WITHOUT CORS headers (no Vary/ACAO on the plain fetch); this CORS-mode
   // <img> then reuses that cached copy and the browser blocks it — black crop
@@ -511,15 +515,15 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
               : <img ref={imgRef} src={corsSrc} alt="" draggable="false" crossOrigin="anonymous" onLoad={() => setMediaTick((t) => t + 1)} style={{ position: "absolute", left: off.x, top: off.y, width: dispW, height: dispH, maxWidth: "none" }} />)}
             <div className="crop__frame" />
           </div>
-          {frameSrc && (
+          {frameSrc && (() => { const g = frameGeom || FRAME_GEOM_OLIVE; return (
             <div style={{ flex: "none", textAlign: "center" }}>
               <span className="field__label" style={{ display: "block", marginBottom: 8 }}>In the frame</span>
-              <div style={{ position: "relative", width: 200, aspectRatio: "766 / 800", filter: "drop-shadow(0 6px 14px rgba(26,30,12,.28))" }}>
-                <img src={live || src} alt="" style={{ position: "absolute", left: "20.6%", top: "14.9%", width: "78%", height: "75%", objectFit: "cover", display: "block" }} />
+              <div style={{ position: "relative", width: 200, aspectRatio: g.canvas, filter: "drop-shadow(0 6px 14px rgba(26,30,12,.28))" }}>
+                <img src={live || src} alt="" style={{ position: "absolute", left: g.left, top: g.top, width: g.width, height: g.height, objectFit: "cover", display: "block" }} />
                 <img src={frameSrc} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "auto", display: "block" }} />
               </div>
             </div>
-          )}
+          ); })()}
           {!frameSrc && livePreview && (
             <div style={{ flex: "none", textAlign: "center" }}>
               <span className="field__label" style={{ display: "block", marginBottom: 8 }}>In the player</span>
