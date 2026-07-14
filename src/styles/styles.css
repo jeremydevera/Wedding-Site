@@ -2048,8 +2048,8 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    the viewport like the olive theme. */
 [data-theme="envelope2"] .eg-sealed { width: min(68vw, 118vh); }
 @media (max-width: 860px) {
-  /* smaller than a full cover — envelope sits as a card, anchored near the top */
-  [data-theme="envelope2"] .eg-sealed { width: min(88vw, 140svh); align-self: flex-start; }
+  /* cover the whole phone screen like Olive Envelope, anchored to the TOP */
+  [data-theme="envelope2"] .eg-sealed { width: max(100vw, 175svh); align-self: flex-start; }
 }
 /* env2 seal sits lower than olive's — keep the tap cue below it. The burgundy
    paper is dark, so the base cream text works as-is. */
