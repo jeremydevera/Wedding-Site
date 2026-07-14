@@ -2057,6 +2057,17 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 }
 .inv-seal-mono__a { transform: translateX(-0.3em); }
 .inv-seal-mono__b { transform: translateX(0.3em); }
+/* env2 OPEN state: same initials on the front pocket's baked oval seal.
+   Position in STACK coords — the front art is inset (left 6%, top 30%, width
+   84%), so the seal measured at image (49.7%, 66.5%, 13% wide) converts to
+   6+.84*49.7 = 47.7% / 30+.84*66.5 = 85.9%; font scaled to the smaller oval. */
+[data-theme="envelope2"] .inv-env-stack .inv-seal-mono--front {
+  position: absolute; left: 47.7%; top: 85.9%; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center;
+  font-family: "Great Vibes", cursive; font-size: 2.3cqw; line-height: 0.9;
+  color: rgba(22, 5, 11, .55); text-shadow: 0 1px 0 rgba(255, 236, 236, .3);
+  pointer-events: none; white-space: nowrap; z-index: 7;
+}
 /* env2 cover names: letterpress emboss — ink well darker than the paper, a
    bright lower lip catching the light (owner: previous mix was too faint).
    Translucent black/white so it survives any envelope recolor. */

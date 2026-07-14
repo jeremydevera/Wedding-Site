@@ -326,6 +326,14 @@ export function EnvelopeHero() {
             </div>
             <img className="inv-l-front" src={frontSrc} alt={isEnv2 ? "Open burgundy envelope pocket" : "Olive envelope front pocket"} />
             {isEnv2 ? envRecolorOverlay(s, "front", frontSrc) : envRecolorOverlay(s, "front")}
+            {/* env2: the pocket's baked oval seal carries the same stacked
+                initials as the sealed cover */}
+            {isEnv2 && ((s.partnerA || "").trim() || (s.partnerB || "").trim()) ? (
+              <span className="inv-seal-mono inv-seal-mono--front" aria-hidden="true">
+                {(s.partnerA || "").trim() ? <span className="inv-seal-mono__a">{(s.partnerA || "").trim().charAt(0).toUpperCase()}</span> : null}
+                {(s.partnerB || "").trim() ? <span className="inv-seal-mono__b">{(s.partnerB || "").trim().charAt(0).toUpperCase()}</span> : null}
+              </span>
+            ) : null}
             <img className="inv-l-flower" src="/assets/invite/p2-flowers.png" alt="Floral spray of calla lilies, anthurium, orchids and amaranthus" />
           </div>
         </div>
