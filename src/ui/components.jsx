@@ -458,6 +458,7 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
     const im = imgRef.current;
     if (!im || !nat.w) return null;
     if (im.tagName === "IMG" && !im.complete) return null; // still decoding — caller falls back to the raw src
+    if (im.tagName === "VIDEO" && im.readyState < 2) return null; // no frame decoded yet — drawing now would snapshot black
     const srcX = -off.x / scale, srcY = -off.y / scale, srcW = W / scale, srcH = H / scale;
     const outW = Math.min(1400, Math.round(srcW));
     const outH = Math.round(outW / (aspect || 1));
@@ -511,7 +512,11 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
         <div style={{ display: "flex", gap: 22, alignItems: "flex-start", flexWrap: "wrap", justifyContent: "center", width: "100%" }}>
           <div className="crop__view" style={{ width: W, height: H }} onPointerDown={onDown}>
             {src && (isVideo
-              ? <video ref={imgRef} src={src} muted loop autoPlay playsInline draggable="false" onLoadedMetadata={(e) => setNat({ w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })} style={{ position: "absolute", left: off.x, top: off.y, width: dispW, height: dispH, maxWidth: "none" }} />
+              /* crossOrigin + the cache-split src keep the canvas untainted (same
+                 CORS story as the image path — DEFECT-2026-07-09-C); onLoadedData
+                 recomputes the frame preview once the first frame is decodable,
+                 so "In the frame" shows the video without waiting for a drag. */
+              ? <video ref={imgRef} src={corsSrc} crossOrigin="anonymous" preload="auto" muted loop autoPlay playsInline draggable="false" onLoadedMetadata={(e) => setNat({ w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })} onLoadedData={() => setMediaTick((t) => t + 1)} style={{ position: "absolute", left: off.x, top: off.y, width: dispW, height: dispH, maxWidth: "none" }} />
               : <img ref={imgRef} src={corsSrc} alt="" draggable="false" crossOrigin="anonymous" onLoad={() => setMediaTick((t) => t + 1)} style={{ position: "absolute", left: off.x, top: off.y, width: dispW, height: dispH, maxWidth: "none" }} />)}
             <div className="crop__frame" />
           </div>
@@ -519,7 +524,9 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
             <div style={{ flex: "none", textAlign: "center" }}>
               <span className="field__label" style={{ display: "block", marginBottom: 8 }}>In the frame</span>
               <div style={{ position: "relative", width: 200, aspectRatio: g.canvas, filter: "drop-shadow(0 6px 14px rgba(26,30,12,.28))" }}>
-                <img src={live || src} alt="" style={{ position: "absolute", left: g.left, top: g.top, width: g.width, height: g.height, objectFit: "cover", display: "block" }} />
+                {/* a raw video URL renders nothing in an <img> — wait for the
+                    canvas snapshot instead of showing a broken image */}
+                {(live || !isVideo) && <img src={live || src} alt="" style={{ position: "absolute", left: g.left, top: g.top, width: g.width, height: g.height, objectFit: "cover", display: "block" }} />}
                 <img src={frameSrc} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "auto", display: "block" }} />
               </div>
             </div>
