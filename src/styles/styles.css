@@ -2161,6 +2161,16 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .eg-cue__txt { padding-left: .22em; }
 .eg-cue svg { animation: egCueBob 1.8s ease-in-out infinite; }
 .eg-cue:focus-visible { outline: 2px solid #f3ecdb; outline-offset: 4px; }
+/* env2 desktop: the opened envelope's contents sit lower than Olive's, so the
+   shared cue offset lands almost on the artwork. Push the "View the details"
+   cue down for more breathing room (owner: cue almost touches the envelope). */
+[data-theme="envelope2"] .eg-cue { top: calc(50% + min(320px, 28.1vw, 29.5vh) + 104px); }
+@media (max-width: 860px) {
+  /* env2 mobile: lift the opened envelope + its contents up the viewport; keep
+     the cue tracking it (preserve the base translateX(2%)). */
+  [data-theme="envelope2"] .eg-open { transform: translate(2%, calc(-3% - 8vh)); }
+  [data-theme="envelope2"] .eg-cue { top: calc(50% + min(320px, 28.1vw, 29.5vh) + 40px - 8vh); }
+}
 @keyframes egCueBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(7px); } }
 @keyframes invHeartPop {
   0%   { transform: translateY(0); }
