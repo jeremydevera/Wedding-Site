@@ -2046,10 +2046,10 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* env2: the burgundy art is the envelope FACE (aspect 1.71). Desktop shows the
    whole envelope as a card over the theme background (contain); mobile covers
    the viewport like the olive theme. */
-[data-theme="envelope2"] .eg-sealed { width: min(86vw, 149vh); }
+[data-theme="envelope2"] .eg-sealed { width: min(68vw, 118vh); }
 @media (max-width: 860px) {
-  /* cover the whole phone screen, anchored to the TOP (crop at the bottom) */
-  [data-theme="envelope2"] .eg-sealed { width: max(100vw, 175svh); align-self: flex-start; }
+  /* smaller than a full cover — envelope sits as a card, anchored near the top */
+  [data-theme="envelope2"] .eg-sealed { width: min(88vw, 140svh); align-self: flex-start; }
 }
 /* env2 seal sits lower than olive's — keep the tap cue below it. The burgundy
    paper is dark, so the base cream text works as-is. */
