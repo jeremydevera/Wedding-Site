@@ -294,7 +294,17 @@ export function EnvelopeHero() {
             ) : null}
             <div className="inv-letter-from">
               {!isEnv2 && <span className="inv-lf-label">A Love Letter From</span>}
-              <span className="inv-lf-names"><span className="inv-lf-type">{s.partnerA} &amp; {s.partnerB}</span></span>
+              {/* env2: long couple names overflow the flap onto the lace on one
+                  line — past ~20 chars stack them (name / & / name), sized down. */}
+              {isEnv2 && (((s.partnerA || "").trim() + " & " + (s.partnerB || "").trim()).length > 20) ? (
+                <span className="inv-lf-names"><span className="inv-lf-type inv-lf-stack">
+                  <span>{(s.partnerA || "").trim()}</span>
+                  <span className="inv-lf-stack__amp">&amp;</span>
+                  <span>{(s.partnerB || "").trim()}</span>
+                </span></span>
+              ) : (
+                <span className="inv-lf-names"><span className="inv-lf-type">{s.partnerA} &amp; {s.partnerB}</span></span>
+              )}
               {isEnv2 && <span className="inv-lf-sub">We are getting married</span>}
             </div>
             <button className="inv-seal-hotspot" type="button" aria-label={isEnv2 ? "Click to open" : "Open the invitation"} onClick={() => setOpen(true)} />

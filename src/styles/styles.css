@@ -2114,6 +2114,10 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   letter-spacing: .01em;
   font-size: min(calc(var(--eg-title-cqw, 2.3) * 3cqw), 11vw);
 }
+/* Stacked long-name fallback (name / & / name): a touch smaller than the
+   one-line title so the lower name clears the lace V; tight leading. */
+.inv-lf-stack { display: flex; flex-direction: column; align-items: center; font-size: .78em; line-height: 1; }
+.inv-lf-stack__amp { font-size: .55em; line-height: 1.15; opacity: .85; }
 .eg-sealed .inv-open-cue { font-size: 3.8vw; font-size: min(1.6cqw, 3.8vw); top: 75%; }
 /* Mobile: the sealed cover is blown up (215vh term wins on tall/narrow phones), so the
    wax seal — authored at 49.3% of the artwork, ~0.7% left of the image's geometric center —
