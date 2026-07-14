@@ -140,10 +140,21 @@ export function CloudflareHealth() {
           <HealthGauges items={[
             { label: "Router requests", detail: `${nfc(data.router?.today)} today`, used: data.router?.month, limit: data.limitMonth, fmt: nf, suffix: "this month" },
             { label: "Pages builds", used: data.builds?.month, limit: data.builds?.limit || 500, fmt: nf, suffix: "this month", note: data.builds?.month == null ? "token needs Pages: Read" : null },
+            { label: "Custom domains", used: data.domains?.count, limit: data.domains?.limit || 100, fmt: nf, suffix: "attached", note: data.domains?.count == null ? "token needs Pages: Read" : null },
             { label: "R2 storage", detail: `${nf(data.r2?.objects)} objects`, used: data.r2?.storageBytes, limit: data.r2?.limitBytes || R2_FREE_BYTES, fmt: fmtBytes, suffix: "free tier" },
             { label: "Supabase database", used: data.supa?.dbBytes, limit: data.supa?.dbLimitBytes || 524288000, fmt: fmtBytes, suffix: "free tier", note: data.supa?.dbBytes == null ? "unavailable" : null },
           ]} />
         </Suspense>
+
+        {/* What the domain cap means + the scaling paths past it. */}
+        <div style={{ background: "var(--panel-2, #f7f6f2)", border: "1px solid var(--line, #e4e1d8)", borderRadius: 8, padding: "10px 14px", fontSize: 13, lineHeight: 1.55, color: "var(--muted)" }}>
+          <strong style={{ color: "var(--ink)" }}>Custom domains</strong> counts every hostname attached to the
+          Pages project — <code>demo</code>, <code>www</code> and the apex each take a slot
+          (<code>wedding-site-8nh.pages.dev</code> is free). The free plan caps at <strong>100 per project</strong> (Pro
+          250, Business 500). Nearing the cap: serve client subdomains through a wildcard{" "}
+          <code>*.celebrately.us</code> Worker route instead of attaching them — unlimited and free. Clients bringing
+          their <em>own</em> domain scale via Cloudflare for SaaS (first 100 hostnames free, then ~$0.10/mo each).
+        </div>
 
         {/* No-limit metrics stay KPI tiles (same design as the Overview tab). */}
         <div className="sa-stats" style={{ marginBottom: 0 }}>

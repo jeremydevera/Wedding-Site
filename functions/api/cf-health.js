@@ -97,6 +97,8 @@ export async function onRequestGet(context) {
   const LIMIT_BUILDS_MONTH = envNum(env.CF_LIMIT_BUILDS_MONTH, 500);
   const LIMIT_R2_GB = envNum(env.CF_LIMIT_R2_GB, 10);
   const LIMIT_SUPA_DB_MB = envNum(env.CF_LIMIT_SUPA_DB_MB, 500);
+  // Pages free plan: 100 custom domains per project (Pro 250, Business 500).
+  const LIMIT_DOMAINS = envNum(env.CF_LIMIT_DOMAINS, 100);
 
   // Serve the 5-min edge cache unless ?refresh=1 forces a fresh pull.
   const url = new URL(request.url);
@@ -138,6 +140,22 @@ export async function onRequestGet(context) {
     } catch { return null; }
   };
 
+  // Custom domains attached to the Pages project — counts against the plan cap
+  // (100 free / 250 Pro / 500 Business). Same "Cloudflare Pages: Read" permission
+  // as builds; soft-fails to null (tile shows the token hint) until it exists.
+  const fetchDomainCount = async () => {
+    try {
+      const r = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${acct}/pages/projects/wedding-site/domains?per_page=100`,
+        { headers: { authorization: `Bearer ${CF_TOKEN}` } },
+      );
+      if (!r.ok) return null;
+      const jr = await r.json();
+      const total = jr.result_info && Number.isFinite(+jr.result_info.total_count) ? +jr.result_info.total_count : null;
+      return total != null ? total : (Array.isArray(jr.result) ? jr.result.length : null);
+    } catch { return null; }
+  };
+
   // Supabase DB size — superadmin-only RPC (0025), called with the CALLER's JWT
   // so the DB re-verifies the role itself. NULL/failure -> null (tile shows "—").
   const fetchDbSize = async () => {
@@ -153,9 +171,9 @@ export async function onRequestGet(context) {
     } catch { return null; }
   };
 
-  let data, buildsMonth, dbBytes;
+  let data, buildsMonth, dbBytes, domainCount;
   try {
-    const [resp, builds, db] = await Promise.all([
+    const [resp, builds, db, doms] = await Promise.all([
       fetch("https://api.cloudflare.com/client/v4/graphql", {
         method: "POST",
         headers: { authorization: `Bearer ${CF_TOKEN}`, "content-type": "application/json" },
@@ -163,8 +181,9 @@ export async function onRequestGet(context) {
       }),
       fetchBuildsMonth(),
       fetchDbSize(),
+      fetchDomainCount(),
     ]);
-    buildsMonth = builds; dbBytes = db;
+    buildsMonth = builds; dbBytes = db; domainCount = doms;
     const jr = await resp.json();
     if (!resp.ok || (jr.errors && jr.errors.length) || !jr.data) {
       return json({ configured: true, error: "upstream" }); // soft — do not cache, do not leak details
@@ -181,6 +200,7 @@ export async function onRequestGet(context) {
     updatedAt: now.toISOString(),
   });
   payload.builds = { month: buildsMonth, limit: LIMIT_BUILDS_MONTH }; // null month => token lacks Pages:Read
+  payload.domains = { count: domainCount, limit: LIMIT_DOMAINS }; // null count => token lacks Pages:Read
   payload.r2.limitBytes = LIMIT_R2_GB * 1024 ** 3;
   payload.supa = { dbBytes, dbLimitBytes: LIMIT_SUPA_DB_MB * 1024 * 1024 };
 
