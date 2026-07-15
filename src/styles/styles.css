@@ -2117,6 +2117,9 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   letter-spacing: .01em;
   font-size: min(calc(var(--eg-title-cqw, 2.3) * 3cqw), 11vw);
 }
+/* Hidden probe that measures what the ONE-LINE title would take (same classes
+   = same font-size rules). Absolute + invisible: no layout, no paint. */
+.inv-lf-probe { position: absolute !important; left: 0; top: 0; visibility: hidden; pointer-events: none; white-space: nowrap; }
 /* Stacked long-name fallback (name / & / name): a touch smaller than the
    one-line title so the lower name clears the lace V; tight leading. */
 .inv-lf-stack { display: flex; flex-direction: column; align-items: center; font-size: .78em; line-height: 1; }

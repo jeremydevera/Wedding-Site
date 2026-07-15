@@ -154,6 +154,29 @@ export function EnvelopeHero() {
   const [ready, setReady] = React.useState(false);
   const artRef = React.useRef(null);
   const triggerReady = React.useCallback(() => setReady(true), []);
+
+  // env2 cover title max width: measure the hidden one-line probe (real fonts,
+  // real cqw/vw sizing) against the safe budget — 86% of the viewport (mobile
+  // shows a slice of a wider-than-screen envelope) and 62% of the envelope
+  // (the flap's plain paper narrows into the lace). Overflow -> stacked title.
+  // Re-measured on resize and once the script font finishes loading (Great
+  // Vibes metrics differ a lot from the fallback).
+  const titleProbeRef = React.useRef(null);
+  const [stackTitle, setStackTitle] = React.useState(false);
+  React.useLayoutEffect(() => {
+    if (!isEnv2) return;
+    const measure = () => {
+      const el = titleProbeRef.current;
+      if (!el) return;
+      const wrap = el.closest(".eg-sealed");
+      const budget = Math.min(window.innerWidth * 0.86, (wrap ? wrap.clientWidth : window.innerWidth) * 0.62);
+      if (budget > 0 && el.offsetWidth > 0) setStackTitle(el.offsetWidth > budget);
+    };
+    measure();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure).catch(() => {});
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [isEnv2, s.partnerA, s.partnerB, s.envTitleSize]);
   // Wait for the envelope art (paper + wax seal) to fully DECODE before showing
   // the cover — previously the type-on played over a blank/partial background
   // and the image popped in late. Fails open after 4s so a slow/failed decode
@@ -309,9 +332,15 @@ export function EnvelopeHero() {
             ) : null}
             <div className="inv-letter-from">
               {!isEnv2 && <span className="inv-lf-label">A Love Letter From</span>}
-              {/* env2: long couple names overflow the flap onto the lace on one
-                  line — past ~20 chars stack them (name / & / name), sized down. */}
-              {isEnv2 && (((s.partnerA || "").trim() + " & " + (s.partnerB || "").trim()).length > 20) ? (
+              {/* env2: the one-line title has a hard MAX WIDTH — a hidden probe
+                  (same classes = same font/size rules incl. the mobile caps)
+                  measures what one line would take; past the budget the names
+                  stack (name / & / name). Width-based, not character-count, so
+                  it adapts per screen and per Title Size. */}
+              {isEnv2 && (
+                <span ref={titleProbeRef} className="inv-lf-names inv-lf-probe" aria-hidden="true">{(s.partnerA || "").trim()} &amp; {(s.partnerB || "").trim()}</span>
+              )}
+              {isEnv2 && stackTitle ? (
                 <span className="inv-lf-names"><span className="inv-lf-type inv-lf-stack">
                   <span>{(s.partnerA || "").trim()}</span>
                   <span className="inv-lf-stack__amp">&amp;</span>
