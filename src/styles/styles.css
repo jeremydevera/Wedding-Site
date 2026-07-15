@@ -1935,7 +1935,7 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
    bottom-right like the olive theme (owner request). */
 [data-theme="envelope2"] .inv-l-flower { left: 48%; top: 12%; width: 68%; }
 /* env2: paper flowers tucked beside the picture frame (owner add). */
-.inv-l-paperflower { position: absolute; left: -2%; top: 6%; width: 38%; z-index: 4; }
+.inv-l-paperflower { position: absolute; left: -2%; top: -4%; width: 38%; z-index: 4; }
 .inv-l-video video, .inv-l-video img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .inv-card-text {
   position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%);
@@ -2087,7 +2087,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* env2: the burgundy art is the envelope FACE (aspect 1.71). Desktop shows the
    whole envelope as a card over the theme background (contain); mobile covers
    the viewport like the olive theme. */
-[data-theme="envelope2"] .eg-sealed { width: min(68vw, 118vh); }
+[data-theme="envelope2"] .eg-sealed { width: min(78vw, 135vh); }
 @media (max-width: 860px) {
   /* cover the whole phone screen like Olive Envelope, anchored to the TOP */
   [data-theme="envelope2"] .eg-sealed { width: max(100vw, 175svh); align-self: flex-start; }
@@ -2150,7 +2150,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   font-family: "Cormorant Garamond", Georgia, serif;
   font-variant: small-caps;
   letter-spacing: .18em;
-  font-size: min(calc(var(--eg-title-cqw, 2.3) * 2cqw), 8.5vw);
+  font-size: min(calc(var(--eg-title-cqw, 2.3) * 2.2cqw), 8.5vw);
 }
 /* Hidden probe that measures what the ONE-LINE title would take (same classes
    = same font-size rules). Absolute + invisible: no layout, no paint. */
