@@ -164,13 +164,16 @@ export function EnvelopeHero() {
   const titleProbeRef = React.useRef(null);
   const nameProbeARef = React.useRef(null);
   const nameProbeBRef = React.useRef(null);
-  const [stackTitle, setStackTitle] = React.useState(false);
+  // null = not measured yet — the type-on animation WAITS for the decision, so
+  // the title never starts typing as one line and restructures to three
+  // mid-animation (owner complaint).
+  const [stackTitle, setStackTitle] = React.useState(null);
   // when stacked, scale the lines so the LONGER name fills the budget (up to
   // full title size) — a fixed reduction left short stacked names tiny.
   const [stackEm, setStackEm] = React.useState(0.78);
   React.useLayoutEffect(() => {
     if (!isEnv2) return;
-    const measure = () => {
+    const commit = () => {
       const el = titleProbeRef.current;
       if (!el) return;
       const wrap = el.closest(".eg-sealed");
@@ -185,14 +188,20 @@ export function EnvelopeHero() {
         setStackEm(Math.max(0.6, Math.min(1, Math.round((budget * 0.98 / widest) * 1000) / 1000)));
       }
     };
+    // Don't commit a decision off FALLBACK-font metrics (they differ enough to
+    // flip the layout when the real face arrives) — wait until the title font
+    // is actually available, with a 2s failsafe so slow font loads can't hold
+    // the reveal hostage.
+    const measure = () => {
+      const fonts = document.fonts;
+      if (fonts && fonts.check && !fonts.check('16px "Cormorant Garamond"')) return;
+      commit();
+    };
     measure();
-    // fonts.ready can resolve BEFORE the probe's first paint even requests
-    // Great Vibes — also re-measure on every loadingdone (font arrival) and
-    // once after a beat, so a fallback-font measurement can't stick.
     const fonts = document.fonts;
     if (fonts && fonts.ready) fonts.ready.then(measure).catch(() => {});
     if (fonts && fonts.addEventListener) fonts.addEventListener("loadingdone", measure);
-    const late = setTimeout(measure, 2000);
+    const late = setTimeout(commit, 2000);
     window.addEventListener("resize", measure);
     return () => {
       window.removeEventListener("resize", measure);
@@ -231,6 +240,10 @@ export function EnvelopeHero() {
   // that clamps the negative end-inset to 0 shaves the last glyph ("m" in "From").
   React.useEffect(() => {
     if (!ready) return;
+    // env2: hold the reveal until the one-line-vs-stacked decision is final —
+    // typing the provisional layout and swapping mid-animation looked broken.
+    // Untyped text stays CSS-clipped (invisible), so the hold shows nothing.
+    if (isEnv2 && stackTitle === null) return;
     const root = artRef.current && artRef.current.closest(".inv-sealed-wrap");
     if (!root) return;
     // The cover type-on is exempt from prefers-reduced-motion by design (owner's
@@ -267,7 +280,7 @@ export function EnvelopeHero() {
       type(".inv-lf-label", 18, 900, 300);
       type(".inv-lf-type", 14, 1100, isEnv2 ? 400 : 1300); // env2 has no label line — names type first
     }
-  }, [ready]);
+  }, [ready, stackTitle, isEnv2]);
   React.useEffect(() => {
     if (!open) {
       document.body.style.overflow = "hidden";
