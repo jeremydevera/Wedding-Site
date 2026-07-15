@@ -1926,7 +1926,7 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
 .inv-l-heart { left: 28.7%;   top: 50%;   width: 42%;   z-index: 5; }
 /* env2's white heart art is taller than the olive lace heart, so at the shared
    top:50% its bottom pokes below the pocket. Lift it up (owner request). */
-[data-theme="envelope2"] .inv-l-heart { top: 38%; left: 26.8%; }
+[data-theme="envelope2"] .inv-l-heart { top: 41%; left: 26.8%; }
 .inv-l-front { left: 6%;    top: 30%;   width: 84%;   z-index: 6; }
 .inv-l-flower{ left: 65.8%; top: 28.4%;  width: 26%;   z-index: 7; }
 /* env2's whiteflower art is a tall portrait bouquet (vs olive's wide spray), so
