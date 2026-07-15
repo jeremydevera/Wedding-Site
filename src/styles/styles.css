@@ -4,6 +4,15 @@
    (set by themes.jsx on :root). Mobile-first, responsive.
    ============================================================================ */
 
+/* Self-hosted script face (owner-supplied) — env2 section headers. */
+@font-face {
+  font-family: "Madelican";
+  src: url("/assets/fonts/Madelican-2OO63.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; overflow-x: clip; overscroll-behavior-y: none; }
 /* Belt-and-suspenders: never allow sideways scrolling site-wide. overflow-x:clip
@@ -45,12 +54,15 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .sec-head__title { font-size: clamp(30px, 5vw, 50px); margin-top: 16px; color: var(--ink); }
 .sec-head__lead { margin-top: 16px; max-width: 56ch; color: var(--ink-soft); font-size: 18px; }
 .sec-head--light .sec-head__title, .sec-head--light .sec-head__lead { color: var(--accent-ink); }
-/* Envelope 2: section headers in the script face (owner request) — slightly
-   larger since the calligraphy reads smaller than the serif at equal px. */
+/* Envelope 2: section headers in the script face (owner request; owner-supplied
+   Madelican, Great Vibes fallback) — slightly larger since the calligraphy
+   reads smaller than the serif at equal px. */
 [data-theme="envelope2"] .sec-head__title {
-  font-family: "Great Vibes", cursive;
+  font-family: "Madelican", "Great Vibes", cursive;
   font-weight: 400; letter-spacing: .01em; text-transform: none;
   font-size: clamp(34px, 5.5vw, 56px);
+  margin-top: 28px; /* Madelican's tall swashes need clearance from the eyebrow rule */
+  line-height: 1.25;
 }
 
 /* --- Buttons ---------------------------------------------------------------*/
