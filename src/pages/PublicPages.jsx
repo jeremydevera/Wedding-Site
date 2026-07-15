@@ -414,7 +414,7 @@ export function EnvelopeHero() {
                 {(s.partnerB || "").trim() ? <span className="inv-seal-mono__b">{(s.partnerB || "").trim().charAt(0).toUpperCase()}</span> : null}
               </span>
             ) : null}
-            <img className="inv-l-flower" src="/assets/invite/p2-flowers.png" alt="Floral spray of calla lilies, anthurium, orchids and amaranthus" />
+            <img className="inv-l-flower" src={isEnv2 ? "/assets/invite/whiteflower.png" : "/assets/invite/p2-flowers.png"} alt="Floral spray of calla lilies, anthurium, orchids and amaranthus" />
           </div>
         </div>
       </div>
