@@ -207,9 +207,18 @@ import { ADMIN_SESSION } from "@/admin/core.jsx";
     if (/[?&]arrange\b/.test(location.search)) return true;
     try { return localStorage.getItem("arrangeMode") === "1"; } catch (e) { return false; }
   }
+  // Prefer the LIVE theme painted on the document (applyTheme sets data-theme),
+  // so it also works while a theme is previewed (demo picker / admin live
+  // preview) and hasn't been persisted to localStorage yet. Fall back to the
+  // saved theme.
+  function liveTheme() {
+    try { return document.documentElement.getAttribute("data-theme") || ""; }
+    catch (e) { return ""; }
+  }
   function arrangeAllowed() {
     var s = settingsObj();
-    var premium = PREMIUM_THEMES.indexOf(s.theme) !== -1;
+    var theme = liveTheme() || s.theme;
+    var premium = PREMIUM_THEMES.indexOf(theme) !== -1;
     return manualOverride() || (isAdmin() && premium && !!s.arrangeEnabled);
   }
 
