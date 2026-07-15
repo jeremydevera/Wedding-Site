@@ -401,7 +401,7 @@ export function EnvelopeHero() {
               <img className="inv-frame-img" src={isEnv2 ? "/assets/invite/white-frame.png" : "/assets/invite/p2-frame.png"} alt={isEnv2 ? "Ornate white oval frame with floral crests" : "Cream oval frame with embossed peony"} />
             </div>
             <div className="inv-l-heart">
-              <img src="/assets/invite/p2-heart.webp" alt="Burgundy lace heart" />
+              <img src={isEnv2 ? "/assets/invite/heart-white.png" : "/assets/invite/p2-heart.webp"} alt={isEnv2 ? "White lace heart" : "Burgundy lace heart"} />
               <span className="inv-heart-text">{(s.heartText || "").trim()}</span>
             </div>
             <img className="inv-l-front" src={frontSrc} alt={isEnv2 ? "Open burgundy envelope pocket" : "Olive envelope front pocket"} />
