@@ -2111,14 +2111,15 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    width so the longest line ("…From") can't clip on a tall/narrow phone. */
 .eg-sealed .inv-lf-label { font-size: 6vw; font-size: min(calc(var(--eg-title-cqw, 2.3) * 1cqw), 8.5vw); letter-spacing: .08em; }
 .eg-sealed .inv-lf-names { font-size: 6vw; font-size: min(calc(var(--eg-title-cqw, 2.3) * 1cqw), 8.5vw); }
-/* Envelope 2 cover title: Great Vibes calligraphy (script — mixed case, no
-   small-caps/tracking). The "A Love Letter From" label line is not rendered
-   on env2 — names only. */
+/* Envelope 2 cover title: same style as the Olive Envelope names (Cormorant
+   Garamond small-caps, wide tracking — owner request). Serif caps read larger
+   per px than the old script, so the size factors are lower. The "A Love
+   Letter From" label line is not rendered on env2 — names only. */
 [data-theme="envelope2"] .eg-sealed .inv-lf-names {
-  font-family: "Great Vibes", cursive;
-  font-variant: normal;
-  letter-spacing: .01em;
-  font-size: min(calc(var(--eg-title-cqw, 2.3) * 3cqw), 11vw);
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: .18em;
+  font-size: min(calc(var(--eg-title-cqw, 2.3) * 2cqw), 8.5vw);
 }
 /* Hidden probe that measures what the ONE-LINE title would take (same classes
    = same font-size rules). Absolute + invisible: no layout, no paint. */
@@ -2130,7 +2131,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* Mobile: the cover text is capped by the vw terms (the cqw terms are huge on
    phones) — raise the caps so the title/sub read larger (owner request). */
 @media (max-width: 860px) {
-  [data-theme="envelope2"] .eg-sealed .inv-lf-names { font-size: min(calc(var(--eg-title-cqw, 2.3) * 3cqw), 16vw); }
+  [data-theme="envelope2"] .eg-sealed .inv-lf-names { font-size: min(calc(var(--eg-title-cqw, 2.3) * 2cqw), 12vw); }
   [data-theme="envelope2"] .eg-sealed .inv-lf-sub { font-size: min(2cqw, 4.6vw); }
 }
 .eg-sealed .inv-open-cue { font-size: 3.8vw; font-size: min(1.6cqw, 3.8vw); top: 75%; }
