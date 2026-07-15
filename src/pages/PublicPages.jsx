@@ -162,7 +162,12 @@ export function EnvelopeHero() {
   // Re-measured on resize and once the script font finishes loading (Great
   // Vibes metrics differ a lot from the fallback).
   const titleProbeRef = React.useRef(null);
+  const nameProbeARef = React.useRef(null);
+  const nameProbeBRef = React.useRef(null);
   const [stackTitle, setStackTitle] = React.useState(false);
+  // when stacked, scale the lines so the LONGER name fills the budget (up to
+  // full title size) — a fixed reduction left short stacked names tiny.
+  const [stackEm, setStackEm] = React.useState(0.78);
   React.useLayoutEffect(() => {
     if (!isEnv2) return;
     const measure = () => {
@@ -170,7 +175,15 @@ export function EnvelopeHero() {
       if (!el) return;
       const wrap = el.closest(".eg-sealed");
       const budget = Math.min(window.innerWidth * 0.86, (wrap ? wrap.clientWidth : window.innerWidth) * 0.62);
-      if (budget > 0 && el.offsetWidth > 0) setStackTitle(el.offsetWidth > budget);
+      if (!(budget > 0) || !(el.offsetWidth > 0)) return;
+      const stacked = el.offsetWidth > budget;
+      setStackTitle(stacked);
+      if (stacked) {
+        const wA = nameProbeARef.current ? nameProbeARef.current.offsetWidth : 0;
+        const wB = nameProbeBRef.current ? nameProbeBRef.current.offsetWidth : 0;
+        const widest = Math.max(wA, wB, 1);
+        setStackEm(Math.max(0.6, Math.min(1, Math.round((budget * 0.98 / widest) * 1000) / 1000)));
+      }
     };
     measure();
     // fonts.ready can resolve BEFORE the probe's first paint even requests
@@ -347,11 +360,13 @@ export function EnvelopeHero() {
                   measures what one line would take; past the budget the names
                   stack (name / & / name). Width-based, not character-count, so
                   it adapts per screen and per Title Size. */}
-              {isEnv2 && (
+              {isEnv2 && (<>
                 <span ref={titleProbeRef} className="inv-lf-names inv-lf-probe" aria-hidden="true">{(s.partnerA || "").trim()} &amp; {(s.partnerB || "").trim()}</span>
-              )}
+                <span ref={nameProbeARef} className="inv-lf-names inv-lf-probe" aria-hidden="true">{(s.partnerA || "").trim()}</span>
+                <span ref={nameProbeBRef} className="inv-lf-names inv-lf-probe" aria-hidden="true">{(s.partnerB || "").trim()}</span>
+              </>)}
               {isEnv2 && stackTitle ? (
-                <span className="inv-lf-names"><span className="inv-lf-type inv-lf-stack">
+                <span className="inv-lf-names"><span className="inv-lf-type inv-lf-stack" style={{ fontSize: stackEm + "em" }}>
                   <span>{(s.partnerA || "").trim()}</span>
                   <span className="inv-lf-stack__amp">&amp;</span>
                   <span>{(s.partnerB || "").trim()}</span>
