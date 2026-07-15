@@ -25,3 +25,6 @@ playwright-report/
 playwright-report.json
 /blob-report/
 /.cache/
+
+# local machine prefs (Claude finish-sound phrase)
+.claude/finish-phrase
