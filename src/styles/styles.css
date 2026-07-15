@@ -1943,6 +1943,14 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
 .inv-ct-name  { font-family: "Mrs Saint Delafield", cursive; font-size: 7.0cqw; line-height: .9; color: #27340f; letter-spacing: .03em; text-indent: .03em; margin: .05em 0; }
 .inv-ct-amp   { font-size: 2.9cqw; font-style: italic; color: #46532b; margin: .03em 0; }
 .inv-card-text .inv-ct-name:nth-child(4) { margin-top: .35em; }
+/* env2's whitepaper.png is taller (2:3 vs p2-card's 4:5) with a floral arch in
+   the upper half, so the shared text block (centered at 46%) ran the names down
+   behind the heart. Lift into the arch + tighten so both names sit on the paper. */
+[data-theme="envelope2"] .inv-card-text { top: 33%; width: 72%; }
+[data-theme="envelope2"] .inv-ct-label { font-size: 1.55cqw; margin-bottom: .5em; }
+[data-theme="envelope2"] .inv-ct-name  { font-size: 5.3cqw; }
+[data-theme="envelope2"] .inv-ct-amp   { font-size: 2.4cqw; }
+[data-theme="envelope2"] .inv-card-text .inv-ct-name:nth-child(4) { margin-top: .2em; }
 
 /* Names on the paper — static (no animation) */
 .inv-card-text .inv-ct-name { position: relative; display: block; }
