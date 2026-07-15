@@ -323,7 +323,8 @@ export function EnvelopeHero() {
               {isEnv2 && <span className="inv-lf-sub">We are getting married</span>}
             </div>
             <button className="inv-seal-hotspot" type="button" aria-label={isEnv2 ? "Click to open" : "Open the invitation"} onClick={() => setOpen(true)} />
-            <span className="inv-open-cue" onClick={() => setOpen(true)} role="button">{isEnv2 ? "Click to open" : "Open the invitation"}</span>
+            {/* env2 shows no text cue (owner request) — the pulsing seal is the affordance */}
+            {!isEnv2 && <span className="inv-open-cue" onClick={() => setOpen(true)} role="button">Open the invitation</span>}
           </div>
         </div>
 
