@@ -1950,7 +1950,7 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
    behind the heart. Lift into the arch + tighten so both names sit on the paper. */
 [data-theme="envelope2"] .inv-card-text { top: 37%; left: 50%; width: 74%; transform: translate(-50%, -50%); }
 [data-theme="envelope2"] .inv-ct-label { font-size: 1.55cqw; margin-bottom: .5em; }
-[data-theme="envelope2"] .inv-ct-name  { font-size: 6.2cqw; }
+[data-theme="envelope2"] .inv-ct-name  { font-size: 6.2cqw; margin-left: -0.8em; }
 [data-theme="envelope2"] .inv-ct-amp   { font-size: 2.4cqw; }
 [data-theme="envelope2"] .inv-card-text .inv-ct-name:nth-child(4) { margin-top: .2em; }
 
