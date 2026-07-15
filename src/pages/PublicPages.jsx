@@ -173,9 +173,19 @@ export function EnvelopeHero() {
       if (budget > 0 && el.offsetWidth > 0) setStackTitle(el.offsetWidth > budget);
     };
     measure();
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure).catch(() => {});
+    // fonts.ready can resolve BEFORE the probe's first paint even requests
+    // Great Vibes — also re-measure on every loadingdone (font arrival) and
+    // once after a beat, so a fallback-font measurement can't stick.
+    const fonts = document.fonts;
+    if (fonts && fonts.ready) fonts.ready.then(measure).catch(() => {});
+    if (fonts && fonts.addEventListener) fonts.addEventListener("loadingdone", measure);
+    const late = setTimeout(measure, 2000);
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      if (fonts && fonts.removeEventListener) fonts.removeEventListener("loadingdone", measure);
+      clearTimeout(late);
+    };
   }, [isEnv2, s.partnerA, s.partnerB, s.envTitleSize]);
   // Wait for the envelope art (paper + wax seal) to fully DECODE before showing
   // the cover — previously the type-on played over a blank/partial background
