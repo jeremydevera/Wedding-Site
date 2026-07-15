@@ -2238,7 +2238,7 @@ export function SettingsAdmin() {
           )}
 
           {/* Tools / Enable-arrange hidden for now (owner request) — flip `false` to restore. */}
-          {false && isPremiumTheme(f.theme) && (
+          {true && isPremiumTheme(f.theme) && (
             <div style={{ marginTop: 24, padding: 18, border: "1px solid #d8b65e", borderRadius: "var(--radius)", background: "linear-gradient(180deg, color-mix(in oklch, #f6e6b8 22%, var(--surface)), var(--surface))" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                 {Icon.grid({ style: { width: 18, height: 18 } })}
