@@ -1912,7 +1912,7 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
 .inv-env-stack img.inv-art-recolor { filter: var(--eg-env-recolor, none); }
 .inv-env-stack > img.inv-l-back { display: none; }
 .inv-l-card  { left: 40.01%; top: -17.5%; width: 47%;   z-index: 2; }
-[data-theme="envelope2"] .inv-l-card { width: 50%; }
+[data-theme="envelope2"] .inv-l-card { width: 50%; top: -20%; }
 .inv-l-framegroup { left: 7.18%; top: -17.02%; width: 47%; }
 .inv-l-framegroup > img.inv-frame-img { display: block; width: 100%; height: auto; position: relative; z-index: 3; }
 .inv-l-video { position: absolute; left: 20.6%; top: 14.9%; width: 78%; height: 75%; z-index: 1; overflow: hidden; }
