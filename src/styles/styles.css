@@ -2082,13 +2082,8 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   color: rgba(22, 5, 11, .55); text-shadow: 0 1px 0 rgba(255, 236, 236, .3);
   pointer-events: none; white-space: nowrap; z-index: 7;
 }
-/* env2 cover names: letterpress emboss — ink well darker than the paper, a
-   bright lower lip catching the light (owner: previous mix was too faint).
-   Translucent black/white so it survives any envelope recolor. */
-[data-theme="envelope2"] .eg-sealed .inv-lf-names {
-  color: rgba(12, 2, 6, .9);
-  text-shadow: 0 1px 0 rgba(255, 228, 228, .55), 0 2px 3px rgba(255, 228, 228, .16);
-}
+/* env2 cover names: NORMAL text (owner request — letterpress emboss removed).
+   No override: inherits the cover's cream ink + soft shadow, same as olive. */
 /* "We are getting married" under the names (env2 only) — fades in after the
    names finish typing on. */
 .eg-sealed .inv-lf-sub {
