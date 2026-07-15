@@ -400,6 +400,7 @@ export function EnvelopeHero() {
               </div>
               <img className="inv-frame-img" src={isEnv2 ? "/assets/invite/white-frame.png" : "/assets/invite/p2-frame.png"} alt={isEnv2 ? "Ornate white oval frame with floral crests" : "Cream oval frame with embossed peony"} />
             </div>
+            {isEnv2 && <img className="inv-l-paperflower" src="/assets/invite/paperflower.png" alt="" aria-hidden="true" />}
             <div className="inv-l-heart">
               <img src={isEnv2 ? "/assets/invite/heart-white.png" : "/assets/invite/p2-heart.webp"} alt={isEnv2 ? "White lace heart" : "Burgundy lace heart"} />
               <span className="inv-heart-text">{(s.heartText || "").trim()}</span>

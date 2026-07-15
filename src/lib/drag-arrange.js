@@ -9,14 +9,15 @@ import { ADMIN_SESSION } from "@/admin/core.jsx";
 (function () {
   "use strict";
 
-  var SELECTOR = ".inv-l-card, .inv-l-framegroup, .inv-l-heart, .inv-l-front, .inv-l-flower, .inv-l-video";
+  var SELECTOR = ".inv-l-card, .inv-l-framegroup, .inv-l-heart, .inv-l-front, .inv-l-flower, .inv-l-paperflower, .inv-l-video";
   var LABELS = {
     "inv-l-card": "Card",
     "inv-l-framegroup": "Frame + video",
     "inv-l-video": "Video",
     "inv-l-heart": "Heart",
     "inv-l-front": "Envelope front",
-    "inv-l-flower": "Flower"
+    "inv-l-flower": "Flower",
+    "inv-l-paperflower": "Paper flower"
   };
 
   var active = false;
