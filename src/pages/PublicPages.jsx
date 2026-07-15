@@ -386,7 +386,7 @@ export function EnvelopeHero() {
         <div className={"eg-page" + (open ? " is-active" : "")}>
           <div className={"inv-env-stack eg-open" + (open ? " is-open" : "")}>
             <div className="inv-l-card">
-              <img src="/assets/invite/p2-card.png" alt="Cream invitation card with green striped border" />
+              <img src={isEnv2 ? "/assets/invite/whitepaper.png" : "/assets/invite/p2-card.png"} alt={isEnv2 ? "White invitation paper" : "Cream invitation card with green striped border"} />
               <div className="inv-card-text">
                 <span className="inv-ct-label">Save the Date</span>
                 <span className="inv-ct-name"><span className="inv-ct-ink">{s.partnerA}</span></span>
@@ -472,7 +472,7 @@ export function EnvelopeInvite() {
       <div className={"inv-page" + (open ? " is-active" : "")}>
         <div className="inv-env-stack">
           <div className="inv-l-card">
-            <img src="/assets/invite/p2-card.png" alt="Cream invitation card with green striped border" />
+            <img src={isEnv2 ? "/assets/invite/whitepaper.png" : "/assets/invite/p2-card.png"} alt={isEnv2 ? "White invitation paper" : "Cream invitation card with green striped border"} />
             <div className="inv-card-text">
               <span className="inv-ct-label">Save the Date</span>
               <span className="inv-ct-name"><span className="inv-ct-ink">{s.partnerA}</span></span>
