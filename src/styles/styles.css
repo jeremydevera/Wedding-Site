@@ -1912,7 +1912,9 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
 .inv-env-stack img.inv-art-recolor { filter: var(--eg-env-recolor, none); }
 .inv-env-stack > img.inv-l-back { display: none; }
 .inv-l-card  { left: 40.01%; top: -17.5%; width: 47%;   z-index: 2; }
-[data-theme="envelope2"] .inv-l-card { width: 50%; top: -20%; }
+/* env2 layout below: owner-arranged via the drag tool (2026-07-16) — card sits
+   LEFT, frame+photo RIGHT (mirrored from the olive layout). */
+[data-theme="envelope2"] .inv-l-card { left: 9.3%; top: -23.4%; width: 50%; }
 .inv-l-framegroup { left: 7.18%; top: -17.02%; width: 47%; }
 .inv-l-framegroup > img.inv-frame-img { display: block; width: 100%; height: auto; position: relative; z-index: 3; }
 .inv-l-video { position: absolute; left: 20.6%; top: 14.9%; width: 78%; height: 75%; z-index: 1; overflow: hidden; }
@@ -1920,22 +1922,21 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
    (hole: x 30.3-69.4%, y 25.1-78.3%) — the stock video box is tuned to the
    peony frame's right-side oval. ~2% overlap tucks the media under the rim. */
 [data-theme="envelope2"] .inv-l-video { left: 28.5%; top: 23%; width: 42.5%; height: 57.5%; }
-/* env2: larger frame+photo (owner request) — grown around the old visual
-   center (47%@7.18/-17.02 -> 54%); the video box is % of the group, so the
-   photo scales with it. */
-[data-theme="envelope2"] .inv-l-framegroup { left: 3.7%; top: -23.2%; width: 54%; }
+/* env2: frame+photo on the RIGHT (owner-arranged); the video box is % of the
+   group, so the photo scales with it. */
+[data-theme="envelope2"] .inv-l-framegroup { left: 41%; top: -24.2%; width: 54%; }
 .inv-l-heart { left: 28.7%;   top: 50%;   width: 42%;   z-index: 5; }
-/* env2's white heart art is taller than the olive lace heart, so at the shared
-   top:50% its bottom pokes below the pocket. Lift it up (owner request). */
+/* env2 heart. NOTE: the drag tool reads out the RENDERED rect (29.8%), but
+   invHeartPop holds translateY(-15%) after the open animation — this top:41%
+   IS that 29.8% on screen. Don't paste the readout value here verbatim. */
 [data-theme="envelope2"] .inv-l-heart { top: 41%; left: 26.8%; }
 .inv-l-front { left: 6%;    top: 30%;   width: 84%;   z-index: 6; }
 .inv-l-flower{ left: 65.8%; top: 28.4%;  width: 26%;   z-index: 7; }
-/* env2's whiteflower art is a tall portrait bouquet (vs olive's wide spray), so
-   at width:26% it reads small. Enlarge + reposition to spill from the pocket's
-   bottom-right like the olive theme (owner request). */
-[data-theme="envelope2"] .inv-l-flower { left: 48%; top: 12%; width: 68%; }
-/* env2: paper flowers tucked beside the picture frame (owner add). */
-.inv-l-paperflower { position: absolute; left: -2%; top: -4%; width: 38%; z-index: 4; }
+/* env2's whiteflower bouquet spills from the pocket's LEFT edge (owner-arranged;
+   negative left is fine — .eg-hero clips overflow). */
+[data-theme="envelope2"] .inv-l-flower { left: -23.2%; top: 6.6%; width: 68%; }
+/* env2: paper flowers beside the frame, right side (owner-arranged; env2-only element). */
+.inv-l-paperflower { position: absolute; left: 64.1%; top: -6.3%; width: 38%; z-index: 4; }
 .inv-l-video video, .inv-l-video img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .inv-card-text {
   position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%);
