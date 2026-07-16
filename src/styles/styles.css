@@ -1929,7 +1929,7 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
 /* env2 heart. NOTE: the drag tool reads out the RENDERED rect (29.8%), but
    invHeartPop holds translateY(-15%) after the open animation — this top:41%
    IS that 29.8% on screen. Don't paste the readout value here verbatim. */
-[data-theme="envelope2"] .inv-l-heart { left: 26.8%; top: 48%; width: 42%; }
+[data-theme="envelope2"] .inv-l-heart { left: 26.8%; top: 42%; width: 42%; }
 .inv-l-front { left: 6%;    top: 30%;   width: 84%;   z-index: 7; }
 .inv-l-flower{ left: 65.8%; top: 28.4%;  width: 26%;   z-index: 7; }
 /* env2's whiteflower bouquet spills from the pocket's LEFT edge (owner-arranged;
