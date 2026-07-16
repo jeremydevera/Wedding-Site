@@ -2102,7 +2102,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 [data-theme="envelope2"] .eg-sealed .inv-seal-mono {
   position: absolute; left: 50%; top: 63%; transform: translate(-50%, -50%);
   display: flex; flex-direction: column; align-items: center;
-  font-family: "Great Vibes", cursive; font-size: 3.3cqw; line-height: 0.9;
+  font-family: "Great Vibes", cursive; font-size: 4.4cqw; line-height: 0.9;
   color: rgba(22, 5, 11, .55); text-shadow: 0 1px 0 rgba(255, 236, 236, .3);
   pointer-events: none; white-space: nowrap; z-index: 2;
 }
