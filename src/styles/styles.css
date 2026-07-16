@@ -2106,8 +2106,9 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   color: rgba(22, 5, 11, .55); text-shadow: 0 1px 0 rgba(255, 236, 236, .3);
   pointer-events: none; white-space: nowrap; z-index: 2;
 }
-.inv-seal-mono__a { transform: translateX(-0.3em); }
-.inv-seal-mono__b { transform: translateX(0.3em); }
+/* Both initials center on one axis (stacked, even) — the old diagonal
+   cipher (A shifted left, B shifted right) read as lopsided in the oval. */
+.inv-seal-mono__a, .inv-seal-mono__b { transform: none; }
 /* env2 OPEN state: same initials on the front pocket's baked oval seal.
    Position in STACK coords — the front art is inset (left 6%, top 30%, width
    84%), so the seal measured at image (49.7%, 66.5%, 13% wide) converts to

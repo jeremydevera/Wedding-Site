@@ -355,8 +355,8 @@ export function EnvelopeHero() {
                 pointed at the env2 art, so both themes share one function. */}
             {isEnv2 ? envRecolorOverlay(s, "sealed", sealedSrc) : envRecolorOverlay(s, "sealed")}
             {/* env2: the couple's initials embossed into the wax oval — stacked
-                diagonally (classic monogram); inline text was too wide for the
-                portrait oval and crossed the rim. */}
+                vertically and centered on one axis (inline text was too wide for
+                the portrait oval and crossed the rim). */}
             {isEnv2 && ((s.partnerA || "").trim() || (s.partnerB || "").trim()) ? (
               <span className="inv-seal-mono" aria-hidden="true">
                 {(s.partnerA || "").trim() ? <span className="inv-seal-mono__a">{(s.partnerA || "").trim().charAt(0).toUpperCase()}</span> : null}
