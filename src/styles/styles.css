@@ -1930,13 +1930,13 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
    invHeartPop holds translateY(-15%) after the open animation — this top:41%
    IS that 29.8% on screen. Don't paste the readout value here verbatim. */
 [data-theme="envelope2"] .inv-l-heart { left: 26.8%; top: 40%; width: 42%; }
-.inv-l-front { left: 6%;    top: 30%;   width: 84%;   z-index: 6; }
+.inv-l-front { left: 6%;    top: 30%;   width: 84%;   z-index: 7; }
 .inv-l-flower{ left: 65.8%; top: 28.4%;  width: 26%;   z-index: 7; }
 /* env2's whiteflower bouquet spills from the pocket's LEFT edge (owner-arranged;
    negative left is fine — .eg-hero clips overflow). */
 [data-theme="envelope2"] .inv-l-flower { left: -23.2%; top: 6.6%; width: 68%; }
 /* env2: paper flowers beside the frame, right side (owner-arranged; env2-only element). */
-.inv-l-paperflower { left: 64.1%; top: -6.3%; width: 38%; z-index: 7; }
+.inv-l-paperflower { left: 64.1%; top: -6.3%; width: 38%; z-index: 6; }
 .inv-l-video video, .inv-l-video img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .inv-card-text {
   position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%);
