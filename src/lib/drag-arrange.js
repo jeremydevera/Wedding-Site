@@ -3,7 +3,7 @@
    scroll-wheel over a piece to resize it, then hit "Copy CSS" to read
    the final values back. Loaded lazily as an ES module from main.jsx. */
 import { PREMIUM_THEMES } from "@/themes";
-import { STORE_KEY } from "@/lib/store.jsx";
+import { Store, STORE_KEY } from "@/lib/store.jsx";
 import { ADMIN_SESSION } from "@/admin/core.jsx";
 
 (function () {
@@ -199,8 +199,22 @@ import { ADMIN_SESSION } from "@/admin/core.jsx";
   // Shown only to the signed-in couple while the Olive Envelope theme is active
   // (so guests never see it). Manual overrides: ?arrange in the URL, or the
   // Ctrl/Cmd+Shift+A shortcut, which force it on regardless of theme.
-  function isAdmin() { try { return sessionStorage.getItem(ADMIN_SESSION) === "1"; } catch (e) { return false; } }
+  // Live store first — Supabase-hydrated settings and the restored auth session
+  // never reach localStorage/sessionStorage (Store.hydrate deliberately doesn't
+  // persist, and loadSession doesn't set the session flag), so the storage
+  // fallbacks below only cover the moment before the store module is ready.
+  function isAdmin() {
+    try {
+      var role = (Store.get().auth || {}).role;
+      if (role === "owner" || role === "superadmin") return true;
+    } catch (e) {}
+    try { return sessionStorage.getItem(ADMIN_SESSION) === "1"; } catch (e) { return false; }
+  }
   function settingsObj() {
+    try {
+      var s = Store.get().settings;
+      if (s) return s;
+    } catch (e) {}
     try { return (JSON.parse(localStorage.getItem(STORE_KEY) || "{}").settings || {}); }
     catch (e) { return {}; }
   }

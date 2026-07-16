@@ -13,6 +13,11 @@ export async function loadSession() {
   if (!session) { Store.setAuth({ session: null, role: null, clientId: null, email: null }); return; }
   const p = await profileFor(session.user.id);
   Store.setAuth({ session, role: p.role, clientId: p.client_id, email: session.user.email });
+  // restored sessions must also open the drag-arrange admin gate — signIn() sets
+  // this flag, but a reload restores the Supabase session without calling signIn
+  if (p.role === "owner" || p.role === "superadmin") {
+    try { sessionStorage.setItem("evermore_admin_session", "1"); } catch (e) {}
+  }
 }
 
 export async function signIn(email, password) {
