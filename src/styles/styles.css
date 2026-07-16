@@ -2012,6 +2012,11 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
   /* stop iOS double-tap-to-zoom on the tappable cover (which magnifies + clips the text) */
   touch-action: manipulation;
 }
+/* env2: taller background-image section on the OPEN state (owner request) — the
+   scene (bg + opened envelope) gets more vertical room. Only once opened; the
+   sealed cover stays exactly one screen tall. */
+[data-theme="envelope2"] .eg-hero.is-open { min-height: 130vh; }
+[data-theme="envelope2"] .eg-hero.is-open .eg-stage { min-height: 130vh; }
 /* while sealed: full-screen envelope, no nav, and NO scrolling until opened.
    position:fixed is the only reliable scroll lock on iOS Safari (overflow:hidden
    alone doesn't hold). The envelope is the first screen, so pinning at top:0 is fine. */
@@ -2102,7 +2107,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 [data-theme="envelope2"] .eg-sealed .inv-seal-mono {
   position: absolute; left: 50%; top: 63%; transform: translate(-50%, -50%);
   display: flex; flex-direction: column; align-items: center;
-  font-family: "Great Vibes", cursive; font-size: 3.6cqw; line-height: 0.9;
+  font-family: "Great Vibes", cursive; font-size: 3.3cqw; line-height: 0.9;
   color: rgba(22, 5, 11, .55); text-shadow: 0 1px 0 rgba(255, 236, 236, .3);
   pointer-events: none; white-space: nowrap; z-index: 2;
 }
