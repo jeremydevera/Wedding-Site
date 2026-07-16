@@ -1924,19 +1924,19 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
 [data-theme="envelope2"] .inv-l-video { left: 28.5%; top: 23%; width: 42.5%; height: 57.5%; }
 /* env2: frame+photo on the RIGHT (owner-arranged); the video box is % of the
    group, so the photo scales with it. */
-[data-theme="envelope2"] .inv-l-framegroup { left: 38%; top: -27%; width: 60%; }
+[data-theme="envelope2"] .inv-l-framegroup { left: 36.1%; top: -27%; width: 60%; }
 .inv-l-heart { left: 28.7%;   top: 50%;   width: 42%;   z-index: 5; }
 /* env2 heart. NOTE: the drag tool reads out the RENDERED rect (29.8%), but
    invHeartPop holds translateY(-15%) after the open animation — this top:41%
    IS that 29.8% on screen. Don't paste the readout value here verbatim. */
-[data-theme="envelope2"] .inv-l-heart { top: 41%; left: 26.8%; }
+[data-theme="envelope2"] .inv-l-heart { left: 26.8%; top: 29.8%; width: 42%; }
 .inv-l-front { left: 6%;    top: 30%;   width: 84%;   z-index: 6; }
 .inv-l-flower{ left: 65.8%; top: 28.4%;  width: 26%;   z-index: 7; }
 /* env2's whiteflower bouquet spills from the pocket's LEFT edge (owner-arranged;
    negative left is fine — .eg-hero clips overflow). */
 [data-theme="envelope2"] .inv-l-flower { left: -23.2%; top: 6.6%; width: 68%; }
 /* env2: paper flowers beside the frame, right side (owner-arranged; env2-only element). */
-.inv-l-paperflower { position: absolute; left: 64.1%; top: -6.3%; width: 38%; z-index: 4; }
+.inv-l-paperflower { left: 64.1%; top: -6.3%; width: 38%; z-index: 4; }
 .inv-l-video video, .inv-l-video img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .inv-card-text {
   position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%);
@@ -2085,10 +2085,10 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    visible pixelation on large screens. Show it near native scale; safe now that
    the art's black corner triangles are painted out. */
 /* Env2's sealed cover fills the whole screen like Olive Envelope (owner request). */
-/* env2: the burgundy art is the envelope FACE (aspect 1.71). Desktop shows the
-   whole envelope as a card over the theme background (contain); mobile covers
-   the viewport like the olive theme. */
-[data-theme="envelope2"] .eg-sealed { width: min(78vw, 135vh); }
+/* env2: the burgundy art is the envelope FACE (aspect 1.735). Desktop AND
+   mobile cover the whole viewport (owner request) — 174vh guarantees height
+   coverage (100/1.735), the overflow crops symmetrically (page centers it). */
+[data-theme="envelope2"] .eg-sealed { width: max(100vw, 174vh); }
 @media (max-width: 860px) {
   /* cover the whole phone screen like Olive Envelope, anchored to the TOP */
   [data-theme="envelope2"] .eg-sealed { width: max(100vw, 175svh); align-self: flex-start; }
