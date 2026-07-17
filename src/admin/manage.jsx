@@ -1263,9 +1263,9 @@ export const QR_TARGETS = [
 // e-wallet numbers so clients can support the developer. Static content; no
 // persisted settings, so it never touches Store/Save.
 const DONATE_QRS = [
-  { key: "gcash", label: "GCash", img: "/assets/donate/gcash.png" },
-  { key: "maya", label: "Maya", img: "/assets/donate/maya.png" },
-  { key: "bdo", label: "BDO", img: "/assets/donate/bdo.png" },
+  { key: "gcash", label: "GCash", img: "/assets/donate/gcash.jpeg" },
+  { key: "maya", label: "Maya", img: "/assets/donate/maya.jpeg" },
+  { key: "bdo", label: "BDO", img: "/assets/donate/bdo.jpeg" },
   { key: "maribank", label: "MariBank", img: "/assets/donate/maribank.png" },
 ];
 const DONATE_NUMBERS = [
