@@ -1263,35 +1263,35 @@ export const QR_TARGETS = [
 ];
 
 // "Donate to Dev" — a tip jar in the client admin. Owners see the developer's
-// QR codes + e-wallet numbers (read-only). The SUPERADMIN can upload/crop each
-// QR; the images live globally in app_config('donate') (R2 keys under the
-// "shared" prefix) so one edit updates every client. Falls back to the bundled
-// repo images until a superadmin replaces one.
-const DONATE_QRS = [
-  { key: "gcash", label: "GCash", fallback: "/assets/donate/gcash.jpeg" },
-  { key: "maya", label: "Maya", fallback: "/assets/donate/maya.jpeg" },
-  { key: "bdo", label: "BDO", fallback: "/assets/donate/bdo.jpeg" },
-  { key: "maribank", label: "MariBank", fallback: "/assets/donate/maribank.png" },
+// payment tiles (QR + optional number) read-only; the SUPERADMIN can edit each
+// tile, upload/crop its QR, add new tiles, or remove them. The whole tile list
+// lives globally in app_config('donate').tiles (R2 image keys under the
+// "shared" prefix) so one edit updates every client.
+const DONATE_FALLBACK = {
+  gcash: "/assets/donate/gcash.jpeg", maya: "/assets/donate/maya.jpeg",
+  bdo: "/assets/donate/bdo.jpeg", maribank: "/assets/donate/maribank.png",
+};
+// Seed shown when nothing's been configured yet (bundled images as fallback).
+const DONATE_DEFAULT_TILES = [
+  { id: "gcash", label: "GCash", img: "", number: "09150860371" },
+  { id: "maya", label: "Maya", img: "", number: "09150860371" },
+  { id: "bdo", label: "BDO", img: "", number: "" },
+  { id: "maribank", label: "MariBank", img: "", number: "" },
 ];
-const DONATE_NUMBERS = [
-  { label: "GCash", value: "09150860371" },
-  { label: "Maya", value: "09150860371" },
-];
-// Resolve a wallet's image: superadmin override (R2 key) if set, else the
-// bundled repo image.
-function donateImg(cfg, q) {
-  const key = cfg && cfg[q.key];
-  return key ? mediaUrl(key) : q.fallback;
-}
-function DonateCard({ q, cfg }) {
+function donateTileSrc(t) { return t.img ? mediaUrl(t.img) : (DONATE_FALLBACK[t.id] || ""); }
+// Read-only tile (owners + guests-of-admin view).
+function DonateCard({ t, copied, onCopy }) {
   const [broken, setBroken] = useState(false);
-  const src = donateImg(cfg, q);
+  const src = donateTileSrc(t);
   return (
     <figure className="donate-card">
-      {broken
-        ? <div className="donate-card__img donate-card__ph">QR coming soon</div>
-        : <img className="donate-card__img" src={src} alt={q.label + " QR code"} loading="lazy" onError={() => setBroken(true)} />}
-      <figcaption className="donate-card__label">{q.label}</figcaption>
+      {src && !broken
+        ? <img className="donate-card__img" src={src} alt={(t.label || "") + " QR code"} loading="lazy" onError={() => setBroken(true)} />
+        : <div className="donate-card__img donate-card__ph">QR coming soon</div>}
+      <figcaption className="donate-card__label">{t.label}</figcaption>
+      {t.number ? (
+        <button className="donate-card__num" onClick={() => onCopy(t.number)}>{copied === t.number ? "Copied!" : t.number}</button>
+      ) : null}
     </figure>
   );
 }
@@ -1299,68 +1299,80 @@ export function DonateToDevTab() {
   const { auth } = useStore();
   const isSuper = auth.role === "superadmin";
   const [copied, setCopied] = useState("");
-  const [cfg, setCfg] = useState(null);   // app_config('donate') value; null until loaded
-  const [saving, setSaving] = useState("");
+  const [tiles, setTiles] = useState(null);   // null until loaded
+  const [dirty, setDirty] = useState(false);
+  const [busy, setBusy] = useState(false);
   useEffect(() => {
     let dead = false;
-    getAppConfig("donate").then((v) => { if (!dead) setCfg(v && typeof v === "object" ? v : {}); });
+    getAppConfig("donate").then((v) => {
+      if (dead) return;
+      const list = v && Array.isArray(v.tiles) && v.tiles.length ? v.tiles : DONATE_DEFAULT_TILES;
+      setTiles(list.map((t) => ({ ...t })));
+    });
     return () => { dead = true; };
   }, []);
   const copy = async (v) => {
     try { await navigator.clipboard.writeText(v); setCopied(v); setTimeout(() => setCopied(""), 1600); }
     catch (_) { toast("Couldn't copy — long-press to copy the number.", "err"); }
   };
-  // Superadmin: persist a wallet's new R2 key (or clear it) to app_config.
-  const saveWallet = async (walletKey, r2key) => {
-    const next = { ...(cfg || {}), [walletKey]: r2key || undefined };
-    if (!r2key) delete next[walletKey];
-    setCfg(next); setSaving(walletKey);
-    try { await setAppConfig("donate", next); toast("Saved — live for every client.", "success"); }
-    catch (e) { toast("Save failed: " + (e && e.message || "error"), "err"); }
-    finally { setSaving(""); }
+  const patchTile = (i, patch) => { setTiles((ts) => ts.map((t, j) => j === i ? { ...t, ...patch } : t)); setDirty(true); };
+  const addTile = () => { setTiles((ts) => [...(ts || []), { id: uid(), label: "", img: "", number: "" }]); setDirty(true); };
+  const removeTile = (i) => { setTiles((ts) => ts.filter((_, j) => j !== i)); setDirty(true); };
+  const saveAll = async () => {
+    setBusy(true);
+    try {
+      const clean = (tiles || []).filter((t) => (t.label || "").trim() || t.img || (t.number || "").trim());
+      await setAppConfig("donate", { tiles: clean });
+      setTiles(clean.map((t) => ({ ...t }))); setDirty(false);
+      toast("Saved — live for every client.", "success");
+    } catch (e) { toast("Save failed: " + (e && e.message || "error"), "err"); }
+    finally { setBusy(false); }
   };
+  if (tiles === null) return <div className="panel"><div className="panel__body" style={{ color: "var(--muted)" }}>Loading…</div></div>;
   return (
     <div className="panel">
       <div className="panel__head">
         <div className="panel__title">Donate to Dev</div>
         <span style={{ color: "var(--muted)", fontSize: 14 }}>
-          {isSuper ? "Upload or crop the QR codes here — changes apply to every client." : "Love the platform? Support the developer behind Celebrately — thank you! 🙏"}
+          {isSuper ? "Add, edit, or remove payment tiles — changes apply to every client." : "Love the platform? Support the developer behind Celebrately — thank you! 🙏"}
         </span>
       </div>
       <div className="panel__body">
         <p style={{ marginTop: 0, color: "var(--ink)", fontSize: 15 }}>
           {isSuper
-            ? "Replace any QR below (upload → crop → it saves globally). The e-wallet numbers are edited in code."
-            : "Scan a QR with your banking or e-wallet app, or send directly to the numbers below. Every bit is appreciated."}
+            ? "Each tile has a name, a QR image (upload → crop), and an optional number. Add as many methods as you like, then Save."
+            : "Scan a QR with your banking or e-wallet app, or copy a number below. Every bit is appreciated."}
         </p>
         {isSuper ? (
-          <div className="donate-grid">
-            {DONATE_QRS.map((q) => (
-              <div key={q.key} className="donate-edit">
-                <div className="donate-edit__label">{q.label}{saving === q.key ? " · saving…" : ""}</div>
-                <ImageUploadField
-                  ratio="1 / 1" purpose="donate" clientIdOverride="shared"
-                  value={cfg && cfg[q.key] ? cfg[q.key] : ""}
-                  defaultPreview={q.fallback}
-                  onChange={(v) => saveWallet(q.key, v)} />
-              </div>
-            ))}
-          </div>
+          <>
+            <div className="donate-grid">
+              {tiles.map((t, i) => (
+                <div key={t.id} className="donate-edit">
+                  <Field label="Name" id={"dn-label-" + t.id}>
+                    <Input id={"dn-label-" + t.id} value={t.label} onChange={(e) => patchTile(i, { label: e.target.value })} placeholder="e.g. GCash" />
+                  </Field>
+                  <ImageUploadField
+                    label="QR image" ratio="1 / 1" purpose="donate" clientIdOverride="shared"
+                    value={t.img || ""} defaultPreview={DONATE_FALLBACK[t.id] || undefined}
+                    onChange={(v) => patchTile(i, { img: v })} />
+                  <Field label="Number (optional)" id={"dn-num-" + t.id}>
+                    <Input id={"dn-num-" + t.id} value={t.number || ""} onChange={(e) => patchTile(i, { number: e.target.value })} placeholder="0915 086 0371" />
+                  </Field>
+                  <Button variant="ghost" size="sm" onClick={() => removeTile(i)}>{Icon.trash({})} Remove tile</Button>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 12, marginTop: 16, alignItems: "center", flexWrap: "wrap" }}>
+              <Button variant="secondary" onClick={addTile}>+ Add payment tile</Button>
+              <Button variant="primary" disabled={!dirty || busy} onClick={saveAll}>{busy ? "Saving…" : (dirty ? "Save changes" : "Saved")}</Button>
+              {dirty && <span style={{ color: "var(--muted)", fontSize: 13 }}>You have unsaved changes.</span>}
+            </div>
+          </>
         ) : (
           <div className="donate-grid">
-            {DONATE_QRS.map((q) => <DonateCard key={q.key} q={q} cfg={cfg} />)}
+            {tiles.map((t) => <DonateCard key={t.id} t={t} copied={copied} onCopy={copy} />)}
           </div>
         )}
-        <div className="donate-numbers">
-          <div className="donate-numbers__title">Or send to these numbers</div>
-          {DONATE_NUMBERS.map((n) => (
-            <div key={n.label} className="donate-num">
-              <span className="donate-num__wallet">{n.label}</span>
-              <span className="donate-num__value">{n.value}</span>
-              <Button variant="secondary" size="sm" onClick={() => copy(n.value)}>{copied === n.value ? "Copied!" : "Copy"}</Button>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );
