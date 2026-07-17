@@ -1453,7 +1453,6 @@ export function DonateToDevTab() {
           <span style={{ color: "var(--muted)", fontSize: 14 }}>Love the platform? Support the developer behind Celebrately — thank you! 🙏</span>
         </div>
         <div className="panel__body">
-          <p style={{ marginTop: 0, color: "var(--ink)", fontSize: 15 }}>Scan a QR with your banking or e-wallet app, or copy a number below. Every bit is appreciated.</p>
           <p style={{ marginTop: 0, marginBottom: 18, color: "var(--ink-soft)", fontSize: 14 }}>
             Already donated?{" "}
             <a role="button" tabIndex={0} onClick={() => setDonatedTicket(true)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setDonatedTicket(true); }}
