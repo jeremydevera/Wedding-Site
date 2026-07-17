@@ -14,9 +14,13 @@ describe("event type sections", () => {
       expect(t.themes.includes(t.defaultTheme), `${key} defaultTheme in list`).toBe(true);
     }
   });
-  it("Olive Envelope stays wedding-only", () => {
-    expect(themesForEvent("wedding")).toContain("envelope");
+  it("Olive Envelope is retired from every picker (kept in THEMES for existing clients)", () => {
+    expect(themesForEvent("wedding")).not.toContain("envelope");
     expect(themesForEvent("birthday")).not.toContain("envelope");
     expect(themesForEvent("corporate")).not.toContain("envelope");
+  });
+  it("Velvet Envelope (envelope2) is wedding-only", () => {
+    expect(themesForEvent("wedding")).toContain("envelope2");
+    expect(themesForEvent("birthday")).not.toContain("envelope2");
   });
 });

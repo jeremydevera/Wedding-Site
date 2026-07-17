@@ -2018,7 +2018,13 @@ export function SettingsAdmin() {
   const setKey = (k, v) => Store.updateSettings({ [k]: v });
   const [tab, setTab] = useState("features");
   // Theme options are scoped to the active event type via the registry.
-  const allowed = themesForEvent(f.eventType || DEFAULT_EVENT_TYPE);
+  const allowedBase = themesForEvent(f.eventType || DEFAULT_EVENT_TYPE);
+  // Olive Envelope is retired from the picker (see eventTypes.js), but a client
+  // already ON it must still see it selected — re-include the current theme if
+  // the event list dropped it.
+  const allowed = (f.theme && THEMES[f.theme] && !allowedBase.includes(f.theme))
+    ? [...allowedBase, f.theme]
+    : allowedBase;
   const normalThemes = allowed.filter((k) => THEMES[k] && !isPremiumTheme(k));
   const premiumThemes = allowed.filter((k) => THEMES[k] && isPremiumTheme(k));
   // "General" (Couple & Event) moved to the top-level Home tab.

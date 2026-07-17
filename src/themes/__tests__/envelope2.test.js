@@ -6,9 +6,9 @@ import { themesForEvent } from "@/config/eventTypes.js";
 // identically (same vars, fonts, button shape, premium arrange, envelope art)
 // via the isEnvelopeTheme() predicate.
 describe("Envelope 2 theme (duplicate of Olive Envelope)", () => {
-  it("exists in THEMES labelled 'Envelope 2' with the envelope vars", () => {
+  it("exists in THEMES labelled 'Velvet Envelope' with the envelope vars", () => {
     expect(THEMES.envelope2).toBeTruthy();
-    expect(THEMES.envelope2.label).toBe("Envelope 2");
+    expect(THEMES.envelope2.label).toBe("Velvet Envelope");
     // identical palette to the original (this is a duplicate, not a re-theme)
     expect(THEMES.envelope2.vars).toEqual(THEMES.envelope.vars);
   });

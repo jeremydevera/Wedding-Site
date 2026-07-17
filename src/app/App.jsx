@@ -144,10 +144,10 @@ export function Nav({ route }) {
       <span className="nav__themepick-label">Theme</span>
       <select value={settings.theme} aria-label="Preview a theme" onChange={(e) => pickTheme(e.target.value)}>
         <optgroup label="Themes">
-          {/* Both envelope themes (Olive Envelope + Envelope 2) are selectable
-              in the demo picker (owner request 2026-07-13). Only the hidden
-              bespoke roadtoforever stays out. */}
-          {Object.keys(THEMES).filter((k) => k !== "roadtoforever").map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
+          {/* Olive Envelope ("envelope") is retired — hidden from the picker,
+              but kept visible if it's somehow the current selection so the
+              control never shows a blank value. Bespoke roadtoforever stays out. */}
+          {Object.keys(THEMES).filter((k) => k !== "roadtoforever" && (k !== "envelope" || settings.theme === "envelope")).map((k) => <option key={k} value={k}>{THEMES[k].label}</option>)}
         </optgroup>
       </select>
     </label>
@@ -272,7 +272,7 @@ export function TweaksContent() {
     <TweaksPanel title="Tweaks">
       <TweakSection label="Theme" />
       <TweakSelect label="Theme" value={s.theme}
-        options={Object.keys(THEMES).map((k) => ({ value: k, label: THEMES[k].label }))}
+        options={Object.keys(THEMES).filter((k) => k !== "envelope" || s.theme === "envelope").map((k) => ({ value: k, label: THEMES[k].label }))}
         onChange={(v) => upd({ theme: v, themeAccent: "", displayFont: THEME_FONTS[v].display, bodyFont: THEME_FONTS[v].body })} />
       <TweakColor label="Accent" value={s.themeAccent || THEME_DEFAULT_ACCENT(s.theme)}
         options={ACCENT_OPTIONS} onChange={(v) => upd({ themeAccent: v })} />

@@ -300,12 +300,12 @@ export const THEMES = {
       "--hero-tint": "oklch(0.3 0.06 126 / 0.46)",
     },
   },
-  // Envelope 2 — a duplicate of Olive Envelope. Same look + full envelope
-  // behavior (art, premium arrange, tint/color system) via isEnvelopeTheme();
-  // kept as its own key so it can diverge later without touching the original.
+  // Velvet Envelope (key stays "envelope2" for data compatibility) — the
+  // flagship invitation theme: velvet paper, lace trim, wax seal. Full envelope
+  // behavior (art, premium arrange, tint/color system) via isEnvelopeTheme().
   envelope2: {
-    label: "Envelope 2",
-    blurb: "Olive paper, warm ivory, burgundy and cream. The invitation, brought to life.",
+    label: "Velvet Envelope",
+    blurb: "Velvet paper, lace trim and a wax seal. The invitation, brought to life.",
     vars: {
       "--bg": "oklch(0.963 0.014 96)",
       "--surface": "oklch(0.99 0.008 96)",
