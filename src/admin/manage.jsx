@@ -2201,6 +2201,51 @@ function ClientPasswordReset() {
   );
 }
 
+// Self-service password change for the LOGGED-IN owner (Settings → Account when
+// the superadmin has exposed Settings to the client). Uses the caller's OWN
+// Supabase session via auth.updateUser — no superadmin, no admin-create-owner
+// edge function (which 403s any non-superadmin). Email is read-only: an owner
+// changes only their own password, never the account they sign in as.
+function SelfPasswordReset() {
+  const { auth } = useStore();
+  const email = auth?.email || auth?.session?.user?.email || "";
+  const [pw, setPw] = useState("");
+  const [pw2, setPw2] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function change() {
+    if (pw.length < 6) return toast("Use a password of at least 6 characters.", "err");
+    if (pw !== pw2) return toast("The two passwords don't match.", "err");
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: pw });
+      if (error) throw error;
+      setPw(""); setPw2("");
+      toast("Password updated", "success");
+    } catch (e) {
+      toast("Couldn't update password: " + (e?.message || "error"), "err");
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="panel">
+      <div className="panel__head"><div><div className="panel__title">Your login</div><div className="panel__sub">Change the password you use to sign in. Your email stays the same.</div></div></div>
+      <div className="panel__body" style={{ maxWidth: 420 }}>
+        <Field label="Email" id="spr-email" hint="The address you sign in with">
+          <Input id="spr-email" type="email" value={email} readOnly disabled placeholder="you@yourdomain" />
+        </Field>
+        <Field label="New password" id="spr-pw" hint="At least 6 characters">
+          <Input id="spr-pw" type="text" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="••••••••" autoComplete="new-password" />
+        </Field>
+        <Field label="Confirm new password" id="spr-pw2">
+          <Input id="spr-pw2" type="text" value={pw2} onChange={(e) => setPw2(e.target.value)} placeholder="••••••••" autoComplete="new-password" />
+        </Field>
+        <Button variant="primary" disabled={busy || !pw} onClick={change}>{busy ? "Updating…" : "Update password"}</Button>
+      </div>
+    </div>
+  );
+}
+
 // Our Story editor — a table of milestones (like Details); "+ Add milestone"
 // and the row pencil open StoryEditor. Each action saves immediately via
 // persistChanges (same pattern as DetailsAdmin — no separate Save button).
@@ -2766,7 +2811,11 @@ export function SettingsAdmin() {
 
       </>)}
 
-      {tab === "account" && (<ClientPasswordReset />)}
+      {/* Account: the superadmin gets the admin tool (set any client's login via
+          the superadmin-gated edge fn); an owner gets self-service — change
+          their OWN password with their own session. The admin tool 403s for
+          non-superadmins, so owners must never be shown it. */}
+      {tab === "account" && (isSuper ? <ClientPasswordReset /> : <SelfPasswordReset />)}
     </div>
   );
 }
