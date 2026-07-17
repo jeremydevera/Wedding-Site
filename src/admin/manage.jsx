@@ -6,7 +6,7 @@ import { Button, CropModal, DecorPreview, FallingFx, Field, Icon, Input, Modal, 
 import { FX_LIST } from "@/lib/falling-fx.js";
 import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
-import { SupportWidget, SupportPanel } from "@/admin/SupportWidget.jsx";
+import { SupportWidget, SupportPanel, TicketForm } from "@/admin/SupportWidget.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { signOut, createOwner } from "@/lib/auth.js";
 import { supabase } from "@/lib/supabase.js";
@@ -1391,6 +1391,7 @@ export function DonateToDevTab() {
   const [tileIndex, setTileIndex] = useState(null);
   const [numOpen, setNumOpen] = useState(false);
   const [numIndex, setNumIndex] = useState(null);
+  const [donatedTicket, setDonatedTicket] = useState(false); // "already donated" ticket modal
   useEffect(() => {
     let dead = false;
     getAppConfig("donate").then((v) => {
@@ -1466,7 +1467,21 @@ export function DonateToDevTab() {
               ))}
             </div>
           )}
+          <p style={{ marginTop: 22, color: "var(--ink-soft)", fontSize: 14 }}>
+            Already donated?{" "}
+            <a role="button" tabIndex={0} onClick={() => setDonatedTicket(true)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setDonatedTicket(true); }}
+              style={{ color: "var(--accent)", fontWeight: 600, cursor: "pointer", textDecoration: "underline" }}>
+              Inform us so we can turn off this popup.
+            </a>
+          </p>
         </div>
+        <Modal open={donatedTicket} onClose={() => setDonatedTicket(false)} label="Let us know you donated">
+          <SectionHead eyebrow="Donate to Dev" title="Thanks for donating! 🙏" />
+          <p style={{ marginTop: -8, marginBottom: 14, color: "var(--ink-soft)", fontSize: 14 }}>Send us a quick note and we'll turn off the donate popup for your site.</p>
+          <TicketForm tab="donate"
+            initial={{ subject: "I've donated to the developer", category: "Question", message: "Hi! I've sent a donation — please turn off the Donate to Dev popup on my site. Thank you!" }}
+            onDone={() => setDonatedTicket(false)} onCancel={() => setDonatedTicket(false)} />
+        </Modal>
       </div>
     );
   }

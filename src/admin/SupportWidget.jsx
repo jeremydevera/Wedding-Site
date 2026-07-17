@@ -170,9 +170,10 @@ const CATEGORIES = ["Question", "Bug", "Design change", "Billing", "Other"];
 const URGENCIES = ["Low", "Normal", "High"];
 const BLANK = { subject: "", category: "Question", urgency: "Normal", message: "" };
 
-// The ticket form — shared by the floating widget's modal and the Support tab.
-function TicketForm({ tab, onDone, onCancel }) {
-  const [form, setForm] = useState(BLANK);
+// The ticket form — shared by the floating widget's modal, the Support tab, and
+// the Donate page's "already donated" link (optional `initial` prefill).
+export function TicketForm({ tab, onDone, onCancel, initial }) {
+  const [form, setForm] = useState(initial ? { ...BLANK, ...initial } : BLANK);
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
