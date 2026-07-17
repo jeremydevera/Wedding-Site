@@ -693,6 +693,10 @@ export async function approveSiteRequest(reqRow) {
     // the superadmin enables them per client. If the request already carries a
     // modules map (preconfigured in the edit-request Access tab), respect it.
     modules: (c.modules && typeof c.modules === "object") ? c.modules : { ...DEFAULT_CLIENT_MODULES },
+    // Feature Permissions v2 is the standard model as of 2026-07-18 — every new
+    // site launches on it (features map left null → FEATURE_DEFAULTS via
+    // featureLevel; the superadmin sets None/View/Edit per module during setup).
+    accessV2: true,
     // New registered sites open with falling petals (Classic Ivory is the wizard's
     // default theme). Owner can change decor/theme anytime in admin.
     decorOn: true,

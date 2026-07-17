@@ -40,7 +40,9 @@ export const DEFAULT_SETTINGS = {
   // "Guests" tab to manage invites + track replies. Public RSVP form is unaffected.
   strictRsvp: false,
   // Feature Permissions v2 trial (spec 2026-07-11). accessV2 flips a client to
-  // the features map; null map = FEATURE_DEFAULTS via featureLevel().
+  // the features map; null map = FEATURE_DEFAULTS via featureLevel(). Runtime
+  // default stays false (legacy-safe for any partial-settings context); new
+  // clients get accessV2:true seeded at creation (approveSiteRequest).
   accessV2: false,
   features: null,
   rsvpRequirePhone: false, // RSVP form: phone becomes a required field
