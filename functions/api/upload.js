@@ -12,7 +12,7 @@ const capFor = () => CAP_ALL;
 const capLabel = (cap) => `${Math.round(cap / 1048576)}MB`;
 const TYPE_OK = /^(audio\/|image\/|video\/)/;
 const SCOPES = new Set(["owner", "guest"]);
-const PURPOSES = new Set(["hero", "attire", "story", "frame", "envbg", "playlist", "trackart", "gallery", "message", "support", "misc"]);
+const PURPOSES = new Set(["hero", "attire", "story", "frame", "envbg", "playlist", "trackart", "gallery", "message", "support", "donate", "misc"]);
 
 const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json" } });

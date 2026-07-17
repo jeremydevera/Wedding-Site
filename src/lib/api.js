@@ -282,6 +282,22 @@ export async function uploadToR2(file, opts, clientId) {
   return await res.json();
 }
 
+// ── Global app config (public read, superadmin write via RLS) ──────────────
+// One key/value JSON row per setting. Used by the "Donate to Dev" tab so the
+// superadmin can manage the dev's QR images once for every client.
+export async function getAppConfig(key) {
+  try {
+    const { data, error } = await supabase.from("app_config").select("value").eq("key", key).maybeSingle();
+    if (error) return null;
+    return data ? data.value : null;
+  } catch (_) { return null; }
+}
+export async function setAppConfig(key, value) {
+  const { error } = await supabase.from("app_config").upsert({ key, value, updated_at: new Date().toISOString() });
+  if (error) throw error;
+  return true;
+}
+
 // Upload an audio file to R2. Returns { url, path } where url is the bare key
 // (call-sites store it as the track url and render via mediaUrl()).
 export async function uploadAudio(file, clientId) {

@@ -10,7 +10,7 @@ import { SupportWidget, SupportPanel } from "@/admin/SupportWidget.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { signOut, createOwner } from "@/lib/auth.js";
 import { supabase } from "@/lib/supabase.js";
-import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb, updateRsvpDietDb, listSiteRequests, subscribeSiteRequestsRealtime, listTickets, subscribeTicketsRealtime , listRecentClientReplies, listRecentSupportReplies, subscribeAllTicketMessagesRealtime} from "@/lib/api.js";
+import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb, updateRsvpDietDb, listSiteRequests, subscribeSiteRequestsRealtime, listTickets, subscribeTicketsRealtime , listRecentClientReplies, listRecentSupportReplies, subscribeAllTicketMessagesRealtime, getAppConfig, setAppConfig} from "@/lib/api.js";
 import { DIET_OPTIONS } from "@/features/rsvp.jsx";
 import { reconcileGuests, guestFromRsvp, findDuplicateGuest } from "@/lib/guests.js";
 import { headsOf } from "@/lib/rsvp.js";
@@ -59,8 +59,11 @@ export function SaveFooter() {
 // ============================================================================
 
 // Reusable image uploader for admin (hero, story milestones)
-export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", framePreview, frameGeom, defaultPreview, tintStrength, tintGradient, purpose = "misc", allowVideo = false, cropValue = null, onCropChange = null }) {
-  const { clientId } = useStore();
+export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", framePreview, frameGeom, defaultPreview, tintStrength, tintGradient, purpose = "misc", allowVideo = false, cropValue = null, onCropChange = null, clientIdOverride = null }) {
+  const { clientId: storeClientId } = useStore();
+  // Superadmin global uploads (e.g. the Donate QRs) force the "shared" prefix
+  // instead of the current client's id.
+  const clientId = clientIdOverride || storeClientId;
   const ref = useRef(null);
   const [cropSrc, setCropSrc] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -1259,49 +1262,95 @@ export const QR_TARGETS = [
   { key: "video-message", label: "Video Message", path: "/video-message" },
 ];
 
-// "Donate to Dev" — a tip jar in the client admin. Owner-facing QR codes +
-// e-wallet numbers so clients can support the developer. Static content; no
-// persisted settings, so it never touches Store/Save.
+// "Donate to Dev" — a tip jar in the client admin. Owners see the developer's
+// QR codes + e-wallet numbers (read-only). The SUPERADMIN can upload/crop each
+// QR; the images live globally in app_config('donate') (R2 keys under the
+// "shared" prefix) so one edit updates every client. Falls back to the bundled
+// repo images until a superadmin replaces one.
 const DONATE_QRS = [
-  { key: "gcash", label: "GCash", img: "/assets/donate/gcash.jpeg" },
-  { key: "maya", label: "Maya", img: "/assets/donate/maya.jpeg" },
-  { key: "bdo", label: "BDO", img: "/assets/donate/bdo.jpeg" },
-  { key: "maribank", label: "MariBank", img: "/assets/donate/maribank.png" },
+  { key: "gcash", label: "GCash", fallback: "/assets/donate/gcash.jpeg" },
+  { key: "maya", label: "Maya", fallback: "/assets/donate/maya.jpeg" },
+  { key: "bdo", label: "BDO", fallback: "/assets/donate/bdo.jpeg" },
+  { key: "maribank", label: "MariBank", fallback: "/assets/donate/maribank.png" },
 ];
 const DONATE_NUMBERS = [
   { label: "GCash", value: "09150860371" },
   { label: "Maya", value: "09150860371" },
 ];
-function DonateCard({ q }) {
+// Resolve a wallet's image: superadmin override (R2 key) if set, else the
+// bundled repo image.
+function donateImg(cfg, q) {
+  const key = cfg && cfg[q.key];
+  return key ? mediaUrl(key) : q.fallback;
+}
+function DonateCard({ q, cfg }) {
   const [broken, setBroken] = useState(false);
+  const src = donateImg(cfg, q);
   return (
     <figure className="donate-card">
       {broken
         ? <div className="donate-card__img donate-card__ph">QR coming soon</div>
-        : <img className="donate-card__img" src={q.img} alt={q.label + " QR code"} loading="lazy" onError={() => setBroken(true)} />}
+        : <img className="donate-card__img" src={src} alt={q.label + " QR code"} loading="lazy" onError={() => setBroken(true)} />}
       <figcaption className="donate-card__label">{q.label}</figcaption>
     </figure>
   );
 }
 export function DonateToDevTab() {
+  const { auth } = useStore();
+  const isSuper = auth.role === "superadmin";
   const [copied, setCopied] = useState("");
+  const [cfg, setCfg] = useState(null);   // app_config('donate') value; null until loaded
+  const [saving, setSaving] = useState("");
+  useEffect(() => {
+    let dead = false;
+    getAppConfig("donate").then((v) => { if (!dead) setCfg(v && typeof v === "object" ? v : {}); });
+    return () => { dead = true; };
+  }, []);
   const copy = async (v) => {
     try { await navigator.clipboard.writeText(v); setCopied(v); setTimeout(() => setCopied(""), 1600); }
     catch (_) { toast("Couldn't copy — long-press to copy the number.", "err"); }
+  };
+  // Superadmin: persist a wallet's new R2 key (or clear it) to app_config.
+  const saveWallet = async (walletKey, r2key) => {
+    const next = { ...(cfg || {}), [walletKey]: r2key || undefined };
+    if (!r2key) delete next[walletKey];
+    setCfg(next); setSaving(walletKey);
+    try { await setAppConfig("donate", next); toast("Saved — live for every client.", "success"); }
+    catch (e) { toast("Save failed: " + (e && e.message || "error"), "err"); }
+    finally { setSaving(""); }
   };
   return (
     <div className="panel">
       <div className="panel__head">
         <div className="panel__title">Donate to Dev</div>
-        <span style={{ color: "var(--muted)", fontSize: 14 }}>Love the platform? Support the developer behind Celebrately — thank you! 🙏</span>
+        <span style={{ color: "var(--muted)", fontSize: 14 }}>
+          {isSuper ? "Upload or crop the QR codes here — changes apply to every client." : "Love the platform? Support the developer behind Celebrately — thank you! 🙏"}
+        </span>
       </div>
       <div className="panel__body">
         <p style={{ marginTop: 0, color: "var(--ink)", fontSize: 15 }}>
-          Scan a QR with your banking or e-wallet app, or send directly to the numbers below. Every bit is appreciated.
+          {isSuper
+            ? "Replace any QR below (upload → crop → it saves globally). The e-wallet numbers are edited in code."
+            : "Scan a QR with your banking or e-wallet app, or send directly to the numbers below. Every bit is appreciated."}
         </p>
-        <div className="donate-grid">
-          {DONATE_QRS.map((q) => <DonateCard key={q.key} q={q} />)}
-        </div>
+        {isSuper ? (
+          <div className="donate-grid">
+            {DONATE_QRS.map((q) => (
+              <div key={q.key} className="donate-edit">
+                <div className="donate-edit__label">{q.label}{saving === q.key ? " · saving…" : ""}</div>
+                <ImageUploadField
+                  ratio="1 / 1" purpose="donate" clientIdOverride="shared"
+                  value={cfg && cfg[q.key] ? cfg[q.key] : ""}
+                  defaultPreview={q.fallback}
+                  onChange={(v) => saveWallet(q.key, v)} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="donate-grid">
+            {DONATE_QRS.map((q) => <DonateCard key={q.key} q={q} cfg={cfg} />)}
+          </div>
+        )}
         <div className="donate-numbers">
           <div className="donate-numbers__title">Or send to these numbers</div>
           {DONATE_NUMBERS.map((n) => (
@@ -4064,7 +4113,11 @@ export function AdminApp() {
   // new reply from support waiting for the client.
   if (clientId) {
     tabs = [...tabs, { key: "support", label: "Support", icon: "mail", badge: supportWaiting }];
-    // Owner-facing tip jar for the developer (static QR codes + numbers).
+  }
+  // Tip jar for the developer. Owners (on a client) see it read-only; the
+  // superadmin sees it everywhere (incl. the platform console) to upload/crop
+  // the QR images, which are stored globally.
+  if (clientId || auth.role === "superadmin") {
     tabs = [...tabs, { key: "donate", label: "Donate to Dev", icon: "heart" }];
   }
   const activeTab = tabs.some((t) => t.key === tab) ? tab : (tabs[0]?.key || "dashboard");
