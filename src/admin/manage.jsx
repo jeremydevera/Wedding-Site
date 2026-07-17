@@ -1265,8 +1265,9 @@ export const QR_TARGETS = [
 // "Donate to Dev" — a tip jar in the client admin. Two managed lists live
 // globally in app_config('donate'): `tiles` (QR-code payment methods) and
 // `numbers` (type-a-number methods, no QR). Owners see both read-only; the
-// SUPERADMIN edits each in a table (QR Codes / Numbers folders). One edit
-// applies to every client. QR images are R2 keys under the "shared" prefix.
+// SUPERADMIN manages each in an Our-Story-style table (display rows + per-row
+// move/edit/delete, modal editors, immediate save). One edit applies to every
+// client. QR images are R2 keys under the "shared" prefix.
 const DONATE_FALLBACK = {
   gcash: "/assets/donate/gcash.jpeg", maya: "/assets/donate/maya.jpeg",
   bdo: "/assets/donate/bdo.jpeg", maribank: "/assets/donate/maribank.png",
@@ -1296,6 +1297,57 @@ function DonateCard({ t }) {
     </figure>
   );
 }
+// Add/edit one QR method (matches StoryEditor: modal, saves immediately).
+function DonateTileEditor({ open, item, onClose, onSave }) {
+  const blank = { label: "", img: "" };
+  const [f, setF] = useState(blank);
+  useEffect(() => { setF(item ? { label: item.label || "", img: item.img || "" } : blank); }, [item, open]);
+  const isEdit = !!item;
+  async function save() {
+    if (!f.label.trim()) { toast("Please enter a name.", "err"); return; }
+    await onSave({ id: (item && item.id) || uid(), label: f.label.trim(), img: f.img });
+    onClose();
+  }
+  return (
+    <Modal open={open} onClose={onClose} label="QR payment method">
+      <SectionHead eyebrow="Donate to Dev" title={isEdit ? "Edit QR method" : "New QR method"} />
+      <Field label="Name" id="dte-label"><Input id="dte-label" value={f.label} onChange={(e) => setF((p) => ({ ...p, label: e.target.value }))} placeholder="e.g. GCash" /></Field>
+      <ImageUploadField label="QR image" ratio="1 / 1" purpose="donate" clientIdOverride="shared"
+        value={f.img} defaultPreview={item ? DONATE_FALLBACK[item.id] : undefined}
+        onChange={(v) => setF((p) => ({ ...p, img: v }))} />
+      <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+        <Button variant="primary" onClick={save}>{isEdit ? "Save changes" : "Add method"}</Button>
+        <Button variant="ghost" onClick={onClose}>Cancel</Button>
+      </div>
+    </Modal>
+  );
+}
+// Add/edit one number-only method.
+function DonateNumberEditor({ open, item, onClose, onSave }) {
+  const blank = { label: "", value: "" };
+  const [f, setF] = useState(blank);
+  useEffect(() => { setF(item ? { label: item.label || "", value: item.value || "" } : blank); }, [item, open]);
+  const isEdit = !!item;
+  async function save() {
+    if (!f.label.trim()) { toast("Please enter a name.", "err"); return; }
+    if (!f.value.trim()) { toast("Please enter the number.", "err"); return; }
+    await onSave({ id: (item && item.id) || uid(), label: f.label.trim(), value: f.value.trim() });
+    onClose();
+  }
+  return (
+    <Modal open={open} onClose={onClose} label="Number payment method">
+      <SectionHead eyebrow="Donate to Dev" title={isEdit ? "Edit number" : "New number"} />
+      <div className="field-row field-row--2">
+        <Field label="Name" id="dne-label"><Input id="dne-label" value={f.label} onChange={(e) => setF((p) => ({ ...p, label: e.target.value }))} placeholder="e.g. GCash" /></Field>
+        <Field label="Number" id="dne-value"><Input id="dne-value" value={f.value} onChange={(e) => setF((p) => ({ ...p, value: e.target.value }))} placeholder="0915 086 0371" /></Field>
+      </div>
+      <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+        <Button variant="primary" onClick={save}>{isEdit ? "Save changes" : "Add number"}</Button>
+        <Button variant="ghost" onClick={onClose}>Cancel</Button>
+      </div>
+    </Modal>
+  );
+}
 export function DonateToDevTab() {
   const { auth } = useStore();
   const isSuper = auth.role === "superadmin";
@@ -1303,14 +1355,15 @@ export function DonateToDevTab() {
   const [tiles, setTiles] = useState(null);     // QR methods; null until loaded
   const [numbers, setNumbers] = useState(null); // number-only methods
   const [folder, setFolder] = useState("qr");   // superadmin sub-folder
-  const [dirty, setDirty] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [tileOpen, setTileOpen] = useState(false);
+  const [tileIndex, setTileIndex] = useState(null);
+  const [numOpen, setNumOpen] = useState(false);
+  const [numIndex, setNumIndex] = useState(null);
   useEffect(() => {
     let dead = false;
     getAppConfig("donate").then((v) => {
       if (dead) return;
-      const tl = v && Array.isArray(v.tiles) && v.tiles.length ? v.tiles
-        : (v && Array.isArray(v.tiles) ? [] : DONATE_DEFAULT_TILES);
+      const tl = v && Array.isArray(v.tiles) ? v.tiles : DONATE_DEFAULT_TILES;
       const nm = v && Array.isArray(v.numbers) ? v.numbers : DONATE_DEFAULT_NUMBERS;
       setTiles(tl.map((t) => ({ ...t }))); setNumbers(nm.map((n) => ({ ...n })));
     });
@@ -1318,24 +1371,43 @@ export function DonateToDevTab() {
   }, []);
   const copy = async (v) => {
     try { await navigator.clipboard.writeText(v); setCopied(v); setTimeout(() => setCopied(""), 1600); }
-    catch (_) { toast("Couldn't copy — long-press to copy the number.", "err"); }
+    catch (_) { toast("Couldn\u2019t copy — long-press to copy the number.", "err"); }
   };
-  const patchTile = (i, patch) => { setTiles((ts) => ts.map((t, j) => j === i ? { ...t, ...patch } : t)); setDirty(true); };
-  const addTile = () => { setTiles((ts) => [...(ts || []), { id: uid(), label: "", img: "" }]); setDirty(true); };
-  const removeTile = (i) => { setTiles((ts) => ts.filter((_, j) => j !== i)); setDirty(true); };
-  const patchNum = (i, patch) => { setNumbers((ns) => ns.map((n, j) => j === i ? { ...n, ...patch } : n)); setDirty(true); };
-  const addNum = () => { setNumbers((ns) => [...(ns || []), { id: uid(), label: "", value: "" }]); setDirty(true); };
-  const removeNum = (i) => { setNumbers((ns) => ns.filter((_, j) => j !== i)); setDirty(true); };
-  const saveAll = async () => {
-    setBusy(true);
+  // Persist both lists immediately (Our-Story style: every action saves).
+  const persist = async (nextTiles, nextNumbers) => {
     try {
-      const cleanT = (tiles || []).filter((t) => (t.label || "").trim() || t.img);
-      const cleanN = (numbers || []).filter((n) => (n.label || "").trim() || (n.value || "").trim());
-      await setAppConfig("donate", { tiles: cleanT, numbers: cleanN });
-      setTiles(cleanT.map((t) => ({ ...t }))); setNumbers(cleanN.map((n) => ({ ...n }))); setDirty(false);
+      await setAppConfig("donate", { tiles: nextTiles, numbers: nextNumbers });
+      setTiles(nextTiles.map((t) => ({ ...t }))); setNumbers(nextNumbers.map((n) => ({ ...n })));
       toast("Saved — live for every client.", "success");
     } catch (e) { toast("Save failed: " + (e && e.message || "error"), "err"); }
-    finally { setBusy(false); }
+  };
+  const saveTile = async (payload) => {
+    const isEdit = tileIndex != null && tileIndex >= 0;
+    const next = isEdit ? tiles.map((t, i) => (i === tileIndex ? payload : t)) : [...tiles, payload];
+    await persist(next, numbers);
+  };
+  const removeTile = async (i) => {
+    const ok = await confirmDialog({ title: "Delete QR method?", message: `Remove "${tiles[i].label || "this method"}" for every client?`, confirmLabel: "Delete", danger: true });
+    if (ok) await persist(tiles.filter((_, j) => j !== i), numbers);
+  };
+  const moveTile = async (i, d) => {
+    const j = i + d; if (j < 0 || j >= tiles.length) return;
+    const a = [...tiles]; [a[i], a[j]] = [a[j], a[i]];
+    await persist(a, numbers);
+  };
+  const saveNum = async (payload) => {
+    const isEdit = numIndex != null && numIndex >= 0;
+    const next = isEdit ? numbers.map((n, i) => (i === numIndex ? payload : n)) : [...numbers, payload];
+    await persist(tiles, next);
+  };
+  const removeNum = async (i) => {
+    const ok = await confirmDialog({ title: "Delete number?", message: `Remove "${numbers[i].label || "this number"}" for every client?`, confirmLabel: "Delete", danger: true });
+    if (ok) await persist(tiles, numbers.filter((_, j) => j !== i));
+  };
+  const moveNum = async (i, d) => {
+    const j = i + d; if (j < 0 || j >= numbers.length) return;
+    const a = [...numbers]; [a[i], a[j]] = [a[j], a[i]];
+    await persist(tiles, a);
   };
   if (tiles === null || numbers === null) return <div className="panel"><div className="panel__body" style={{ color: "var(--muted)" }}>Loading…</div></div>;
 
@@ -1367,65 +1439,73 @@ export function DonateToDevTab() {
     );
   }
 
-  // ── Superadmin (editable tables in two folders) ────────────────────────
+  // ── Superadmin: Our-Story-style tables in two folders ──────────────────
   return (
     <div className="panel">
       <div className="panel__head">
-        <div className="panel__title">Donate to Dev</div>
-        <span style={{ color: "var(--muted)", fontSize: 14 }}>Edit the payment methods — changes apply to every client.</span>
+        <div className="panel__title">Donate to Dev <span style={{ color: "var(--muted)", fontSize: 15 }}>({folder === "qr" ? tiles.length : numbers.length})</span></div>
+        {folder === "qr"
+          ? <Button variant="primary" size="sm" onClick={() => { setTileIndex(null); setTileOpen(true); }}>+ Add QR method</Button>
+          : <Button variant="primary" size="sm" onClick={() => { setNumIndex(null); setNumOpen(true); }}>+ Add number</Button>}
       </div>
-      <div className="panel__body">
-        <div className="folders" style={{ marginBottom: 18 }}>
+      <div className="panel__body" style={{ paddingBottom: 0 }}>
+        <div className="folders" style={{ marginBottom: 0 }}>
           <button className={"folder" + (folder === "qr" ? " folder--active" : "")} onClick={() => setFolder("qr")}>QR Codes</button>
           <button className={"folder" + (folder === "numbers" ? " folder--active" : "")} onClick={() => setFolder("numbers")}>Numbers</button>
         </div>
-
-        {folder === "qr" ? (
-          <div className="table-wrap">
-            <table className="tbl donate-tbl">
-              <thead><tr><th style={{ width: "34%" }}>Name</th><th>QR image (upload &amp; crop)</th><th style={{ width: 70 }}></th></tr></thead>
-              <tbody>
-                {tiles.map((t, i) => (
-                  <tr key={t.id}>
-                    <td><Input value={t.label} onChange={(e) => patchTile(i, { label: e.target.value })} placeholder="e.g. GCash" /></td>
-                    <td className="donate-tbl__imgcell">
-                      <ImageUploadField ratio="1 / 1" purpose="donate" clientIdOverride="shared"
-                        value={t.img || ""} defaultPreview={DONATE_FALLBACK[t.id] || undefined}
-                        onChange={(v) => patchTile(i, { img: v })} />
-                    </td>
-                    <td><Button variant="ghost" size="sm" onClick={() => removeTile(i)} aria-label="Remove">{Icon.trash({})}</Button></td>
-                  </tr>
-                ))}
-                {tiles.length === 0 && <tr><td colSpan={3} style={{ color: "var(--muted)" }}>No QR methods yet — add one below.</td></tr>}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="table-wrap">
-            <table className="tbl">
-              <thead><tr><th style={{ width: "40%" }}>Name</th><th>Number</th><th style={{ width: 70 }}></th></tr></thead>
-              <tbody>
-                {numbers.map((n, i) => (
-                  <tr key={n.id}>
-                    <td><Input value={n.label} onChange={(e) => patchNum(i, { label: e.target.value })} placeholder="e.g. GCash" /></td>
-                    <td><Input value={n.value} onChange={(e) => patchNum(i, { value: e.target.value })} placeholder="0915 086 0371" /></td>
-                    <td><Button variant="ghost" size="sm" onClick={() => removeNum(i)} aria-label="Remove">{Icon.trash({})}</Button></td>
-                  </tr>
-                ))}
-                {numbers.length === 0 && <tr><td colSpan={3} style={{ color: "var(--muted)" }}>No numbers yet — add one below.</td></tr>}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        <div style={{ display: "flex", gap: 12, marginTop: 16, alignItems: "center", flexWrap: "wrap" }}>
-          {folder === "qr"
-            ? <Button variant="secondary" onClick={addTile}>+ Add QR method</Button>
-            : <Button variant="secondary" onClick={addNum}>+ Add number</Button>}
-          <Button variant="primary" disabled={!dirty || busy} onClick={saveAll}>{busy ? "Saving…" : (dirty ? "Save changes" : "Saved")}</Button>
-          {dirty && <span style={{ color: "var(--muted)", fontSize: 13 }}>Unsaved changes (saves both tabs).</span>}
-        </div>
       </div>
+      <div className="panel__body--flush table-wrap">
+        {folder === "qr" ? (
+          <table className="tbl">
+            <thead><tr><th>#</th><th>QR</th><th>Name</th><th></th></tr></thead>
+            <tbody>
+              {tiles.map((t, i) => {
+                const src = donateTileSrc(t);
+                return (
+                  <tr key={t.id || i}>
+                    <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--muted)" }}>{i + 1}</td>
+                    <td>{src
+                      ? <img src={src} alt="" style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 6, display: "block" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                      : <span style={{ color: "var(--muted)" }}>—</span>}</td>
+                    <td><strong>{t.label || "—"}</strong>{!t.img && DONATE_FALLBACK[t.id] ? <div style={{ color: "var(--muted)", fontSize: 13 }}>default image</div> : null}</td>
+                    <td>
+                      <div className="row-actions">
+                        <MoveArrows i={i} count={tiles.length} onMove={(dir) => moveTile(i, dir)} />
+                        <button className="icon-btn" title="Edit method" onClick={() => { setTileIndex(i); setTileOpen(true); }}>{Icon.edit({})}</button>
+                        <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => removeTile(i)}>{Icon.trash({})}</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {tiles.length === 0 && <tr><td colSpan={4} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No QR methods yet. Add one to get started.</td></tr>}
+            </tbody>
+          </table>
+        ) : (
+          <table className="tbl">
+            <thead><tr><th>#</th><th>Name</th><th>Number</th><th></th></tr></thead>
+            <tbody>
+              {numbers.map((n, i) => (
+                <tr key={n.id || i}>
+                  <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--muted)" }}>{i + 1}</td>
+                  <td><strong>{n.label || "—"}</strong></td>
+                  <td style={{ fontVariantNumeric: "tabular-nums", letterSpacing: ".03em" }}>{n.value || "—"}</td>
+                  <td>
+                    <div className="row-actions">
+                      <MoveArrows i={i} count={numbers.length} onMove={(dir) => moveNum(i, dir)} />
+                      <button className="icon-btn" title="Edit number" onClick={() => { setNumIndex(i); setNumOpen(true); }}>{Icon.edit({})}</button>
+                      <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => removeNum(i)}>{Icon.trash({})}</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {numbers.length === 0 && <tr><td colSpan={4} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No numbers yet. Add one to get started.</td></tr>}
+            </tbody>
+          </table>
+        )}
+      </div>
+      <DonateTileEditor open={tileOpen} item={tileIndex != null ? tiles[tileIndex] : null} onClose={() => setTileOpen(false)} onSave={saveTile} />
+      <DonateNumberEditor open={numOpen} item={numIndex != null ? numbers[numIndex] : null} onClose={() => setNumOpen(false)} onSave={saveNum} />
     </div>
   );
 }
