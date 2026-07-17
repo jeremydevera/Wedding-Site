@@ -59,7 +59,7 @@ export function SaveFooter() {
 // ============================================================================
 
 // Reusable image uploader for admin (hero, story milestones)
-export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", framePreview, frameGeom, defaultPreview, tintStrength, tintGradient, purpose = "misc", allowVideo = false, cropValue = null, onCropChange = null, clientIdOverride = null }) {
+export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", framePreview, frameGeom, defaultPreview, tintStrength, tintGradient, purpose = "misc", allowVideo = false, cropValue = null, onCropChange = null, clientIdOverride = null, cropDefault = false }) {
   const { clientId: storeClientId } = useStore();
   // Superadmin global uploads (e.g. the Donate QRs) force the "shared" prefix
   // instead of the current client's id.
@@ -134,7 +134,11 @@ export function ImageUploadField({ value, onChange, label, ratio = "4 / 3", fram
         </div>
         <div className="imgup__actions">
           <Button variant="ghost" size="sm" disabled={busy} onClick={() => setPickerOpen(true)}>{Icon.upload({})} {busy ? "Uploading…" : (value ? "Replace" : "Add photo")}</Button>
-          {value && !busy && (!isVid || onCropChange) && <Button variant="ghost" size="sm" onClick={() => setCropSrc(mediaUrl(value))}>{Icon.crop({})} Crop</Button>}
+          {/* Crop the current image. When there's no uploaded value, cropDefault
+              lets the caller (e.g. Donate QRs) crop the bundled default image
+              instead — the result uploads as a new value. */}
+          {!busy && (!isVid || onCropChange) && (value || (cropDefault && defaultPreview)) &&
+            <Button variant="ghost" size="sm" onClick={() => setCropSrc(value ? mediaUrl(value) : defaultPreview)}>{Icon.crop({})} Crop</Button>}
           {value && !busy && <Button variant="ghost" size="sm" onClick={() => commit("")}>Remove</Button>}
         </div>
         <input ref={ref} type="file" accept={allowVideo ? "image/*,image/gif,video/mp4,video/webm,.gif,.mp4,.webm,.mov" : "image/*"} style={{ display: "none" }} onChange={(e) => { const file = e.target.files[0]; e.target.value = ""; setPickerOpen(false); pick(file); }} />
@@ -1312,7 +1316,7 @@ function DonateTileEditor({ open, item, onClose, onSave }) {
     <Modal open={open} onClose={onClose} label="QR payment method">
       <SectionHead eyebrow="Donate to Dev" title={isEdit ? "Edit QR method" : "New QR method"} />
       <Field label="Name" id="dte-label"><Input id="dte-label" value={f.label} onChange={(e) => setF((p) => ({ ...p, label: e.target.value }))} placeholder="e.g. GCash" /></Field>
-      <ImageUploadField label="QR image" ratio="1 / 1" purpose="donate" clientIdOverride="shared"
+      <ImageUploadField label="QR image" ratio="1 / 1" purpose="donate" clientIdOverride="shared" cropDefault
         value={f.img} defaultPreview={item ? DONATE_FALLBACK[item.id] : undefined}
         onChange={(v) => setF((p) => ({ ...p, img: v }))} />
       <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
