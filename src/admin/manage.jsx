@@ -2235,10 +2235,10 @@ function SelfPasswordReset() {
           <Input id="spr-email" type="email" value={email} readOnly disabled placeholder="you@yourdomain" />
         </Field>
         <Field label="New password" id="spr-pw" hint="At least 6 characters">
-          <Input id="spr-pw" type="text" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="••••••••" autoComplete="new-password" />
+          <Input id="spr-pw" type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="••••••••" autoComplete="new-password" />
         </Field>
         <Field label="Confirm new password" id="spr-pw2">
-          <Input id="spr-pw2" type="text" value={pw2} onChange={(e) => setPw2(e.target.value)} placeholder="••••••••" autoComplete="new-password" />
+          <Input id="spr-pw2" type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} placeholder="••••••••" autoComplete="new-password" />
         </Field>
         <Button variant="primary" disabled={busy || !pw} onClick={change}>{busy ? "Updating…" : "Update password"}</Button>
       </div>
