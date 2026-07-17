@@ -1353,8 +1353,12 @@ function DonateNumberEditor({ open, item, onClose, onSave }) {
   );
 }
 export function DonateToDevTab() {
-  const { auth } = useStore();
-  const isSuper = auth.role === "superadmin";
+  const { auth, clientId } = useStore();
+  // Editor ONLY on the superadmin platform console (no client). Inside any
+  // client — whether an owner OR a superadmin who opened that client — the tab
+  // is the read-only "where to donate" view, so it always matches what the
+  // client sees. Manage the QRs/numbers from the console.
+  const isSuper = auth.role === "superadmin" && !clientId;
   const [copied, setCopied] = useState("");
   const [tiles, setTiles] = useState(null);     // QR methods; null until loaded
   const [numbers, setNumbers] = useState(null); // number-only methods
