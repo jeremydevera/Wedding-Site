@@ -1359,7 +1359,12 @@ function DonateAdModal({ open, onClose, onGo }) {
     <Modal open={open} onClose={onClose} label="Support the developer">
       <div style={{ textAlign: "center", padding: "2px 4px 0" }}>
         <div style={{ fontSize: 46, lineHeight: 1, marginBottom: 4 }}>🙏</div>
-        <SectionHead eyebrow="Donate to Dev" title="Enjoying Celebrately?" center />
+        {/* Plain (non-cursive) title: under envelope2 the shared .sec-head__title
+            goes cursive (Madelican/Great Vibes) whose "?" glyph clips/renders
+            missing — owner wants a normal font here. Inline font-body beats the
+            theme override and renders the question mark. */}
+        <div className="eyebrow">Donate to Dev</div>
+        <h2 style={{ fontFamily: "var(--font-body)", fontWeight: 700, fontSize: "clamp(22px, 3vw, 28px)", letterSpacing: ".01em", color: "var(--ink)", margin: "10px 0 0", lineHeight: 1.25 }}>Enjoying Celebrately?</h2>
         <p style={{ color: "var(--ink-soft)", fontSize: 15, margin: "8px auto 20px", maxWidth: 380, lineHeight: 1.55 }}>
           This platform is built &amp; run by a solo developer. If it helped make your celebration special, a small tip keeps it going. Thank you! ❤️
         </p>
