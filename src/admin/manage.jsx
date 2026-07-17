@@ -2310,7 +2310,7 @@ export function SettingsAdmin() {
   // module toggles, renames and owner-grants disappear here. RSVP options and
   // guestbook moderation stay (RSVP has no content tab).
   const STABS = settings.accessV2 === true
-    ? [["rsvp", "RSVP & moderation", "check"],
+    ? [["rsvp", "Moderation", "check"],
        // Renaming guest-menu tabs is a SUPERADMIN-only operation under v2
        // (owner request 2026-07-11) — owners never see this folder.
        ...(auth.role === "superadmin" ? [["tabnames", "Tab names", "edit"]] : []),
@@ -2350,7 +2350,7 @@ export function SettingsAdmin() {
       </div>)}
 
       {tab === "rsvp" && settings.accessV2 === true && (<div className="panel">
-        <div className="panel__head"><div className="panel__title">RSVP &amp; moderation</div></div>
+        <div className="panel__head"><div className="panel__title">Moderation</div></div>
         <div className="panel__body" style={{ maxWidth: 760, display: "grid", gap: 16 }}>
           <div style={{ display: "flex", gap: 10 }}>
             <input type="checkbox" checked={f.strictRsvp === true} onChange={(e) => setKey("strictRsvp", e.target.checked)} style={{ width: 16, height: 16, flex: "none", marginTop: 2, accentColor: "var(--accent)" }} />
