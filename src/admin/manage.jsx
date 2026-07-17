@@ -1747,7 +1747,7 @@ export function FaqEditor({ open, index, item, onClose }) {
   );
 }
 
-export function DetailsAdmin({ headExtraTiles = null, headExtraFaq = null }) {
+export function DetailsAdmin({ headExtraTiles = null, headExtraFaq = null, attireSlot = null }) {
   const { detailCards, faq } = useStore();
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const [tab, setTab] = useState("tiles");
@@ -1766,6 +1766,7 @@ export function DetailsAdmin({ headExtraTiles = null, headExtraFaq = null }) {
       <div className="folders">
         <button className={"folder" + (tab === "tiles" ? " folder--active" : "")} onClick={() => setTab("tiles")}>{Icon.rings({})} Details</button>
         <button className={"folder" + (tab === "faq" ? " folder--active" : "")} onClick={() => setTab("faq")}>{Icon.book({})} FAQ</button>
+        {attireSlot && <button className={"folder" + (tab === "attire" ? " folder--active" : "")} onClick={() => setTab("attire")}>{Icon.palette({})} Attire</button>}
       </div>
 
       {tab === "tiles" && (
@@ -1829,6 +1830,8 @@ export function DetailsAdmin({ headExtraTiles = null, headExtraFaq = null }) {
         </div>
       </div>
       )}
+
+      {tab === "attire" && attireSlot}
 
       <TileEditor open={tileOpen} index={tileIndex} item={tileIndex != null ? tiles[tileIndex] : null} onClose={() => setTileOpen(false)} />
       <FaqEditor open={faqOpen} index={faqIndex} item={faqIndex != null ? faqs[faqIndex] : null} onClose={() => setFaqOpen(false)} />
@@ -2978,9 +2981,10 @@ function ShowToHomeModal({ open, onClose, showKey, defaultOn = true, helper, chi
     </Modal>
   );
 }
-// accessV2 Details tab: the Details/FAQ CRUD (DetailsAdmin's own folders) with
-// a Show-to-Home link + modal per folder, plus the Attire panel (attire lives
-// inside the Details module under v2).
+// accessV2 Details tab: the Details/FAQ/Attire CRUD as three sibling folder
+// chips (DetailsAdmin's own folders) with a Show-to-Home link + modal per
+// folder. Attire lives inside the Details module under v2, so it's passed in as
+// the third chip (attireSlot) rather than dangling below the chip row.
 function DetailsTabV2() {
   const { settings, detailCards, faq } = useStore();
   const f = settings;
@@ -2991,8 +2995,7 @@ function DetailsTabV2() {
 
   return (
     <div>
-      <DetailsAdmin headExtraTiles={<STHLink onClick={() => setOpenD(true)} />} headExtraFaq={<STHLink onClick={() => setOpenF(true)} />} />
-      <HomeAdmin section="attire" />
+      <DetailsAdmin headExtraTiles={<STHLink onClick={() => setOpenD(true)} />} headExtraFaq={<STHLink onClick={() => setOpenF(true)} />} attireSlot={<HomeAdmin section="attire" />} />
       <ShowToHomeModal open={openD} onClose={() => setOpenD(false)} showKey="showHomeDetails" defaultOn={false}
         helper="If enabled, the detail cards will also be shown on the home page."
         scrollTo="home-details" sampleTag={cards.length === 0}>
