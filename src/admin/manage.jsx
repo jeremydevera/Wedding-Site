@@ -1352,6 +1352,25 @@ function DonateNumberEditor({ open, item, onClose, onSave }) {
     </Modal>
   );
 }
+// Promo popup shown to owners in their admin (once per session) nudging them to
+// the Donate to Dev tab. Owner-only; the CTA jumps straight to the tab.
+function DonateAdModal({ open, onClose, onGo }) {
+  return (
+    <Modal open={open} onClose={onClose} label="Support the developer">
+      <div style={{ textAlign: "center", padding: "2px 4px 0" }}>
+        <div style={{ fontSize: 46, lineHeight: 1, marginBottom: 4 }}>🙏</div>
+        <SectionHead eyebrow="Donate to Dev" title="Enjoying Celebrately?" center />
+        <p style={{ color: "var(--ink-soft)", fontSize: 15, margin: "8px auto 20px", maxWidth: 380, lineHeight: 1.55 }}>
+          This platform is built &amp; run by a solo developer. If it helped make your celebration special, a small tip keeps it going. Thank you! ❤️
+        </p>
+        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+          <Button variant="primary" onClick={onGo}>{Icon.heart({})} Donate to Dev</Button>
+          <Button variant="ghost" onClick={onClose}>Maybe later</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
 export function DonateToDevTab() {
   const { auth, clientId } = useStore();
   // Editor ONLY on the superadmin platform console (no client). Inside any
@@ -4141,6 +4160,15 @@ export function AdminApp() {
   // client, so subscribeAllTicketMessagesRealtime only delivers own replies).
   const [clientTickets, setClientTickets] = useState([]);
   const [supportReplies, setSupportReplies] = useState([]);
+  // Owner-only "Donate to Dev" promo popup — shows once per browser session.
+  const [showDonateAd, setShowDonateAd] = useState(false);
+  useEffect(() => {
+    if (!clientId || auth.role !== "owner") return;
+    let seen = false;
+    try { seen = sessionStorage.getItem("donateAdSeen") === "1"; } catch (_) {}
+    if (!seen) { const t = setTimeout(() => setShowDonateAd(true), 900); return () => clearTimeout(t); }
+  }, [clientId, auth.role]);
+  const dismissDonateAd = () => { setShowDonateAd(false); try { sessionStorage.setItem("donateAdSeen", "1"); } catch (_) {} };
   useEffect(() => {
     if (!clientId) { setClientTickets([]); setSupportReplies([]); return; }
     let dead = false;
@@ -4295,6 +4323,7 @@ export function AdminApp() {
           <div className="admin-saving__box"><span className="admin-saving__spin" aria-hidden="true" />Saving…</div>
         </div>
       )}
+      <DonateAdModal open={showDonateAd} onClose={dismissDonateAd} onGo={() => { dismissDonateAd(); setTab("donate"); }} />
       {menuOpen && <div className="admin__overlay" onClick={() => setMenuOpen(false)} />}
       <aside className={"admin__side" + (menuOpen ? " admin__side--open" : "")}>
         <button className="admin__drawer-close" onClick={() => setMenuOpen(false)} aria-label="Close menu">{Icon.close({})}</button>
