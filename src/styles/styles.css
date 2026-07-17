@@ -190,6 +190,7 @@ body.env-sealed main { padding-top: 0; }
 @keyframes themeFabIn { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .theme-fab__panel { animation: none; } }
 .theme-fab__title { font-family: var(--font-display, serif); font-size: 16px; font-weight: 600; color: var(--ink); }
+.theme-fab__hint { font-size: 12.5px; line-height: 1.4; color: var(--muted); margin-top: -4px; }
 /* nav__themepick is display:none by default (nav shows it only ≥940px) — force
    it visible inside the panel, full-width label + select. */
 .theme-fab__panel .nav__themepick { display: flex; }

@@ -209,10 +209,11 @@ export function Nav({ route }) {
         <div className={"theme-fab" + (fabOpen ? " theme-fab--open" : "")}>
           {fabOpen && (
             <div className="theme-fab__panel" role="dialog" aria-label="Preview a theme and decoration">
-              <div className="theme-fab__title">Try a look</div>
+              <div className="theme-fab__title">Select a theme</div>
+              <div className="theme-fab__hint">Preview any design on this site — pick one below.</div>
               <ThemePicker block />
               {!isPremiumTheme(settings.theme) && <DecorPicker block />}
-              <Button className="theme-fab__reg" variant="primary" size="sm" block onClick={() => { window.location.href = "https://celebrately.us/apply"; }}>Register — get your own site</Button>
+              <Button className="theme-fab__reg" variant="primary" size="sm" block onClick={() => { window.location.href = "https://celebrately.us/apply"; }}>Register</Button>
             </div>
           )}
           <button className="theme-fab__btn" aria-label={fabOpen ? "Close theme picker" : "Preview a theme"} aria-expanded={fabOpen} onClick={() => setFabOpen((o) => !o)}>
