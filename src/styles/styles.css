@@ -160,32 +160,40 @@ body.env-sealed main { padding-top: 0; }
 .nav__themepick--block select { width: 100%; max-width: none; }
 @media (min-width: 940px) { .nav__themepick { display: inline-flex; } }
 
-/* Demo showcase try-bar: pinned controls so mobile visitors can preview a theme
-   + decoration immediately — the nav pickers only show on wide screens, and on
-   the envelope theme the nav is hidden behind the sealed cover. Hidden on wide
-   screens, where the nav pickers appear instead. */
-.demo-trybar {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 55;
-  display: flex; gap: 12px; align-items: flex-end;
-  padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
-  background: color-mix(in oklch, var(--surface) 88%, transparent);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  border-top: 1px solid var(--line); box-shadow: 0 -6px 20px -12px rgba(0,0,0,.4);
-  /* iOS Safari mis-paints a position:fixed + backdrop-filter bar during scroll /
-     when body overflow toggles (e.g. switching to/from the envelope theme),
-     leaving it stuck mid-screen. Promote it to its own compositor layer so it
-     stays pinned to the viewport bottom — same fix as .admin__head. */
+/* Demo showcase: floating action button (support-icon style) at bottom-right.
+   Tapping it opens a panel to preview any theme + decoration. Replaces the old
+   pinned try-bar + inline nav selects. Works at every width and even over the
+   sealed envelope cover (nav is hidden there). z-index sits above content but
+   below modals. */
+.theme-fab {
+  position: fixed; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom));
+  z-index: 55; display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
+  /* own compositor layer — same iOS fixed-element paint fix as .admin__head */
   -webkit-transform: translateZ(0); transform: translateZ(0);
-  -webkit-backface-visibility: hidden; backface-visibility: hidden;
 }
-.demo-trybar { flex-wrap: wrap; transition: transform .28s ease; }
-.demo-trybar--hide { transform: translateY(calc(100% + 24px)) translateZ(0); }
-@media (prefers-reduced-motion: reduce) { .demo-trybar { transition: none; } }
-.demo-trybar .nav__themepick { display: flex; flex: 1; min-width: 0; }
-/* Register CTA gets its own full-width row so the selects above keep enough
-   width to show their value without clipping. */
-.demo-trybar .demo-trybar__reg { flex: 1 0 100%; justify-content: center; }
-.demo-trybar .nav__themepick-label { margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.theme-fab__btn {
+  width: 56px; height: 56px; border-radius: 50%; border: 0; cursor: pointer;
+  align-self: flex-end; background: var(--accent, #1E5BD6); color: #fff;
+  display: grid; place-items: center; box-shadow: 0 10px 26px -8px rgba(0,0,0,.5);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.theme-fab__btn:hover { transform: translateY(-2px); box-shadow: 0 14px 30px -8px rgba(0,0,0,.55); }
+.theme-fab__btn:active { transform: translateY(0); }
+.theme-fab__btn svg { width: 26px; height: 26px; }
+.theme-fab__panel {
+  width: min(280px, 82vw); background: var(--surface, #fff); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 16px; padding: 16px;
+  box-shadow: 0 16px 44px -10px rgba(0,0,0,.4);
+  display: flex; flex-direction: column; gap: 12px;
+  animation: themeFabIn .18s ease;
+}
+@keyframes themeFabIn { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .theme-fab__panel { animation: none; } }
+.theme-fab__title { font-family: var(--font-display, serif); font-size: 16px; font-weight: 600; color: var(--ink); }
+/* nav__themepick is display:none by default (nav shows it only ≥940px) — force
+   it visible inside the panel, full-width label + select. */
+.theme-fab__panel .nav__themepick { display: flex; }
+.theme-fab__panel .nav__themepick-label { margin-bottom: 2px; }
 .demo-trybar .nav__themepick select { width: 100%; max-width: none; }
 @media (min-width: 940px) { .demo-trybar { display: none; } }
 /* The fixed try-bar would cover the footer (incl. "Admin sign in") on mobile.

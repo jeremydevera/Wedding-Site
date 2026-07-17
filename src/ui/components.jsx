@@ -644,6 +644,7 @@ export const Icon = {
   menu: (p) => (<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>),
   close: (p) => (<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>),
   arrow: (p) => (<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M5 12h14m0 0-5-5m5 5-5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>),
+  palette: (p) => (<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.9 1.4-1.8-.22-.98.5-1.7 1.5-1.7H17a4 4 0 0 0 4-4c0-5-4-8.5-9-8.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><circle cx="7.5" cy="12" r="1.1" fill="currentColor"/><circle cx="10.5" cy="7.8" r="1.1" fill="currentColor"/><circle cx="15" cy="8.2" r="1.1" fill="currentColor"/></svg>),
 };
 
 // --- Floating home decorations (toggleable) --------------------------------

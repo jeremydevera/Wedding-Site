@@ -1,7 +1,7 @@
 import React from "react";
 
 import { go } from "@/lib/nav.js";
-import { onSiteScroll, scrollOffset, scrollToTop } from "@/lib/scroll.js";
+import { scrollToTop } from "@/lib/scroll.js";
 import { Store, useStore } from "@/lib/store.jsx";
 import { loadClientData } from "@/lib/api.js";
 import { resolveSubdomain } from "@/lib/tenant.js";
@@ -107,21 +107,9 @@ const DECOR_OPTS = [
 export function Nav({ route }) {
   const { settings, auth, clientId } = useStore();
   const [drawer, setDrawer] = useState(false);
-  // Demo try-bar visibility: hidden while scrolling DOWN (reading content),
-  // shown when scrolling UP or at rest. The sealed envelope locks scrolling,
-  // so no events fire there and the bar stays visible.
-  const [barHidden, setBarHidden] = useState(false);
-  useEffect(() => {
-    let last = scrollOffset();
-    const onScroll = () => {
-      const y = scrollOffset();
-      const dy = y - last;
-      if (Math.abs(dy) < 6) return; // ignore jitter
-      setBarHidden(dy > 0 && y > 40); // down = hide (never near the very top)
-      last = y;
-    };
-    return onSiteScroll(onScroll);
-  }, []);
+  // Demo theme/decor picker: a floating action button (support-icon style) that
+  // opens a small panel — replaces the old sticky try-bar + inline nav selects.
+  const [fabOpen, setFabOpen] = useState(false);
   // Demo site (demo.<platform> / apex) is a theme showcase: swap the RSVP CTA for
   // a live theme picker so prospective clients can preview every design.
   // In the admin Theme picker the home page is embedded via /?preview — hide the
@@ -180,13 +168,10 @@ export function Nav({ route }) {
           ))}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {/* RSVP button shows on every site. Demo's only extra is the theme +
-              decoration pickers beside it. */}
+          {/* RSVP button shows on every site. On the demo, the theme + decoration
+              pickers now live in the floating button (bottom-right), not the nav. */}
           <Button className="nav__cta" variant="primary" size="sm" onClick={() => go("rsvp")}>{sectionLabel("rsvp", settings.moduleLabels)}</Button>
-          {isDemo && <>
-            <Button className="nav__cta" variant="ghost" size="sm" onClick={() => { window.location.href = "https://celebrately.us/apply"; }}>Register</Button>
-            <ThemePicker />{!isPremiumTheme(settings.theme) && <DecorPicker />}
-          </>}
+          {isDemo && <Button className="nav__cta" variant="ghost" size="sm" onClick={() => { window.location.href = "https://celebrately.us/apply"; }}>Register</Button>}
           <button className="nav__burger" onClick={() => setDrawer(true)} aria-label="Menu">{Icon.menu({})}</button>
         </div>
       </div>
@@ -217,13 +202,22 @@ export function Nav({ route }) {
         </div>
       )}
 
-      {/* Demo showcase: a fixed bar so visitors can preview a theme + decoration
-          immediately on mobile — even on the sealed envelope where the nav is hidden. */}
+      {/* Demo showcase: a floating action button (support-icon style, bottom-
+          right) opens a panel to preview any theme + decoration. Works on every
+          width and even over the sealed envelope cover where the nav is hidden. */}
       {isDemo && (
-        <div className={"demo-trybar" + (barHidden ? " demo-trybar--hide" : "")}>
-          <ThemePicker block />
-          {!isPremiumTheme(settings.theme) && <DecorPicker block />}
-          <Button className="demo-trybar__reg" variant="primary" size="sm" onClick={() => { window.location.href = "https://celebrately.us/apply"; }}>Register — get your own site</Button>
+        <div className={"theme-fab" + (fabOpen ? " theme-fab--open" : "")}>
+          {fabOpen && (
+            <div className="theme-fab__panel" role="dialog" aria-label="Preview a theme and decoration">
+              <div className="theme-fab__title">Try a look</div>
+              <ThemePicker block />
+              {!isPremiumTheme(settings.theme) && <DecorPicker block />}
+              <Button className="theme-fab__reg" variant="primary" size="sm" block onClick={() => { window.location.href = "https://celebrately.us/apply"; }}>Register — get your own site</Button>
+            </div>
+          )}
+          <button className="theme-fab__btn" aria-label={fabOpen ? "Close theme picker" : "Preview a theme"} aria-expanded={fabOpen} onClick={() => setFabOpen((o) => !o)}>
+            {fabOpen ? Icon.close({}) : Icon.palette({})}
+          </button>
         </div>
       )}
     </>
