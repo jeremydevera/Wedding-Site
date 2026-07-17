@@ -2363,7 +2363,7 @@ export function SettingsAdmin() {
           <label style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer" }}>
             <input type="checkbox" checked={f.showSettingsToClient === true} onChange={(e) => setKey("showSettingsToClient", e.target.checked)} style={{ width: 18, height: 18, marginTop: 2, accentColor: "var(--accent)" }} />
             <span>
-              <span style={{ fontWeight: 600, color: "var(--ink)" }}>Show Settings to Client</span>
+              <span style={{ fontWeight: 600, color: "var(--ink)", textTransform: "uppercase", letterSpacing: ".04em" }}>Show Settings to Client</span>
               <span style={{ display: "block", color: "var(--muted)", fontSize: 13, marginTop: 2 }}>When on, the client sees the Settings tab with Moderation, Tab names, Theme &amp; Account (never this Admin folder). Off = the client has no Settings tab.</span>
             </span>
           </label>
