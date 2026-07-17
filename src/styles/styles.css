@@ -1282,6 +1282,18 @@ a.client-domain--link:hover { text-decoration: underline; }
 .admin-toolbar .search-box,
 .admin-toolbar__action,
 .admin--sa .admin-toolbar__action { height: 38px; min-height: 38px; }
+
+/* Donate to Dev tab — responsive grid of QR cards + copyable e-wallet numbers. */
+.donate-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin: 18px 0 4px; }
+.donate-card { margin: 0; background: #fff; border: 1px solid var(--line, #e4e1d8); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 10px; box-shadow: 0 2px 10px -6px rgba(0,0,0,.25); }
+.donate-card__img { width: 100%; max-width: 300px; height: auto; border-radius: 8px; display: block; }
+.donate-card__ph { aspect-ratio: 1; display: grid; place-items: center; background: #f4f3ef; color: var(--muted); font-size: 13px; border: 1px dashed var(--line, #d8d4c8); }
+.donate-card__label { font-size: 14px; font-weight: 600; color: var(--ink); letter-spacing: .02em; }
+.donate-numbers { margin-top: 22px; border-top: 1px solid var(--line, #e4e1d8); padding-top: 16px; display: flex; flex-direction: column; gap: 10px; max-width: 420px; }
+.donate-numbers__title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.donate-num { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid var(--line, #e4e1d8); border-radius: 10px; padding: 10px 12px; }
+.donate-num__wallet { font-weight: 600; color: var(--ink); min-width: 64px; }
+.donate-num__value { font-variant-numeric: tabular-nums; letter-spacing: .04em; color: var(--ink); flex: 1; }
 @media (max-width: 640px) {
   .admin-toolbar { gap: 8px; }
   .admin-toolbar__action { flex: 1 1 0; }                 /* actions share the top row */

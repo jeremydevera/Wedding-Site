@@ -1259,6 +1259,63 @@ export const QR_TARGETS = [
   { key: "video-message", label: "Video Message", path: "/video-message" },
 ];
 
+// "Donate to Dev" — a tip jar in the client admin. Owner-facing QR codes +
+// e-wallet numbers so clients can support the developer. Static content; no
+// persisted settings, so it never touches Store/Save.
+const DONATE_QRS = [
+  { key: "gcash", label: "GCash", img: "/assets/donate/gcash.png" },
+  { key: "maya", label: "Maya", img: "/assets/donate/maya.png" },
+  { key: "bdo", label: "BDO", img: "/assets/donate/bdo.png" },
+  { key: "maribank", label: "MariBank", img: "/assets/donate/maribank.png" },
+];
+const DONATE_NUMBERS = [
+  { label: "GCash", value: "09150860371" },
+  { label: "Maya", value: "09150860371" },
+];
+function DonateCard({ q }) {
+  const [broken, setBroken] = useState(false);
+  return (
+    <figure className="donate-card">
+      {broken
+        ? <div className="donate-card__img donate-card__ph">QR coming soon</div>
+        : <img className="donate-card__img" src={q.img} alt={q.label + " QR code"} loading="lazy" onError={() => setBroken(true)} />}
+      <figcaption className="donate-card__label">{q.label}</figcaption>
+    </figure>
+  );
+}
+export function DonateToDevTab() {
+  const [copied, setCopied] = useState("");
+  const copy = async (v) => {
+    try { await navigator.clipboard.writeText(v); setCopied(v); setTimeout(() => setCopied(""), 1600); }
+    catch (_) { toast("Couldn't copy — long-press to copy the number.", "err"); }
+  };
+  return (
+    <div className="panel">
+      <div className="panel__head">
+        <div className="panel__title">Donate to Dev</div>
+        <span style={{ color: "var(--muted)", fontSize: 14 }}>Love the platform? Support the developer behind Celebrately — thank you! 🙏</span>
+      </div>
+      <div className="panel__body">
+        <p style={{ marginTop: 0, color: "var(--ink)", fontSize: 15 }}>
+          Scan a QR with your banking or e-wallet app, or send directly to the numbers below. Every bit is appreciated.
+        </p>
+        <div className="donate-grid">
+          {DONATE_QRS.map((q) => <DonateCard key={q.key} q={q} />)}
+        </div>
+        <div className="donate-numbers">
+          <div className="donate-numbers__title">Or send to these numbers</div>
+          {DONATE_NUMBERS.map((n) => (
+            <div key={n.label} className="donate-num">
+              <span className="donate-num__wallet">{n.label}</span>
+              <span className="donate-num__value">{n.value}</span>
+              <Button variant="secondary" size="sm" onClick={() => copy(n.value)}>{copied === n.value ? "Copied!" : "Copy"}</Button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 export function QrAdmin() {
   const base = window.location.origin;
   return (
@@ -4007,6 +4064,8 @@ export function AdminApp() {
   // new reply from support waiting for the client.
   if (clientId) {
     tabs = [...tabs, { key: "support", label: "Support", icon: "mail", badge: supportWaiting }];
+    // Owner-facing tip jar for the developer (static QR codes + numbers).
+    tabs = [...tabs, { key: "donate", label: "Donate to Dev", icon: "heart" }];
   }
   const activeTab = tabs.some((t) => t.key === tab) ? tab : (tabs[0]?.key || "dashboard");
   const title = (tabs.find((t) => t.key === activeTab) || { label: "Admin" }).label;
@@ -4106,6 +4165,7 @@ export function AdminApp() {
           {activeTab === "r2media" && !clientId && <R2LibraryAdmin />}
           {activeTab === "health" && !clientId && <CloudflareHealth />}
           {activeTab === "support" && (clientId ? <SupportPanel tab={activeTab} /> : <SupportAdmin />)}
+          {activeTab === "donate" && <DonateToDevTab />}
           </AdminSaveCtx.Provider>
           {/* Footer: a clear end-of-content marker at the bottom of the scroll. */}
           <footer className="admin__footer">
