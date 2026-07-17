@@ -2401,6 +2401,7 @@ export function SettingsAdmin() {
             </div>
           </div>
         </div>
+        <SaveFooter />
       </div>)}
 
       {tab === "features" && (<div className="panel">
