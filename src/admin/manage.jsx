@@ -1458,7 +1458,7 @@ export function DonateToDevTab() {
             <a role="button" tabIndex={0} onClick={() => setDonatedTicket(true)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setDonatedTicket(true); }}
               style={{ color: "var(--accent)", fontWeight: 600, cursor: "pointer", textDecoration: "underline" }}>
               here
-            </a>{" "}and we'll stop showing this popup.
+            </a>
           </p>
           {tiles.length > 0 && <div className="donate-grid">{tiles.map((t) => <DonateCard key={t.id} t={t} />)}</div>}
           {numbers.length > 0 && (
