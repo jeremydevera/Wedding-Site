@@ -2037,7 +2037,7 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
 }
 /* env2's white lace heart has a different centroid (~51%/50%) than the olive
    heart (~46%/48%) the base rule is tuned to — recentre the text on it. */
-[data-theme="envelope2"] .inv-heart-text { left: 51%; top: 47%; color: #5a3a24; text-shadow: 0 1px 3px rgba(255, 255, 250, .5); }
+[data-theme="envelope2"] .inv-heart-text { left: 50.5%; top: 47%; color: #5a3a24; text-shadow: 0 1px 3px rgba(255, 255, 250, .5); }
 .inv-stage.is-open .inv-l-heart {
   will-change: transform, opacity; transform-origin: center bottom;
   animation: invHeartPop 3.8s ease-out .2s both;
