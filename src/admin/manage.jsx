@@ -2312,12 +2312,17 @@ export function SettingsAdmin() {
   // accessV2: feature membership + permissions moved to the superadmin table;
   // module toggles, renames and owner-grants disappear here. RSVP options and
   // guestbook moderation stay (RSVP has no content tab).
+  const isSuper = auth.role === "superadmin";
+  // When the superadmin turns on "Show Settings to Client" (Admin folder), the
+  // owner sees Moderation / Tab names / Theme / Account — everything EXCEPT the
+  // superadmin-only Admin folder.
+  const showToClient = settings.showSettingsToClient === true;
   const STABS = settings.accessV2 === true
     ? [["rsvp", "Moderation", "check"],
-       // Renaming guest-menu tabs is a SUPERADMIN-only operation under v2
-       // (owner request 2026-07-11) — owners never see this folder.
-       ...(auth.role === "superadmin" ? [["tabnames", "Tab names", "edit"]] : []),
-       ["appearance", "Theme", "grid"], ["account", "Account", "user"]]
+       ...((isSuper || showToClient) ? [["tabnames", "Tab names", "edit"]] : []),
+       ["appearance", "Theme", "grid"], ["account", "Account", "user"],
+       // Admin folder: superadmin-only master switches (never shown to owners).
+       ...(isSuper ? [["admin", "Admin", "gear"]] : [])]
     : [["features", "Features", "check"], ["appearance", "Theme", "grid"], ["access", "Access", "check"], ["account", "Account", "user"]];
 
   return (
@@ -2335,7 +2340,7 @@ export function SettingsAdmin() {
         })}
       </div>
 
-      {tab === "tabnames" && settings.accessV2 === true && auth.role === "superadmin" && (<div className="panel">
+      {tab === "tabnames" && settings.accessV2 === true && (isSuper || showToClient) && (<div className="panel">
         <div className="panel__head"><div className="panel__title">Tab names</div><span style={{ color: "var(--muted)", fontSize: 14 }}>How each section reads in the guest menu</span></div>
         <div className="panel__body" style={{ maxWidth: 760 }}>
           <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>Leave a field blank to keep the default. Click <strong>Save changes</strong> to apply.</p>
@@ -2348,6 +2353,20 @@ export function SettingsAdmin() {
               </div>
             ))}
           </div>
+        </div>
+        <SaveFooter />
+      </div>)}
+
+      {tab === "admin" && isSuper && (<div className="panel">
+        <div className="panel__head"><div className="panel__title">Admin</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Superadmin-only controls (clients never see this folder)</span></div>
+        <div className="panel__body" style={{ maxWidth: 760 }}>
+          <label style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer" }}>
+            <input type="checkbox" checked={f.showSettingsToClient === true} onChange={(e) => setKey("showSettingsToClient", e.target.checked)} style={{ width: 18, height: 18, marginTop: 2, accentColor: "var(--accent)" }} />
+            <span>
+              <span style={{ fontWeight: 600, color: "var(--ink)" }}>Show Settings to Client</span>
+              <span style={{ display: "block", color: "var(--muted)", fontSize: 13, marginTop: 2 }}>When on, the client sees the Settings tab with Moderation, Tab names, Theme &amp; Account (never this Admin folder). Off = the client has no Settings tab.</span>
+            </span>
+          </label>
         </div>
         <SaveFooter />
       </div>)}
@@ -2986,16 +3005,18 @@ function ShowToHomeModal({ open, onClose, showKey, defaultOn = true, helper, chi
 // folder. Attire lives inside the Details module under v2, so it's passed in as
 // the third chip (attireSlot) rather than dangling below the chip row.
 function DetailsTabV2() {
-  const { settings, detailCards, faq } = useStore();
+  const { settings, detailCards, faq, attire } = useStore();
   const f = settings;
   const [openD, setOpenD] = useState(false);
   const [openF, setOpenF] = useState(false);
+  const [openA, setOpenA] = useState(false);
   const cards = (detailCards || []).filter((c) => (c.title || "").trim() || (c.body || "").trim());
   const homeFaqs = (Array.isArray(faq) ? faq : []).filter((x) => x.home !== false);
 
   return (
     <div>
-      <DetailsAdmin headExtraTiles={<STHLink onClick={() => setOpenD(true)} />} headExtraFaq={<STHLink onClick={() => setOpenF(true)} />} attireSlot={<HomeAdmin section="attire" />} />
+      <DetailsAdmin headExtraTiles={<STHLink onClick={() => setOpenD(true)} />} headExtraFaq={<STHLink onClick={() => setOpenF(true)} />}
+        attireSlot={<AttireAdmin headExtra={<STHLink onClick={() => setOpenA(true)} />} />} />
       <ShowToHomeModal open={openD} onClose={() => setOpenD(false)} showKey="showHomeDetails" defaultOn={false}
         helper="If enabled, the detail cards will also be shown on the home page."
         scrollTo="home-details" sampleTag={cards.length === 0}>
@@ -3019,6 +3040,11 @@ function DetailsTabV2() {
           </label>
         ))}
         {(Array.isArray(faq) ? faq : []).length === 0 && <p style={{ color: "var(--muted)", fontSize: 13 }}>No questions yet — add them in the FAQ folder.</p>}
+      </ShowToHomeModal>
+      <ShowToHomeModal open={openA} onClose={() => setOpenA(false)} showKey="showAttire" defaultOn={true}
+        helper="If enabled, the attire guide will also be shown on the home page."
+        scrollTo="home-attire" sampleTag={(attire || []).length === 0}>
+        <HomeHeadFields k="attire" defEyebrow="What to wear" defTitle="Attire guide" />
       </ShowToHomeModal>
     </div>
   );
@@ -3642,7 +3668,7 @@ export function AttireGroupEditor({ open, group, onClose }) {
   );
 }
 
-export function AttireAdmin({ headRight, extraTop = null }) {
+export function AttireAdmin({ headRight, headExtra = null, extraTop = null }) {
   const { attire } = useStore();
   const { save: persistChanges } = React.useContext(AdminSaveCtx);
   const groups = attire || [];
@@ -3653,7 +3679,7 @@ export function AttireAdmin({ headRight, extraTop = null }) {
   return (
     <div className="panel">
       <div className="panel__head">
-        <div className="panel__title">Attire guide <span style={{ color: "var(--muted)", fontSize: 15 }}>({groups.length})</span></div>
+        <div className="panel__title">Attire guide <span style={{ color: "var(--muted)", fontSize: 15 }}>({groups.length})</span>{headExtra}</div>
         {headRight}
       </div>
       {extraTop && <div style={{ padding: "14px 16px 0" }}>{extraTop}</div>}
@@ -4282,6 +4308,9 @@ export function AdminApp() {
     // doesn't apply to v2 clients (levels are the only authority).
     tabs = ADMIN_TABS.filter((t) => {
       const fk = V2_TAB_FEATURE[t.key];
+      // Settings is owner-visible only when the superadmin flips
+      // "Show Settings to Client" (Settings → Admin). Superadmin always sees it.
+      if (t.key === "settings" && auth.role !== "superadmin") return settings.showSettingsToClient === true;
       if (!fk) return true;                       // dashboard, rsvps, settings…
       return auth.role === "superadmin" ? true : lvl(fk) === "edit";
     });

@@ -45,6 +45,10 @@ export const DEFAULT_SETTINGS = {
   // clients get accessV2:true seeded at creation (approveSiteRequest).
   accessV2: false,
   features: null,
+  // Settings tab visibility for the OWNER. Off by default — the superadmin
+  // builds the site; flip on in Settings → Admin to let the client see the
+  // Settings folders (Moderation, Tab names, Theme, Account — never Admin).
+  showSettingsToClient: false,
   rsvpRequirePhone: false, // RSVP form: phone becomes a required field
   // Per-module display-name overrides for the guest nav tabs. Empty object = use
   // the default labels; a per-key value (e.g. { guestbook: "Well Wishes" }) renames
