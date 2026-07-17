@@ -2417,6 +2417,13 @@ export function SettingsAdmin() {
               <span style={{ display: "block", color: "var(--muted)", fontSize: 13, marginTop: 2 }}>When on, the client sees the Settings tab with Moderation, Tab names, Theme &amp; Account (never this Admin folder). Off = the client has no Settings tab.</span>
             </span>
           </label>
+          <label style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer", marginTop: 16 }}>
+            <input type="checkbox" checked={f.hideDonateAd === true} onChange={(e) => setKey("hideDonateAd", e.target.checked)} style={{ width: 18, height: 18, marginTop: 2, accentColor: "var(--accent)" }} />
+            <span>
+              <span style={{ fontWeight: 600, color: "var(--ink)", textTransform: "uppercase", letterSpacing: ".04em" }}>Turn off Donate ads</span>
+              <span style={{ display: "block", color: "var(--muted)", fontSize: 13, marginTop: 2 }}>Stop showing the "Donate to Dev" popup to this client (e.g. once they've donated). The Donate tab stays available.</span>
+            </span>
+          </label>
         </div>
         <SaveFooter />
       </div>)}
@@ -4248,10 +4255,11 @@ export function AdminApp() {
   const [showDonateAd, setShowDonateAd] = useState(false);
   useEffect(() => {
     if (!clientId || auth.role !== "owner") return;
+    if (settings.hideDonateAd === true) return;   // superadmin turned it off for this client
     let seen = false;
     try { seen = sessionStorage.getItem("donateAdSeen") === "1"; } catch (_) {}
     if (!seen) { const t = setTimeout(() => setShowDonateAd(true), 900); return () => clearTimeout(t); }
-  }, [clientId, auth.role]);
+  }, [clientId, auth.role, settings.hideDonateAd]);
   const dismissDonateAd = () => { setShowDonateAd(false); try { sessionStorage.setItem("donateAdSeen", "1"); } catch (_) {} };
   useEffect(() => {
     if (!clientId) { setClientTickets([]); setSupportReplies([]); return; }

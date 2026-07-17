@@ -49,6 +49,9 @@ export const DEFAULT_SETTINGS = {
   // builds the site; flip on in Settings → Admin to let the client see the
   // Settings folders (Moderation, Tab names, Theme, Account — never Admin).
   showSettingsToClient: false,
+  // Superadmin can turn OFF the "Donate to Dev" promo popup per client (e.g.
+  // once they've donated). true = popup suppressed for that client.
+  hideDonateAd: false,
   rsvpRequirePhone: false, // RSVP form: phone becomes a required field
   // Per-module display-name overrides for the guest nav tabs. Empty object = use
   // the default labels; a per-key value (e.g. { guestbook: "Well Wishes" }) renames

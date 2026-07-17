@@ -489,6 +489,18 @@ export function ClientsAdmin() {
 
   // Enable/disable a client's site. is_active=false makes the public "read active
   // clients" policy hide it, so guests see the site as unavailable until re-enabled.
+  // Toggle the "Donate to Dev" popup for a client (superadmin can turn it off
+  // once they've confirmed the client donated). Writes content.hideDonateAd.
+  async function toggleDonateAd(c) {
+    await runBusy("Updating…", async () => {
+      const hidden = !(c.content && c.content.hideDonateAd === true);
+      const content = { ...(c.content || {}), hideDonateAd: hidden };
+      const { error } = await supabase.from("clients").update({ content }).eq("id", c.id);
+      if (error) { toast("Update failed: " + error.message, "err"); return; }
+      toast(hidden ? "Donate popup turned OFF for this client." : "Donate popup turned ON.", "success");
+      await load();
+    });
+  }
   async function toggleActive(c) {
     const next = !c.is_active;
     if (!next) {
@@ -981,7 +993,7 @@ export function ClientsAdmin() {
                   <th style={{ width: 34 }}><input type="checkbox" aria-label="Select all on this page"
                     checked={pg.pageItems.length > 0 && pg.pageItems.every((c) => sel.has(c.id))}
                     onChange={(e) => setSel((p) => { const n = new Set(p); pg.pageItems.forEach((c) => e.target.checked ? n.add(c.id) : n.delete(c.id)); return n; })} /></th>
-                  <th>Client</th><th>Email</th><th>Notes</th><th></th></tr></thead>
+                  <th>Client</th><th>Email</th><th>Notes</th><th>Donate ad</th><th></th></tr></thead>
                 <tbody>
                   {pg.pageItems.map((c) => (
                     <tr key={c.id}>
@@ -1002,6 +1014,12 @@ export function ClientsAdmin() {
                         ? <span title={notes[c.id]} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{notes[c.id]}</span>
                         : <span style={{ color: "var(--muted)" }}>—</span>}</td>
                       <td>
+                        {(() => { const off = c.content && c.content.hideDonateAd === true;
+                          return <button className={"tag" + (off ? " tag--hidden" : "")} style={{ cursor: "pointer", border: 0 }}
+                            onClick={() => toggleDonateAd(c)} title={off ? "Donate popup is OFF — click to turn on" : "Donate popup is ON — click to turn off"}>
+                            {off ? "Off" : "On"}</button>; })()}
+                      </td>
+                      <td>
                         <div className="row-actions">
                           <button className={"icon-btn" + (c.is_active ? "" : " icon-btn--danger")} onClick={() => toggleActive(c)} title={c.is_active ? "Disable access (take site offline)" : "Enable access (put site live)"} aria-pressed={c.is_active}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 3.5v8" /><path d="M6.6 6.8a8 8 0 1 0 10.8 0" /></svg>
@@ -1014,7 +1032,7 @@ export function ClientsAdmin() {
                       </td>
                     </tr>
                   ))}
-                  {filtered.length === 0 && <tr><td colSpan={6} style={{ textAlign: "center", padding: 40, color: "var(--muted)" }}>{clients.length ? "No matches." : "No clients yet — use “Add client”."}</td></tr>}
+                  {filtered.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center", padding: 40, color: "var(--muted)" }}>{clients.length ? "No matches." : "No clients yet — use “Add client”."}</td></tr>}
                 </tbody>
               </table>
             </div>
