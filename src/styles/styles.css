@@ -1298,7 +1298,13 @@ a.client-domain--link:hover { text-decoration: underline; }
 .donate-tbl td { vertical-align: middle; }
 .donate-tbl__imgcell .imgup { max-width: 240px; }
 .donate-tbl__imgcell .imgup__thumb { max-width: 140px; }
-.donate-numbers { margin-top: 22px; border-top: 1px solid var(--line, #e4e1d8); padding-top: 16px; display: flex; flex-direction: column; gap: 10px; max-width: 420px; }
+.donate-numbers { margin-top: 22px; border-top: 1px solid var(--line, #e4e1d8); padding-top: 16px; }
+.donate-numbers__list { display: flex; flex-direction: column; gap: 10px; max-width: 420px; }
+/* Desktop: lay the number rows side by side instead of stacking. */
+@media (min-width: 700px) {
+  .donate-numbers__list { flex-direction: row; flex-wrap: wrap; max-width: none; }
+  .donate-numbers__list .donate-num { flex: 0 1 320px; }
+}
 .donate-numbers__title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
 .donate-num { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid var(--line, #e4e1d8); border-radius: 10px; padding: 10px 12px; }
 .donate-num__wallet { font-weight: 600; color: var(--ink); min-width: 64px; }

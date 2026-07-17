@@ -1454,26 +1454,28 @@ export function DonateToDevTab() {
         </div>
         <div className="panel__body">
           <p style={{ marginTop: 0, color: "var(--ink)", fontSize: 15 }}>Scan a QR with your banking or e-wallet app, or copy a number below. Every bit is appreciated.</p>
-          {tiles.length > 0 && <div className="donate-grid">{tiles.map((t) => <DonateCard key={t.id} t={t} />)}</div>}
-          {numbers.length > 0 && (
-            <div className="donate-numbers">
-              <div className="donate-numbers__title">Or send to these numbers</div>
-              {numbers.map((n) => (
-                <div key={n.id} className="donate-num">
-                  <span className="donate-num__wallet">{n.label}</span>
-                  <span className="donate-num__value">{n.value}</span>
-                  <Button variant="secondary" size="sm" onClick={() => copy(n.value)}>{copied === n.value ? "Copied!" : "Copy"}</Button>
-                </div>
-              ))}
-            </div>
-          )}
-          <p style={{ marginTop: 22, color: "var(--ink-soft)", fontSize: 14 }}>
+          <p style={{ marginTop: 0, marginBottom: 18, color: "var(--ink-soft)", fontSize: 14 }}>
             Already donated?{" "}
             <a role="button" tabIndex={0} onClick={() => setDonatedTicket(true)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setDonatedTicket(true); }}
               style={{ color: "var(--accent)", fontWeight: 600, cursor: "pointer", textDecoration: "underline" }}>
               Inform us so we can turn off this popup.
             </a>
           </p>
+          {tiles.length > 0 && <div className="donate-grid">{tiles.map((t) => <DonateCard key={t.id} t={t} />)}</div>}
+          {numbers.length > 0 && (
+            <div className="donate-numbers">
+              <div className="donate-numbers__title">Or send to these numbers</div>
+              <div className="donate-numbers__list">
+                {numbers.map((n) => (
+                  <div key={n.id} className="donate-num">
+                    <span className="donate-num__wallet">{n.label}</span>
+                    <span className="donate-num__value">{n.value}</span>
+                    <Button variant="secondary" size="sm" onClick={() => copy(n.value)}>{copied === n.value ? "Copied!" : "Copy"}</Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <Modal open={donatedTicket} onClose={() => setDonatedTicket(false)} label="Let us know you donated">
           <SectionHead eyebrow="Donate to Dev" title="Thanks for donating! 🙏" />
