@@ -2357,6 +2357,52 @@ export function StoryEditor({ open, index, item, onClose }) {
   );
 }
 
+// Platform-wide superadmin console settings (no client context). Currently the
+// AUTO APPROVE WEBSITE REQUEST master switch, stored globally in app_config so
+// the server-side site-request flow can read it. Superadmin-only (RLS on
+// app_config enforces the write; the tab is only mounted for SA on the console).
+export function PlatformSettings() {
+  const [enabled, setEnabled] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let dead = false;
+    getAppConfig("auto_approve_requests")
+      .then((v) => { if (!dead) { setEnabled(v?.enabled === true); setLoaded(true); } })
+      .catch(() => { if (!dead) setLoaded(true); });
+    return () => { dead = true; };
+  }, []);
+  const save = async (next) => {
+    const prev = enabled;
+    setBusy(true); setEnabled(next); // optimistic
+    try {
+      await setAppConfig("auto_approve_requests", { enabled: next });
+      toast(next
+        ? "Auto-approve ON — new website requests will be approved automatically."
+        : "Auto-approve OFF — requests wait for manual approval.", "ok");
+    } catch (e) {
+      setEnabled(prev);
+      toast("Couldn't save: " + (e?.message || "error"), "err");
+    } finally { setBusy(false); }
+  };
+  return (
+    <div className="panel">
+      <div className="panel__head">
+        <div className="panel__title">Platform settings</div>
+        <span style={{ color: "var(--muted)", fontSize: 14 }}>Superadmin only — applies to the whole platform.</span>
+      </div>
+      <div className="panel__body">
+        <AdminToggle
+          label="AUTO APPROVE WEBSITE REQUEST"
+          desc="When ON, a customer's request from /apply is approved automatically: their site is created and an email is sent with a link to set their own password plus their new website link — even while you're offline. When OFF, requests wait in Clients → Requests for you to approve manually."
+          checked={enabled}
+          onChange={(loaded && !busy) ? save : () => {}}
+        />
+      </div>
+    </div>
+  );
+}
+
 export function SettingsAdmin() {
   const { settings, story, auth } = useStore();
   const f = settings;
@@ -4420,6 +4466,11 @@ export function AdminApp() {
   if (clientId || auth.role === "superadmin") {
     tabs = [...tabs, { key: "donate", label: "Donate to Dev", icon: "heart" }];
   }
+  // Platform-wide superadmin console settings (auto-approve, etc.) — only on the
+  // apex hub (no client), superadmin only.
+  if (!clientId && auth.role === "superadmin") {
+    tabs = [...tabs, { key: "platformsettings", label: "Settings", icon: "gear" }];
+  }
   const activeTab = tabs.some((t) => t.key === tab) ? tab : (tabs[0]?.key || "dashboard");
   const title = (tabs.find((t) => t.key === activeTab) || { label: "Admin" }).label;
   const onPlatformTab = activeTab === "overview" || activeTab === "clients" || (activeTab === "support" && !clientId);
@@ -4522,6 +4573,7 @@ export function AdminApp() {
           {activeTab === "health" && !clientId && <CloudflareHealth />}
           {activeTab === "support" && (clientId ? <SupportPanel tab={activeTab} /> : <SupportAdmin />)}
           {activeTab === "donate" && <DonateToDevTab />}
+          {activeTab === "platformsettings" && !clientId && <PlatformSettings />}
           </AdminSaveCtx.Provider>
           {/* Footer: a clear end-of-content marker at the bottom of the scroll. */}
           <footer className="admin__footer">
