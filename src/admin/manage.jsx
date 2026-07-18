@@ -2650,7 +2650,10 @@ export function SettingsAdmin() {
               crop box, preview frame and preview geometry all follow the theme. A crop
               made in the matching box maps 1:1 onto the site (no media edge can show). */}
           <ImageUploadField purpose="frame" label="Photo inside the oval frame"
-            ratio={f.theme === "envelope2" ? "425 / 575" : "1 / 1"} allowVideo
+            /* Crop aspect MUST match the on-site oval box so what you frame is what
+               shows (no object-fit:cover re-crop). olive box = 45.6%x60.5% of the
+               766x800 frame -> 349:484; env2 box = 39.1%x53.1% of 940x940 -> 391:531. */
+            ratio={f.theme === "envelope2" ? "391 / 531" : "349 / 484"} allowVideo
             framePreview={f.theme === "envelope2" ? "/assets/invite/white-frame.png" : "/assets/invite/p2-frame.png"}
             frameGeom={f.theme === "envelope2" ? { canvas: "940 / 940", left: "30.3%", top: "25.2%", width: "39.1%", height: "53.1%" } : undefined}
             defaultPreview="/assets/invite/frame-video.gif"
