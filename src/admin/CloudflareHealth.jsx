@@ -142,7 +142,7 @@ export function CloudflareHealth() {
             { label: "Pages builds", used: data.builds?.month, limit: data.builds?.limit || 500, fmt: nf, suffix: "this month", note: data.builds?.month == null ? "token needs Pages: Read" : null },
             { label: "Custom domains", used: data.domains?.count, limit: data.domains?.limit || 100, fmt: nf, suffix: "attached", note: data.domains?.count == null ? "token needs Pages: Read" : null },
             { label: "R2 storage", detail: `${nf(data.r2?.objects)} objects`, used: data.r2?.storageBytes, limit: data.r2?.limitBytes || R2_FREE_BYTES, fmt: fmtBytes, suffix: "free tier" },
-            { label: "Supabase database", used: data.supa?.dbBytes, limit: data.supa?.dbLimitBytes || 524288000, fmt: fmtBytes, suffix: "free tier", note: data.supa?.dbBytes == null ? "unavailable" : null },
+            { label: "Supabase database", used: data.supa?.dbBytes, limit: data.supa?.dbLimitBytes || 524288000, fmt: fmtBytes, suffix: data.supa?.plan ? `${data.supa.plan} plan` : "free tier", note: data.supa?.dbBytes == null ? "unavailable" : null },
           ]} />
         </Suspense>
 

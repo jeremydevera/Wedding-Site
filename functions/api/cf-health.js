@@ -87,11 +87,15 @@ export async function onRequestGet(context) {
 
   const acct = env.CF_ACCOUNT_ID || "4acf69efbeed54838dc0d5f004769933";
   const zone = env.CF_ZONE_ID || "3de2f4733d9e76517db51bf1a44314a2";
+  const SUPA_ORG_ID = env.SUPABASE_ORG_ID || "hmjytmqurgudfkpczvtg";
 
-  // Plan limits — CF/Supabase expose no "your plan's quota" API, so these are
+  // Plan limits — CF exposes no "your plan's quota" API, so these are
   // dashboard-adjustable Pages vars with the current plans as defaults
-  // (Workers Paid 10M req/mo, Pages 500 builds/mo, R2 free 10 GB, Supabase free
-  // 500 MB). Change a var after a plan upgrade; applies on the next deploy.
+  // (Workers Paid 10M req/mo, Pages 500 builds/mo, R2 free 10 GB). Change a var
+  // after a plan upgrade; applies on the next deploy. The Supabase DB limit is
+  // the exception: when a SUPABASE_MGMT_TOKEN (PAT) secret is set it's read LIVE
+  // from the org's plan (fetchSupaPlan); CF_LIMIT_SUPA_DB_MB / 500 is only the
+  // fallback for when no PAT is configured.
   const envNum = (v, dflt) => (Number.isFinite(+v) && +v > 0 ? +v : dflt);
   const LIMIT_REQ_MONTH = envNum(env.CF_LIMIT_REQ_MONTH, 10_000_000);
   const LIMIT_BUILDS_MONTH = envNum(env.CF_LIMIT_BUILDS_MONTH, 500);
@@ -174,9 +178,29 @@ export async function onRequestGet(context) {
     } catch { return null; }
   };
 
-  let data, buildsMonth, dbBytes, domainCount;
+  // Supabase plan -> included DB-size ceiling. The plan lives behind the
+  // Management API (api.supabase.com), which needs a Personal Access Token —
+  // the anon key / caller JWT can't reach it. No PAT set -> null -> the caller
+  // falls back to CF_LIMIT_SUPA_DB_MB / 500, so this stays inert until wired.
+  // enterprise / custom-disk plans aren't in the map -> null -> env/500 too.
+  const SUPA_PLAN_MB = { free: 500, pro: 8192, team: 8192 };
+  const fetchSupaPlan = async () => {
+    const pat = env.SUPABASE_MGMT_TOKEN;
+    if (!pat) return null;
+    try {
+      const r = await fetch(`https://api.supabase.com/v1/organizations/${SUPA_ORG_ID}`, {
+        headers: { authorization: `Bearer ${pat}` },
+      });
+      if (!r.ok) return null;
+      const o = await r.json();
+      const plan = typeof o?.plan === "string" ? o.plan : null;
+      return plan ? { plan, limitMb: SUPA_PLAN_MB[plan] || null } : null;
+    } catch { return null; }
+  };
+
+  let data, buildsMonth, dbBytes, domainCount, supaPlan;
   try {
-    const [resp, builds, db, doms] = await Promise.all([
+    const [resp, builds, db, doms, plan] = await Promise.all([
       fetch("https://api.cloudflare.com/client/v4/graphql", {
         method: "POST",
         headers: { authorization: `Bearer ${CF_TOKEN}`, "content-type": "application/json" },
@@ -185,8 +209,9 @@ export async function onRequestGet(context) {
       fetchBuildsMonth(),
       fetchDbSize(),
       fetchDomainCount(),
+      fetchSupaPlan(),
     ]);
-    buildsMonth = builds; dbBytes = db; domainCount = doms;
+    buildsMonth = builds; dbBytes = db; domainCount = doms; supaPlan = plan;
     const jr = await resp.json();
     if (!resp.ok || (jr.errors && jr.errors.length) || !jr.data) {
       return json({ configured: true, error: "upstream" }); // soft — do not cache, do not leak details
@@ -205,7 +230,9 @@ export async function onRequestGet(context) {
   payload.builds = { month: buildsMonth, limit: LIMIT_BUILDS_MONTH }; // null month => token lacks Pages:Read
   payload.domains = { count: domainCount, limit: LIMIT_DOMAINS }; // null count => token lacks Pages:Read
   payload.r2.limitBytes = LIMIT_R2_GB * 1024 ** 3;
-  payload.supa = { dbBytes, dbLimitBytes: LIMIT_SUPA_DB_MB * 1024 * 1024 };
+  // Live plan limit wins when a PAT let us read it; else the env var / 500.
+  const dbLimitMb = supaPlan?.limitMb || LIMIT_SUPA_DB_MB;
+  payload.supa = { dbBytes, dbLimitBytes: dbLimitMb * 1024 * 1024, plan: supaPlan?.plan || null };
 
   const res = json(payload);
   res.headers.set("cache-control", "max-age=300");
