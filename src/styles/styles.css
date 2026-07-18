@@ -1966,12 +1966,15 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
    rectangle (NOT cropped oval). Box = the frame's oval-hole bounds so the photo
    fits the opening with no overlap; the opaque frame masks the corners. Owner
    picks what shows via the Crop tool. (Owner chose this "fit the oval" layout.) */
-.inv-l-video { position: absolute; left: 31.5%; top: 19.2%; width: 45.6%; height: 60.5%; z-index: 1; overflow: hidden; }
+/* Box OVERSCANS the oval hole (~+3%) so the photo tucks UNDER the frame ring —
+   no rectangular photo edge / gap shows inside the opening. Hole measured
+   L31.2 W46.1 T19.0 H61.0; box extends past it on all sides. */
+.inv-l-video { position: absolute; left: 28.2%; top: 16.0%; width: 52.1%; height: 67.0%; z-index: 1; overflow: hidden; }
 /* env2's white-frame.png is a square canvas with a CENTERED oval opening
    (hole: x 30.3-69.4%, y 25.1-78.3%) — the stock video box is tuned to the
    peony frame's right-side oval. ~2% overlap tucks the media under the rim. */
 /* env2 white-frame oval hole: x30.3-69.4%, y25.2-78.3% (inherits the ellipse clip). */
-[data-theme="envelope2"] .inv-l-video { left: 30.3%; top: 25.2%; width: 39.1%; height: 53.1%; }
+[data-theme="envelope2"] .inv-l-video { left: 27.1%; top: 22.0%; width: 45.5%; height: 59.5%; }
 /* env2: frame+photo on the RIGHT (owner-arranged); the video box is % of the
    group, so the photo scales with it. */
 [data-theme="envelope2"] .inv-l-framegroup { left: 36.1%; top: -27%; width: 60%; }

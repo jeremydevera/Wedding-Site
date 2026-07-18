@@ -2650,12 +2650,12 @@ export function SettingsAdmin() {
               crop box, preview frame and preview geometry all follow the theme. A crop
               made in the matching box maps 1:1 onto the site (no media edge can show). */}
           <ImageUploadField purpose="frame" label="Photo inside the oval frame"
-            /* Crop aspect MUST match the on-site oval box so what you frame is what
-               shows (no object-fit:cover re-crop). olive box = 45.6%x60.5% of the
-               766x800 frame -> 349:484; env2 box = 39.1%x53.1% of 940x940 -> 391:531. */
-            ratio={f.theme === "envelope2" ? "391 / 531" : "349 / 484"} allowVideo
+            /* Crop aspect matches the on-site overscanned box so object-fit:cover
+               adds no extra crop. olive box 52.1%x67.0% of 766x800 -> ~745:1000;
+               env2 box 45.5%x59.5% of 940x940 -> ~765:1000. */
+            ratio={f.theme === "envelope2" ? "765 / 1000" : "745 / 1000"} allowVideo
             framePreview={f.theme === "envelope2" ? "/assets/invite/white-frame.png" : "/assets/invite/p2-frame.png"}
-            frameGeom={f.theme === "envelope2" ? { canvas: "940 / 940", left: "30.3%", top: "25.2%", width: "39.1%", height: "53.1%" } : undefined}
+            frameGeom={f.theme === "envelope2" ? { canvas: "940 / 940", left: "27.1%", top: "22.0%", width: "45.5%", height: "59.5%" } : undefined}
             defaultPreview="/assets/invite/frame-video.gif"
             value={f.frameImage} onChange={(v) => setKey("frameImage", v)}
             cropValue={f.frameImageCrop || null} onCropChange={(c) => setKey("frameImageCrop", c)} />

@@ -388,7 +388,7 @@ export function confirmDialog(opts) {
 // frameGeom: geometry of the "In the frame" live preview — the frame art's
 // canvas aspect + the media window inside it (mirrors the site's .inv-l-video
 // box for that theme). Defaults to the olive peony frame.
-const FRAME_GEOM_OLIVE = { canvas: "766 / 800", left: "31.5%", top: "19.2%", width: "45.6%", height: "60.5%" };
+const FRAME_GEOM_OLIVE = { canvas: "766 / 800", left: "28.2%", top: "16.0%", width: "52.1%", height: "67.0%" };
 export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, livePreview, initialParams, frameGeom }) {
   // DEFECT-2026-07-09-C: the plain preview <img> caches the media response
   // WITHOUT CORS headers (no Vary/ACAO on the plain fetch); this CORS-mode
