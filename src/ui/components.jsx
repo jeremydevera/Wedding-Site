@@ -396,7 +396,14 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
   // box + broken icon. A cache-splitting query param forces a fresh fetch WITH
   // Origin (R2 ignores the query for object lookup). http(s) only — data:/blob:
   // pass through untouched.
-  const corsSrc = /^https?:/i.test(src || "") ? src + (src.includes("?") ? "&" : "?") + "xo=1" : src;
+  // Our R2 media host (media.celebrately.us) sends NO CORS header, so a canvas
+  // drawn from it TAINTS -> toDataURL throws. That froze the "In the frame"
+  // live preview (stuck on the raw static image) AND made "Apply crop" silently
+  // cancel for existing R2 photos. The SAME object is served SAME-ORIGIN by the
+  // /r2/ Pages Function, and same-origin media never taints. Read pixels from
+  // /r2/ in the crop editor; data:/blob:/other URLs pass through unchanged.
+  const readSrc = typeof src === "string" ? src.replace(/^https?:\/\/media\.celebrately\.us\//i, "/r2/") : src;
+  const corsSrc = /^https?:/i.test(readSrc || "") ? readSrc + (readSrc.includes("?") ? "&" : "?") + "xo=1" : readSrc;
   const [zoom, setZoom] = useState(1);
   const [off, setOff] = useState({ x: 0, y: 0 });
   const [nat, setNat] = useState({ w: 0, h: 0 });
@@ -412,13 +419,17 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
   // via a same-origin object URL instead — always shows AND stays canvas-
   // readable (untainted), so no crossOrigin attr is needed. Fresh blob:/data:
   // uploads pass straight through. Video keeps the corsSrc path.
-  const [blobSrc, setBlobSrc] = useState(src);
+  const [blobSrc, setBlobSrc] = useState(readSrc);
   useEffect(() => {
     if (!open || !src || isVideo) return;
-    if (!/^https?:/i.test(src)) { setBlobSrc(src); return; }  // already same-origin
-    setBlobSrc(src);  // show immediately (no crossOrigin → not blocked on iOS)
+    // readSrc is same-origin (/r2/…) for our media host, or a data:/blob: — use
+    // it directly: same-origin images are canvas-readable (no taint, no iOS-black).
+    if (!/^https?:/i.test(readSrc)) { setBlobSrc(readSrc); return; }
+    // Only a FOREIGN cross-origin http(s) src reaches here — blob-fetch it so the
+    // canvas stays readable and iOS doesn't blank it.
+    setBlobSrc(readSrc);
     let url = null, dead = false;
-    fetch(src, { mode: "cors" })
+    fetch(readSrc, { mode: "cors" })
       .then((r) => (r.ok ? r.blob() : Promise.reject(new Error("fetch " + r.status))))
       .then((bl) => { if (dead) return; url = URL.createObjectURL(bl); setBlobSrc(url); setMediaTick((t) => t + 1); })
       .catch(() => { /* keep the direct src; canvas readback may be limited but it displays */ });
@@ -431,7 +442,7 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
     if (isVideo) return; // the rendered <video> reports its size via onLoadedMetadata
     const im = new Image();
     im.onload = () => setNat({ w: im.naturalWidth, h: im.naturalHeight });
-    im.src = src;
+    im.src = readSrc;
   }, [open, src]);
 
   const baseScale = nat.w ? Math.max(W / nat.w, H / nat.h) : 1;
