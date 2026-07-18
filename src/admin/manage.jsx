@@ -2616,8 +2616,10 @@ export function SettingsAdmin() {
             </div>
           )}
 
-          {/* Tools / Enable-arrange hidden for now (owner request) — flip `false` to restore. */}
-          {true && isPremiumTheme(f.theme) && (
+          {/* Tools / Enable-arrange is SUPERADMIN-ONLY — never shown to clients/owners.
+             (auth.role stays "superadmin" while impersonating a client, so the
+             SA still gets it on the client's console.) */}
+          {isSuper && isPremiumTheme(f.theme) && (
             <div style={{ marginTop: 24, padding: 18, border: "1px solid #d8b65e", borderRadius: "var(--radius)", background: "linear-gradient(180deg, color-mix(in oklch, #f6e6b8 22%, var(--surface)), var(--surface))" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                 {Icon.grid({ style: { width: 18, height: 18 } })}
@@ -4422,7 +4424,9 @@ export function AdminApp() {
   const title = (tabs.find((t) => t.key === activeTab) || { label: "Admin" }).label;
   const onPlatformTab = activeTab === "overview" || activeTab === "clients" || (activeTab === "support" && !clientId);
 
-  const canArrange = settings.arrangeEnabled && isPremiumTheme(settings.theme);
+  // Arrange is superadmin-only (matches the SA-only "Enable arrange" toggle) — a
+  // client with a stale arrangeEnabled=true must NOT see the Arrange Now button.
+  const canArrange = auth.role === "superadmin" && settings.arrangeEnabled && isPremiumTheme(settings.theme);
   const startArrange = () => { try { sessionStorage.setItem("arrangeStart", "1"); } catch (e) {} go("home"); };
 
   const isSuper = auth.role === "superadmin";

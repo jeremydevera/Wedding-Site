@@ -35,3 +35,11 @@ when a behavior is confirmed intentional.
 - **Behavior:** The per-section home header editor (Small Header / Big Header in each Home folder) renders only for the superadmin. Owners with Home-folder grants still edit the folder's content but never see this panel.
 - **Why:** Header copy is curated by the platform owner; clients shouldn't rewrite section headers themselves.
 - **Do NOT flag as:** "owner missing header fields", "grant doesn't expose header editor". Intended.
+
+---
+
+## "Enable arrange" toggle + "Arrange Now" button are superadmin-only
+- **Where:** `src/admin/manage.jsx` — Settings → Theme "Tools" block gated `isSuper && isPremiumTheme(f.theme)`; nav `canArrange = auth.role === "superadmin" && settings.arrangeEnabled && isPremiumTheme(...)`.
+- **Behavior:** Clients/owners never see the "Enable arrange" toggle nor the "Arrange Now" nav button, even if `settings.arrangeEnabled` is already true. `auth.role` stays `"superadmin"` while impersonating a client, so the SA still gets both on the client's console.
+- **Why:** Arrange is a layout-authoring tool for the platform owner, not the couple.
+- **Do NOT flag as:** "owner missing arrange", "stale arrangeEnabled not honored for client", "Tools panel hidden". Intended.
