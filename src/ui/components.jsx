@@ -388,7 +388,7 @@ export function confirmDialog(opts) {
 // frameGeom: geometry of the "In the frame" live preview — the frame art's
 // canvas aspect + the media window inside it (mirrors the site's .inv-l-video
 // box for that theme). Defaults to the olive peony frame.
-const FRAME_GEOM_OLIVE = { canvas: "766 / 800", left: "20.6%", top: "14.9%", width: "78%", height: "75%" };
+const FRAME_GEOM_OLIVE = { canvas: "766 / 800", left: "31.5%", top: "19.2%", width: "45.6%", height: "60.5%" };
 export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, livePreview, initialParams, frameGeom }) {
   // DEFECT-2026-07-09-C: the plain preview <img> caches the media response
   // WITHOUT CORS headers (no Vary/ACAO on the plain fetch); this CORS-mode
@@ -526,7 +526,7 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
               <div style={{ position: "relative", width: 200, aspectRatio: g.canvas, filter: "drop-shadow(0 6px 14px rgba(26,30,12,.28))" }}>
                 {/* a raw video URL renders nothing in an <img> — wait for the
                     canvas snapshot instead of showing a broken image */}
-                {(live || !isVideo) && <img src={live || src} alt="" style={{ position: "absolute", left: g.left, top: g.top, width: g.width, height: g.height, objectFit: "cover", display: "block" }} />}
+                {(live || !isVideo) && <img src={live || src} alt="" style={{ position: "absolute", left: g.left, top: g.top, width: g.width, height: g.height, objectFit: "cover", display: "block", borderRadius: "50%" }} />}
                 <img src={frameSrc} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "auto", display: "block" }} />
               </div>
             </div>

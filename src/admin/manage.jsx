@@ -2652,7 +2652,7 @@ export function SettingsAdmin() {
           <ImageUploadField purpose="frame" label="Photo inside the oval frame"
             ratio={f.theme === "envelope2" ? "425 / 575" : "1 / 1"} allowVideo
             framePreview={f.theme === "envelope2" ? "/assets/invite/white-frame.png" : "/assets/invite/p2-frame.png"}
-            frameGeom={f.theme === "envelope2" ? { canvas: "940 / 940", left: "28.5%", top: "23%", width: "42.5%", height: "57.5%" } : undefined}
+            frameGeom={f.theme === "envelope2" ? { canvas: "940 / 940", left: "30.3%", top: "25.2%", width: "39.1%", height: "53.1%" } : undefined}
             defaultPreview="/assets/invite/frame-video.gif"
             value={f.frameImage} onChange={(v) => setKey("frameImage", v)}
             cropValue={f.frameImageCrop || null} onCropChange={(c) => setKey("frameImageCrop", c)} />

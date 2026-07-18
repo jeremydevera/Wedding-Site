@@ -1962,11 +1962,16 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
 [data-theme="envelope2"] .inv-l-card { left: 9.3%; top: -23.4%; width: 50%; }
 .inv-l-framegroup { left: 7.18%; top: -17.02%; width: 47%; z-index: 5; }
 .inv-l-framegroup > img.inv-frame-img { display: block; width: 100%; height: auto; position: relative; z-index: 6; }
-.inv-l-video { position: absolute; left: 20.6%; top: 14.9%; width: 78%; height: 75%; z-index: 1; overflow: hidden; }
+/* The photo sits INSIDE the frame's oval opening. Box = the p2-frame oval hole
+   (measured x31.5-77%, y19.2-79.8%) and clipped to an ellipse (border-radius)
+   so the rectangular photo's corners can't poke past the oval onto the frame /
+   card. */
+.inv-l-video { position: absolute; left: 31.5%; top: 19.2%; width: 45.6%; height: 60.5%; z-index: 1; overflow: hidden; border-radius: 50%; }
 /* env2's white-frame.png is a square canvas with a CENTERED oval opening
    (hole: x 30.3-69.4%, y 25.1-78.3%) — the stock video box is tuned to the
    peony frame's right-side oval. ~2% overlap tucks the media under the rim. */
-[data-theme="envelope2"] .inv-l-video { left: 28.5%; top: 23%; width: 42.5%; height: 57.5%; }
+/* env2 white-frame oval hole: x30.3-69.4%, y25.2-78.3% (inherits the ellipse clip). */
+[data-theme="envelope2"] .inv-l-video { left: 30.3%; top: 25.2%; width: 39.1%; height: 53.1%; }
 /* env2: frame+photo on the RIGHT (owner-arranged); the video box is % of the
    group, so the photo scales with it. */
 [data-theme="envelope2"] .inv-l-framegroup { left: 36.1%; top: -27%; width: 60%; }
