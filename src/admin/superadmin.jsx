@@ -795,7 +795,8 @@ export function ClientsAdmin() {
                                 try {
                                   const res = await approveSiteRequest(r);
                                   if (res && res.loginError) toast("Site created, but the owner login was NOT set (" + res.loginError + ") — set it via Edit → Access.", "err");
-                                  else toast("Site created — owner can sign in with the starter password", "success");
+                                  else if (res && res.emailError) toast("Site created & login set, but the setup email didn't send (" + res.emailError + ") — check RESEND_API_KEY, then resend.", "err");
+                                  else toast("Site created — a set-password + site link was emailed to the client.", "success");
                                   await load();
                                 }
                                 catch (e) { toast("Approve failed: " + (e.message || "error"), "err"); }
@@ -864,7 +865,8 @@ export function ClientsAdmin() {
                                 try {
                                   const res = await approveSiteRequest(r);
                                   if (res && res.loginError) toast("Site restored, but the owner login was NOT set (" + res.loginError + ")", "err");
-                                  else toast("Site restored — owner can sign in with the starter password", "success");
+                                  else if (res && res.emailError) toast("Site restored & login set, but the setup email didn't send (" + res.emailError + ")", "err");
+                                  else toast("Site restored — a set-password + site link was emailed to the client.", "success");
                                   await load();
                                 } catch (e) { toast("Restore failed: " + (e.message || "error"), "err"); }
                                 finally { setBusy(false); }

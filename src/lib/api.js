@@ -2,7 +2,7 @@ import { supabase } from "@/lib/supabase.js";
 import { Store } from "@/lib/store.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { clientToState, stateToClientRow, rowToGuestbook, rowToRsvp, rowToQuizSub, rsvpToRow, guestbookToRow, quizToRow, guestToRow, rowToGuest, ticketToRow } from "@/lib/mappers.js";
-import { loadSession, createOwner } from "@/lib/auth.js";
+import { loadSession, createOwner, sendSetupEmail } from "@/lib/auth.js";
 import { DEFAULT_CLIENT_MODULES } from "@/lib/roles.js";
 
 // Boot: load the active client + approved guestbook, hydrate the store cache.
@@ -756,6 +756,15 @@ export async function approveSiteRequest(reqRow) {
   } catch (e) {
     loginError = e?.message || "owner login could not be created";
   }
+  // Email the client a "set your password" link + their site link (same message
+  // auto-approve sends). Non-fatal: a send failure does NOT block approval — the
+  // superadmin can resend, and the Password123+ login above still works.
+  let emailError = "";
+  try {
+    await sendSetupEmail({ email: reqRow.email, subdomain: reqRow.subdomain, name: reqRow.partner_a });
+  } catch (e) {
+    emailError = e?.message || "setup email could not be sent";
+  }
   await setSiteRequestStatus(reqRow.id, "approved");
-  return { ...created, loginError };
+  return { ...created, loginError, emailError };
 }

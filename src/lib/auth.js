@@ -75,3 +75,11 @@ export async function updateOwnerEmail({ old_email, new_email }) {
 export async function deleteOwner({ email, user_id, client_id }) {
   return invokeOwnerFn({ action: "delete_owner", email, user_id, client_id });
 }
+
+// Superadmin-only: email the owner a "set your password" (recovery) link + their
+// site link — the same message auto-approve sends. Used on MANUAL approval so
+// the client can set their own password. Sent server-side (needs service role +
+// Resend); the owner login itself is still created separately (createOwner).
+export async function sendSetupEmail({ email, subdomain, name }) {
+  return invokeOwnerFn({ action: "send_setup_email", email, subdomain, name });
+}
