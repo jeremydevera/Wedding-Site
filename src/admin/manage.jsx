@@ -4267,16 +4267,20 @@ export function AdminApp() {
   // client, so subscribeAllTicketMessagesRealtime only delivers own replies).
   const [clientTickets, setClientTickets] = useState([]);
   const [supportReplies, setSupportReplies] = useState([]);
-  // Owner-only "Donate to Dev" promo popup — shows once per browser session.
+  // Owner-only "Donate to Dev" promo popup (owner request): shows ~1s after
+  // entering the admin EVERY session, again every 4 minutes while they stay,
+  // and again whenever they reopen the tab (minimize → back). Suppressed per
+  // client by the superadmin "Turn off Donate ads" toggle.
   const [showDonateAd, setShowDonateAd] = useState(false);
   useEffect(() => {
-    if (!clientId || auth.role !== "owner") return;
-    if (settings.hideDonateAd === true) return;   // superadmin turned it off for this client
-    let seen = false;
-    try { seen = sessionStorage.getItem("donateAdSeen") === "1"; } catch (_) {}
-    if (!seen) { const t = setTimeout(() => setShowDonateAd(true), 900); return () => clearTimeout(t); }
+    if (!clientId || auth.role !== "owner" || settings.hideDonateAd === true) return;
+    const first = setTimeout(() => setShowDonateAd(true), 900);
+    const interval = setInterval(() => setShowDonateAd(true), 4 * 60 * 1000);
+    const onVis = () => { if (document.visibilityState === "visible") setShowDonateAd(true); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { clearTimeout(first); clearInterval(interval); document.removeEventListener("visibilitychange", onVis); };
   }, [clientId, auth.role, settings.hideDonateAd]);
-  const dismissDonateAd = () => { setShowDonateAd(false); try { sessionStorage.setItem("donateAdSeen", "1"); } catch (_) {} };
+  const dismissDonateAd = () => setShowDonateAd(false);
   useEffect(() => {
     if (!clientId) { setClientTickets([]); setSupportReplies([]); return; }
     let dead = false;
