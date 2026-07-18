@@ -526,7 +526,7 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
               <div style={{ position: "relative", width: 200, aspectRatio: g.canvas, filter: "drop-shadow(0 6px 14px rgba(26,30,12,.28))" }}>
                 {/* a raw video URL renders nothing in an <img> — wait for the
                     canvas snapshot instead of showing a broken image */}
-                {(live || !isVideo) && <img src={live || src} alt="" style={{ position: "absolute", left: g.left, top: g.top, width: g.width, height: g.height, objectFit: "cover", display: "block", borderRadius: "50%" }} />}
+                {(live || !isVideo) && <img src={live || src} alt="" style={{ position: "absolute", left: g.left, top: g.top, width: g.width, height: g.height, objectFit: "cover", display: "block" }} />}
                 <img src={frameSrc} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "auto", display: "block" }} />
               </div>
             </div>
