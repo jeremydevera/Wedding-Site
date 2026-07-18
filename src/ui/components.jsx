@@ -407,6 +407,24 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
   const H = Math.round(W / (aspect || 1));
   const isVideo = /\.(mp4|webm|mov|m4v)(\?|$)/i.test(String(src || ""));
 
+  // iOS Safari fix: a crossOrigin <img> to an R2 URL renders BLACK on iOS
+  // (CORS-cached response blocks it). Fetch the image as a blob and display it
+  // via a same-origin object URL instead — always shows AND stays canvas-
+  // readable (untainted), so no crossOrigin attr is needed. Fresh blob:/data:
+  // uploads pass straight through. Video keeps the corsSrc path.
+  const [blobSrc, setBlobSrc] = useState(src);
+  useEffect(() => {
+    if (!open || !src || isVideo) return;
+    if (!/^https?:/i.test(src)) { setBlobSrc(src); return; }  // already same-origin
+    setBlobSrc(src);  // show immediately (no crossOrigin → not blocked on iOS)
+    let url = null, dead = false;
+    fetch(src, { mode: "cors" })
+      .then((r) => (r.ok ? r.blob() : Promise.reject(new Error("fetch " + r.status))))
+      .then((bl) => { if (dead) return; url = URL.createObjectURL(bl); setBlobSrc(url); setMediaTick((t) => t + 1); })
+      .catch(() => { /* keep the direct src; canvas readback may be limited but it displays */ });
+    return () => { dead = true; if (url) URL.revokeObjectURL(url); };
+  }, [open, src, isVideo]);
+
   useEffect(() => {
     if (!open || !src) return;
     setZoom(1); setNat({ w: 0, h: 0 });
@@ -517,7 +535,7 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
                  recomputes the frame preview once the first frame is decodable,
                  so "In the frame" shows the video without waiting for a drag. */
               ? <video ref={imgRef} src={corsSrc} crossOrigin="anonymous" preload="auto" muted loop autoPlay playsInline draggable="false" onLoadedMetadata={(e) => setNat({ w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })} onLoadedData={() => setMediaTick((t) => t + 1)} style={{ position: "absolute", left: off.x, top: off.y, width: dispW, height: dispH, maxWidth: "none" }} />
-              : <img ref={imgRef} src={corsSrc} alt="" draggable="false" crossOrigin="anonymous" onLoad={() => setMediaTick((t) => t + 1)} style={{ position: "absolute", left: off.x, top: off.y, width: dispW, height: dispH, maxWidth: "none" }} />)}
+              : <img ref={imgRef} src={blobSrc} alt="" draggable="false" onLoad={() => setMediaTick((t) => t + 1)} style={{ position: "absolute", left: off.x, top: off.y, width: dispW, height: dispH, maxWidth: "none" }} />)}
             <div className="crop__frame" />
           </div>
           {frameSrc && (() => { const g = frameGeom || FRAME_GEOM_OLIVE; return (
