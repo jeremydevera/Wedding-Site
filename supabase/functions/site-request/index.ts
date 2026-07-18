@@ -102,6 +102,10 @@ type ReqRow = { id: string; email: string; partner_a: string; partner_b: string;
 // site, provisions the owner login (self-set password via a recovery link),
 // emails the customer, then marks the request approved.
 async function autoApprove(admin: SupabaseClient, req: ReqRow) {
+  // Refuse BEFORE creating anything if email can't be sent — otherwise we'd leave
+  // a site + owner with no way to set a password (half-state). Missing secret →
+  // clean throw → request stays pending for manual approval.
+  if (!Deno.env.get("RESEND_API_KEY")) throw new Error("RESEND_API_KEY not set — refusing to auto-approve");
   const c = req.content || {};
   const eventType = (c.eventType === "birthday") ? "birthday" : "wedding";
   const content: Record<string, unknown> = {
