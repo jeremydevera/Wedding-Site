@@ -1962,10 +1962,11 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
 [data-theme="envelope2"] .inv-l-card { left: 9.3%; top: -23.4%; width: 50%; }
 .inv-l-framegroup { left: 7.18%; top: -17.02%; width: 47%; z-index: 5; }
 .inv-l-framegroup > img.inv-frame-img { display: block; width: 100%; height: auto; position: relative; z-index: 6; }
-/* Photo sits BEHIND the frame and shows through its oval opening — rectangular,
-   NOT cropped oval. This is the original olive box (restored); env2's white
-   frame has its own box below. */
-.inv-l-video { position: absolute; left: 20.6%; top: 14.9%; width: 78%; height: 75%; z-index: 1; overflow: hidden; }
+/* Photo sits BEHIND the frame and shows through its oval opening — a plain
+   rectangle (NOT cropped oval). Box = the frame's oval-hole bounds so the photo
+   fits the opening with no overlap; the opaque frame masks the corners. Owner
+   picks what shows via the Crop tool. (Owner chose this "fit the oval" layout.) */
+.inv-l-video { position: absolute; left: 31.5%; top: 19.2%; width: 45.6%; height: 60.5%; z-index: 1; overflow: hidden; }
 /* env2's white-frame.png is a square canvas with a CENTERED oval opening
    (hole: x 30.3-69.4%, y 25.1-78.3%) — the stock video box is tuned to the
    peony frame's right-side oval. ~2% overlap tucks the media under the rim. */
