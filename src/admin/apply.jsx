@@ -213,6 +213,7 @@ export function ApplyWizard({ initial = null, onSave, onCancel }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [done, setDone] = useState(false);
+  const [approved, setApproved] = useState(false); // auto-approved server-side
   const [touchedSub, setTouchedSub] = useState(editing); // editing: never auto-slug over a real subdomain
   const [subState, setSubState] = useState("idle");
   const [f, setF] = useState(() => (editing ? stateFromRequest(initial) : blankApplyState()));
@@ -291,7 +292,8 @@ export function ApplyWizard({ initial = null, onSave, onCancel }) {
       if (editing) {
         await onSave(requestPayload(f)); // caller persists + closes
       } else {
-        await submitSiteRequest(requestPayload(f));
+        const res = await submitSiteRequest(requestPayload(f));
+        setApproved(res?.approved === true);
         setDone(true);
       }
     } catch (e2) {
@@ -449,8 +451,13 @@ export function ApplyWizard({ initial = null, onSave, onCancel }) {
           <div className="signin__center">
             <div className="signin__form apply-done" style={{ textAlign: "center" }}>
               <div className="apply-done__badge">{Icon.check({ style: { width: 30, height: 30 } })}</div>
-              <h1 className="signin__title">Request sent!</h1>
-              <p className="signin__sub">Thanks! We'll review your setup and email you at <strong>{f.email}</strong> once <strong>{f.subdomain}.celebrately.us</strong> is approved.</p>
+              {approved ? (<>
+                <h1 className="signin__title">Your site is ready! 🎉</h1>
+                <p className="signin__sub">We've emailed <strong>{f.email}</strong> a link to set your password, plus the link to your new site at <strong>{f.subdomain}.celebrately.us</strong>. Check your inbox (and spam) to finish setting up.</p>
+              </>) : (<>
+                <h1 className="signin__title">Request sent!</h1>
+                <p className="signin__sub">Thanks! We'll review your setup and email you at <strong>{f.email}</strong> once <strong>{f.subdomain}.celebrately.us</strong> is approved.</p>
+              </>)}
             </div>
           </div>
         </div>

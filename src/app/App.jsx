@@ -16,6 +16,7 @@ import { GuestbookPage, QuizPage } from "@/features/social.jsx";
 import { MusicMount } from "@/features/music.jsx";
 import { AdminApp, ImageUploadField } from "@/admin/manage.jsx";
 import { ApplyWizard } from "@/admin/apply.jsx";
+import { SetPassword } from "@/app/SetPassword.jsx";
 import { RoadToForeverSite } from "@/features/roadtoforever.jsx";
 import { hasSection } from "@/config/eventTypes.js";
 import { featureVisible, moduleEnabled, moduleLabel, sectionLabel } from "@/lib/roles.js";
@@ -442,6 +443,14 @@ export function App() {
 
   // Gate the render AFTER all hooks above (rules of hooks: hook count must be
   // stable across renders — an early return between hooks crashes on hydrate).
+  // Owner "set your password" landing (from the auto-approval email). Handled
+  // before any client-load gating so it works on the new site's own subdomain
+  // even while client data is still loading. The recovery token in the URL hash
+  // is exchanged by supabase-js; SetPassword then lets them choose a password.
+  if (/^\/set-password\/?$/.test(window.location.pathname)) {
+    return (<><SetPassword /><ToastHost /><ConfirmHost /></>);
+  }
+
   const view = rootView({ loading: Store.get().loading, notFound, subdomain: resolveSubdomain(), route });
   if (view === "loading") {
     return <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", color: "var(--ink-soft)" }}>Loading…</div>;
