@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase.js";
-import { neonSelect, neonInsert, neonRpc, NEON_FLAG_KEY } from "@/lib/neon.js";
+import { neonSelect, neonInsert, neonRpc, NEON_FLAG_KEY, NEON_SHARDS_KEY, setNeonRegistry, resolveShardId, setActiveShard } from "@/lib/neon.js";
 import { Store } from "@/lib/store.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { clientToState, stateToClientRow, rowToGuestbook, rowToRsvp, rowToQuizSub, rsvpToRow, guestbookToRow, quizToRow, guestToRow, rowToGuest, ticketToRow } from "@/lib/mappers.js";
@@ -21,8 +21,14 @@ export async function loadClientData() {
   // Real clients / demo never enter this branch. (Plan: docs/superpowers/plans/)
   if (subdomain === "sandbox") {
     try {
-      const flag = await getAppConfig(NEON_FLAG_KEY);
+      // Flag + shard registry in parallel (both live in Supabase app_config).
+      // The registry lets future shards (s2…) go live via config, no redeploy.
+      const [flag, shardCfg] = await Promise.all([
+        getAppConfig(NEON_FLAG_KEY), getAppConfig(NEON_SHARDS_KEY).catch(() => null),
+      ]);
       if (flag?.enabled === true) {
+        setNeonRegistry(shardCfg);
+        setActiveShard(resolveShardId(subdomain));
         const rows = await neonSelect("clients", `select=*&subdomain=eq.${encodeURIComponent(subdomain)}&is_active=eq.true&limit=1`);
         const client = rows && rows[0];
         if (client) {
