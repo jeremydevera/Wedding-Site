@@ -66,3 +66,20 @@ Never instant-apply toggle switches.**
   `app_config` (e.g. AUTO APPROVE WEBSITE REQUEST, USE NEON DATABASE) — local
   checkbox state + one Save that writes the changed keys.
 - Reference implementation: `PlatformSettings()` in `src/admin/manage.jsx`.
+
+---
+
+## R4 — Clients sub-tabs have feature parity
+
+Owner rule, stated repeatedly (last: 2026-07-19, donate ad missing outside the
+Clients tab): **any per-client row control (Donate ad, Status, power, edit, …)
+must appear in EVERY Clients sub-tab** — Clients, Requests, Approved, Rejected,
+Offline — not just the main list.
+
+- Use the shared cell renderers in `ClientsPanel` (`donateCell(cl)`,
+  `statusCell(cl)` in `src/admin/superadmin.jsx`) — never inline a control in
+  just one table.
+- Request rows without a live client (pending/rejected, site not created yet)
+  render "—" for client-backed controls; the COLUMN still exists so tables stay
+  identical.
+- Adding a new client row control? Add it to all five tables in the same commit.

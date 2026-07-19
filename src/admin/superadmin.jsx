@@ -501,6 +501,42 @@ export function ClientsAdmin() {
       await load();
     });
   }
+  // 🔴 OWNER RULE — docs/DEV-RULES.md R4 (stated many times, do NOT regress):
+  // client row controls (Donate ad, Status, …) must appear in EVERY Clients
+  // sub-tab (Clients / Requests / Approved / Rejected / Offline), not just the
+  // main list. Request rows without a live client render "—" (nothing to store
+  // the flag on until the site is created). Use these shared cells everywhere.
+  const donateCell = (cl) => {
+    if (!cl) return <span style={{ color: "var(--muted)" }}>—</span>;
+    const off = cl.content && cl.content.hideDonateAd === true;
+    return <button className={"tag" + (off ? " tag--hidden" : "")} style={{ cursor: "pointer", border: 0 }}
+      onClick={() => toggleDonateAd(cl)} title={off ? "Donate popup is OFF — click to turn on" : "Donate popup is ON — click to turn off"}>
+      {off ? "Off" : "On"}</button>;
+  };
+  // Billing status — 'paid' | 'not_paid' | 'demo' (clients.status; new
+  // registrations default to not_paid via the column default). Superadmin-only:
+  // the lock_client_admin_columns trigger rejects owner writes.
+  const STATUS_OPTS = [["not_paid", "Not Paid"], ["paid", "Paid"], ["demo", "Demo"]];
+  async function setClientStatus(c, status) {
+    await runBusy("Updating…", async () => {
+      const { error } = await supabase.from("clients").update({ status }).eq("id", c.id);
+      if (error) { toast("Status update failed: " + error.message, "err"); return; }
+      toast(`${c.subdomain} → ${(STATUS_OPTS.find(([v]) => v === status) || [])[1] || status}`, "success");
+      await load();
+    });
+  }
+  const statusCell = (cl) => {
+    if (!cl) return <span style={{ color: "var(--muted)" }}>—</span>;
+    const v = cl.status || "not_paid";
+    return (
+      <select value={v} disabled={busy} onChange={(e) => setClientStatus(cl, e.target.value)}
+        title="Billing status" aria-label={`Status for ${cl.subdomain}`}
+        style={{ fontSize: 13, fontWeight: 600, padding: "3px 6px", borderRadius: 6, border: "1px solid var(--line)",
+          background: "transparent", color: v === "paid" ? "#1d7a3d" : v === "demo" ? "#3b6fb5" : "#a05a1a" }}>
+        {STATUS_OPTS.map(([val, label]) => <option key={val} value={val}>{label}</option>)}
+      </select>
+    );
+  };
   async function toggleActive(c) {
     const next = !c.is_active;
     if (!next) {
@@ -590,6 +626,7 @@ export function ClientsAdmin() {
     // Absent keys fall back to the same defaults the client admin uses.
     setEditForm({
       subdomain: c.subdomain, ownerEmail: c.owner_email || "", ownerPassword: "",
+      status: c.status || "not_paid",
       modules: Object.fromEntries(MODULES.map((m) => [m, ct.modules?.[m] !== false])),
       note: notes[c.id] || "",
       autoApproveMedia: ct.autoApproveMedia !== false,
@@ -646,7 +683,7 @@ export function ClientsAdmin() {
         accessV2: editForm.accessV2 === true,
         features: editForm.features || null,
       };
-      const { error } = await supabase.from("clients").update({ content }).eq("id", id);
+      const { error } = await supabase.from("clients").update({ content, status: editForm.status || "not_paid" }).eq("id", id);
       if (error) { toast("Save failed: " + error.message, "err"); return; }
       try { await saveNote(id, editForm.note); } catch (_) { /* note is best-effort */ }
       // Password reset is authoritative: NEVER report success if it failed, or
@@ -770,7 +807,7 @@ export function ClientsAdmin() {
           <div className="panel__head"><div className="panel__title">Site requests</div><span style={{ color: "var(--muted)", fontSize: 13 }}>Submitted from the /apply wizard — approve to create the site</span></div>
           <div className="panel__body--flush table-wrap">
             <table className="tbl">
-              <thead><tr><th>Couple</th><th>Site address</th><th>Email</th><th>Note</th><th>RSVP</th><th></th></tr></thead>
+              <thead><tr><th>Couple</th><th>Site address</th><th>Email</th><th>Note</th><th>RSVP</th><th>Status</th><th>Donate ad</th><th></th></tr></thead>
               <tbody>
                 {requests.filter((r) => r.status === "pending").map((r) => (
                   <React.Fragment key={r.id}>
@@ -782,6 +819,8 @@ export function ClientsAdmin() {
                       ? <span title={r.content.note} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{r.content.note}</span>
                       : <span style={{ color: "var(--muted)" }}>—</span>}</td>
                       <td>{r.content && r.content.strictRsvp ? "Strict" : "Open"}</td>
+                      <td>{statusCell(clients.find((x) => x.subdomain === r.subdomain))}</td>
+                      <td>{donateCell(clients.find((x) => x.subdomain === r.subdomain))}</td>
                       <td>
                         <div className="row-actions">
                           <button className="icon-btn" title="Details" onClick={() => setReqInfo(r)}>{Icon.eye({})}</button>
@@ -815,7 +854,7 @@ export function ClientsAdmin() {
                     </tr>
                   </React.Fragment>
                 ))}
-                {requests.filter((r) => r.status === "pending").length === 0 && <tr><td colSpan={6} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>No pending requests — share celebrately.us/apply with a prospect.</td></tr>}
+                {requests.filter((r) => r.status === "pending").length === 0 && <tr><td colSpan={8} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>No pending requests — share celebrately.us/apply with a prospect.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -828,7 +867,7 @@ export function ClientsAdmin() {
           <div className="panel__head"><div className="panel__title">Approved requests</div><span style={{ color: "var(--muted)", fontSize: 13 }}>These sites were created — manage them in the Clients tab</span></div>
           <div className="panel__body--flush table-wrap">
             <table className="tbl">
-              <thead><tr><th>Couple</th><th>Site address</th><th>Email</th><th>Note</th><th>Submitted</th><th></th></tr></thead>
+              <thead><tr><th>Couple</th><th>Site address</th><th>Email</th><th>Note</th><th>Submitted</th><th>Status</th><th>Donate ad</th><th></th></tr></thead>
               <tbody>
                 {requests.filter((r) => r.status === "approved").map((r) => (
                   <tr key={r.id}>
@@ -848,6 +887,8 @@ export function ClientsAdmin() {
                         : <span style={{ color: "var(--muted)" }}>—</span>;
                     })()}</td>
                     <td style={{ color: "var(--muted)", fontSize: 13 }}>{new Date(r.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</td>
+                    <td>{statusCell(clients.find((x) => x.subdomain === r.subdomain))}</td>
+                    <td>{donateCell(clients.find((x) => x.subdomain === r.subdomain))}</td>
                     <td>
                       {/* Approved = a live client exists: expose the SAME actions as the
                           Clients tab (power / open admin / info / edit — password lives in
@@ -889,7 +930,7 @@ export function ClientsAdmin() {
                     </td>
                   </tr>
                 ))}
-                {requests.filter((r) => r.status === "approved").length === 0 && <tr><td colSpan={6} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>No approved requests yet.</td></tr>}
+                {requests.filter((r) => r.status === "approved").length === 0 && <tr><td colSpan={8} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>No approved requests yet.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -903,7 +944,7 @@ export function ClientsAdmin() {
           <div className="panel__head"><div className="panel__title">Rejected requests</div><span style={{ color: "var(--muted)", fontSize: 13 }}>Reopen to move a request back to pending — nothing is deleted</span></div>
           <div className="panel__body--flush table-wrap">
             <table className="tbl">
-              <thead><tr><th>Couple</th><th>Site address</th><th>Email</th><th>Note</th><th>Submitted</th><th></th></tr></thead>
+              <thead><tr><th>Couple</th><th>Site address</th><th>Email</th><th>Note</th><th>Submitted</th><th>Status</th><th>Donate ad</th><th></th></tr></thead>
               <tbody>
                 {requests.filter((r) => r.status === "rejected").map((r) => (
                   <tr key={r.id}>
@@ -914,6 +955,8 @@ export function ClientsAdmin() {
                       ? <span title={r.content.note} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{r.content.note}</span>
                       : <span style={{ color: "var(--muted)" }}>—</span>}</td>
                     <td style={{ color: "var(--muted)", fontSize: 13 }}>{new Date(r.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</td>
+                    <td>{statusCell(clients.find((x) => x.subdomain === r.subdomain))}</td>
+                    <td>{donateCell(clients.find((x) => x.subdomain === r.subdomain))}</td>
                     <td>
                       <div className="row-actions">
                         <button className="icon-btn" title="Details" onClick={() => setReqInfo(r)}>{Icon.eye({})}</button>
@@ -929,7 +972,7 @@ export function ClientsAdmin() {
                     </td>
                   </tr>
                 ))}
-                {requests.filter((r) => r.status === "rejected").length === 0 && <tr><td colSpan={6} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>No rejected requests.</td></tr>}
+                {requests.filter((r) => r.status === "rejected").length === 0 && <tr><td colSpan={8} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>No rejected requests.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -947,7 +990,7 @@ export function ClientsAdmin() {
                 <th style={{ width: 34 }}><input type="checkbox" aria-label="Select all offline"
                   checked={clients.filter((c) => !c.is_active).length > 0 && clients.filter((c) => !c.is_active).every((c) => sel.has(c.id))}
                   onChange={(e) => setSel((p) => { const n = new Set(p); clients.filter((c) => !c.is_active).forEach((c) => e.target.checked ? n.add(c.id) : n.delete(c.id)); return n; })} /></th>
-                <th>Client</th><th>Notes</th><th></th></tr></thead>
+                <th>Client</th><th>Notes</th><th>Status</th><th>Donate ad</th><th></th></tr></thead>
               <tbody>
                 {clients.filter((c) => !c.is_active).map((c) => (
                   <tr key={c.id}>
@@ -963,6 +1006,8 @@ export function ClientsAdmin() {
                     <td style={{ maxWidth: 220 }}>{notes[c.id]
                       ? <span title={notes[c.id]} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{notes[c.id]}</span>
                       : <span style={{ color: "var(--muted)" }}>—</span>}</td>
+                    <td>{statusCell(c)}</td>
+                    <td>{donateCell(c)}</td>
                     <td>
                       <div className="row-actions">
                         <Button variant="primary" size="sm" disabled={busy} onClick={() => toggleActive(c)}>Enable</Button>
@@ -974,7 +1019,7 @@ export function ClientsAdmin() {
                     </td>
                   </tr>
                 ))}
-                {clients.filter((c) => !c.is_active).length === 0 && <tr><td colSpan={4} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>All clients are online. 🎉</td></tr>}
+                {clients.filter((c) => !c.is_active).length === 0 && <tr><td colSpan={6} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>All clients are online. 🎉</td></tr>}
               </tbody>
             </table>
           </div>
@@ -995,7 +1040,7 @@ export function ClientsAdmin() {
                   <th style={{ width: 34 }}><input type="checkbox" aria-label="Select all on this page"
                     checked={pg.pageItems.length > 0 && pg.pageItems.every((c) => sel.has(c.id))}
                     onChange={(e) => setSel((p) => { const n = new Set(p); pg.pageItems.forEach((c) => e.target.checked ? n.add(c.id) : n.delete(c.id)); return n; })} /></th>
-                  <th>Client</th><th>Email</th><th>Notes</th><th>Donate ad</th><th></th></tr></thead>
+                  <th>Client</th><th>Email</th><th>Notes</th><th>Status</th><th>Donate ad</th><th></th></tr></thead>
                 <tbody>
                   {pg.pageItems.map((c) => (
                     <tr key={c.id}>
@@ -1015,12 +1060,8 @@ export function ClientsAdmin() {
                       <td style={{ maxWidth: 180 }}>{notes[c.id]
                         ? <span title={notes[c.id]} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{notes[c.id]}</span>
                         : <span style={{ color: "var(--muted)" }}>—</span>}</td>
-                      <td>
-                        {(() => { const off = c.content && c.content.hideDonateAd === true;
-                          return <button className={"tag" + (off ? " tag--hidden" : "")} style={{ cursor: "pointer", border: 0 }}
-                            onClick={() => toggleDonateAd(c)} title={off ? "Donate popup is OFF — click to turn on" : "Donate popup is ON — click to turn off"}>
-                            {off ? "Off" : "On"}</button>; })()}
-                      </td>
+                      <td>{statusCell(c)}</td>
+                      <td>{donateCell(c)}</td>
                       <td>
                         <div className="row-actions">
                           <button className={"icon-btn" + (c.is_active ? "" : " icon-btn--danger")} onClick={() => toggleActive(c)} title={c.is_active ? "Disable access (take site offline)" : "Enable access (put site live)"} aria-pressed={c.is_active}>
@@ -1119,6 +1160,15 @@ export function ClientsAdmin() {
                 the client-only owner password reset + private note. */}
             <div style={{ display: editTab === "access" ? "block" : "none" }}>
               <div className="form-rows">
+                {/* Billing status (clients.status) — superadmin-only column; saved by
+                    the Access tab's "Save changes" button below (R3: no instant-apply). */}
+                <Field label="Status" id="ec-status" hint="Paid, Not Paid, or Demo. New registrations start as Not Paid.">
+                  <Select id="ec-status" value={editForm.status || "not_paid"} onChange={(e) => setEditForm((f) => ({ ...f, status: e.target.value }))}>
+                    <option value="not_paid">Not Paid</option>
+                    <option value="paid">Paid</option>
+                    <option value="demo">Demo</option>
+                  </Select>
+                </Field>
                 <AccessFields v={editForm} set={(patch) => setEditForm((f) => ({ ...f, ...patch }))} omit={["strictRsvp"]} />
                 <div className="form-foot">
                   <Button type="button" variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>

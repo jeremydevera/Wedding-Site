@@ -7,6 +7,9 @@ changes" button won't enable. Verify Save enables after adding any settings cont
 R3: settings controls are **CHECKBOXES + an explicit "Save changes" button** —
 NEVER instant-apply toggle switches. Owner has repeated this many times. Applies
 to console/platform settings (app_config) too — reference: PlatformSettings().
+R4: **Clients sub-tabs have feature parity** — every per-client row control
+(Donate ad, Status, …) appears in ALL tabs (Clients/Requests/Approved/Rejected/
+Offline) via the shared donateCell/statusCell renderers. Repeated many times.
 
 ## 🔴 Before any bug scan — read docs/BY-DESIGN.md
 `docs/BY-DESIGN.md` is an allowlist of INTENTIONAL behaviors. When asked to scan
