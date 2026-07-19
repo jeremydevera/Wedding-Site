@@ -48,3 +48,21 @@ enables, click Save, reload — the value persists.
 The R2 media library "Choose from library" tab, and the owner-edit content tabs,
 are gated by `auth.role`/grants. See `docs/BY-DESIGN.md`. Don't expose them to
 owners.
+
+---
+
+## R3 — Settings controls are CHECKBOXES + an explicit Save button
+
+Owner rule, stated repeatedly (last: 2026-07-19, Platform settings toggles):
+**settings controls use `<input type="checkbox">` + a "Save changes" button.
+Never instant-apply toggle switches.**
+
+- No `AdminToggle`/switch that persists on click for settings panels — the user
+  must be able to tick boxes and commit with an explicit **Save**.
+- Save button: disabled until dirty, label swaps to "Saving…" while busy
+  (see the loading-feedback rule).
+- Client-scoped settings already satisfy this via R1 (Store.updateSettings +
+  SaveFooter). This rule extends it to **console/platform settings** backed by
+  `app_config` (e.g. AUTO APPROVE WEBSITE REQUEST, USE NEON DATABASE) — local
+  checkbox state + one Save that writes the changed keys.
+- Reference implementation: `PlatformSettings()` in `src/admin/manage.jsx`.

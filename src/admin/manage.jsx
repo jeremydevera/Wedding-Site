@@ -2361,56 +2361,73 @@ export function StoryEditor({ open, index, item, onClose }) {
 // AUTO APPROVE WEBSITE REQUEST master switch, stored globally in app_config so
 // the server-side site-request flow can read it. Superadmin-only (RLS on
 // app_config enforces the write; the tab is only mounted for SA on the console).
-// One optimistic app_config-backed switch (shared by the platform toggles).
-function PlatformFlag({ configKey, label, desc, onLabel, offLabel }) {
-  const [enabled, setEnabled] = useState(false);
+// 🔴 OWNER UI RULE — docs/DEV-RULES.md R3 (repeated many times, do NOT regress):
+// settings controls are CHECKBOXES + an explicit "Save changes" button. Never
+// instant-apply toggle switches. Checkboxes edit local state; Save (disabled
+// until dirty, "Saving…" while busy) commits the changed app_config keys.
+const PLATFORM_FLAGS = [
+  {
+    key: "auto_approve_requests",
+    label: "AUTO APPROVE WEBSITE REQUEST",
+    desc: "When checked, a customer's request from /apply is approved automatically: their site is created and an email is sent with a link to set their own password plus their new website link — even while you're offline. When unchecked, requests wait in Clients → Requests for you to approve manually.",
+  },
+  {
+    key: "use_neon_db",
+    label: "USE NEON DATABASE",
+    desc: "EXPERIMENTAL — applies to the SANDBOX site only. When checked, sandbox.celebrately.us serves its content and guest submissions (RSVP, guestbook, quiz) from the Neon database instead of Supabase. All real client sites and demo always stay on Supabase. If Neon errors, sandbox automatically falls back to Supabase.",
+  },
+];
+
+export function PlatformSettings() {
+  const empty = Object.fromEntries(PLATFORM_FLAGS.map((f) => [f.key, false]));
+  const [flags, setFlags] = useState(empty);   // what the checkboxes show
+  const [saved, setSaved] = useState(empty);   // last persisted values (dirty baseline)
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     let dead = false;
-    getAppConfig(configKey)
-      .then((v) => { if (!dead) { setEnabled(v?.enabled === true); setLoaded(true); } })
-      .catch(() => { if (!dead) setLoaded(true); });
+    Promise.all(PLATFORM_FLAGS.map((f) => getAppConfig(f.key).catch(() => null)))
+      .then((vals) => {
+        if (dead) return;
+        const v = Object.fromEntries(PLATFORM_FLAGS.map((f, i) => [f.key, vals[i]?.enabled === true]));
+        setFlags(v); setSaved(v); setLoaded(true);
+      });
     return () => { dead = true; };
-  }, [configKey]);
-  const save = async (next) => {
-    const prev = enabled;
-    setBusy(true); setEnabled(next); // optimistic
+  }, []);
+  const dirty = PLATFORM_FLAGS.some((f) => flags[f.key] !== saved[f.key]);
+  const save = async () => {
+    setBusy(true);
     try {
-      await setAppConfig(configKey, { enabled: next });
-      toast(next ? onLabel : offLabel, "ok");
+      for (const f of PLATFORM_FLAGS) {
+        if (flags[f.key] !== saved[f.key]) await setAppConfig(f.key, { enabled: flags[f.key] });
+      }
+      setSaved({ ...flags });
+      toast("Platform settings saved", "ok");
     } catch (e) {
-      setEnabled(prev);
       toast("Couldn't save: " + (e?.message || "error"), "err");
     } finally { setBusy(false); }
   };
-  return (
-    <AdminToggle label={label} desc={desc} checked={enabled} onChange={(loaded && !busy) ? save : () => {}} />
-  );
-}
-
-export function PlatformSettings() {
   return (
     <div className="panel">
       <div className="panel__head">
         <div className="panel__title">Platform settings</div>
         <span style={{ color: "var(--muted)", fontSize: 14 }}>Superadmin only — applies to the whole platform.</span>
       </div>
-      <div className="panel__body">
-        <PlatformFlag
-          configKey="auto_approve_requests"
-          label="AUTO APPROVE WEBSITE REQUEST"
-          desc="When ON, a customer's request from /apply is approved automatically: their site is created and an email is sent with a link to set their own password plus their new website link — even while you're offline. When OFF, requests wait in Clients → Requests for you to approve manually."
-          onLabel="Auto-approve ON — new website requests will be approved automatically."
-          offLabel="Auto-approve OFF — requests wait for manual approval."
-        />
-        <PlatformFlag
-          configKey="use_neon_db"
-          label="USE NEON DATABASE"
-          desc="EXPERIMENTAL — applies to the SANDBOX site only. When ON, sandbox.celebrately.us serves its content and guest submissions (RSVP, guestbook, quiz) from the Neon database instead of Supabase. All real client sites and demo always stay on Supabase. If Neon errors, sandbox automatically falls back to Supabase."
-          onLabel="Neon ON — sandbox now serves from the Neon database."
-          offLabel="Neon OFF — sandbox back on Supabase."
-        />
+      <div className="panel__body" style={{ maxWidth: 760 }}>
+        {PLATFORM_FLAGS.map((f) => (
+          <label key={f.key} style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 16, cursor: "pointer" }}>
+            <input type="checkbox" checked={flags[f.key]} disabled={!loaded || busy}
+              onChange={(e) => setFlags((p) => ({ ...p, [f.key]: e.target.checked }))}
+              style={{ width: 16, height: 16, flex: "none", marginTop: 2, accentColor: "var(--accent)" }} />
+            <div>
+              <div style={{ fontWeight: 600 }}>{f.label}</div>
+              <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>{f.desc}</div>
+            </div>
+          </label>
+        ))}
+        <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 12, borderTop: "1px solid var(--line)" }}>
+          <Button variant="primary" disabled={!loaded || busy || !dirty} onClick={save}>{busy ? "Saving…" : "Save changes"}</Button>
+        </div>
       </div>
     </div>
   );
