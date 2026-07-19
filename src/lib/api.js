@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase.js";
+import { neonSelect, neonInsert, neonRpc, NEON_FLAG_KEY } from "@/lib/neon.js";
 import { Store } from "@/lib/store.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { clientToState, stateToClientRow, rowToGuestbook, rowToRsvp, rowToQuizSub, rsvpToRow, guestbookToRow, quizToRow, guestToRow, rowToGuest, ticketToRow } from "@/lib/mappers.js";
@@ -12,6 +13,28 @@ export async function loadClientData() {
     await loadSession();
     Store.hydrate({ clientId: null, notFound: false }); // no client context on the hub
     return;
+  }
+  // EXPERIMENTAL Neon backend — SANDBOX ONLY, behind the superadmin platform
+  // toggle (app_config `use_neon_db`, read from Supabase = control plane). When
+  // on, the sandbox guest site loads + writes via the Neon Data API; every
+  // failure falls back to the normal Supabase path so sandbox can never brick.
+  // Real clients / demo never enter this branch. (Plan: docs/superpowers/plans/)
+  if (subdomain === "sandbox") {
+    try {
+      const flag = await getAppConfig(NEON_FLAG_KEY);
+      if (flag?.enabled === true) {
+        const rows = await neonSelect("clients", `select=*&subdomain=eq.${encodeURIComponent(subdomain)}&is_active=eq.true&limit=1`);
+        const client = rows && rows[0];
+        if (client) {
+          Store.hydrate({ ...clientToState(client), guestbook: [], neonMode: true });
+          await loadSession();
+          return;
+        }
+        console.warn("[neon] flag on but sandbox client missing on Neon — using Supabase");
+      }
+    } catch (e) {
+      console.warn("[neon] sandbox Neon path failed — using Supabase:", e?.message);
+    }
   }
   const { data: client, error } = await supabase
     .from("clients").select("*").eq("subdomain", subdomain).eq("is_active", true).single();
@@ -30,8 +53,16 @@ export async function loadClientData() {
   await loadSession();
 }
 
+// True when the loaded site is being served from Neon (sandbox + flag).
+const onNeon = () => Store.get().neonMode === true;
+
 export async function postRsvp(form) {
   const clientId = Store.get().clientId;
+  if (onNeon()) {
+    await neonInsert("rsvps", rsvpToRow(form, clientId));
+    Store.addRSVP(form);
+    return;
+  }
   const { error } = await supabase.from("rsvps").insert(rsvpToRow(form, clientId));
   if (error) throw error;
   Store.addRSVP(form); // local echo (admin view this session)
@@ -44,9 +75,12 @@ export async function postRsvp(form) {
 export async function rsvpNameTaken(first, middle, last) {
   const clientId = Store.get().clientId;
   if (!clientId || !(first || "").trim() || !(last || "").trim()) return false;
-  const { data, error } = await supabase.rpc("rsvp_name_taken", {
-    p_client_id: clientId, p_first: first || "", p_middle: middle || "", p_last: last || "",
-  });
+  const args = { p_client_id: clientId, p_first: first || "", p_middle: middle || "", p_last: last || "" };
+  if (onNeon()) {
+    try { return !!(await neonRpc("rsvp_name_taken", args)); }
+    catch (e) { console.warn("[api] neon rsvp_name_taken failed:", e.message); return false; } // fail open, same as below
+  }
+  const { data, error } = await supabase.rpc("rsvp_name_taken", args);
   if (error) { console.warn("[api] rsvp_name_taken failed:", error.message); return false; }
   return !!data;
 }
@@ -56,6 +90,18 @@ export async function rsvpNameTaken(first, middle, last) {
 // rsvps table directly under RLS). `form` is the same shape passed to postRsvp.
 export async function upsertRsvp(form) {
   const clientId = Store.get().clientId;
+  if (onNeon()) {
+    await neonRpc("rsvp_upsert", {
+      p_client_id: clientId,
+      p_first: form.firstName || "", p_middle: form.middleName || "", p_last: form.lastName || "",
+      p_full_name: form.fullName || "", p_email: form.email || "", p_phone: form.phone || "",
+      p_status: form.status, p_count: form.count || 0,
+      p_plus_one: form.plusOne || "", p_diet: form.diet || "None", p_diet_notes: form.dietNotes || "",
+      p_song: form.song || "", p_notes: form.notes || "",
+      p_companions: Array.isArray(form.companions) ? form.companions : [],
+    });
+    return;
+  }
   const { error } = await supabase.rpc("rsvp_upsert", {
     p_client_id: clientId,
     p_first: form.firstName || "", p_middle: form.middleName || "", p_last: form.lastName || "",
@@ -78,9 +124,16 @@ export async function upsertRsvp(form) {
 export async function guestAllocation(first, middle, last) {
   const clientId = Store.get().clientId;
   if (!clientId || !(first || "").trim() || !(last || "").trim()) return { status: "not_found", allocation: null };
-  const { data, error } = await supabase.rpc("rsvp_guest_allocation", {
-    p_client_id: clientId, p_first: first || "", p_middle: middle || "", p_last: last || "",
-  });
+  const args = { p_client_id: clientId, p_first: first || "", p_middle: middle || "", p_last: last || "" };
+  if (onNeon()) {
+    const d = (await neonRpc("rsvp_guest_allocation", args)) || {};
+    return {
+      status: d.status || "not_found",
+      allocation: d.allocation == null ? null : Number(d.allocation),
+      guestStatus: d.guest_status || null,
+    };
+  }
+  const { data, error } = await supabase.rpc("rsvp_guest_allocation", args);
   if (error) throw error;
   const d = data || {};
   return {
@@ -109,8 +162,12 @@ export async function postGuestbook(entry) {
   // insert errors even though the insert succeeded. Mirror the trigger instead.
   const auto = Store.get().settings?.autoApproveGuestbook === true;
   const status = auto ? "approved" : "pending";
-  const { error } = await supabase.from("guestbook").insert(guestbookToRow(entry, clientId, status));
-  if (error) throw error;
+  if (onNeon()) {
+    await neonInsert("guestbook", guestbookToRow(entry, clientId, status));
+  } else {
+    const { error } = await supabase.from("guestbook").insert(guestbookToRow(entry, clientId, status));
+    if (error) throw error;
+  }
   if (status === "approved") {
     const id = (globalThis.crypto && crypto.randomUUID) ? crypto.randomUUID() : `tmp_${Date.now()}`;
     Store.addGuestbook({ ...entry, id, status: "visible" });
@@ -120,6 +177,11 @@ export async function postGuestbook(entry) {
 
 export async function postQuiz(sub) {
   const clientId = Store.get().clientId;
+  if (onNeon()) {
+    await neonInsert("quiz_answers", quizToRow(sub, clientId));
+    Store.addQuizSub(sub);
+    return;
+  }
   const { error } = await supabase.from("quiz_answers").insert(quizToRow(sub, clientId));
   if (error) throw error;
   Store.addQuizSub(sub); // local echo
