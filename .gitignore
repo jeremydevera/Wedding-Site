@@ -28,3 +28,4 @@ playwright-report.json
 
 # local machine prefs (Claude finish-sound phrase)
 .claude/finish-phrase
+.dev.vars
