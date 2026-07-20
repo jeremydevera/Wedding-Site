@@ -97,10 +97,10 @@ function AuthCard({ onDone }) {
       <Field label="Email" id="rg-email"><Input id="rg-email" type="email" value={f.email} onChange={set("email")} autoComplete="email" /></Field>
       <Field label="Password" id="rg-pw" hint="At least 8 characters"><Input id="rg-pw" type="password" value={f.pw} onChange={set("pw")} autoComplete={mode === "signup" ? "new-password" : "current-password"} /></Field>
       {mode === "signup" && <Field label="Confirm password" id="rg-pw2"><Input id="rg-pw2" type="password" value={f.pw2} onChange={set("pw2")} autoComplete="new-password" /></Field>}
-      <Button variant="primary" block disabled={busy}>{busy ? "Working…" : (mode === "signup" ? "Create account" : "Sign in")}</Button>
+      <Button type="submit" variant="primary" block disabled={busy}>{busy ? "Working…" : (mode === "signup" ? "Create account" : "Sign in")}</Button>
       <p style={{ textAlign: "center", marginTop: 14, fontSize: 14 }}>
         {mode === "signup" ? "Already have an account? " : "New here? "}
-        <a href="#" onClick={(e) => { e.preventDefault(); setMode(mode === "signup" ? "signin" : "signup"); }}>{mode === "signup" ? "Sign in" : "Create one"}</a>
+        <a href="#" onClick={(e) => { e.preventDefault(); setMode(mode === "signup" ? "signin" : "signup"); setF((p) => ({ ...p, pw: "", pw2: "" })); }}>{mode === "signup" ? "Sign in" : "Create one"}</a>
       </p>
     </form>
   );
