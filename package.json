@@ -12,6 +12,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "@supabase/supabase-js": "^2.108.2",
     "chart.js": "^4.5.1",
     "leaflet": "^1.9.4",
