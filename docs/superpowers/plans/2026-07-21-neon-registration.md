@@ -595,3 +595,25 @@ Also update the Requests pending-count badge on the folder tab to `requests.filt
 - [ ] **Step 3:** E2E (auto-approve ON): register throwaway user on `sandbox.celebrately.us/register` → wizard → finish → redirected to `{sub}.celebrately.us`, site renders with her modules; RSVP submit lands in Neon (verify via MCP).
 - [ ] **Step 4:** E2E (auto-approve OFF): second throwaway → wizard → pending screen; console Requests shows Neon-tagged row → Approve → her subdomain renders; re-login shows redirect. (Steps 3–4 need the user in the loop for browser actions; MCP verifies rows.)
 - [ ] **Step 5:** Cleanup test users/sites via MCP SQL; update `docs/BY-DESIGN.md` (no email verification phase-1; Neon clients read-only edit in console) + memory; final commit.
+
+---
+
+## EXECUTION COMPLETE (2026-07-21)
+
+All 10 tasks done via subagent-driven development (per-task spec + quality
+reviews, final integration review). 15 commits. Post-review hardening beyond
+the original plan:
+- register auth card: submit button type + password clearing on mode toggle
+- loadClientData fallback: try-scope narrowed (no double-hydrate)
+- approve path: atomic + shared `_enrich_site_content` /
+  `approve_site_request(uuid)` SQL fns on ALL 5 shards — auto and console
+  approvals now produce fully-enriched sites (names, hashtag, welcome/invite
+  copy, modules default, accessV2, onboarded), verified live on s1
+- console Neon mutations: runBusy + disabled guards; flag mirror surfaces
+  server error body
+
+Known follow-ups (tracked, non-blocking): Neon rows unpaginated in console;
+Requests-tab approve/reject busy-label; flag-mirror drift not persisted
+(toast-only); Register.jsx doesn't read the shard registry (s1 fixed);
+draft key not per-user; iOS Safari third-party-cookie session check pending;
+`subdomain_free` can't see Supabase (client-side dual check only).

@@ -43,3 +43,16 @@ when a behavior is confirmed intentional.
 - **Behavior:** Clients/owners never see the "Enable arrange" toggle nor the "Arrange Now" nav button, even if `settings.arrangeEnabled` is already true. `auth.role` stays `"superadmin"` while impersonating a client, so the SA still gets both on the client's console.
 - **Why:** Arrange is a layout-authoring tool for the platform owner, not the couple.
 - **Do NOT flag as:** "owner missing arrange", "stale arrangeEnabled not honored for client", "Tools panel hidden". Intended.
+
+## Neon self-registration (phase 1, 2026-07-21)
+- **No email verification on /register** — Neon Auth sign-up works without SMTP;
+  verification is a later phase. Spam guard = AUTO APPROVE WEBSITE REQUEST off.
+- **Cross-database subdomain uniqueness is client-side only** — the wizard checks
+  BOTH Supabase and Neon before submitting, but Neon's `register_site` can only
+  see Neon. A direct-RPC caller could claim a Supabase-taken name; resolution
+  order (Supabase first) keeps the existing client's site winning. Accepted.
+- **Neon clients in the console have no Edit (design wizard)** — status/donate/
+  active/open-site only. Owner-side editing for Neon sites is a later phase.
+- **Neon rows in the console Clients list are un-paginated/un-searched** —
+  appended after the Supabase page rows; fine at current volume.
+- **/register lives on sandbox.celebrately.us only** while the funnel matures.
