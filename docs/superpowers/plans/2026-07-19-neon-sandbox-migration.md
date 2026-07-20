@@ -67,6 +67,34 @@ Neon Data API + Neon Auth** (no interim server-proxy).
    owner login + RLS isolation, superadmin console paths, strictRsvp allocation rpc.
 7. Later: migration tooling (copy any client Supabase→Neon), realtime substitute, cutover.
 
+## Shards — DONE (2026-07-19, owner wanted capacity pre-built)
+
+5 Neon projects ("shards"), ALL aws-ap-southeast-1 / PG 18 / Neon Auth + Data API
+provisioned / full 92-statement schema applied / scale-to-zero ($0 idle):
+
+| shard | project | endpoint slug |
+|---|---|---|
+| s1 (default; sandbox lives here) | proud-sound-95226693 | ep-long-credit-aztdmow3 |
+| s2 | autumn-mud-64342047 | ep-autumn-truth-az7a633t |
+| s3 | misty-heart-89423194 | ep-long-hat-azuwmvs5 |
+| s4 | damp-unit-31516352 | ep-square-band-azmn8ord |
+| s5 | fancy-block-52725111 | ep-falling-voice-azbn8u4w |
+
+- Live registry: Supabase `app_config` key **`neon_shards`** — `{default, bySubdomain,
+  shards:{id:{projectId, authUrl, dataApiUrl}}}`. neon.js resolves shard per subdomain
+  at boot; new/changed shards = config write, NO redeploy. s1 also hardcoded as builtin
+  fallback in neon.js.
+- To place a future client on a shard: add `"their-subdomain": "s3"` to `bySubdomain`.
+- ⚠️ Each shard = separate Neon Auth USER POOL. Owner logins live on their client's
+  shard; superadmin will need an account per shard (auth phase must handle this).
+- ⚠️ Schema migrations must run on ALL 5 shards from now on (use the 92-stmt pattern
+  via Neon MCP run_sql_transaction per project).
+- NEON_API_KEY in gitignored `.dev.vars` (repo root) — full Neon account access; used
+  for region-pinned project creation (MCP create_project can't set region — Ohio bug,
+  first attempt deleted). Key also pasted in a chat transcript 2026-07-19; rotate if
+  ever concerned.
+- Ohio mistake: project dawn-rain-28611094 (us-east-2) created+deleted same day.
+
 ## Env/refs
 
 - Supabase (control plane + all prod clients): `xprynknppsehuzqqdvue`
