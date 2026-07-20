@@ -2411,7 +2411,8 @@ export function PlatformSettings() {
             headers: { "content-type": "application/json", authorization: `Bearer ${session?.access_token || ""}` },
             body: JSON.stringify({ action: "set_config", key: "auto_approve_requests", value: { enabled: flags.auto_approve_requests } }),
           });
-          if (!res.ok) throw new Error(`neon mirror ${res.status}`);
+          const j = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(j.error || `neon mirror ${res.status}`);
         } catch (e2) {
           toast("Saved, but the Neon copy of auto-approve did NOT update: " + (e2.message || "error"), "err");
         }
