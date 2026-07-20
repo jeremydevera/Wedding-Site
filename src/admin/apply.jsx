@@ -209,7 +209,14 @@ export function stateFromRequest(row) {
 // saves via onSave(requestPayload) instead of submitting a new request.
 export function ApplyWizard({ initial = null, onSave, onCancel, submitOverride = null, presetEmail = "", subCheck = null, draftKey = null }) {
   const editing = !!initial;
-  const [step, setStep] = useState(0);
+  // Registration draft (read once): { __step, f } — the wizard resumes on the
+  // exact step it was left on. Legacy drafts were the bare fields object; both
+  // shapes restore. Step is clamped to a safely-valid index.
+  const [draft] = useState(() => {
+    if (editing || !draftKey) return null;
+    try { const d = JSON.parse(localStorage.getItem(draftKey) || "null"); return d && typeof d === "object" ? d : null; } catch { return null; }
+  });
+  const [step, setStep] = useState(() => (draft && Number.isInteger(draft.__step) ? Math.max(0, Math.min(draft.__step, 4)) : 0));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [done, setDone] = useState(false);
@@ -218,18 +225,20 @@ export function ApplyWizard({ initial = null, onSave, onCancel, submitOverride =
   const [subState, setSubState] = useState("idle");
   const [f, setF] = useState(() => {
     if (editing) return stateFromRequest(initial);
-    if (draftKey) {
-      try { const d = JSON.parse(localStorage.getItem(draftKey) || "null"); if (d && typeof d === "object") return { ...blankApplyState(), ...d, email: presetEmail || d.email }; } catch { /* ignore */ }
+    if (draft) {
+      const d = (draft.f && typeof draft.f === "object") ? draft.f : draft; // {__step,f} or legacy bare fields
+      return { ...blankApplyState(), ...d, email: presetEmail || d.email };
     }
     return { ...blankApplyState(), email: presetEmail };
   });
   const set = (k) => (e) => { setErr(""); setF((p) => ({ ...p, [k]: e && e.target ? e.target.value : e })); };
 
-  // Draft persistence (registration flow): survives refresh/session expiry.
+  // Draft persistence (registration flow): survives refresh/session expiry —
+  // fields AND current step, so "come back later" resumes where she left off.
   useEffect(() => {
     if (!draftKey || editing) return;
-    try { localStorage.setItem(draftKey, JSON.stringify(f)); } catch { /* quota */ }
-  }, [f, draftKey, editing]);
+    try { localStorage.setItem(draftKey, JSON.stringify({ __step: step, f })); } catch { /* quota */ }
+  }, [f, step, draftKey, editing]);
 
   // suggest the address from the names (wedding) or the event title (birthday) until edited
   useEffect(() => {

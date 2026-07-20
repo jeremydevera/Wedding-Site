@@ -2,18 +2,32 @@ import React from "react";
 import { neonAuth, authedRpc, neonRpc, NEON_FLAG_KEY } from "@/lib/neon.js";
 import { getAppConfig, checkRequestSubdomainFree } from "@/lib/api.js";
 import { ApplyWizard } from "@/admin/apply.jsx";
-import { Button, Field, Input, toast } from "@/ui/components.jsx";
+import { Logo } from "@/admin/core.jsx";
+import { toast } from "@/ui/components.jsx";
 const { useState, useEffect } = React;
 
 // Self-registration (Neon backend) — apex (celebrately.us/www) + sandbox hosts,
 // behind USE NEON DATABASE.
-// States: loading → off | auth | wizard | pending | redirect.
+// States: loading → off | auth | wizard | pending | done.
 // The wizard is what creates the site; until it finishes there is no site, so
 // nothing but the wizard (or the auth card / pending notice) ever renders here.
+// All phases render in the neutral "signin" shell (owner rule: NO wedding theme
+// on the registration flow — same clean design as the login page and /apply).
+function Shell({ children }) {
+  return (
+    <div className="signin admin--sa apply-page">
+      <div className="signin__pane">
+        <header className="signin__top"><div className="signin__brand"><Logo size={30} /><span className="signin__word">Celebrately</span></div></header>
+        <div className="signin__center">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 export function RegisterPage() {
   const [phase, setPhase] = useState("loading");
   const [email, setEmail] = useState("");
-  const [pendingSub, setPendingSub] = useState("");
+  const [sub, setSub] = useState(""); // pending OR live subdomain, per phase
 
   async function resolvePhase() {
     const flag = await getAppConfig(NEON_FLAG_KEY).catch(() => null);
@@ -28,17 +42,19 @@ export function RegisterPage() {
       await new Promise((r) => setTimeout(r, 600));
       st = await authedRpc("my_registration_state").catch(() => ({ state: "none" }));
     }
-    if (st?.state === "active") { window.location.href = `https://${st.subdomain}.celebrately.us`; setPhase("redirect"); return; }
-    if (st?.state === "pending") { setPendingSub(st.subdomain || ""); setPhase("pending"); return; }
+    // Owner rule: never auto-redirect — always SHOW the link so she can see and
+    // click her site's address (works for just-created and returning users).
+    if (st?.state === "active") { setSub(st.subdomain || ""); setPhase("done"); return; }
+    if (st?.state === "pending") { setSub(st.subdomain || ""); setPhase("pending"); return; }
     setPhase("wizard");
   }
   useEffect(() => { resolvePhase(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // both databases must agree the address is free
-  const subCheck = async (sub) => {
+  const subCheck = async (s) => {
     const [supaFree, neonFree] = await Promise.all([
-      checkRequestSubdomainFree(sub).catch(() => false),
-      neonRpc("subdomain_free", { p_sub: sub }).then((v) => v === true).catch(() => false),
+      checkRequestSubdomainFree(s).catch(() => false),
+      neonRpc("subdomain_free", { p_sub: s }).then((v) => v === true).catch(() => false),
     ]);
     return supaFree && neonFree;
   };
@@ -49,23 +65,54 @@ export function RegisterPage() {
       p_partner_a: p.partnerA || "", p_partner_b: p.partnerB || "", p_content: p.content || {},
     });
     try { localStorage.removeItem("neonRegDraft"); } catch { /* ignore */ }
-    if (res?.result === "created") { window.location.href = `https://${res.subdomain}.celebrately.us`; return { approved: true }; }
-    setPendingSub(res?.subdomain || p.subdomain); setPhase("pending");
+    if (res?.result === "created") { setSub(res.subdomain); setPhase("done"); return { approved: true }; }
+    setSub(res?.subdomain || p.subdomain); setPhase("pending");
     return { approved: false };
   };
 
-  if (phase === "loading" || phase === "redirect") return <div style={{ padding: 60, textAlign: "center", color: "var(--muted)" }}>Loading…</div>;
-  if (phase === "off") return <div style={{ padding: 60, textAlign: "center" }}><h2>Registration isn't open yet</h2><p style={{ color: "var(--muted)" }}>Please check back soon.</p></div>;
-  if (phase === "auth") return <AuthCard onDone={resolvePhase} />;
-  if (phase === "pending") return (
-    <div style={{ maxWidth: 520, margin: "60px auto", padding: 24 }} className="card card--pad-lg">
-      <h2>Request received 🎉</h2>
-      <p>Your site <strong>{pendingSub}.celebrately.us</strong> is waiting for approval. You'll be able to open it right here once it's approved — check back soon.</p>
-      <Button variant="ghost" onClick={async () => { await neonAuth.signOut(); setPhase("auth"); }}>Sign out</Button>
-    </div>
+  const signOut = async () => { await neonAuth.signOut(); setPhase("auth"); };
+
+  if (phase === "loading") return (
+    <Shell><div className="signin__form" style={{ textAlign: "center", color: "var(--sg-sub)" }}>Loading…</div></Shell>
   );
-  // wizard — fullscreen, nothing else (the wizard creates the site).
-  // draftKey: survives refresh/session expiry (spec edge case).
+  if (phase === "off") return (
+    <Shell>
+      <div className="signin__form" style={{ textAlign: "center" }}>
+        <h1 className="signin__title">Registration isn't open yet</h1>
+        <p className="signin__sub">Please check back soon.</p>
+      </div>
+    </Shell>
+  );
+  if (phase === "auth") return <Shell><AuthCard onDone={resolvePhase} /></Shell>;
+  if (phase === "pending") return (
+    <Shell>
+      <div className="signin__form" style={{ textAlign: "center" }}>
+        <h1 className="signin__title">Request received 🎉</h1>
+        <p className="signin__sub">Your site <strong>{sub}.celebrately.us</strong> is waiting for approval. Sign back in here anytime — the link to your site will appear as soon as it's approved.</p>
+        <button type="button" className="signin__btn" style={{ marginTop: 18 }} onClick={signOut}>Sign out</button>
+      </div>
+    </Shell>
+  );
+  if (phase === "done") return (
+    <Shell>
+      <div className="signin__form" style={{ textAlign: "center" }}>
+        <h1 className="signin__title">Your site is live! 🎉</h1>
+        <p className="signin__sub">Here's your website — save this link and share it with your guests:</p>
+        <a className="signin__btn" style={{ display: "block", marginTop: 18, textDecoration: "none", textAlign: "center" }} href={`https://${sub}.celebrately.us`}>
+          Open {sub}.celebrately.us →
+        </a>
+        <p style={{ textAlign: "center", fontSize: 13, color: "var(--sg-sub)", marginTop: 16 }}>
+          You can come back to this page and sign in anytime to find your link again.
+        </p>
+        <p style={{ textAlign: "center", fontSize: 13, marginTop: 6 }}>
+          <a href="#" style={{ color: "var(--sg-sub)" }} onClick={(e) => { e.preventDefault(); signOut(); }}>Sign out</a>
+        </p>
+      </div>
+    </Shell>
+  );
+  // wizard — fullscreen, nothing else (the wizard creates the site; it renders
+  // its own signin-style shell). draftKey: fields + step survive refresh,
+  // session expiry, and coming back later — resumes where she left off.
   return <ApplyWizard presetEmail={email} subCheck={subCheck} submitOverride={submitOverride} draftKey="neonRegDraft" />;
 }
 
@@ -92,16 +139,30 @@ function AuthCard({ onDone }) {
     } finally { setBusy(false); }
   }
   return (
-    <form onSubmit={submit} style={{ maxWidth: 420, margin: "60px auto", padding: 24 }} className="card card--pad-lg">
-      <h2 style={{ marginTop: 0 }}>{mode === "signup" ? "Create your account" : "Welcome back"}</h2>
-      <p style={{ color: "var(--muted)", marginTop: 4 }}>{mode === "signup" ? "Register, then set up your celebration site." : "Sign in to continue your setup."}</p>
-      <Field label="Email" id="rg-email"><Input id="rg-email" type="email" value={f.email} onChange={set("email")} autoComplete="email" /></Field>
-      <Field label="Password" id="rg-pw" hint="At least 8 characters"><Input id="rg-pw" type="password" value={f.pw} onChange={set("pw")} autoComplete={mode === "signup" ? "new-password" : "current-password"} /></Field>
-      {mode === "signup" && <Field label="Confirm password" id="rg-pw2"><Input id="rg-pw2" type="password" value={f.pw2} onChange={set("pw2")} autoComplete="new-password" /></Field>}
-      <Button type="submit" variant="primary" block disabled={busy}>{busy ? "Working…" : (mode === "signup" ? "Create account" : "Sign in")}</Button>
-      <p style={{ textAlign: "center", marginTop: 14, fontSize: 14 }}>
+    <form className="signin__form" onSubmit={submit} noValidate>
+      <h1 className="signin__title">{mode === "signup" ? "Create your account" : "Welcome back"}</h1>
+      <p className="signin__sub">{mode === "signup" ? "Register, then set up your celebration site." : "Sign in to continue your setup."}</p>
+      <div className="signin__field">
+        <label htmlFor="rg-email">Email</label>
+        <input id="rg-email" type="email" autoComplete="email" value={f.email} onChange={set("email")} placeholder="you@example.com" />
+      </div>
+      <div className="signin__field">
+        <label htmlFor="rg-pw">Password</label>
+        <input id="rg-pw" type="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} value={f.pw} onChange={set("pw")} placeholder="At least 8 characters" />
+      </div>
+      {mode === "signup" && (
+        <div className="signin__field">
+          <label htmlFor="rg-pw2">Confirm password</label>
+          <input id="rg-pw2" type="password" autoComplete="new-password" value={f.pw2} onChange={set("pw2")} placeholder="••••••••" />
+        </div>
+      )}
+      <button type="submit" className="signin__btn" disabled={busy}>{busy ? "Working…" : (mode === "signup" ? "Create account" : "Sign in")}</button>
+      <p style={{ textAlign: "center", fontSize: 13, color: "var(--sg-sub)", marginTop: 14 }}>
         {mode === "signup" ? "Already have an account? " : "New here? "}
-        <a href="#" onClick={(e) => { e.preventDefault(); setMode(mode === "signup" ? "signin" : "signup"); setF((p) => ({ ...p, pw: "", pw2: "" })); }}>{mode === "signup" ? "Sign in" : "Create one"}</a>
+        <a href="#" style={{ color: "#1E5BD6", fontWeight: 600, textDecoration: "none" }}
+          onClick={(e) => { e.preventDefault(); setMode(mode === "signup" ? "signin" : "signup"); setF((p) => ({ ...p, pw: "", pw2: "" })); }}>
+          {mode === "signup" ? "Sign in →" : "Create one →"}
+        </a>
       </p>
     </form>
   );
