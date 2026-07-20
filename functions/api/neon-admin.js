@@ -32,26 +32,12 @@ export async function onRequestPost({ request, env }) {
       case "list_clients":
         return json({ rows: await sql`select id, subdomain, event_type, is_active, owner_email, status, created_at, (content->>'hideDonateAd')::boolean as hide_donate from clients order by created_at desc` });
       case "approve_request": {
-        const [r] = await sql`select * from site_requests where id = ${body.id} and status = 'pending'`;
-        if (!r) return json({ error: "request not found or not pending" }, 404);
-        const [existing] = await sql`select id from clients where lower(subdomain) = lower(${r.subdomain})`;
-        if (existing) return json({ error: "subdomain already taken" }, 409);
-        // Atomic: client + owner profile + request flip in ONE statement (data-
-        // modifying CTEs) — a partial failure can't strand a half-created site
-        // with the request still pending (a retry would 409 on the subdomain).
-        const rows = await sql`
-          with ins as (
-            insert into clients (subdomain, event_type, template_key, content, is_active, owner_email, status)
-            values (${r.subdomain}, 'wedding', ${r.template_key}, ${r.content}, true, ${r.email}, 'not_paid')
-            returning id, subdomain
-          ), prof as (
-            insert into profiles (id, role, client_id)
-            select ${r.requested_by}, 'owner', ins.id from ins where ${r.requested_by}::text is not null
-            on conflict (id) do update set role = 'owner', client_id = excluded.client_id
-          )
-          update site_requests set status = 'approved' where id = ${r.id}
-          returning (select subdomain from ins) as subdomain`;
-        return json({ ok: true, subdomain: rows[0]?.subdomain || r.subdomain });
+        // Single SECURITY DEFINER fn = one transaction + the same content
+        // enrichment register_site uses (names, hashtag, modules, accessV2).
+        const [row] = await sql`select public.approve_site_request(${body.id}) as res`;
+        const res = row?.res || {};
+        if (res.error) return json({ error: res.error }, res.error === "subdomain already taken" ? 409 : 404);
+        return json({ ok: true, subdomain: res.subdomain });
       }
       case "reject_request":
         await sql`update site_requests set status = 'rejected' where id = ${body.id}`;
