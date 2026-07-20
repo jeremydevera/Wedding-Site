@@ -36,12 +36,22 @@ export async function onRequestPost({ request, env }) {
         if (!r) return json({ error: "request not found or not pending" }, 404);
         const [existing] = await sql`select id from clients where lower(subdomain) = lower(${r.subdomain})`;
         if (existing) return json({ error: "subdomain already taken" }, 409);
-        const [c] = await sql`insert into clients (subdomain, event_type, template_key, content, is_active, owner_email, status)
-          values (${r.subdomain}, 'wedding', ${r.template_key}, ${r.content}, true, ${r.email}, 'not_paid') returning id, subdomain`;
-        if (r.requested_by) await sql`insert into profiles (id, role, client_id) values (${r.requested_by}, 'owner', ${c.id})
-          on conflict (id) do update set role = 'owner', client_id = excluded.client_id`;
-        await sql`update site_requests set status = 'approved' where id = ${r.id}`;
-        return json({ ok: true, subdomain: c.subdomain });
+        // Atomic: client + owner profile + request flip in ONE statement (data-
+        // modifying CTEs) — a partial failure can't strand a half-created site
+        // with the request still pending (a retry would 409 on the subdomain).
+        const rows = await sql`
+          with ins as (
+            insert into clients (subdomain, event_type, template_key, content, is_active, owner_email, status)
+            values (${r.subdomain}, 'wedding', ${r.template_key}, ${r.content}, true, ${r.email}, 'not_paid')
+            returning id, subdomain
+          ), prof as (
+            insert into profiles (id, role, client_id)
+            select ${r.requested_by}, 'owner', ins.id from ins where ${r.requested_by}::text is not null
+            on conflict (id) do update set role = 'owner', client_id = excluded.client_id
+          )
+          update site_requests set status = 'approved' where id = ${r.id}
+          returning (select subdomain from ins) as subdomain`;
+        return json({ ok: true, subdomain: rows[0]?.subdomain || r.subdomain });
       }
       case "reject_request":
         await sql`update site_requests set status = 'rejected' where id = ${body.id}`;
