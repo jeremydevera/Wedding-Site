@@ -147,3 +147,5 @@ export async function authedRpc(fn, args) {
   const text = await res.text();
   return text ? JSON.parse(text) : null;
 }
+
+// deploy marker: neon-registration funnel v1 (2026-07-21)
