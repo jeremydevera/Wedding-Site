@@ -101,8 +101,18 @@ export function RegisterPage() {
         <a className="signin__btn" style={{ display: "block", marginTop: 18, textDecoration: "none", textAlign: "center" }} href={`https://${sub}.celebrately.us`}>
           Open {sub}.celebrately.us →
         </a>
+        <div style={{ textAlign: "left", marginTop: 22, padding: "14px 16px", border: "1px solid var(--sg-line, #e5e7eb)", borderRadius: 12 }}>
+          <p style={{ fontWeight: 700, margin: 0, fontSize: 14 }}>Manage your site</p>
+          <p style={{ fontSize: 13, color: "var(--sg-sub)", margin: "6px 0 8px" }}>
+            Open your site and tap <strong>Admin sign in</strong> at the very bottom, then sign in with the email and password you used here:
+          </p>
+          <img src="/assets/register-admin-hint.png" alt="The Admin sign in link at the bottom of your site" style={{ width: "100%", borderRadius: 8, border: "1px solid var(--sg-line, #e5e7eb)", display: "block" }} />
+          <a href={`https://${sub}.celebrately.us/admin`} style={{ display: "inline-block", marginTop: 10, fontSize: 13, fontWeight: 600 }}>
+            Or go straight to your admin: {sub}.celebrately.us/admin →
+          </a>
+        </div>
         <p style={{ textAlign: "center", fontSize: 13, color: "var(--sg-sub)", marginTop: 16 }}>
-          You can come back to this page and sign in anytime to find your link again.
+          You can come back to this page and sign in anytime to find these links again.
         </p>
         <p style={{ textAlign: "center", fontSize: 13, marginTop: 6 }}>
           <a href="#" style={{ color: "var(--sg-sub)" }} onClick={(e) => { e.preventDefault(); signOut(); }}>Sign out</a>

@@ -56,7 +56,27 @@ export async function signIn(email, password) {
     return p;
   }
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw error;
+  if (error) {
+    // Apex (celebrately.us/admin) only: a self-serve owner's account lives in
+    // NEON Auth, not Supabase, so the Supabase sign-in fails. Try Neon — if the
+    // account owns a live site, send her to HER OWN admin (her subdomain; the
+    // shared .celebrately.us session cookie means she lands signed in).
+    if (!resolveSubdomain()) {
+      try {
+        await neonAuth.signIn(email, password);
+        const st = await authedRpc("my_registration_state").catch(() => null);
+        if (st?.state === "active" && st.subdomain) {
+          window.location.assign(`https://${st.subdomain}.celebrately.us/admin`);
+          return { role: "owner", client_id: null, redirecting: true };
+        }
+        if (st?.state === "pending") throw new Error("Your site is waiting for approval — check back soon.");
+      } catch (e2) {
+        if (e2 && e2.message && /waiting for approval/.test(e2.message)) throw e2;
+        /* fall through to the original Supabase error */
+      }
+    }
+    throw error;
+  }
   const p = await profileFor(data.user.id);
   Store.setAuth({ session: data.session, role: p.role, clientId: p.client_id, email: data.user.email });
   gateFlag();

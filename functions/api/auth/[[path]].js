@@ -47,8 +47,14 @@ export async function onRequest({ request, params }) {
   }
   // Expose set-auth-jwt to the browser fetch() caller (same-origin, but be explicit).
   if (upstream.headers.get("set-auth-jwt")) out.set("access-control-expose-headers", "set-auth-jwt");
-  // Rewrite cookies to first-party: drop Domain, SameSite=None→Lax, drop
-  // Partitioned (meaningless first-party). Keep HttpOnly/Secure/Max-Age/Path.
+  // Rewrite cookies to first-party: SameSite=None→Lax, drop Partitioned
+  // (meaningless first-party). Keep HttpOnly/Secure/Max-Age/Path.
+  // Domain: on *.celebrately.us set Domain=.celebrately.us so the SAME session
+  // works across the apex (where she registers) and her own subdomain (where
+  // her admin lives) — she signs up once and arrives at <sub>/admin already
+  // signed in. Still first-party/same-site everywhere. Other hosts (localhost,
+  // *.pages.dev) keep a host-only cookie.
+  const shareRoot = /(^|\.)celebrately\.us$/i.test(url.hostname) ? "celebrately.us" : null;
   const setCookies = typeof upstream.headers.getSetCookie === "function"
     ? upstream.headers.getSetCookie()
     : (upstream.headers.get("set-cookie") ? [upstream.headers.get("set-cookie")] : []);
@@ -56,7 +62,8 @@ export async function onRequest({ request, params }) {
     const rewritten = c
       .replace(/;\s*Domain=[^;]*/gi, "")
       .replace(/;\s*SameSite=None/gi, "; SameSite=Lax")
-      .replace(/;\s*Partitioned/gi, "");
+      .replace(/;\s*Partitioned/gi, "")
+      + (shareRoot ? `; Domain=.${shareRoot}` : "");
     out.append("set-cookie", rewritten);
   }
   return new Response(upstream.body, { status: upstream.status, headers: out });
