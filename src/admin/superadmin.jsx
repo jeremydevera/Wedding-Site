@@ -454,7 +454,26 @@ export function ClientsAdmin() {
     const { data: nd } = await supabase.from("client_notes").select("client_id,note");
     setNotes(Object.fromEntries((nd || []).map((r) => [r.client_id, r.note || ""])));
   }
-  useEffect(() => { load(); }, []);
+  const [neonReqs, setNeonReqs] = useState([]);
+  const [neonClients, setNeonClients] = useState([]);
+  async function neonAdmin(action, params = {}) {
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch("/api/neon-admin", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${session?.access_token || ""}` },
+      body: JSON.stringify({ action, ...params }),
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(j.error || `neon-admin ${res.status}`);
+    return j;
+  }
+  async function loadNeon() {
+    try {
+      const [rq, cl] = await Promise.all([neonAdmin("list_requests"), neonAdmin("list_clients")]);
+      setNeonReqs(rq.rows || []); setNeonClients(cl.rows || []);
+    } catch (e) { console.warn("[neon-admin] load failed:", e.message); }
+  }
+  useEffect(() => { load(); loadNeon(); }, []);
   // Selection is per-tab: clear checks when switching views so a bulk delete can
   // never target off-screen rows selected in another tab (e.g. list → offline).
   useEffect(() => { setSel(new Set()); }, [view]);
@@ -789,7 +808,7 @@ export function ClientsAdmin() {
       <div className="folders">
         <button className={"folder" + (view === "list" || view === "add" ? " folder--active" : "")} onClick={() => { setEditing(null); setView("list"); }}>Clients</button>
         <button className={"folder" + (view === "requests" ? " folder--active" : "")} onClick={() => setView("requests")}>
-          Requests{requests.filter((r) => r.status === "pending").length > 0 ? ` (${requests.filter((r) => r.status === "pending").length})` : ""}
+          Requests{(requests.filter((r) => r.status === "pending").length + neonReqs.length) > 0 ? ` (${requests.filter((r) => r.status === "pending").length + neonReqs.length})` : ""}
         </button>
         <button className={"folder" + (view === "approved" ? " folder--active" : "")} onClick={() => setView("approved")}>
           Approved{requests.filter((r) => r.status === "approved").length > 0 ? ` (${requests.filter((r) => r.status === "approved").length})` : ""}
@@ -854,7 +873,35 @@ export function ClientsAdmin() {
                     </tr>
                   </React.Fragment>
                 ))}
-                {requests.filter((r) => r.status === "pending").length === 0 && <tr><td colSpan={8} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>No pending requests — share celebrately.us/apply with a prospect.</td></tr>}
+                {neonReqs.map((r) => (
+                  <tr key={"n-" + r.id}>
+                    <td><strong>{r.partner_a}{r.partner_b ? ` & ${r.partner_b}` : ""}</strong> <span className="tag" style={{ marginLeft: 6 }}>Neon</span></td>
+                    <td className="client-domain">{r.subdomain}.celebrately.us</td>
+                    <td>{r.email}</td>
+                    <td><span style={{ color: "var(--muted)" }}>—</span></td>
+                    <td><span style={{ color: "var(--muted)" }}>—</span></td>
+                    <td><span style={{ color: "var(--muted)" }}>—</span></td>
+                    <td><span style={{ color: "var(--muted)" }}>—</span></td>
+                    <td>
+                      <div className="row-actions">
+                        <Button variant="primary" size="sm" disabled={busy} onClick={async () => {
+                          const ok = await confirmDialog({ title: "Approve this site?", message: `Create ${r.subdomain}.celebrately.us on Neon?`, confirmLabel: "Approve & create" });
+                          if (!ok) return;
+                          setBusy(true);
+                          try { await neonAdmin("approve_request", { id: r.id }); toast("Site created on Neon.", "success"); await loadNeon(); }
+                          catch (e) { toast("Approve failed: " + e.message, "err"); }
+                          finally { setBusy(false); }
+                        }}>Approve</Button>
+                        <Button variant="ghost" size="sm" disabled={busy} onClick={async () => {
+                          const ok = await confirmDialog({ title: "Reject this request?", message: `Reject ${r.subdomain}.celebrately.us?`, confirmLabel: "Reject", danger: true });
+                          if (!ok) return;
+                          try { await neonAdmin("reject_request", { id: r.id }); await loadNeon(); } catch (e) { toast("Failed: " + e.message, "err"); }
+                        }}>Reject</Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {requests.filter((r) => r.status === "pending").length === 0 && neonReqs.length === 0 && <tr><td colSpan={8} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>No pending requests — share celebrately.us/apply with a prospect.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -1071,6 +1118,44 @@ export function ClientsAdmin() {
                           <button className="icon-btn" onClick={() => setInfo(c)} title="Client info">{Icon.eye({})}</button>
                           <button className="icon-btn" onClick={() => openEdit(c)} title="Edit">{Icon.edit({})}</button>
                           <button className="icon-btn icon-btn--danger" onClick={() => deleteClient(c)} title="Delete">{Icon.trash({})}</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {neonClients.map((c) => (
+                    <tr key={"n-" + c.id}>
+                      <td></td>
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                          <span className={"sa-dot" + (c.is_active ? "" : " sa-dot--off")} title={c.is_active ? "Active" : "Disabled"} />
+                          <div>
+                            <span className="tag" style={{ marginRight: 8 }}>Neon</span>
+                            <a className="client-domain client-domain--link" href={clientUrl(c.subdomain)} target="_blank" rel="noreferrer">{c.subdomain}.{PLATFORM_DOMAIN}</a>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ maxWidth: 200 }}>{c.owner_email ? <span className="client-domain" style={{ fontSize: 13 }}>{c.owner_email}</span> : <span style={{ color: "var(--muted)", fontSize: 13 }}>no login</span>}</td>
+                      <td><span style={{ color: "var(--muted)" }}>—</span></td>
+                      <td>
+                        <select value={c.status || "not_paid"} disabled={busy} aria-label={`Status for ${c.subdomain}`}
+                          onChange={async (e) => { try { await neonAdmin("set_status", { id: c.id, status: e.target.value }); await loadNeon(); } catch (e2) { toast("Failed: " + e2.message, "err"); } }}
+                          style={{ fontSize: 13, fontWeight: 600, padding: "3px 6px", borderRadius: 6, border: "1px solid var(--line)", background: "transparent",
+                            color: (c.status || "not_paid") === "paid" ? "#1d7a3d" : (c.status || "not_paid") === "demo" ? "#3b6fb5" : "#a05a1a" }}>
+                          <option value="not_paid">Not Paid</option><option value="paid">Paid</option><option value="demo">Demo</option>
+                        </select>
+                      </td>
+                      <td>
+                        <button className={"tag" + (c.hide_donate ? " tag--hidden" : "")} style={{ cursor: "pointer", border: 0 }}
+                          onClick={async () => { try { await neonAdmin("toggle_donate", { id: c.id }); await loadNeon(); } catch (e2) { toast("Failed: " + e2.message, "err"); } }}>
+                          {c.hide_donate ? "Off" : "On"}</button>
+                      </td>
+                      <td>
+                        <div className="row-actions">
+                          <button className={"icon-btn" + (c.is_active ? "" : " icon-btn--danger")} title={c.is_active ? "Disable site" : "Enable site"}
+                            onClick={async () => { try { await neonAdmin("set_active", { id: c.id, active: !c.is_active }); await loadNeon(); } catch (e2) { toast("Failed: " + e2.message, "err"); } }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 3.5v8" /><path d="M6.6 6.8a8 8 0 1 0 10.8 0" /></svg>
+                          </button>
+                          <a className="icon-btn" href={clientUrl(c.subdomain)} target="_blank" rel="noreferrer" title="Open live site">{Icon.arrow({})}</a>
                         </div>
                       </td>
                     </tr>
