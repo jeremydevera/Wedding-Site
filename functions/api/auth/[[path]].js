@@ -41,6 +41,7 @@ export async function onRequest({ request, params }) {
   });
 
   const out = new Headers();
+  out.set("x-authproxy", "v2-domain-share"); // deploy marker (verify Set-Cookie Domain rollout)
   for (const h of ["content-type", "set-auth-jwt"]) {
     const v = upstream.headers.get(h);
     if (v) out.set(h, v);
