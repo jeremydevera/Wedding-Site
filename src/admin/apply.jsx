@@ -207,7 +207,7 @@ export function stateFromRequest(row) {
 // Public /apply intake, and — with `initial` — the superadmin request editor:
 // the same steps render prefilled inside the console modal, and the last step
 // saves via onSave(requestPayload) instead of submitting a new request.
-export function ApplyWizard({ initial = null, onSave, onCancel }) {
+export function ApplyWizard({ initial = null, onSave, onCancel, submitOverride = null, presetEmail = "", subCheck = null, draftKey = null }) {
   const editing = !!initial;
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -216,8 +216,20 @@ export function ApplyWizard({ initial = null, onSave, onCancel }) {
   const [approved, setApproved] = useState(false); // auto-approved server-side
   const [touchedSub, setTouchedSub] = useState(editing); // editing: never auto-slug over a real subdomain
   const [subState, setSubState] = useState("idle");
-  const [f, setF] = useState(() => (editing ? stateFromRequest(initial) : blankApplyState()));
+  const [f, setF] = useState(() => {
+    if (editing) return stateFromRequest(initial);
+    if (draftKey) {
+      try { const d = JSON.parse(localStorage.getItem(draftKey) || "null"); if (d && typeof d === "object") return { ...blankApplyState(), ...d, email: presetEmail || d.email }; } catch { /* ignore */ }
+    }
+    return { ...blankApplyState(), email: presetEmail };
+  });
   const set = (k) => (e) => { setErr(""); setF((p) => ({ ...p, [k]: e && e.target ? e.target.value : e })); };
+
+  // Draft persistence (registration flow): survives refresh/session expiry.
+  useEffect(() => {
+    if (!draftKey || editing) return;
+    try { localStorage.setItem(draftKey, JSON.stringify(f)); } catch { /* quota */ }
+  }, [f, draftKey, editing]);
 
   // suggest the address from the names (wedding) or the event title (birthday) until edited
   useEffect(() => {
@@ -240,7 +252,7 @@ export function ApplyWizard({ initial = null, onSave, onCancel }) {
     setSubState("checking");
     clearTimeout(t.current);
     t.current = setTimeout(() => {
-      checkRequestSubdomainFree(sub).then((free) => setSubState(free ? "free" : "taken")).catch(() => setSubState("idle"));
+      (subCheck || checkRequestSubdomainFree)(sub).then((free) => setSubState(free ? "free" : "taken")).catch(() => setSubState("idle"));
     }, 450);
     return () => clearTimeout(t.current);
   }, [f.subdomain]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -292,7 +304,7 @@ export function ApplyWizard({ initial = null, onSave, onCancel }) {
       if (editing) {
         await onSave(requestPayload(f)); // caller persists + closes
       } else {
-        const res = await submitSiteRequest(requestPayload(f));
+        const res = await (submitOverride || submitSiteRequest)(requestPayload(f));
         setApproved(res?.approved === true);
         setDone(true);
       }
