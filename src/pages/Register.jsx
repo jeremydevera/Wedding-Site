@@ -5,7 +5,8 @@ import { ApplyWizard } from "@/admin/apply.jsx";
 import { Button, Field, Input, toast } from "@/ui/components.jsx";
 const { useState, useEffect } = React;
 
-// Self-registration (Neon backend) — sandbox host only, behind USE NEON DATABASE.
+// Self-registration (Neon backend) — apex (celebrately.us/www) + sandbox hosts,
+// behind USE NEON DATABASE.
 // States: loading → off | auth | wizard | pending | redirect.
 // The wizard is what creates the site; until it finishes there is no site, so
 // nothing but the wizard (or the auth card / pending notice) ever renders here.

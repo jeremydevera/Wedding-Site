@@ -152,11 +152,12 @@ export function AdminLogin({ onAuthed }) {
           </div>
 
           <button type="submit" className="signin__btn" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
-          {/* New-site requests go through the /apply approval flow */}
+          {/* New sites: self-serve /register (Neon funnel). /apply stays live
+              as the manual-request path for shared links. */}
           {!isClient && (
             <>
               <p style={{ textAlign: "center", fontSize: 13, color: "var(--sg-sub)", marginTop: 18 }}>
-                New here? <a href="/apply" style={{ color: "#1E5BD6", fontWeight: 600, textDecoration: "none" }}>Request your wedding site →</a>
+                New here? <a href="/register" style={{ color: "#1E5BD6", fontWeight: 600, textDecoration: "none" }}>Sign up →</a>
               </p>
               <p style={{ textAlign: "center", fontSize: 13, color: "var(--sg-sub)", marginTop: 6 }}>
                 Want a look first? <a href="https://demo.celebrately.us/" style={{ color: "#1E5BD6", fontWeight: 600, textDecoration: "none" }}>View the demo site →</a>

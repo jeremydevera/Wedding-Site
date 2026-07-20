@@ -55,4 +55,4 @@ when a behavior is confirmed intentional.
   active/open-site only. Owner-side editing for Neon sites is a later phase.
 - **Neon rows in the console Clients list are un-paginated/un-searched** —
   appended after the Supabase page rows; fine at current volume.
-- **/register lives on sandbox.celebrately.us only** while the funnel matures.
+- **/register lives on celebrately.us (+www) and sandbox** — promoted from sandbox-only on owner request 2026-07-21; the login page's "Sign up →" links there. /apply remains the manual-request path.

@@ -463,15 +463,12 @@ export function App() {
   const Page = ROUTES[route] || Home;
   // apex hub or the admin route → admin shell (no public site).
   const isAdmin = view === "admin";
-  // Neon self-registration — sandbox host only (flag re-checked inside the page).
-  if (resolveSubdomain() === "sandbox" && /^\/register\/?$/.test(window.location.pathname)) {
+  // Neon self-registration — apex (celebrately.us / www) + sandbox host.
+  // The flag is re-checked inside the page ("not open yet" when off). This
+  // supersedes the old retired-/register→/apply redirect; /apply itself stays
+  // live as the manual-request path.
+  if ((resolveSubdomain() === null || resolveSubdomain() === "sandbox") && /^\/register\/?$/.test(window.location.pathname)) {
     return (<><RegisterPage /><ToastHost /><ConfirmHost /></>);
-  }
-  // /register (old self-serve signup) is retired — every new site goes through
-  // the /apply approval flow. Old shared links land there too.
-  if (isAdmin && resolveSubdomain() === null && /^\/register\/?$/.test(window.location.pathname)) {
-    window.location.replace("/apply");
-    return null;
   }
   // Prospect intake wizard (link sent to possible clients) — apex /apply.
   if (isAdmin && resolveSubdomain() === null && /^\/apply\/?$/.test(window.location.pathname)) {
