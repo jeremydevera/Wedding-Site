@@ -16,6 +16,7 @@ import { GuestbookPage, QuizPage } from "@/features/social.jsx";
 import { MusicMount } from "@/features/music.jsx";
 import { AdminApp, ImageUploadField } from "@/admin/manage.jsx";
 import { ApplyWizard } from "@/admin/apply.jsx";
+import { RegisterPage } from "@/pages/Register.jsx";
 import { SetPassword } from "@/app/SetPassword.jsx";
 import { RoadToForeverSite } from "@/features/roadtoforever.jsx";
 import { hasSection } from "@/config/eventTypes.js";
@@ -462,6 +463,10 @@ export function App() {
   const Page = ROUTES[route] || Home;
   // apex hub or the admin route → admin shell (no public site).
   const isAdmin = view === "admin";
+  // Neon self-registration — sandbox host only (flag re-checked inside the page).
+  if (resolveSubdomain() === "sandbox" && /^\/register\/?$/.test(window.location.pathname)) {
+    return (<><RegisterPage /><ToastHost /><ConfirmHost /></>);
+  }
   // /register (old self-serve signup) is retired — every new site goes through
   // the /apply approval flow. Old shared links land there too.
   if (isAdmin && resolveSubdomain() === null && /^\/register\/?$/.test(window.location.pathname)) {
