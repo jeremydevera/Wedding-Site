@@ -93,3 +93,57 @@ export async function neonSelectPaged(table, query, from, to) {
   const total = parseInt((res.headers.get("content-range") || "").split("/")[1], 10);
   return { rows: rows || [], count: Number.isFinite(total) ? total : (rows || []).length };
 }
+
+// ---- Neon Auth (Better Auth REST) — registered users ------------------------
+// Cookie session lives on the neonauth domain (credentials: 'include'); the
+// short-lived JWT for the Data API is captured from the `set-auth-jwt` response
+// header of /get-session and cached until ~1 min before expiry.
+let userTok = null; // { token, exp(ms) }
+async function authFetch(path, { method = "GET", body } = {}) {
+  const res = await fetch(`${shard().authUrl}${path}`, {
+    method,
+    credentials: "include",
+    headers: body !== undefined ? { "content-type": "application/json" } : {},
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const jwt = res.headers.get("set-auth-jwt");
+  if (jwt) userTok = { token: jwt, exp: jwtExpMs(jwt) || Date.now() + 10 * 60_000 };
+  let data = null;
+  try { data = await res.json(); } catch { /* some endpoints return empty */ }
+  if (!res.ok) {
+    const err = new Error(data?.message || `auth error (${res.status})`);
+    err.status = res.status; throw err;
+  }
+  return data;
+}
+export const neonAuth = {
+  signUp: (email, password) => authFetch("/sign-up/email", { method: "POST", body: { email, password, name: email.split("@")[0] } }),
+  signIn: (email, password) => authFetch("/sign-in/email", { method: "POST", body: { email, password } }),
+  signOut: () => { userTok = null; return authFetch("/sign-out", { method: "POST", body: {} }).catch(() => null); },
+  // null when signed out; { user } when signed in (also refreshes the JWT)
+  session: async () => {
+    try { const d = await authFetch("/get-session"); return d && d.user ? d : null; } catch { return null; }
+  },
+};
+async function userToken() {
+  if (userTok && Date.now() < userTok.exp - 60_000) return userTok.token;
+  const s = await neonAuth.session(); // refreshes userTok via header
+  if (!s || !userTok) throw new Error("not signed in");
+  return userTok.token;
+}
+// Data API RPC with the signed-in user's JWT (RLS role: authenticated).
+export async function authedRpc(fn, args) {
+  const token = await userToken();
+  const res = await fetch(`${shard().dataApiUrl}/rpc/${fn}`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+    body: JSON.stringify(args || {}),
+  });
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try { msg = (await res.json()).message || msg; } catch { /* keep */ }
+    const err = new Error(msg); err.status = res.status; throw err;
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
