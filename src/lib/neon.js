@@ -154,4 +154,30 @@ export async function authedRpc(fn, args) {
   return text ? JSON.parse(text) : null;
 }
 
+// ---- Authenticated Data API (owner JWT) — admin reads/writes -----------------
+// The signed-in owner's JWT gives RLS role "authenticated"; the ported Neon
+// policies scope every read/write to their own client (auth.user_id() ->
+// profiles.client_id), exactly like the Supabase owner-update policies. Used by
+// the admin path (loadAdminData + mutations + saveClientData) when neonMode.
+async function neonAuthedRest(path, { method = "GET", body, headers = {}, raw = false } = {}) {
+  const token = await userToken();
+  const res = await fetch(`${shard().dataApiUrl}/${path}`, {
+    method,
+    headers: { authorization: `Bearer ${token}`, "content-type": "application/json", ...headers },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try { msg = (await res.json()).message || msg; } catch { /* keep status */ }
+    const err = new Error(msg); err.status = res.status; throw err;
+  }
+  if (raw) return res;
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+export const neonAuthedSelect = (table, query) => neonAuthedRest(`${table}?${query}`);
+export const neonAuthedInsert = (table, row) => neonAuthedRest(table, { method: "POST", body: row, headers: { prefer: "return=representation" } });
+export const neonAuthedUpdate = (table, query, patch) => neonAuthedRest(`${table}?${query}`, { method: "PATCH", body: patch, headers: { prefer: "return=minimal" } });
+export const neonAuthedDelete = (table, query) => neonAuthedRest(`${table}?${query}`, { method: "DELETE", headers: { prefer: "return=minimal" } });
+
 // deploy marker: neon-registration funnel v1 (2026-07-21)

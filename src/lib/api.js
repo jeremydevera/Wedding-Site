@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase.js";
-import { neonSelect, neonInsert, neonRpc, NEON_FLAG_KEY, NEON_SHARDS_KEY, setNeonRegistry, resolveShardId, setActiveShard } from "@/lib/neon.js";
+import { neonSelect, neonInsert, neonRpc, neonAuthedSelect, neonAuthedInsert, neonAuthedUpdate, neonAuthedDelete, NEON_FLAG_KEY, NEON_SHARDS_KEY, setNeonRegistry, resolveShardId, setActiveShard } from "@/lib/neon.js";
 import { Store } from "@/lib/store.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { clientToState, stateToClientRow, rowToGuestbook, rowToRsvp, rowToQuizSub, rsvpToRow, guestbookToRow, quizToRow, guestToRow, rowToGuest, ticketToRow } from "@/lib/mappers.js";
@@ -169,11 +169,13 @@ export async function guestAllocation(first, middle, last) {
 }
 // Admin edit of a reply's status (owner-update RLS, 0016).
 export async function updateRsvpStatusDb(id, status) {
+  if (onNeon()) { await neonAuthedUpdate("rsvps", `id=eq.${id}`, { status }); return; }
   const { error } = await supabase.from("rsvps").update({ status }).eq("id", id);
   if (error) { console.warn("[api] rsvp status update failed:", error.message); throw error; }
 }
 // Admin edit of a reply's dietary preference (owner-update RLS, 0016).
 export async function updateRsvpDietDb(id, diet, dietNotes) {
+  if (onNeon()) { await neonAuthedUpdate("rsvps", `id=eq.${id}`, { diet: diet || "None", diet_notes: dietNotes || "" }); return; }
   const { error } = await supabase.from("rsvps").update({ diet: diet || "None", diet_notes: dietNotes || "" }).eq("id", id);
   if (error) { console.warn("[api] rsvp diet update failed:", error.message); throw error; }
 }
@@ -217,6 +219,23 @@ export async function postQuiz(sub) {
 export async function loadAdminData() {
   const clientId = Store.get().clientId;
   if (!clientId) return;
+  if (onNeon()) {
+    // Owner JWT → RLS scopes each read to this client. Any query that errors
+    // keeps the previously-loaded rows (same as the Supabase path below).
+    const q = (t, ord) => neonAuthedSelect(t, `select=*&client_id=eq.${clientId}&order=${ord}`).catch((e) => { console.warn(`[api] neon ${t} load failed:`, e.message); return null; });
+    const [rs, gb, qz, gu] = await Promise.all([
+      q("rsvps", "created_at.desc"), q("guestbook", "created_at.desc"),
+      q("quiz_answers", "created_at.desc"), q("guests", "created_at.asc"),
+    ]);
+    const prev = Store.get();
+    Store.setSubmissions({
+      rsvps: rs ? rs.map(rowToRsvp) : (prev.rsvps || []),
+      guestbook: gb ? gb.map(rowToGuestbook) : (prev.guestbook || []),
+      quizSubs: qz ? qz.map(rowToQuizSub) : (prev.quizSubs || []),
+      guests: gu ? gu.map(rowToGuest) : (prev.guests || []),
+    });
+    return;
+  }
   const [rs, gb, qz, gu] = await Promise.all([
     supabase.from("rsvps").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
     supabase.from("guestbook").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
@@ -248,6 +267,13 @@ export async function loadAdminData() {
 export function subscribeAdminRealtime() {
   const clientId = Store.get().clientId;
   if (!clientId) return () => {};
+  // Neon has no realtime channel — the admin refreshes on tab focus / actions
+  // instead (known gap). Avoid opening a stale Supabase channel for a Neon client.
+  if (onNeon()) {
+    const onVisible = () => { if (document.visibilityState === "visible") loadAdminData().catch(() => {}); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }
   let t = null;
   const refetch = () => {
     clearTimeout(t);
@@ -279,14 +305,18 @@ export function subscribeAdminRealtime() {
 // Admin moderation — write-through to the DB (caller updates the store optimistically).
 const GB_DB_STATUS = { visible: "approved", hidden: "hidden", pending: "pending" };
 export async function setGuestbookStatusDb(id, storeStatus) {
-  const { error } = await supabase.from("guestbook").update({ status: GB_DB_STATUS[storeStatus] || "pending" }).eq("id", id);
+  const st = GB_DB_STATUS[storeStatus] || "pending";
+  if (onNeon()) { await neonAuthedUpdate("guestbook", `id=eq.${id}`, { status: st }); return; }
+  const { error } = await supabase.from("guestbook").update({ status: st }).eq("id", id);
   if (error) { console.warn("[api] guestbook status update failed:", error.message); throw error; }
 }
 export async function deleteGuestbookDb(id) {
+  if (onNeon()) { await neonAuthedDelete("guestbook", `id=eq.${id}`); return; }
   const { error } = await supabase.from("guestbook").delete().eq("id", id);
   if (error) { console.warn("[api] guestbook delete failed:", error.message); throw error; }
 }
 export async function deleteRsvpDb(id) {
+  if (onNeon()) { await neonAuthedDelete("rsvps", `id=eq.${id}`); return; }
   const { error } = await supabase.from("rsvps").delete().eq("id", id);
   if (error) { console.warn("[api] rsvp delete failed:", error.message); throw error; }
 }
@@ -295,6 +325,7 @@ export async function deleteRsvpDb(id) {
 export async function updateRsvpCompanionsDb(id, companions) {
   const list = (companions || []).map((s) => (s || "").trim()).filter(Boolean);
   const patch = { companions: list, plus_one: list.join(", "), count: list.length + 1 };
+  if (onNeon()) { await neonAuthedUpdate("rsvps", `id=eq.${id}`, patch); return { companions: list, plusOne: patch.plus_one, count: patch.count }; }
   const { error } = await supabase.from("rsvps").update(patch).eq("id", id);
   if (error) { console.warn("[api] rsvp companions update failed:", error.message); throw error; }
   return { companions: list, plusOne: patch.plus_one, count: patch.count };
@@ -303,16 +334,19 @@ export async function updateRsvpCompanionsDb(id, companions) {
 // Owner/superadmin guest-list CRUD (RLS scopes writes to the owner's client).
 export async function addGuestDb(guest) {
   const clientId = Store.get().clientId;
+  if (onNeon()) { const rows = await neonAuthedInsert("guests", guestToRow(guest, clientId)); return rowToGuest(Array.isArray(rows) ? rows[0] : rows); }
   const { data, error } = await supabase.from("guests").insert(guestToRow(guest, clientId)).select().single();
   if (error) { console.warn("[api] guest insert failed:", error.message); throw error; }
   return rowToGuest(data);
 }
 export async function updateGuestDb(id, guest) {
   const clientId = Store.get().clientId;
+  if (onNeon()) { await neonAuthedUpdate("guests", `id=eq.${id}`, guestToRow(guest, clientId)); return; }
   const { error } = await supabase.from("guests").update(guestToRow(guest, clientId)).eq("id", id);
   if (error) { console.warn("[api] guest update failed:", error.message); throw error; }
 }
 export async function deleteGuestDb(id) {
+  if (onNeon()) { await neonAuthedDelete("guests", `id=eq.${id}`); return; }
   const { error } = await supabase.from("guests").delete().eq("id", id);
   if (error) { console.warn("[api] guest delete failed:", error.message); throw error; }
 }
@@ -323,6 +357,7 @@ export async function deleteGuestDb(id) {
 export async function saveClientData() {
   const clientId = Store.get().clientId;
   if (!clientId) throw new Error("No client loaded");
+  if (onNeon()) { await neonAuthedUpdate("clients", `id=eq.${clientId}`, stateToClientRow(Store.get())); return; }
   const { error } = await supabase.from("clients").update(stateToClientRow(Store.get())).eq("id", clientId);
   if (error) { console.warn("[api] save failed:", error.message); throw error; }
 }
