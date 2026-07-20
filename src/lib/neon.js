@@ -95,15 +95,21 @@ export async function neonSelectPaged(table, query, from, to) {
 }
 
 // ---- Neon Auth (Better Auth REST) — registered users ------------------------
-// Cookie session lives on the neonauth domain (credentials: 'include'); the
-// short-lived JWT for the Data API is captured from the `set-auth-jwt` response
-// header of /get-session and cached until ~1 min before expiry.
+// Auth calls go through OUR first-party proxy (/api/auth/* → the shard's
+// neonauth host). Direct calls set a THIRD-party cookie that Safari/WebKit
+// blocks (verified: sign-in bounced back to the auth card on WebKit) — via the
+// proxy the session cookie is first-party on every browser. The short-lived
+// Data API JWT still arrives via the `set-auth-jwt` response header (proxied
+// through) and is cached until ~1 min before expiry.
 let userTok = null; // { token, exp(ms) }
 async function authFetch(path, { method = "GET", body } = {}) {
-  const res = await fetch(`${shard().authUrl}${path}`, {
+  const res = await fetch(`/api/auth${path}`, {
     method,
     credentials: "include",
-    headers: body !== undefined ? { "content-type": "application/json" } : {},
+    headers: {
+      "x-neon-auth-base": shard().authUrl, // proxy validates against a strict Neon-host pattern
+      ...(body !== undefined ? { "content-type": "application/json" } : {}),
+    },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const jwt = res.headers.get("set-auth-jwt");
