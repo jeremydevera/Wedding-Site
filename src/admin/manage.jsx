@@ -2401,6 +2401,21 @@ export function PlatformSettings() {
       for (const f of PLATFORM_FLAGS) {
         if (flags[f.key] !== saved[f.key]) await setAppConfig(f.key, { enabled: flags[f.key] });
       }
+      // register_site on Neon reads the NEON copy of this flag (tamper-proof) —
+      // keep it in sync. Best-effort: a failed mirror must be loud, not silent.
+      if (flags.auto_approve_requests !== saved.auto_approve_requests) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const res = await fetch("/api/neon-admin", {
+            method: "POST",
+            headers: { "content-type": "application/json", authorization: `Bearer ${session?.access_token || ""}` },
+            body: JSON.stringify({ action: "set_config", key: "auto_approve_requests", value: { enabled: flags.auto_approve_requests } }),
+          });
+          if (!res.ok) throw new Error(`neon mirror ${res.status}`);
+        } catch (e2) {
+          toast("Saved, but the Neon copy of auto-approve did NOT update: " + (e2.message || "error"), "err");
+        }
+      }
       setSaved({ ...flags });
       toast("Platform settings saved", "ok");
     } catch (e) {
