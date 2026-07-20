@@ -1138,21 +1138,30 @@ export function ClientsAdmin() {
                       <td><span style={{ color: "var(--muted)" }}>—</span></td>
                       <td>
                         <select value={c.status || "not_paid"} disabled={busy} aria-label={`Status for ${c.subdomain}`}
-                          onChange={async (e) => { try { await neonAdmin("set_status", { id: c.id, status: e.target.value }); await loadNeon(); } catch (e2) { toast("Failed: " + e2.message, "err"); } }}
+                          onChange={(e) => runBusy("Updating…", async () => {
+                            try { await neonAdmin("set_status", { id: c.id, status: e.target.value }); await loadNeon(); }
+                            catch (e2) { toast("Failed: " + e2.message, "err"); }
+                          })}
                           style={{ fontSize: 13, fontWeight: 600, padding: "3px 6px", borderRadius: 6, border: "1px solid var(--line)", background: "transparent",
                             color: (c.status || "not_paid") === "paid" ? "#1d7a3d" : (c.status || "not_paid") === "demo" ? "#3b6fb5" : "#a05a1a" }}>
                           <option value="not_paid">Not Paid</option><option value="paid">Paid</option><option value="demo">Demo</option>
                         </select>
                       </td>
                       <td>
-                        <button className={"tag" + (c.hide_donate ? " tag--hidden" : "")} style={{ cursor: "pointer", border: 0 }}
-                          onClick={async () => { try { await neonAdmin("toggle_donate", { id: c.id }); await loadNeon(); } catch (e2) { toast("Failed: " + e2.message, "err"); } }}>
+                        <button className={"tag" + (c.hide_donate ? " tag--hidden" : "")} style={{ cursor: "pointer", border: 0 }} disabled={busy}
+                          onClick={() => runBusy("Updating…", async () => {
+                            try { await neonAdmin("toggle_donate", { id: c.id }); await loadNeon(); }
+                            catch (e2) { toast("Failed: " + e2.message, "err"); }
+                          })}>
                           {c.hide_donate ? "Off" : "On"}</button>
                       </td>
                       <td>
                         <div className="row-actions">
-                          <button className={"icon-btn" + (c.is_active ? "" : " icon-btn--danger")} title={c.is_active ? "Disable site" : "Enable site"}
-                            onClick={async () => { try { await neonAdmin("set_active", { id: c.id, active: !c.is_active }); await loadNeon(); } catch (e2) { toast("Failed: " + e2.message, "err"); } }}>
+                          <button className={"icon-btn" + (c.is_active ? "" : " icon-btn--danger")} title={c.is_active ? "Disable site" : "Enable site"} disabled={busy}
+                            onClick={() => runBusy(c.is_active ? "Disabling…" : "Enabling…", async () => {
+                              try { await neonAdmin("set_active", { id: c.id, active: !c.is_active }); await loadNeon(); }
+                              catch (e2) { toast("Failed: " + e2.message, "err"); }
+                            })}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 3.5v8" /><path d="M6.6 6.8a8 8 0 1 0 10.8 0" /></svg>
                           </button>
                           <a className="icon-btn" href={clientUrl(c.subdomain)} target="_blank" rel="noreferrer" title="Open live site">{Icon.arrow({})}</a>
