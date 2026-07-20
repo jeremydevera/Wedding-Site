@@ -45,6 +45,24 @@ export async function loadClientData() {
   const { data: client, error } = await supabase
     .from("clients").select("*").eq("subdomain", subdomain).eq("is_active", true).single();
   if (error || !client) {
+    // Supabase miss — Neon-registered sites (flag ON) resolve here. Existing
+    // clients ALWAYS resolve above; this branch cannot affect them.
+    try {
+      const [flag, shardCfg] = await Promise.all([
+        getAppConfig(NEON_FLAG_KEY), getAppConfig(NEON_SHARDS_KEY).catch(() => null),
+      ]);
+      if (flag?.enabled === true) {
+        setNeonRegistry(shardCfg);
+        setActiveShard(resolveShardId(subdomain));
+        const rows = await neonSelect("clients", `select=*&subdomain=eq.${encodeURIComponent(subdomain)}&is_active=eq.true&limit=1`);
+        const nc = rows && rows[0];
+        if (nc) {
+          Store.hydrate({ ...clientToState(nc), guestbook: [], neonMode: true });
+          await loadSession();
+          return;
+        }
+      }
+    } catch (e2) { console.warn("[neon] fallback lookup failed:", e2?.message); }
     console.warn("[api] client not found for subdomain:", subdomain, error?.message);
     await loadSession(); // always resolve auth so admin doesn't hang on the loading gate
     // No active client for this subdomain (deleted / never existed / deactivated).
