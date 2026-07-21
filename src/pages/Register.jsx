@@ -158,35 +158,51 @@ function AuthCard({ onDone }) {
   const [f, setF] = useState({ email: "", pw: "", pw2: "", otp: "" });
   const [busy, setBusy] = useState(false);
   const [tsToken, setTsToken] = useState("");
+  const [tsError, setTsError] = useState("");   // widget failed to load / verify
+  const [tsNonce, setTsNonce] = useState(0);     // bump to force a re-render (Retry)
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
   // Turnstile widget (signup only). The token is verified SERVER-side by the
   // /api/auth proxy — this widget just produces it. Script is loaded once;
-  // widget re-renders when switching back to signup mode.
+  // widget re-renders when switching back to signup mode (or on Retry via tsNonce).
   useEffect(() => {
     if (mode !== "signup") return;
-    let widgetId = null, dead = false;
+    let widgetId = null, dead = false, guard = null;
+    setTsError("");
+    const fail = (why) => { if (!dead) setTsError(why || "Security check couldn't load. Tap Retry, or refresh the page."); };
     const render = async () => {
       const cfg = await getAppConfig("turnstile").catch(() => null);
       if (dead) return;
       const el = document.getElementById("rg-turnstile");
-      if (el && window.turnstile) {
-        el.innerHTML = "";
+      if (!el || !window.turnstile) { fail(); return; }
+      el.innerHTML = "";
+      try {
         widgetId = window.turnstile.render(el, {
           sitekey: cfg?.siteKey || TURNSTILE_TEST_SITEKEY,
-          callback: (t) => setTsToken(t),
+          callback: (t) => { setTsToken(t); setTsError(""); },
           "expired-callback": () => setTsToken(""),
+          // A sitekey not allow-listed for this domain fails HERE (or, worse,
+          // silently — see the guard below). Surface it instead of a dead submit.
+          "error-callback": () => { setTsToken(""); fail("Security check failed to load — the site key isn't valid for this domain. Tap Retry, or contact support."); return true; },
         });
-      }
+      } catch (e) { fail(); return; }
+      // Silent no-render guard: a mis-configured sitekey can draw NO iframe AND
+      // fire no error-callback (observed live on celebrately.us). If no challenge
+      // iframe appears within a few seconds, surface it — otherwise the user hits
+      // "complete the security check first" with nothing visible to complete.
+      guard = setTimeout(() => {
+        if (dead) return;
+        if (!el.querySelector("iframe")) fail("Security check couldn't load. Tap Retry, or refresh the page.");
+      }, 6000);
     };
     if (window.turnstile) render();
     else {
       const s = document.createElement("script");
       s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
-      s.async = true; s.onload = render;
+      s.async = true; s.onload = render; s.onerror = () => fail();
       document.head.appendChild(s);
     }
-    return () => { dead = true; try { if (widgetId !== null && window.turnstile) window.turnstile.remove(widgetId); } catch (e) { /* ignore */ } };
-  }, [mode]);
+    return () => { dead = true; if (guard) clearTimeout(guard); try { if (widgetId !== null && window.turnstile) window.turnstile.remove(widgetId); } catch (e) { /* ignore */ } };
+  }, [mode, tsNonce]);
   async function submit(e) {
     e.preventDefault();
     if (busy) return;
@@ -274,6 +290,13 @@ function AuthCard({ onDone }) {
         </div>
       )}
       {mode === "signup" && <div id="rg-turnstile" style={{ margin: "6px 0 2px", minHeight: 66 }} />}
+      {mode === "signup" && tsError && (
+        <p style={{ fontSize: 13, color: "#B42318", margin: "0 0 6px", textAlign: "center", lineHeight: 1.4 }}>
+          {tsError}{" "}
+          <a href="#" style={{ color: "#1E5BD6", fontWeight: 600, textDecoration: "none" }}
+            onClick={(e) => { e.preventDefault(); setTsToken(""); setTsError(""); setTsNonce((n) => n + 1); }}>Retry</a>
+        </p>
+      )}
       <button type="submit" className="signin__btn" disabled={busy}>{busy ? "Working…" : (mode === "signup" ? "Create account" : "Sign in")}</button>
       <p style={{ textAlign: "center", fontSize: 13, color: "var(--sg-sub)", marginTop: 14 }}>
         {mode === "signup" ? "Already have an account? " : "New here? "}
