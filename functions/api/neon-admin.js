@@ -55,6 +55,42 @@ export async function onRequestPost({ request, env }) {
         await sql`update clients set content = content || ${JSON.stringify({ hideDonateAd: hidden })}::jsonb where id = ${body.id}`;
         return json({ ok: true, hidden });
       }
+      // Permanently remove a Neon client site: unlink/remove owner profiles first
+      // (profiles.client_id references the client), then the client row. Guest
+      // rows (rsvps/guestbook/quiz) cascade via their client_id FKs where defined;
+      // delete explicitly to be safe. The owner's AUTH account is kept — they
+      // could register a new site later.
+      case "delete_client": {
+        if (!body.id) return json({ error: "id required" }, 400);
+        await sql`delete from rsvps where client_id = ${body.id}`;
+        await sql`delete from guestbook where client_id = ${body.id}`;
+        await sql`delete from quiz_answers where client_id = ${body.id}`;
+        await sql`delete from guests where client_id = ${body.id}`.catch(() => {});
+        await sql`delete from profiles where client_id = ${body.id} and role = 'owner'`;
+        const del = await sql`delete from clients where id = ${body.id} returning subdomain`;
+        return json({ ok: true, deleted: del[0]?.subdomain || null });
+      }
+      // Registered accounts that never finished the wizard: no client, no pending
+      // request. Surfaced in the console so signups aren't invisible.
+      case "list_signups": {
+        const rows = await sql`select u.id, u.email, u.name, u."createdAt" as created_at
+          from neon_auth."user" u
+          left join profiles p on p.id = u.id
+          left join site_requests r on r.requested_by = u.id and r.status = 'pending'
+          where (p.id is null or (p.client_id is null and p.role <> 'superadmin')) and r.id is null
+          order by u."createdAt" desc`;
+        return json({ rows });
+      }
+      // Remove an unfinished signup's auth account (never one with a client or
+      // the superadmin).
+      case "delete_signup": {
+        if (!body.user_id) return json({ error: "user_id required" }, 400);
+        const [p] = await sql`select role, client_id from profiles where id = ${body.user_id}`;
+        if (p && (p.role === "superadmin" || p.client_id)) return json({ error: "refusing: account has a site or is the admin" }, 400);
+        await sql`delete from profiles where id = ${body.user_id}`.catch(() => {});
+        await sql`delete from neon_auth."user" where id = ${body.user_id}`;
+        return json({ ok: true });
+      }
       case "set_config":
         await sql`insert into app_config (key, value) values (${body.key}, ${JSON.stringify(body.value)}::jsonb)
           on conflict (key) do update set value = excluded.value, updated_at = now()`;

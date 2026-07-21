@@ -456,6 +456,7 @@ export function ClientsAdmin() {
   }
   const [neonReqs, setNeonReqs] = useState([]);
   const [neonClients, setNeonClients] = useState([]);
+  const [neonSignups, setNeonSignups] = useState([]); // registered, wizard not finished
   async function neonAdmin(action, params = {}) {
     const { data: { session } } = await supabase.auth.getSession();
     const res = await fetch("/api/neon-admin", {
@@ -469,8 +470,8 @@ export function ClientsAdmin() {
   }
   async function loadNeon() {
     try {
-      const [rq, cl] = await Promise.all([neonAdmin("list_requests"), neonAdmin("list_clients")]);
-      setNeonReqs(rq.rows || []); setNeonClients(cl.rows || []);
+      const [rq, cl, su] = await Promise.all([neonAdmin("list_requests"), neonAdmin("list_clients"), neonAdmin("list_signups").catch(() => ({ rows: [] }))]);
+      setNeonReqs(rq.rows || []); setNeonClients(cl.rows || []); setNeonSignups(su.rows || []);
     } catch (e) { console.warn("[neon-admin] load failed:", e.message); }
   }
   useEffect(() => { load(); loadNeon(); }, []);
@@ -1164,7 +1165,46 @@ export function ClientsAdmin() {
                             })}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 3.5v8" /><path d="M6.6 6.8a8 8 0 1 0 10.8 0" /></svg>
                           </button>
+                          <a className="icon-btn" href={clientUrl(c.subdomain) + "/admin"} target="_blank" rel="noreferrer" title="Open admin (you have superadmin access)">{Icon.edit({})}</a>
                           <a className="icon-btn" href={clientUrl(c.subdomain)} target="_blank" rel="noreferrer" title="Open live site">{Icon.arrow({})}</a>
+                          <button className="icon-btn icon-btn--danger" title="Delete site permanently" disabled={busy}
+                            onClick={() => confirmDialog({ title: "Delete this Neon site?", message: `Permanently delete ${c.subdomain}.${PLATFORM_DOMAIN} and all its RSVPs, guestbook and quiz data? The owner's login is kept. This can't be undone.`, confirmLabel: "Delete site", danger: true }).then((ok) => { if (!ok) return; runBusy("Deleting…", async () => {
+                              try { await neonAdmin("delete_client", { id: c.id }); toast("Site deleted.", "success"); await loadNeon(); }
+                              catch (e2) { toast("Delete failed: " + e2.message, "err"); }
+                            }); })}>
+                            {Icon.trash({})}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {/* Neon signups that never finished the wizard — visible so a
+                      registered-but-stuck prospect isn't invisible to the admin. */}
+                  {neonSignups.map((u) => (
+                    <tr key={"s-" + u.id}>
+                      <td></td>
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                          <span className="sa-dot sa-dot--off" title="No site yet" />
+                          <div>
+                            <span className="tag" style={{ marginRight: 8 }}>Neon</span>
+                            <span style={{ color: "var(--muted)", fontSize: 13 }}>signed up — hasn't built a site yet</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ maxWidth: 200 }}><span className="client-domain" style={{ fontSize: 13 }}>{u.email}</span></td>
+                      <td><span style={{ color: "var(--muted)", fontSize: 13 }}>{u.created_at ? new Date(u.created_at).toLocaleDateString() : "—"}</span></td>
+                      <td><span style={{ color: "var(--muted)" }}>—</span></td>
+                      <td><span style={{ color: "var(--muted)" }}>—</span></td>
+                      <td>
+                        <div className="row-actions">
+                          <button className="icon-btn icon-btn--danger" title="Delete this signup's account" disabled={busy}
+                            onClick={() => confirmDialog({ title: "Delete this signup?", message: `Remove the account ${u.email}? They never built a site; they can register again later.`, confirmLabel: "Delete account", danger: true }).then((ok) => { if (!ok) return; runBusy("Deleting…", async () => {
+                              try { await neonAdmin("delete_signup", { user_id: u.id }); await loadNeon(); }
+                              catch (e2) { toast("Delete failed: " + e2.message, "err"); }
+                            }); })}>
+                            {Icon.trash({})}
+                          </button>
                         </div>
                       </td>
                     </tr>

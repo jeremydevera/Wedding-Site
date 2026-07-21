@@ -47,7 +47,13 @@ export function RegisterPage() {
     // client's admin) must NEVER reach the wizard — register_site would overwrite
     // the superadmin profile to 'owner' (also guarded server-side in SQL).
     const prof = await neonAuthedSelect("profiles", `select=role&id=eq.${encodeURIComponent(s.user?.id || "")}`).catch(() => null);
-    if (prof && prof[0] && prof[0].role === "superadmin") { setPhase("sa"); return; }
+    if (prof && prof[0] && prof[0].role === "superadmin") {
+      // The platform admin never registers — take them straight to the console
+      // (no interstitial). Testing registration as a client = private window.
+      setPhase("sa");
+      window.location.replace("/admin");
+      return;
+    }
     // First authed RPC after sign-in can flake to {state:'anon'} while the JWT
     // session warms up (observed live) — retry once before trusting it.
     let st = await authedRpc("my_registration_state").catch(() => ({ state: "none" }));
@@ -97,16 +103,12 @@ export function RegisterPage() {
     </Shell>
   );
   if (phase === "sa") return (
+    // Auto-redirecting to /admin (resolvePhase issued the replace). This renders
+    // only for the brief moment before navigation lands.
     <Shell>
-      <div className="signin__form" style={{ textAlign: "center" }}>
-        <h1 className="signin__title">You're the platform admin</h1>
-        <p className="signin__sub">This page registers NEW client sites — it's not your console. To see and manage your clients, head to the admin console. (Registration as the admin account is blocked so it can't demote your access.)</p>
-        <a className="signin__btn" style={{ display: "block", marginTop: 18, textDecoration: "none", textAlign: "center" }} href="/admin">Open your admin console →</a>
-        <p style={{ textAlign: "center", fontSize: 13, marginTop: 12 }}>
-          <a href="#" style={{ color: "var(--sg-sub)" }} onClick={async (e) => { e.preventDefault(); await neonAuth.signOut(); setPhase("auth"); }}>
-            Or sign out to test registration as a client
-          </a>
-        </p>
+      <div className="signin__form" style={{ textAlign: "center", color: "var(--sg-sub)" }}>
+        You're the platform admin — taking you to your console…
+        <p style={{ fontSize: 13, marginTop: 12 }}><a href="/admin">Open the console →</a></p>
       </div>
     </Shell>
   );
