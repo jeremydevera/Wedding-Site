@@ -185,13 +185,17 @@ function AuthCard({ onDone }) {
           "error-callback": () => { setTsToken(""); fail("Security check failed to load — the site key isn't valid for this domain. Tap Retry, or contact support."); return true; },
         });
       } catch (e) { fail(); return; }
-      // Silent no-render guard: a mis-configured sitekey can draw NO iframe AND
-      // fire no error-callback (observed live on celebrately.us). If no challenge
-      // iframe appears within a few seconds, surface it — otherwise the user hits
-      // "complete the security check first" with nothing visible to complete.
+      // Silent no-render guard. ⚠️ Do NOT probe for the iframe — Turnstile puts
+      // it inside a CLOSED shadow root, so el.querySelector("iframe") is null
+      // even when the widget is rendered and interactive (verified live: widget
+      // visible, iframe query false → this guard false-fired the error on every
+      // healthy load). The reliable light-DOM signal is the hidden
+      // cf-turnstile-response input Turnstile injects into the container on a
+      // successful render; only its absence means the widget truly didn't mount.
       guard = setTimeout(() => {
         if (dead) return;
-        if (!el.querySelector("iframe")) fail("Security check couldn't load. Tap Retry, or refresh the page.");
+        const mounted = el.querySelector('input[name="cf-turnstile-response"]') || el.childElementCount > 0;
+        if (!mounted) fail("Security check couldn't load. Tap Retry, or refresh the page.");
       }, 6000);
     };
     if (window.turnstile) render();
