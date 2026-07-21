@@ -149,10 +149,21 @@ export function RegisterPage() {
       </div>
     </Shell>
   );
-  // wizard — fullscreen, nothing else (the wizard creates the site; it renders
-  // its own signin-style shell). draftKey: fields + step survive refresh,
-  // session expiry, and coming back later — resumes where she left off.
-  return <ApplyWizard presetEmail={email} subCheck={subCheck} submitOverride={submitOverride} draftKey="neonRegDraft" />;
+  // wizard — fullscreen (the wizard creates the site; it renders its own
+  // signin-style shell). draftKey: fields + step survive refresh, session
+  // expiry, and coming back later — resumes where she left off. The floating
+  // sign-out lets a signed-in-but-unfinished user switch accounts (her draft
+  // stays in this browser's localStorage for when she returns).
+  return (
+    <>
+      <ApplyWizard presetEmail={email} subCheck={subCheck} submitOverride={submitOverride} draftKey="neonRegDraft" />
+      <button type="button"
+        onClick={async () => { await neonAuth.signOut(); setPhase("auth"); }}
+        style={{ position: "fixed", top: 14, right: 16, zIndex: 60, background: "rgba(255,255,255,.92)", border: "1px solid var(--sg-line, #e5e7eb)", borderRadius: 999, padding: "6px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "var(--sg-sub, #5d6b64)" }}>
+        Sign out{email ? ` (${email})` : ""}
+      </button>
+    </>
+  );
 }
 
 // Cloudflare Turnstile "always passes" TEST sitekey — mirrors the proxy's test

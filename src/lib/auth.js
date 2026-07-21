@@ -69,7 +69,35 @@ export async function loadSession() {
   if (Store.get().neonMode) return void (await loadNeonSession());
   const { data } = await supabase.auth.getSession();
   const session = data.session;
-  if (!session) { Store.setAuth({ session: null, role: null, clientId: null, email: null }); return; }
+  if (!session) {
+    // Apex hub (/ or /admin) with NO Supabase session: an existing NEON session
+    // (self-serve registrant) must not be shown the login form again — route her
+    // onward: site owner → her admin; wizard unfinished → /register to resume.
+    // Switching accounts = the wizard's Sign out. The superadmin (who also has a
+    // Neon profile) falls through to the normal console login. Path-guarded so
+    // /register itself never loops.
+    if (!resolveSubdomain() && /^\/(admin\/?)?$/.test(window.location.pathname)) {
+      try {
+        const s = await neonAuth.session();
+        if (s && s.user) {
+          try {
+            const { data: cfg } = await supabase.from("app_config").select("value").eq("key", NEON_SHARDS_KEY).maybeSingle();
+            setNeonRegistry(cfg?.value || null);
+            setActiveShard(resolveShardId(""));
+          } catch (e3) { /* builtin s1 fallback */ }
+          const prof = await neonAuthedSelect("profiles", `select=role&id=eq.${encodeURIComponent(s.user.id)}`).catch(() => null);
+          const isSA = prof && prof[0] && prof[0].role === "superadmin";
+          if (!isSA) {
+            const st = await regState();
+            if (st?.state === "active" && st.subdomain) { window.location.assign(`https://${st.subdomain}.celebrately.us/admin`); return; }
+            if (st?.state === "none") { window.location.assign("/register"); return; }
+            // pending → fall through: the login form's messages cover it
+          }
+        }
+      } catch (e2) { /* no Neon session — show the login form */ }
+    }
+    Store.setAuth({ session: null, role: null, clientId: null, email: null }); return;
+  }
   const p = await profileFor(session.user.id);
   Store.setAuth({ session, role: p.role, clientId: p.client_id, email: session.user.email });
   // restored sessions must also open the drag-arrange admin gate — signIn() sets
