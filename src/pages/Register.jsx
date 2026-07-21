@@ -229,7 +229,7 @@ function AuthCard({ onDone }) {
       <p style={{ textAlign: "center", fontSize: 13, color: "var(--sg-sub)", marginTop: 14 }}>
         {mode === "signup" ? "Already have an account? " : "New here? "}
         <a href="#" style={{ color: "#1E5BD6", fontWeight: 600, textDecoration: "none" }}
-          onClick={(e) => { e.preventDefault(); setMode(mode === "signup" ? "signin" : "signup"); setF((p) => ({ ...p, pw: "", pw2: "" })); }}>
+          onClick={(e) => { e.preventDefault(); setMode(mode === "signup" ? "signin" : "signup"); setF((p) => ({ ...p, pw: "", pw2: "" })); setTsToken(""); }}>
           {mode === "signup" ? "Sign in →" : "Create one →"}
         </a>
       </p>
