@@ -120,7 +120,9 @@ export function AdminLogin({ onAuthed }) {
       // generic credentials line. Swallowing everything showed a pending owner
       // "Wrong email or password" and made her think her password broke.
       const m = e2 && e2.message ? e2.message : "";
-      setErr(/waiting for approval|access to this site/i.test(m) ? m : "Wrong email or password.");
+      // Keep this passthrough in step with the crafted messages signIn throws —
+      // masking them into the generic line gaslights users whose password was right.
+      setErr(/waiting for approval|access to this site|6-digit code|isn't verified/i.test(m) ? m : "Wrong email or password.");
     }
     finally { setBusy(false); }
   }
