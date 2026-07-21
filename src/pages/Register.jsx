@@ -159,11 +159,9 @@ export function RegisterPage() {
   return (
     <>
       <ApplyWizard presetEmail={email} subCheck={subCheck} submitOverride={submitOverride} draftKey="neonRegDraft" />
-      <button type="button"
-        onClick={signOut}
-        style={{ position: "fixed", top: 14, right: 16, zIndex: 60, background: "rgba(255,255,255,.92)", border: "1px solid var(--sg-line, #e5e7eb)", borderRadius: 999, padding: "6px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "var(--sg-sub, #5d6b64)" }}>
-        Sign out{email ? ` (${email})` : ""}
-      </button>
+      {/* label stays short (no email) — the address is already in the wizard's
+          email field; title shows it on hover for the curious */}
+      <button type="button" className="reg-signout" onClick={signOut} title={email || undefined}>Sign out</button>
     </>
   );
 }

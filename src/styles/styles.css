@@ -2942,14 +2942,19 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .apply-mfp__steplabel { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--mfp-pastel); }
 .apply-mfp__stepname { font-size: 13px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
 
-/* main content */
-.apply-mfp__main { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 26px 44px 20px; }
+/* main content — position+z-index: the sidebar is position:relative (for its
+   blob art), so without a stacking context of its own the mobile card's
+   negative-margin overlap paints BEHIND the band and the step title gets
+   clipped. */
+.apply-mfp__main { position: relative; z-index: 1; flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 26px 44px 20px; }
 .apply-mfp__content { flex: 1 1 auto; animation: apply-step-in .26s ease-out both; }
 .apply-mfp__title { font-family: Ubuntu, system-ui, sans-serif; font-size: 32px; font-weight: 700; color: var(--mfp-marine); margin: 0 0 9px; letter-spacing: -.01em; line-height: 1.1; text-wrap: balance; }
 .apply-mfp__sub { color: var(--mfp-cool); font-size: 15px; line-height: 1.5; margin: 0 0 24px; }
 
-/* fields inside MFP main */
-.apply-mfp__main label { color: var(--mfp-marine); font-weight: 700; font-size: 13px; }
+/* fields inside MFP main — kill the base .field__label uppercase/letterspacing:
+   the reference uses bold marine sentence-case labels */
+.apply-mfp__main label,
+.apply-mfp__main .field__label { color: var(--mfp-marine); font-weight: 700; font-size: 14px; text-transform: none; letter-spacing: 0; }
 .apply-mfp__main .input,
 .apply-mfp__main input,
 .apply-mfp__main select,
@@ -2991,6 +2996,15 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 
 .apply-mfp__err { color: var(--mfp-red); font-weight: 600; font-size: 14px; margin-top: 14px; }
 
+/* register-only floating sign-out (rendered by Register.jsx after the wizard) */
+.reg-signout { position: fixed; top: 14px; right: 16px; z-index: 60; background: rgba(255, 255, 255, .92); border: 1px solid #e5e7eb; border-radius: 999px; padding: 6px 14px; font-family: Ubuntu, system-ui, sans-serif; font-size: 13px; font-weight: 600; color: #5d6b64; cursor: pointer; }
+@media (max-width: 760px) {
+  /* on the gradient band: ghost style, and push the step circles down so the
+     pill never overlaps them (band only grows when the pill exists) */
+  .reg-signout { background: transparent; border-color: rgba(255, 255, 255, .5); color: #fff; padding: 4px 12px; font-size: 12px; }
+  .apply-mfp:has(+ .reg-signout) .apply-mfp__side { padding-top: 52px; }
+}
+
 /* thank-you screen */
 .apply-mfp__thanks { background: #fff; border-radius: 16px; padding: 48px 40px; max-width: 520px; text-align: center; box-shadow: 0 30px 55px -25px rgba(2, 41, 90, .30); }
 .apply-mfp__thanksbadge { width: 64px; height: 64px; margin: 0 auto 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; background: var(--mfp-purple); }
@@ -3001,11 +3015,17 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 @media (max-width: 760px) {
   .apply-mfp { padding: 0; align-items: stretch; }
   .apply-mfp__card { flex-direction: column; width: 100%; min-height: 100svh; padding: 0; border-radius: 0; background: transparent; box-shadow: none; }
-  .apply-mfp__side { flex: none; border-radius: 0; min-height: 170px; padding: 28px 24px 58px; align-items: center; justify-content: flex-start; gap: 20px; }
+  .apply-mfp__side { flex: none; border-radius: 0; min-height: 0; padding: 24px 16px 64px; align-items: center; justify-content: flex-start; gap: 0; }
+  .apply-mfp__side::before { width: 90px; height: 90px; left: -26px; bottom: -26px; }
+  .apply-mfp__side::after { width: 140px; height: 92px; right: -34px; bottom: -18px; }
   .apply-mfp__brand { display: none; }
-  .apply-mfp__steps { flex-direction: row; justify-content: center; gap: 18px; }
+  .apply-mfp__steps { flex-direction: row; justify-content: center; gap: 13px; }
+  .apply-mfp__num { width: 30px; height: 30px; font-size: 13px; }
   .apply-mfp__meta { display: none; }
-  .apply-mfp__main { background: #fff; margin: -40px 16px 0; border-radius: 12px; padding: 30px 24px 22px; flex: 1 0 auto; box-shadow: 0 12px 30px -14px rgba(2, 41, 90, .25); }
-  .apply-mfp__title { font-size: 26px; }
+  .apply-mfp__main { background: #fff; margin: -34px 16px 0; border-radius: 12px; padding: 26px 20px 20px; flex: 1 0 auto; box-shadow: 0 12px 30px -14px rgba(2, 41, 90, .25); }
+  .apply-mfp__title { font-size: 24px; }
+  .apply-mfp__sub { font-size: 14px; margin-bottom: 18px; }
+  .apply-mfp__foot { padding-top: 14px; }
+  .apply-mfp__next { height: 44px; padding: 0 22px; font-size: 14px; }
   .apply-mfp__thanks { margin: 24px 16px; }
 }
