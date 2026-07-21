@@ -108,8 +108,20 @@ export async function signIn(email, password) {
           return { role: "owner", client_id: null, redirecting: true };
         }
         if (st?.state === "pending") throw new Error("Your site is waiting for approval — check back soon.");
+        // Signed in fine but no site yet — she registered and stopped before
+        // finishing the wizard. Send her back to /register to continue (the
+        // shared session cookie + saved draft resume exactly where she left off).
+        // Without this she fell through to "wrong email or password" despite a
+        // successful sign-in.
+        window.location.assign("/register");
+        return { role: "guest", client_id: null, redirecting: true };
       } catch (e2) {
         if (e2 && e2.message && /waiting for approval/.test(e2.message)) throw e2;
+        // Registered but never entered the emailed code — the password was RIGHT,
+        // so "wrong email or password" would gaslight her. Say what to do instead.
+        if (e2 && e2.message && /not verified/i.test(e2.message)) {
+          throw new Error("Your email isn't verified yet — go to celebrately.us/register, sign in, and enter the 6-digit code we emailed you.");
+        }
         /* fall through to the original Supabase error */
       }
     }
