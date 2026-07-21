@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase.js";
 import { Store } from "@/lib/store.jsx";
-import { neonAuth, authedRpc } from "@/lib/neon.js";
+import { neonAuth, authedRpc, neonAuthedSelect } from "@/lib/neon.js";
 import { resolveSubdomain } from "@/lib/tenant.js";
 
 async function profileFor(userId) {
@@ -20,6 +20,16 @@ async function loadNeonSession() {
   try {
     const s = await neonAuth.session();
     if (!s || !s.user) { Store.setAuth({ session: null, role: null, clientId: null, email: null }); return null; }
+    // Platform owner: a Neon `profiles` row with role superadmin (created once
+    // per shard via the console's ensure_superadmin action) grants the full
+    // admin on ANY Neon client — same model as Supabase RLS superadmin.
+    // Self-readable via RLS; owners/others simply get no row back.
+    const prof = await neonAuthedSelect("profiles", `select=role&id=eq.${encodeURIComponent(s.user.id)}`).catch(() => null);
+    if (prof && prof[0] && prof[0].role === "superadmin") {
+      Store.setAuth({ session: s, role: "superadmin", clientId: Store.get().clientId, email: s.user.email });
+      gateFlag();
+      return { role: "superadmin", client_id: Store.get().clientId };
+    }
     const st = await authedRpc("my_registration_state").catch(() => null);
     if (st && st.state === "active" && st.subdomain === resolveSubdomain()) {
       Store.setAuth({ session: s, role: "owner", clientId: Store.get().clientId, email: s.user.email });

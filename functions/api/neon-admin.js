@@ -59,6 +59,24 @@ export async function onRequestPost({ request, env }) {
         await sql`insert into app_config (key, value) values (${body.key}, ${JSON.stringify(body.value)}::jsonb)
           on conflict (key) do update set value = excluded.value, updated_at = now()`;
         return json({ ok: true });
+      // One-time per shard: link the (already signed-up) Neon Auth account for
+      // `email` to a superadmin profile row, so the platform owner can sign in
+      // to ANY Neon client's /admin with the same credentials (plan: "superadmin
+      // will need an account per shard"). Returns RLS diagnostics so we can
+      // verify the ported superadmin policies actually cover admin writes.
+      case "ensure_superadmin": {
+        const email = String(body.email || "").trim().toLowerCase();
+        if (!email) return json({ error: "email required" }, 400);
+        let u;
+        try { [u] = await sql`select id, email from neon_auth.users where lower(email) = ${email} limit 1`; }
+        catch { [u] = await sql`select id, email from neon_auth."user" where lower(email) = ${email} limit 1`; } // Better Auth names it "user" on some versions
+        if (!u) return json({ error: "no Neon Auth account with that email on this shard — sign up first" }, 404);
+        await sql`insert into profiles (id, role, client_id) values (${u.id}, 'superadmin', null)
+          on conflict (id) do update set role = 'superadmin'`;
+        const policies = await sql`select tablename, policyname, cmd from pg_policies
+          where schemaname = 'public' and tablename in ('clients','rsvps','guestbook','guests','profiles','quiz_answers') order by tablename, policyname`;
+        return json({ ok: true, userId: u.id, policies });
+      }
       default:
         return json({ error: "unknown action" }, 400);
     }
