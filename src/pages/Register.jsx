@@ -148,11 +148,45 @@ export function RegisterPage() {
   return <ApplyWizard presetEmail={email} subCheck={subCheck} submitOverride={submitOverride} draftKey="neonRegDraft" />;
 }
 
+// Cloudflare Turnstile "always passes" TEST sitekey — mirrors the proxy's test
+// secret. Override with the real key via app_config('turnstile').siteKey (no
+// redeploy) once the TURNSTILE_SECRET Pages secret holds the real secret.
+const TURNSTILE_TEST_SITEKEY = "1x00000000000000000000AA";
+
 function AuthCard({ onDone }) {
   const [mode, setMode] = useState("signup"); // signup | signin
   const [f, setF] = useState({ email: "", pw: "", pw2: "" });
   const [busy, setBusy] = useState(false);
+  const [tsToken, setTsToken] = useState("");
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
+  // Turnstile widget (signup only). The token is verified SERVER-side by the
+  // /api/auth proxy — this widget just produces it. Script is loaded once;
+  // widget re-renders when switching back to signup mode.
+  useEffect(() => {
+    if (mode !== "signup") return;
+    let widgetId = null, dead = false;
+    const render = async () => {
+      const cfg = await getAppConfig("turnstile").catch(() => null);
+      if (dead) return;
+      const el = document.getElementById("rg-turnstile");
+      if (el && window.turnstile) {
+        el.innerHTML = "";
+        widgetId = window.turnstile.render(el, {
+          sitekey: cfg?.siteKey || TURNSTILE_TEST_SITEKEY,
+          callback: (t) => setTsToken(t),
+          "expired-callback": () => setTsToken(""),
+        });
+      }
+    };
+    if (window.turnstile) render();
+    else {
+      const s = document.createElement("script");
+      s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+      s.async = true; s.onload = render;
+      document.head.appendChild(s);
+    }
+    return () => { dead = true; try { if (widgetId !== null && window.turnstile) window.turnstile.remove(widgetId); } catch (e) { /* ignore */ } };
+  }, [mode]);
   async function submit(e) {
     e.preventDefault();
     if (busy) return;
@@ -160,13 +194,15 @@ function AuthCard({ onDone }) {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast("Enter a valid email address.", "err");
     if (f.pw.length < 8) return toast("Password must be at least 8 characters.", "err");
     if (mode === "signup" && f.pw !== f.pw2) return toast("The two passwords don't match.", "err");
+    if (mode === "signup" && !tsToken) return toast("Please complete the security check first.", "err");
     setBusy(true);
     try {
-      if (mode === "signup") await neonAuth.signUp(email, f.pw);
+      if (mode === "signup") await neonAuth.signUp(email, f.pw, tsToken);
       else await neonAuth.signIn(email, f.pw);
       await onDone();
     } catch (e2) {
       const msg = e2?.message || "error";
+      if (mode === "signup") { setTsToken(""); try { window.turnstile && window.turnstile.reset(); } catch (e3) { /* ignore */ } } // tokens are single-use
       toast(mode === "signup" && /exist/i.test(msg) ? "That email already has an account — sign in instead." : "Couldn't " + (mode === "signup" ? "create the account" : "sign in") + ": " + msg, "err");
     } finally { setBusy(false); }
   }
@@ -188,6 +224,7 @@ function AuthCard({ onDone }) {
           <input id="rg-pw2" type="password" autoComplete="new-password" value={f.pw2} onChange={set("pw2")} placeholder="••••••••" />
         </div>
       )}
+      {mode === "signup" && <div id="rg-turnstile" style={{ margin: "6px 0 2px", minHeight: 66 }} />}
       <button type="submit" className="signin__btn" disabled={busy}>{busy ? "Working…" : (mode === "signup" ? "Create account" : "Sign in")}</button>
       <p style={{ textAlign: "center", fontSize: 13, color: "var(--sg-sub)", marginTop: 14 }}>
         {mode === "signup" ? "Already have an account? " : "New here? "}

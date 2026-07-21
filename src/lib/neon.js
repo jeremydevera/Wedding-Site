@@ -102,13 +102,14 @@ export async function neonSelectPaged(table, query, from, to) {
 // Data API JWT still arrives via the `set-auth-jwt` response header (proxied
 // through) and is cached until ~1 min before expiry.
 let userTok = null; // { token, exp(ms) }
-async function authFetch(path, { method = "GET", body } = {}) {
+async function authFetch(path, { method = "GET", body, headers = {} } = {}) {
   const res = await fetch(`/api/auth${path}`, {
     method,
     credentials: "include",
     headers: {
       "x-neon-auth-base": shard().authUrl, // proxy validates against a strict Neon-host pattern
       ...(body !== undefined ? { "content-type": "application/json" } : {}),
+      ...headers,
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
@@ -123,7 +124,9 @@ async function authFetch(path, { method = "GET", body } = {}) {
   return data;
 }
 export const neonAuth = {
-  signUp: (email, password) => authFetch("/sign-up/email", { method: "POST", body: { email, password, name: email.split("@")[0] } }),
+  // turnstileToken: Cloudflare Turnstile response — verified SERVER-side by the
+  // /api/auth proxy (signup is refused without a valid token).
+  signUp: (email, password, turnstileToken) => authFetch("/sign-up/email", { method: "POST", body: { email, password, name: email.split("@")[0] }, headers: turnstileToken ? { "x-turnstile-token": turnstileToken } : {} }),
   signIn: (email, password) => authFetch("/sign-in/email", { method: "POST", body: { email, password } }),
   signOut: () => { userTok = null; return authFetch("/sign-out", { method: "POST", body: {} }).catch(() => null); },
   // null when signed out; { user } when signed in (also refreshes the JWT)
