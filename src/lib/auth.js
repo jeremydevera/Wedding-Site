@@ -10,6 +10,19 @@ async function profileFor(userId) {
 
 const gateFlag = () => { try { sessionStorage.setItem("evermore_admin_session", "1"); } catch (e) {} };
 
+// my_registration_state with one retry — the first authed RPC right after a
+// Neon-Auth sign-in can flake to {state:'anon'} while the JWT session warms up
+// (observed live; Register.jsx does the same). Without the retry a legit owner's
+// first admin sign-in gets treated as "no access". Returns null on hard failure.
+async function regState() {
+  let st = await authedRpc("my_registration_state").catch(() => null);
+  if (st && st.state === "anon") {
+    await new Promise((r) => setTimeout(r, 600));
+    st = await authedRpc("my_registration_state").catch(() => null);
+  }
+  return st;
+}
+
 // ---- Neon admin auth (Better Auth via the first-party /api/auth proxy) --------
 // A neonMode client authenticates its OWNER against Neon Auth, not Supabase.
 // Ownership is proven server-side by my_registration_state() (state 'active' +
@@ -30,7 +43,7 @@ async function loadNeonSession() {
       gateFlag();
       return { role: "superadmin", client_id: Store.get().clientId };
     }
-    const st = await authedRpc("my_registration_state").catch(() => null);
+    const st = await regState();
     if (st && st.state === "active" && st.subdomain === resolveSubdomain()) {
       Store.setAuth({ session: s, role: "owner", clientId: Store.get().clientId, email: s.user.email });
       gateFlag();
@@ -83,7 +96,7 @@ export async function signIn(email, password) {
           setActiveShard(resolveShardId(""));
         } catch (e3) { /* builtin s1 fallback */ }
         await neonAuth.signIn(email, password);
-        const st = await authedRpc("my_registration_state").catch(() => null);
+        const st = await regState();
         if (st?.state === "active" && st.subdomain) {
           window.location.assign(`https://${st.subdomain}.celebrately.us/admin`);
           return { role: "owner", client_id: null, redirecting: true };

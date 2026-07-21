@@ -114,7 +114,14 @@ export function AdminLogin({ onAuthed }) {
     if (busy) return;
     setBusy(true); setErr("");
     try { await signIn(email.trim(), pw); onAuthed && onAuthed(); }
-    catch (e2) { setErr("Wrong email or password."); }
+    catch (e2) {
+      // Neon owners get crafted, actionable messages from signIn (site pending
+      // approval / not this site's admin) — surface those; otherwise the
+      // generic credentials line. Swallowing everything showed a pending owner
+      // "Wrong email or password" and made her think her password broke.
+      const m = e2 && e2.message ? e2.message : "";
+      setErr(/waiting for approval|access to this site/i.test(m) ? m : "Wrong email or password.");
+    }
     finally { setBusy(false); }
   }
   const [showPw, setShowPw] = useState(false);

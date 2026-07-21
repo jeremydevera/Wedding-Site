@@ -45,8 +45,9 @@ when a behavior is confirmed intentional.
 - **Do NOT flag as:** "owner missing arrange", "stale arrangeEnabled not honored for client", "Tools panel hidden". Intended.
 
 ## Neon self-registration (phase 1, 2026-07-21)
-- **No email verification on /register** — Neon Auth sign-up works without SMTP;
-  verification is a later phase. Spam guard = AUTO APPROVE WEBSITE REQUEST off.
+- **Email verification IS on /register** — signup emails a 6-digit OTP (Neon Auth
+  shared sender); account unusable until verified. Plus a Turnstile CAPTCHA +
+  hourly cap on site creation. (Earlier phase had none — updated 2026-07-21.)
 - **Cross-database subdomain uniqueness is client-side only** — the wizard checks
   BOTH Supabase and Neon before submitting, but Neon's `register_site` can only
   see Neon. A direct-RPC caller could claim a Supabase-taken name; resolution

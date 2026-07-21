@@ -216,12 +216,18 @@ export function ApplyWizard({ initial = null, onSave, onCancel, submitOverride =
     if (editing || !draftKey) return null;
     try { const d = JSON.parse(localStorage.getItem(draftKey) || "null"); return d && typeof d === "object" ? d : null; } catch { return null; }
   });
-  const [step, setStep] = useState(() => (draft && Number.isInteger(draft.__step) ? Math.max(0, Math.min(draft.__step, 4)) : 0));
+  // clamp to the last valid step index — the wizard has 7 steps (0–6); see the
+  // `steps` array below. (Was mistakenly capped at 4, stranding anyone who left
+  // on RSVP/Review one or two steps back on resume.)
+  const [step, setStep] = useState(() => (draft && Number.isInteger(draft.__step) ? Math.max(0, Math.min(draft.__step, 6)) : 0));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [done, setDone] = useState(false);
   const [approved, setApproved] = useState(false); // auto-approved server-side
-  const [touchedSub, setTouchedSub] = useState(editing); // editing: never auto-slug over a real subdomain
+  // editing: never auto-slug over a real subdomain. On register-draft resume,
+  // treat a saved custom subdomain as "touched" too — persisted below — so the
+  // auto-slug effect can't overwrite an address she deliberately changed.
+  const [touchedSub, setTouchedSub] = useState(editing || !!(draft && (draft.touchedSub === true || (draft.f && draft.f.subdomain))));
   const [subState, setSubState] = useState("idle");
   const [f, setF] = useState(() => {
     if (editing) return stateFromRequest(initial);
@@ -237,8 +243,8 @@ export function ApplyWizard({ initial = null, onSave, onCancel, submitOverride =
   // fields AND current step, so "come back later" resumes where she left off.
   useEffect(() => {
     if (!draftKey || editing) return;
-    try { localStorage.setItem(draftKey, JSON.stringify({ __step: step, f })); } catch { /* quota */ }
-  }, [f, step, draftKey, editing]);
+    try { localStorage.setItem(draftKey, JSON.stringify({ __step: step, touchedSub, f })); } catch { /* quota */ }
+  }, [f, step, touchedSub, draftKey, editing]);
 
   // suggest the address from the names (wedding) or the event title (birthday) until edited
   useEffect(() => {
