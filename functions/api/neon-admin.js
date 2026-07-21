@@ -73,10 +73,13 @@ export async function onRequestPost({ request, env }) {
       // Registered accounts that never finished the wizard: no client, no pending
       // request. Surfaced in the console so signups aren't invisible.
       case "list_signups": {
+        // neon_auth."user".id is UUID; profiles.id / site_requests.requested_by
+        // are TEXT (Better Auth ids) — cast for the joins or Postgres errors
+        // with "operator does not exist: text = uuid".
         const rows = await sql`select u.id, u.email, u.name, u."createdAt" as created_at
           from neon_auth."user" u
-          left join profiles p on p.id = u.id
-          left join site_requests r on r.requested_by = u.id and r.status = 'pending'
+          left join profiles p on p.id = u.id::text
+          left join site_requests r on r.requested_by = u.id::text and r.status = 'pending'
           where (p.id is null or (p.client_id is null and p.role <> 'superadmin')) and r.id is null
           order by u."createdAt" desc`;
         return json({ rows });
@@ -85,10 +88,10 @@ export async function onRequestPost({ request, env }) {
       // the superadmin).
       case "delete_signup": {
         if (!body.user_id) return json({ error: "user_id required" }, 400);
-        const [p] = await sql`select role, client_id from profiles where id = ${body.user_id}`;
+        const [p] = await sql`select role, client_id from profiles where id = ${String(body.user_id)}`;
         if (p && (p.role === "superadmin" || p.client_id)) return json({ error: "refusing: account has a site or is the admin" }, 400);
-        await sql`delete from profiles where id = ${body.user_id}`.catch(() => {});
-        await sql`delete from neon_auth."user" where id = ${body.user_id}`;
+        await sql`delete from profiles where id = ${String(body.user_id)}`.catch(() => {});
+        await sql`delete from neon_auth."user" where id = ${String(body.user_id)}::uuid`;
         return json({ ok: true });
       }
       case "set_config":
