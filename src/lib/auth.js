@@ -37,7 +37,13 @@ async function loadNeonSession() {
     // per shard via the console's ensure_superadmin action) grants the full
     // admin on ANY Neon client — same model as Supabase RLS superadmin.
     // Self-readable via RLS; owners/others simply get no row back.
-    const prof = await neonAuthedSelect("profiles", `select=role&id=eq.${encodeURIComponent(s.user.id)}`).catch(() => null);
+    // Same warm-up flake as regState(): the first authed read after sign-in can
+    // run as 'anon' (permission denied) — retry once on ERROR only. A clean
+    // empty result is a legit non-superadmin, no retry (keeps owner sign-in fast).
+    const readProf = () => neonAuthedSelect("profiles", `select=role&id=eq.${encodeURIComponent(s.user.id)}`).then((rows) => ({ ok: true, rows })).catch(() => ({ ok: false, rows: null }));
+    let pr = await readProf();
+    if (!pr.ok) { await new Promise((r) => setTimeout(r, 600)); pr = await readProf(); }
+    const prof = pr.rows;
     if (prof && prof[0] && prof[0].role === "superadmin") {
       Store.setAuth({ session: s, role: "superadmin", clientId: Store.get().clientId, email: s.user.email });
       gateFlag();
