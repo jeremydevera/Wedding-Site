@@ -192,11 +192,18 @@ function AuthCard({ onDone }) {
       // healthy load). The reliable light-DOM signal is the hidden
       // cf-turnstile-response input Turnstile injects into the container on a
       // successful render; only its absence means the widget truly didn't mount.
-      guard = setTimeout(() => {
-        if (dead) return;
+      // Poll (don't one-shot): Turnstile populates the container LAZILY — on a
+      // cold load with a real challenge it can take >6s, so a single timeout
+      // false-fires on slow connections. Keep checking; clear the error the
+      // moment the widget arrives; only fail after a sustained 20s of nothing.
+      let waited = 0;
+      guard = setInterval(() => {
+        if (dead) { clearInterval(guard); return; }
         const mounted = el.querySelector('input[name="cf-turnstile-response"]') || el.childElementCount > 0;
-        if (!mounted) fail("Security check couldn't load. Tap Retry, or refresh the page.");
-      }, 6000);
+        if (mounted) { setTsError(""); clearInterval(guard); return; }
+        waited += 1000;
+        if (waited >= 20000) { clearInterval(guard); fail("Security check couldn't load. Tap Retry, or refresh the page."); }
+      }, 1000);
     };
     if (window.turnstile) render();
     else {
@@ -205,7 +212,7 @@ function AuthCard({ onDone }) {
       s.async = true; s.onload = render; s.onerror = () => fail();
       document.head.appendChild(s);
     }
-    return () => { dead = true; if (guard) clearTimeout(guard); try { if (widgetId !== null && window.turnstile) window.turnstile.remove(widgetId); } catch (e) { /* ignore */ } };
+    return () => { dead = true; if (guard) clearInterval(guard); try { if (widgetId !== null && window.turnstile) window.turnstile.remove(widgetId); } catch (e) { /* ignore */ } };
   }, [mode, tsNonce]);
   async function submit(e) {
     e.preventDefault();
