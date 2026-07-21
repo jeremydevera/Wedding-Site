@@ -1,5 +1,5 @@
 import React from "react";
-import { neonAuth, authedRpc, neonRpc, NEON_FLAG_KEY } from "@/lib/neon.js";
+import { neonAuth, authedRpc, neonRpc, neonAuthedSelect, NEON_FLAG_KEY } from "@/lib/neon.js";
 import { getAppConfig, checkRequestSubdomainFree } from "@/lib/api.js";
 import { ApplyWizard } from "@/admin/apply.jsx";
 import { Logo } from "@/admin/core.jsx";
@@ -35,6 +35,11 @@ export function RegisterPage() {
     const s = await neonAuth.session();
     if (!s) { setPhase("auth"); return; }
     setEmail(s.user?.email || "");
+    // Platform-admin guard: the superadmin's shared Neon session (from helping a
+    // client's admin) must NEVER reach the wizard — register_site would overwrite
+    // the superadmin profile to 'owner' (also guarded server-side in SQL).
+    const prof = await neonAuthedSelect("profiles", `select=role&id=eq.${encodeURIComponent(s.user?.id || "")}`).catch(() => null);
+    if (prof && prof[0] && prof[0].role === "superadmin") { setPhase("sa"); return; }
     // First authed RPC after sign-in can flake to {state:'anon'} while the JWT
     // session warms up (observed live) — retry once before trusting it.
     let st = await authedRpc("my_registration_state").catch(() => ({ state: "none" }));
@@ -80,6 +85,15 @@ export function RegisterPage() {
       <div className="signin__form" style={{ textAlign: "center" }}>
         <h1 className="signin__title">Registration isn't open yet</h1>
         <p className="signin__sub">Please check back soon.</p>
+      </div>
+    </Shell>
+  );
+  if (phase === "sa") return (
+    <Shell>
+      <div className="signin__form" style={{ textAlign: "center" }}>
+        <h1 className="signin__title">You're the platform admin</h1>
+        <p className="signin__sub">Registration creates a client site for the signed-in account — running it as the superadmin would demote your access. Sign out (or use a private window) to test registration as a client.</p>
+        <button type="button" className="signin__btn" style={{ marginTop: 18 }} onClick={async () => { await neonAuth.signOut(); setPhase("auth"); }}>Sign out & continue</button>
       </div>
     </Shell>
   );

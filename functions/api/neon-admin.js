@@ -64,6 +64,13 @@ export async function onRequestPost({ request, env }) {
       // to ANY Neon client's /admin with the same credentials (plan: "superadmin
       // will need an account per shard"). Returns RLS diagnostics so we can
       // verify the ported superadmin policies actually cover admin writes.
+      // Read-only: current definition of register_site (fixed identifier — used to
+      // build the superadmin-demote guard patch against the LIVE body, not the
+      // stale plan-doc copy).
+      case "inspect_register_site": {
+        const [r] = await sql`select pg_get_functiondef('public.register_site(text,text,text,text,text,text,jsonb)'::regprocedure) as def`;
+        return json({ ok: true, def: r?.def || null });
+      }
       case "ensure_superadmin": {
         const email = String(body.email || "").trim().toLowerCase();
         if (!email) return json({ error: "email required" }, 400);
