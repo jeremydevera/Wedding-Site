@@ -129,7 +129,18 @@ export async function signIn(email, password) {
           setNeonRegistry(data?.value || null);
           setActiveShard(resolveShardId(""));
         } catch (e3) { /* builtin s1 fallback */ }
-        await neonAuth.signIn(email, password);
+        const ns = await neonAuth.signIn(email, password);
+        // Superadmin guard (mirror loadNeonSession): the SA also has a Neon
+        // account (ensure_superadmin). If they signed in with their NEON password
+        // at the apex, regState would say 'none' (SA owns no client site) and we'd
+        // wrongly bounce them to /register. Never route the SA to registration —
+        // sign the Neon session back out and surface the Supabase error so they
+        // retry with their console (Supabase) password.
+        const suid = ns?.user?.id;
+        if (suid) {
+          const prof = await neonAuthedSelect("profiles", `select=role&id=eq.${encodeURIComponent(suid)}`).catch(() => null);
+          if (prof && prof[0] && prof[0].role === "superadmin") { await neonAuth.signOut().catch(() => {}); throw error; }
+        }
         const st = await regState();
         if (st?.state === "active" && st.subdomain) {
           window.location.assign(`https://${st.subdomain}.celebrately.us/admin`);
