@@ -34,4 +34,13 @@ describe("subdomainFromHost", () => {
   it("demo.celebrately.us -> 'demo' (reserved-from-registration, but the live showcase client MUST resolve)", () => {
     expect(subdomainFromHost("demo.celebrately.us", "")).toBe("demo");
   });
+  // REGRESSION: deriving the hub set from RESERVED_SUBDOMAINS once turned
+  // sandbox.celebrately.us into a sign-in page. Reserved-from-REGISTRATION and
+  // "platform hub" are different sets — sandbox is the live Neon dev client and
+  // MUST resolve as a client site (same for other reserved-but-real labels).
+  it("sandbox.celebrately.us -> 'sandbox' (reserved from registration, but a real client site)", () => {
+    expect(subdomainFromHost("sandbox.celebrately.us", "")).toBe("sandbox");
+    expect(subdomainFromHost("staging.celebrately.us", "")).toBe("staging");
+    expect(subdomainFromHost("register.celebrately.us", "")).toBe("register");
+  });
 });

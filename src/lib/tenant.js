@@ -1,6 +1,14 @@
 // Resolve which client a request is for, from the hostname.
 // Pure + testable: pass hostname + search string explicitly.
-import { RESERVED_SUBDOMAINS } from "@/config/site.js";
+
+// Hosts that are the PLATFORM HUB, never a client site. This is deliberately
+// NOT derived from RESERVED_SUBDOMAINS: reservation means "can't be registered
+// by a new client", hub means "doesn't resolve as a client site" — different
+// sets. sandbox/staging/test ARE reserved from registration yet MUST resolve
+// as client sites (sandbox is the live Neon dev client — deriving this list
+// from the union once broke it into a sign-in page). Keep this the frozen
+// infra-label set; extend only for labels that truly have no site.
+const HUB_LABELS = ["www", "app", "admin", "api", "mail", "static", "assets", "cdn"];
 
 export function subdomainFromHost(hostname, search = "") {
   const override = new URLSearchParams(search).get("client");
@@ -16,13 +24,9 @@ export function subdomainFromHost(hostname, search = "") {
   // custom domain: client.celebrately.us -> first label.
   // bare apex (celebrately.us) -> null = the platform hub (login + manage clients),
   // NOT a client site.
-  // Infra labels (www, app, admin, api, mail, static, assets, cdn) are also the
-  // platform hub, never a client: they can't be registered as a subdomain, so
+  // Infra labels (HUB_LABELS above) are also the platform hub, never a client:
   // resolving them as a client yields a bogus "site unavailable". Fail closed to
-  // the hub (login/console). NOTE: "demo" is reserved-from-registration but IS the
-  // live seeded demo client (demo.celebrately.us MUST resolve), so it is excluded
-  // from the hub set and passes through as a normal client label.
-  const HUB_LABELS = RESERVED_SUBDOMAINS.filter((s) => s !== "demo");
+  // the hub (login/console).
   if (parts.length > 2 && !HUB_LABELS.includes(parts[0])) return parts[0];
   return null;
 }
