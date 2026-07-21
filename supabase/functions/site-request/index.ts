@@ -18,9 +18,12 @@ const cors = {
 };
 
 const SUB_RE = /^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/;
+// Mirror of the CANONICAL union in src/config/site.js RESERVED_SUBDOMAINS —
+// keep in step (the Neon copy is the reserved_subdomains table).
 const RESERVED = new Set([
-  "www", "demo", "admin", "api", "app", "mail", "media", "assets", "static",
+  "www", "app", "admin", "api", "demo", "mail", "media", "static", "assets", "cdn",
   "help", "support", "blog", "docs", "status", "celebrately", "staging", "test",
+  "sandbox", "register", "apply",
 ]);
 
 // Mirror of DEFAULT_CLIENT_MODULES (src/lib/roles.js).

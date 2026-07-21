@@ -71,6 +71,39 @@ export async function onRequestPost({ request, env }) {
         const [r] = await sql`select pg_get_functiondef('public.register_site(text,text,text,text,text,text,jsonb)'::regprocedure) as def`;
         return json({ ok: true, def: r?.def || null });
       }
+      // Read-only: live subdomain_free definition (same always-inspect-live rule).
+      case "inspect_subdomain_free": {
+        const [r] = await sql`select pg_get_functiondef('public.subdomain_free(text)'::regprocedure) as def`;
+        return json({ ok: true, def: r?.def || null });
+      }
+      // Idempotent hardening batch (fixed statements):
+      //  1. clients column grants — ANONYMOUS loses owner_email (guests could
+      //     harvest client login emails via the public Data API). The explicit
+      //     column list matches NEON_CLIENT_COLS in src/lib/api.js.
+      //  2. reserved_subdomains TABLE seeded from the canonical union
+      //     (src/config/site.js RESERVED_SUBDOMAINS) + subdomain_free reads the
+      //     table — reserving a name becomes a data write, not three code edits.
+      case "harden_minors": {
+        await sql`revoke select on public.clients from anonymous`;
+        await sql`grant select (id, subdomain, event_type, template_key, theme, content, is_active, created_at, status) on public.clients to anonymous`;
+        await sql`create table if not exists public.reserved_subdomains (name text primary key)`;
+        await sql`insert into public.reserved_subdomains (name) values
+          ('www'),('app'),('admin'),('api'),('demo'),('mail'),('media'),('static'),('assets'),('cdn'),
+          ('help'),('support'),('blog'),('docs'),('status'),('celebrately'),('staging'),('test'),
+          ('sandbox'),('register'),('apply')
+          on conflict (name) do nothing`;
+        await sql`CREATE OR REPLACE FUNCTION public.subdomain_free(p_sub text)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$ declare s text := lower(btrim(coalesce(p_sub,''))); begin if s !~ '^[a-z0-9](?:[a-z0-9-]{1,61})?[a-z0-9]$' then return false; end if; if exists (select 1 from public.reserved_subdomains r where r.name = s) then return false; end if; if exists (select 1 from public.clients c where lower(c.subdomain) = s) then return false; end if; if exists (select 1 from public.site_requests r where lower(r.subdomain) = s and r.status = 'pending') then return false; end if; return true; end $function$`;
+        const [chk] = await sql`select
+          (select count(*) from public.reserved_subdomains) as reserved_count,
+          has_column_privilege('anonymous','public.clients','owner_email','select') as anon_sees_owner_email,
+          has_column_privilege('anonymous','public.clients','content','select') as anon_sees_content`;
+        return json({ ok: true, ...chk });
+      }
       // Fixed DDL patch (idempotent): register_site refuses a SUPERADMIN caller —
       // its on-conflict profile upsert would demote the platform admin to 'owner'.
       // Body = the LIVE definition (fetched via inspect_register_site) + the guard;

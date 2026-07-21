@@ -28,7 +28,16 @@ export const clientUrl = (subdomain) => `https://${subdomain}.${PLATFORM_DOMAIN}
 
 // Subdomains that can't be handed to a client — they collide with the apex,
 // the demo fallback, or common infra hostnames.
-export const RESERVED_SUBDOMAINS = ["www", "app", "admin", "api", "demo", "mail", "static", "assets", "cdn"];
+// CANONICAL list (the union) — ALL three enforcement points mirror THIS:
+//   1. this frontend check (isValidSubdomain)
+//   2. Supabase edge fn site-request RESERVED set (manual mirror)
+//   3. Neon reserved_subdomains TABLE (seeded via /api/neon-admin harden_minors)
+// When adding a name here, update 2 and re-run 3 — do not let them drift again.
+export const RESERVED_SUBDOMAINS = [
+  "www", "app", "admin", "api", "demo", "mail", "media", "static", "assets", "cdn",
+  "help", "support", "blog", "docs", "status", "celebrately", "staging", "test",
+  "sandbox", "register", "apply",
+];
 
 // A subdomain must be a valid DNS label AND not reserved:
 //   lowercase letters/digits/hyphens, 1-63 chars, no leading/trailing hyphen.

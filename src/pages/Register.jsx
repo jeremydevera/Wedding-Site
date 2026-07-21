@@ -1,5 +1,5 @@
 import React from "react";
-import { neonAuth, authedRpc, neonRpc, neonAuthedSelect, NEON_FLAG_KEY } from "@/lib/neon.js";
+import { neonAuth, authedRpc, neonRpc, neonAuthedSelect, NEON_FLAG_KEY, NEON_SHARDS_KEY, setNeonRegistry, resolveShardId, setActiveShard } from "@/lib/neon.js";
 import { getAppConfig, checkRequestSubdomainFree } from "@/lib/api.js";
 import { ApplyWizard } from "@/admin/apply.jsx";
 import { Logo } from "@/admin/core.jsx";
@@ -30,8 +30,16 @@ export function RegisterPage() {
   const [sub, setSub] = useState(""); // pending OR live subdomain, per phase
 
   async function resolvePhase() {
-    const flag = await getAppConfig(NEON_FLAG_KEY).catch(() => null);
+    // Flag + shard registry together — new registrations land on the registry's
+    // DEFAULT shard (bySubdomain can't match a not-yet-registered name), so
+    // adding shard s2 later is a config write, no redeploy (was s1-hardcoded).
+    const [flag, shardCfg] = await Promise.all([
+      getAppConfig(NEON_FLAG_KEY).catch(() => null),
+      getAppConfig(NEON_SHARDS_KEY).catch(() => null),
+    ]);
     if (flag?.enabled !== true) { setPhase("off"); return; }
+    setNeonRegistry(shardCfg);
+    setActiveShard(resolveShardId(""));
     const s = await neonAuth.session();
     if (!s) { setPhase("auth"); return; }
     setEmail(s.user?.email || "");

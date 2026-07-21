@@ -6,6 +6,12 @@ import { clientToState, stateToClientRow, rowToGuestbook, rowToRsvp, rowToQuizSu
 import { loadSession, createOwner, sendSetupEmail } from "@/lib/auth.js";
 import { DEFAULT_CLIENT_MODULES } from "@/lib/roles.js";
 
+// Columns the ANONYMOUS role may read from clients (matches the Neon column
+// grant — owner_email is deliberately excluded so guests can't harvest login
+// emails). select=* would fail under column-level grants; keep this list in
+// step with the grant in /api/neon-admin harden_minors.
+const NEON_CLIENT_COLS = "id,subdomain,event_type,template_key,theme,content,is_active,created_at,status";
+
 // Boot: load the active client + approved guestbook, hydrate the store cache.
 export async function loadClientData() {
   const subdomain = resolveSubdomain();
@@ -29,7 +35,7 @@ export async function loadClientData() {
       if (flag?.enabled === true) {
         setNeonRegistry(shardCfg);
         setActiveShard(resolveShardId(subdomain));
-        const rows = await neonSelect("clients", `select=*&subdomain=eq.${encodeURIComponent(subdomain)}&is_active=eq.true&limit=1`);
+        const rows = await neonSelect("clients", `select=${NEON_CLIENT_COLS}&subdomain=eq.${encodeURIComponent(subdomain)}&is_active=eq.true&limit=1`);
         const client = rows && rows[0];
         if (client) {
           Store.hydrate({ ...clientToState(client), guestbook: [], neonMode: true });
@@ -55,7 +61,7 @@ export async function loadClientData() {
       if (flag?.enabled === true) {
         setNeonRegistry(shardCfg);
         setActiveShard(resolveShardId(subdomain));
-        const rows = await neonSelect("clients", `select=*&subdomain=eq.${encodeURIComponent(subdomain)}&is_active=eq.true&limit=1`);
+        const rows = await neonSelect("clients", `select=${NEON_CLIENT_COLS}&subdomain=eq.${encodeURIComponent(subdomain)}&is_active=eq.true&limit=1`);
         nc = (rows && rows[0]) || null;
       }
     } catch (e2) { console.warn("[neon] fallback lookup failed:", e2?.message); }
@@ -267,12 +273,15 @@ export async function loadAdminData() {
 export function subscribeAdminRealtime() {
   const clientId = Store.get().clientId;
   if (!clientId) return () => {};
-  // Neon has no realtime channel — the admin refreshes on tab focus / actions
-  // instead (known gap). Avoid opening a stale Supabase channel for a Neon client.
+  // Neon has no realtime channel — poll instead (45s, hidden tabs skipped) plus
+  // an immediate catch-up when the tab becomes visible again. Keeps the bell,
+  // tiles and RSVP list near-live without a websocket. Avoid opening a stale
+  // Supabase channel for a Neon client.
   if (onNeon()) {
-    const onVisible = () => { if (document.visibilityState === "visible") loadAdminData().catch(() => {}); };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
+    const tick = () => { if (document.visibilityState === "visible") loadAdminData().catch(() => {}); };
+    const iv = setInterval(tick, 45_000);
+    document.addEventListener("visibilitychange", tick);
+    return () => { clearInterval(iv); document.removeEventListener("visibilitychange", tick); };
   }
   let t = null;
   const refetch = () => {

@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase.js";
 import { Store } from "@/lib/store.jsx";
-import { neonAuth, authedRpc, neonAuthedSelect } from "@/lib/neon.js";
+import { neonAuth, authedRpc, neonAuthedSelect, NEON_SHARDS_KEY, setNeonRegistry, resolveShardId, setActiveShard } from "@/lib/neon.js";
 import { resolveSubdomain } from "@/lib/tenant.js";
 
 async function profileFor(userId) {
@@ -73,6 +73,15 @@ export async function signIn(email, password) {
     // shared .celebrately.us session cookie means she lands signed in).
     if (!resolveSubdomain()) {
       try {
+        // Apex never runs loadClientData's Neon branch, so the shard registry is
+        // unloaded here — resolve it (default shard) before hitting Neon Auth.
+        // Direct supabase read: importing getAppConfig from api.js would be an
+        // import cycle (api.js imports this file).
+        try {
+          const { data } = await supabase.from("app_config").select("value").eq("key", NEON_SHARDS_KEY).maybeSingle();
+          setNeonRegistry(data?.value || null);
+          setActiveShard(resolveShardId(""));
+        } catch (e3) { /* builtin s1 fallback */ }
         await neonAuth.signIn(email, password);
         const st = await authedRpc("my_registration_state").catch(() => null);
         if (st?.state === "active" && st.subdomain) {
