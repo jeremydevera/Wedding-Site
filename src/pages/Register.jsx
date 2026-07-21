@@ -89,7 +89,9 @@ export function RegisterPage() {
     return { approved: false };
   };
 
-  const signOut = async () => { await neonAuth.signOut(); setPhase("auth"); };
+  // Sign-out LEAVES the registration flow — landing back on this page's auth
+  // card read as "why am I still on register?". Go to the main login instead.
+  const signOut = async () => { await neonAuth.signOut(); window.location.assign("/"); };
 
   if (phase === "loading") return (
     <Shell><div className="signin__form" style={{ textAlign: "center", color: "var(--sg-sub)" }}>Loading…</div></Shell>
@@ -158,7 +160,7 @@ export function RegisterPage() {
     <>
       <ApplyWizard presetEmail={email} subCheck={subCheck} submitOverride={submitOverride} draftKey="neonRegDraft" />
       <button type="button"
-        onClick={async () => { await neonAuth.signOut(); setPhase("auth"); }}
+        onClick={signOut}
         style={{ position: "fixed", top: 14, right: 16, zIndex: 60, background: "rgba(255,255,255,.92)", border: "1px solid var(--sg-line, #e5e7eb)", borderRadius: 999, padding: "6px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "var(--sg-sub, #5d6b64)" }}>
         Sign out{email ? ` (${email})` : ""}
       </button>
