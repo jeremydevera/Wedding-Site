@@ -129,6 +129,11 @@ export const neonAuth = {
   signUp: (email, password, turnstileToken) => authFetch("/sign-up/email", { method: "POST", body: { email, password, name: email.split("@")[0] }, headers: turnstileToken ? { "x-turnstile-token": turnstileToken } : {} }),
   signIn: (email, password) => authFetch("/sign-in/email", { method: "POST", body: { email, password } }),
   signOut: () => { userTok = null; return authFetch("/sign-out", { method: "POST", body: {} }).catch(() => null); },
+  // Email-verification OTP (Neon Auth shared sender supports OTP only). Verify
+  // with auto_sign_in_after_verification=true returns a session via the proxied
+  // set-auth-jwt header, so a successful verify leaves the user signed in.
+  sendVerifyOtp: (email) => authFetch("/email-otp/send-verification-otp", { method: "POST", body: { email, type: "email-verification" } }),
+  verifyEmailOtp: (email, otp) => authFetch("/email-otp/verify-email", { method: "POST", body: { email, otp } }),
   // null when signed out; { user } when signed in (also refreshes the JWT)
   session: async () => {
     try { const d = await authFetch("/get-session"); return d && d.user ? d : null; } catch { return null; }

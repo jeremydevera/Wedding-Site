@@ -154,8 +154,8 @@ export function RegisterPage() {
 const TURNSTILE_TEST_SITEKEY = "1x00000000000000000000AA";
 
 function AuthCard({ onDone }) {
-  const [mode, setMode] = useState("signup"); // signup | signin
-  const [f, setF] = useState({ email: "", pw: "", pw2: "" });
+  const [mode, setMode] = useState("signup"); // signup | signin | verify
+  const [f, setF] = useState({ email: "", pw: "", pw2: "", otp: "" });
   const [busy, setBusy] = useState(false);
   const [tsToken, setTsToken] = useState("");
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
@@ -197,15 +197,64 @@ function AuthCard({ onDone }) {
     if (mode === "signup" && !tsToken) return toast("Please complete the security check first.", "err");
     setBusy(true);
     try {
-      if (mode === "signup") await neonAuth.signUp(email, f.pw, tsToken);
-      else await neonAuth.signIn(email, f.pw);
+      if (mode === "signup") {
+        const res = await neonAuth.signUp(email, f.pw, tsToken);
+        // Email verification required: signup returns NO session (token null) —
+        // the 6-digit code was emailed; collect it before continuing.
+        if (!res?.token) { setMode("verify"); toast("We emailed you a 6-digit code — enter it below.", "ok"); return; }
+      } else {
+        await neonAuth.signIn(email, f.pw);
+      }
       await onDone();
     } catch (e2) {
       const msg = e2?.message || "error";
+      // Unverified account signing in → jump to the code screen (fresh code sent).
+      if (/not verified/i.test(msg)) {
+        neonAuth.sendVerifyOtp(email).catch(() => {});
+        setMode("verify");
+        toast("Your email isn't verified yet — we sent you a new 6-digit code.", "ok");
+        return;
+      }
       if (mode === "signup") { setTsToken(""); try { window.turnstile && window.turnstile.reset(); } catch (e3) { /* ignore */ } } // tokens are single-use
       toast(mode === "signup" && /exist/i.test(msg) ? "That email already has an account — sign in instead." : "Couldn't " + (mode === "signup" ? "create the account" : "sign in") + ": " + msg, "err");
     } finally { setBusy(false); }
   }
+  async function verifyOtp(e) {
+    e.preventDefault();
+    if (busy) return;
+    const email = f.email.trim().toLowerCase();
+    const otp = (f.otp || "").trim();
+    if (!/^\d{6}$/.test(otp)) return toast("Enter the 6-digit code from the email.", "err");
+    setBusy(true);
+    try {
+      await neonAuth.verifyEmailOtp(email, otp);
+      // auto_sign_in_after_verification: the verify response carries the session
+      // JWT through the proxy — resolvePhase lands the user in the wizard.
+      await onDone();
+    } catch (e2) {
+      toast("That code didn't work: " + (e2?.message || "error") + " — check the digits or resend.", "err");
+    } finally { setBusy(false); }
+  }
+  if (mode === "verify") return (
+    <form className="signin__form" onSubmit={verifyOtp} noValidate>
+      <h1 className="signin__title">Check your email</h1>
+      <p className="signin__sub">We sent a 6-digit code to <strong>{f.email}</strong>. Enter it to verify your email.</p>
+      <div className="signin__field">
+        <label htmlFor="rg-otp">Verification code</label>
+        <input id="rg-otp" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={f.otp} onChange={set("otp")} placeholder="123456" />
+      </div>
+      <button type="submit" className="signin__btn" disabled={busy}>{busy ? "Verifying…" : "Verify & continue"}</button>
+      <p style={{ textAlign: "center", fontSize: 13, color: "var(--sg-sub)", marginTop: 14 }}>
+        Didn't get it?{" "}
+        <a href="#" style={{ color: "#1E5BD6", fontWeight: 600, textDecoration: "none" }}
+          onClick={(e) => { e.preventDefault(); neonAuth.sendVerifyOtp(f.email.trim().toLowerCase()).then(() => toast("New code sent.", "ok")).catch((e2) => toast("Couldn't resend: " + (e2?.message || "error"), "err")); }}>
+          Resend code
+        </a>
+        {"  ·  "}
+        <a href="#" style={{ color: "var(--sg-sub)" }} onClick={(e) => { e.preventDefault(); setMode("signin"); setF((p) => ({ ...p, otp: "" })); }}>Back to sign in</a>
+      </p>
+    </form>
+  );
   return (
     <form className="signin__form" onSubmit={submit} noValidate>
       <h1 className="signin__title">{mode === "signup" ? "Create your account" : "Welcome back"}</h1>
