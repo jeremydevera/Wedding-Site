@@ -100,8 +100,13 @@ export function RegisterPage() {
     <Shell>
       <div className="signin__form" style={{ textAlign: "center" }}>
         <h1 className="signin__title">You're the platform admin</h1>
-        <p className="signin__sub">Registration creates a client site for the signed-in account — running it as the superadmin would demote your access. Sign out (or use a private window) to test registration as a client.</p>
-        <button type="button" className="signin__btn" style={{ marginTop: 18 }} onClick={async () => { await neonAuth.signOut(); setPhase("auth"); }}>Sign out & continue</button>
+        <p className="signin__sub">This page registers NEW client sites — it's not your console. To see and manage your clients, head to the admin console. (Registration as the admin account is blocked so it can't demote your access.)</p>
+        <a className="signin__btn" style={{ display: "block", marginTop: 18, textDecoration: "none", textAlign: "center" }} href="/admin">Open your admin console →</a>
+        <p style={{ textAlign: "center", fontSize: 13, marginTop: 12 }}>
+          <a href="#" style={{ color: "var(--sg-sub)" }} onClick={async (e) => { e.preventDefault(); await neonAuth.signOut(); setPhase("auth"); }}>
+            Or sign out to test registration as a client
+          </a>
+        </p>
       </div>
     </Shell>
   );
