@@ -3,7 +3,7 @@ import { submitSiteRequest, checkRequestSubdomainFree } from "@/lib/api.js";
 import { THEMES } from "@/themes";
 import { isPremiumTheme } from "@/themes";
 import { themesForEvent, DEFAULT_EVENT_TYPE } from "@/config/eventTypes.js";
-import { Button, Field, FloatingDecor, Icon, Input, Select } from "@/ui/components.jsx";
+import { Button, Field, Icon, Input, Select } from "@/ui/components.jsx";
 import { LocationPicker } from "@/ui/location-picker.jsx";
 import { Logo } from "@/admin/core.jsx";
 const { useState, useEffect, useRef, useCallback } = React;
@@ -472,21 +472,16 @@ export function ApplyWizard({ initial = null, onSave, onCancel, submitOverride =
 
   if (done) {
     return (
-      <div className="signin admin--sa apply-page">
-        <div className="signin__pane">
-          <header className="signin__top"><div className="signin__brand"><Logo size={30} /><span className="signin__word">Celebrately</span></div></header>
-          <div className="signin__center">
-            <div className="signin__form apply-done" style={{ textAlign: "center" }}>
-              <div className="apply-done__badge">{Icon.check({ style: { width: 30, height: 30 } })}</div>
-              {approved ? (<>
-                <h1 className="signin__title">Your site is ready! 🎉</h1>
-                <p className="signin__sub">We've emailed <strong>{f.email}</strong> a link to set your password, plus the link to your new site at <strong>{f.subdomain}.celebrately.us</strong>. Check your inbox (and spam) to finish setting up.</p>
-              </>) : (<>
-                <h1 className="signin__title">Request sent!</h1>
-                <p className="signin__sub">Thanks! We'll review your setup and email you at <strong>{f.email}</strong> once <strong>{f.subdomain}.celebrately.us</strong> is approved.</p>
-              </>)}
-            </div>
-          </div>
+      <div className="apply-mfp apply-mfp--done">
+        <div className="apply-mfp__thanks">
+          <div className="apply-mfp__thanksbadge">{Icon.check({ style: { width: 34, height: 34 } })}</div>
+          {approved ? (<>
+            <h1 className="apply-mfp__title">Your site is ready! 🎉</h1>
+            <p className="apply-mfp__sub">We've emailed <strong>{f.email}</strong> a link to set your password, plus the link to your new site at <strong>{f.subdomain}.celebrately.us</strong>. Check your inbox (and spam) to finish setting up.</p>
+          </>) : (<>
+            <h1 className="apply-mfp__title">Request sent!</h1>
+            <p className="apply-mfp__sub">Thanks! We'll review your setup and email you at <strong>{f.email}</strong> once <strong>{f.subdomain}.celebrately.us</strong> is approved.</p>
+          </>)}
         </div>
       </div>
     );
@@ -542,14 +537,51 @@ export function ApplyWizard({ initial = null, onSave, onCancel, submitOverride =
 
   if (editing) return body; // rendered inside the console's Modal — no page chrome
 
+  // Public register / /apply flow — "multi-step form" layout: purple gradient
+  // sidebar with numbered steps + blob art, right-side content, navy Next Step.
   return (
-    <div className="signin signin--themed admin--sa apply-page" style={THEMES.classic.vars}>
-      {/* Classic Ivory palette (above) + falling petals, so the register page
-          previews the default look a new site opens with. */}
-      <FloatingDecor on style="petals" />
-      <div className="signin__pane">
-        <header className="signin__top"><div className="signin__brand"><Logo size={30} /><span className="signin__word">Celebrately</span></div></header>
-        <div className="signin__center">{body}</div>
+    <div className="apply-mfp">
+      <div className="apply-mfp__card">
+        <aside className="apply-mfp__side">
+          <div className="apply-mfp__brand"><Logo size={22} /><span>Celebrately</span></div>
+          <ol className="apply-mfp__steps">
+            {steps.map((st, i) => (
+              <li key={st.short}>
+                <button
+                  type="button"
+                  className={"apply-mfp__step" + (i === step ? " is-current" : i < step ? " is-done" : "")}
+                  disabled={i >= step}
+                  aria-current={i === step ? "step" : undefined}
+                  onClick={() => { if (i < step) { setErr(""); setStep(i); } }}
+                >
+                  <span className="apply-mfp__num">{i + 1}</span>
+                  <span className="apply-mfp__meta">
+                    <span className="apply-mfp__steplabel">Step {i + 1}</span>
+                    <span className="apply-mfp__stepname">{st.short}</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        </aside>
+        <div className="apply-mfp__main">
+          <div className="apply-mfp__content" key={step}>
+            <h1 className="apply-mfp__title">{s.title}</h1>
+            {s.sub && <p className="apply-mfp__sub">{s.sub}</p>}
+            <div className="apply-mfp__fields">{s.body}</div>
+            {err && <div className="apply-mfp__err">{err}</div>}
+          </div>
+          <div className="apply-mfp__foot">
+            {step > 0
+              ? <button type="button" className="apply-mfp__back" onClick={() => { setErr(""); setStep(step - 1); }} disabled={busy}>Go Back</button>
+              : <span />}
+            <div className="apply-mfp__actions">
+              {s.skippable && !last && <button type="button" className="apply-mfp__skip" onClick={() => { setF((p) => ({ ...p, entourage: [] })); setStep(step + 1); }}>Skip this step</button>}
+              {!last && <button type="button" className="apply-mfp__next" onClick={next}>Next Step</button>}
+              {last && <button type="button" className="apply-mfp__next apply-mfp__next--confirm" onClick={submit} disabled={busy}>{busy ? "Sending…" : "Confirm"}</button>}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
