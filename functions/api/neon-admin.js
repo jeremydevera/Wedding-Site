@@ -71,6 +71,20 @@ export async function onRequestPost({ request, env }) {
         const [r] = await sql`select pg_get_functiondef('public.register_site(text,text,text,text,text,text,jsonb)'::regprocedure) as def`;
         return json({ ok: true, def: r?.def || null });
       }
+      // Fixed DDL patch (idempotent): register_site refuses a SUPERADMIN caller —
+      // its on-conflict profile upsert would demote the platform admin to 'owner'.
+      // Body = the LIVE definition (fetched via inspect_register_site) + the guard;
+      // everything else byte-identical (_enrich_site_content path preserved).
+      case "apply_register_site_guard": {
+        await sql`CREATE OR REPLACE FUNCTION public.register_site(p_subdomain text, p_event_type text, p_template_key text, p_email text, p_partner_a text, p_partner_b text, p_content jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$ declare v_uid text; v_sub text := lower(btrim(coalesce(p_subdomain,''))); v_auto boolean; v_client uuid; v_etype text := case when coalesce(nullif(p_event_type,''),'wedding') = 'birthday' then 'birthday' else 'wedding' end; begin begin v_uid := auth.user_id(); exception when others then v_uid := null; end; if v_uid is null then raise exception 'sign in first' using errcode = '42501'; end if; if exists (select 1 from public.profiles p where p.id = v_uid and p.role = 'superadmin') then raise exception 'platform admin account cannot register a client site' using errcode = '42501'; end if; if exists (select 1 from public.profiles p where p.id = v_uid and p.client_id is not null) or exists (select 1 from public.site_requests r where r.requested_by = v_uid and r.status = 'pending') then raise exception 'you already have a site or a pending request' using errcode = '23505'; end if; if not public.subdomain_free(v_sub) then raise exception 'that site address is taken or not allowed' using errcode = '23505'; end if; if pg_column_size(coalesce(p_content, '{}'::jsonb)) > 200000 then raise exception 'content too large' using errcode = '22001'; end if; select coalesce((value->>'enabled')::boolean, false) into v_auto from public.app_config where key = 'auto_approve_requests'; if coalesce(v_auto, false) then insert into public.clients (subdomain, event_type, template_key, content, is_active, owner_email, status) values (v_sub, v_etype, coalesce(nullif(p_template_key,''),'classic'), public._enrich_site_content(p_content, p_event_type, p_partner_a, p_partner_b), true, nullif(btrim(coalesce(p_email,'')),''), 'not_paid') returning id into v_client; insert into public.profiles (id, role, client_id) values (v_uid, 'owner', v_client) on conflict (id) do update set role = 'owner', client_id = excluded.client_id; return jsonb_build_object('result','created','subdomain',v_sub); else insert into public.site_requests (status, email, partner_a, partner_b, subdomain, template_key, content, requested_by) values ('pending', coalesce(nullif(btrim(p_email),''),'unknown@unknown'), coalesce(p_partner_a,''), coalesce(p_partner_b,''), v_sub, coalesce(nullif(p_template_key,''),'classic'), coalesce(p_content,'{}'::jsonb), v_uid); return jsonb_build_object('result','pending','subdomain',v_sub); end if; end $function$`;
+        const [r] = await sql`select pg_get_functiondef('public.register_site(text,text,text,text,text,text,jsonb)'::regprocedure) as def`;
+        return json({ ok: true, guarded: /superadmin/.test(r?.def || "") });
+      }
       case "ensure_superadmin": {
         const email = String(body.email || "").trim().toLowerCase();
         if (!email) return json({ error: "email required" }, 400);
