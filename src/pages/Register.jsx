@@ -193,7 +193,11 @@ function AuthCard({ onDone }) {
   // /api/auth proxy — this widget just produces it. Script is loaded once;
   // widget re-renders when switching back to signup mode (or on Retry via tsNonce).
   useEffect(() => {
-    if (mode !== "signup") return;
+    // Firebase mode: no Turnstile. Signup goes straight to Firebase (its own
+    // rate limits + email verification); the proxy that server-verified the
+    // token isn't in the path, so the widget would be theater — and a widget
+    // domain misconfig must never brick signups.
+    if (mode !== "signup" || fbAuthMode()) return;
     let widgetId = null, dead = false, guard = null;
     setTsError("");
     const fail = (why) => { if (!dead) setTsError(why || "Security check couldn't load. Tap Retry, or refresh the page."); };
@@ -249,7 +253,7 @@ function AuthCard({ onDone }) {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast("Enter a valid email address.", "err");
     if (f.pw.length < 8) return toast("Password must be at least 8 characters.", "err");
     if (mode === "signup" && f.pw !== f.pw2) return toast("The two passwords don't match.", "err");
-    if (mode === "signup" && !tsToken) return toast("Please complete the security check first.", "err");
+    if (mode === "signup" && !tsToken && !fbAuthMode()) return toast("Please complete the security check first.", "err");
     setBusy(true);
     try {
       if (mode === "signup") {
@@ -328,8 +332,8 @@ function AuthCard({ onDone }) {
           <input id="rg-pw2" type="password" autoComplete="new-password" value={f.pw2} onChange={set("pw2")} placeholder="••••••••" />
         </div>
       )}
-      {mode === "signup" && <div id="rg-turnstile" style={{ margin: "6px 0 2px", minHeight: 66 }} />}
-      {mode === "signup" && tsError && (
+      {mode === "signup" && !fbAuthMode() && <div id="rg-turnstile" style={{ margin: "6px 0 2px", minHeight: 66 }} />}
+      {mode === "signup" && !fbAuthMode() && tsError && (
         <p style={{ fontSize: 13, color: "#B42318", margin: "0 0 6px", textAlign: "center", lineHeight: 1.4 }}>
           {tsError}{" "}
           <a href="#" style={{ color: "#1E5BD6", fontWeight: 600, textDecoration: "none" }}
