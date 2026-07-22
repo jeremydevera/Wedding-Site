@@ -3232,7 +3232,8 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .lgp-iph{position:absolute;inset:0;transform-style:preserve-3d}
 .lgp-iph>i{position:absolute;left:50%;top:50%;display:block}
 .lgp-fF{width:var(--lw);height:var(--lh);transform:translate(-50%,-50%) translateZ(calc(var(--ld)/2));border-radius:26px;background:#000;padding:5px;backface-visibility:hidden;box-shadow:0 36px 66px -24px rgba(0,0,0,.66)}
-.lgp-scr{display:flex;flex-direction:column;gap:7px;width:100%;height:100%;border-radius:21px;overflow:hidden;position:relative;background:linear-gradient(180deg,#fff,#f2eef4);padding:26px 10px 10px}
+.lgp-scr{display:block;width:100%;height:100%;border-radius:21px;overflow:hidden;position:relative;background:#f2eef4}
+.lgp-shot{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top}
 .lgp-isl{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:48px;height:12px;border-radius:7px;background:#000;z-index:2}
 .lgp-hd{height:7px;width:46%;border-radius:4px;background:#c9b7d6}
 .lgp-photo{height:42%;border-radius:10px;background:linear-gradient(135deg,#7a5c86,#e2b7c9)}

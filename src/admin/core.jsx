@@ -104,7 +104,7 @@ export function Logo({ size = 30, className }) {
 // Pure-CSS 3D iPhone (17-Pro-style: titanium edges + buttons, camera plateau,
 // Dynamic Island). Six faces in preserve-3d; screens tinted per carousel slot.
 // Styles: styles.css ".lgp-*" (login promo scene).
-function LoginPhone() {
+function LoginPhone({ shot }) {
   return (
     <div className="lgp-iph">
       <i className="lgp-fB">
@@ -114,7 +114,8 @@ function LoginPhone() {
       <i className="lgp-fR"><span className="lgp-btnP" /></i>
       <i className="lgp-fL"><span className="lgp-btnA" /><span className="lgp-btnV1" /><span className="lgp-btnV2" /></i>
       <i className="lgp-fT" /><i className="lgp-fBo"><span className="lgp-usb" /></i>
-      <i className="lgp-fF"><span className="lgp-isl" /><span className="lgp-scr"><span className="lgp-hd" /><span className="lgp-photo" /><span className="lgp-ln" /><span className="lgp-ln lgp-s" /><span className="lgp-pill" /></span></i>
+      {/* screen = REAL app screenshot (captured from the live demo) */}
+      <i className="lgp-fF"><span className="lgp-isl" /><span className="lgp-scr"><img className="lgp-shot" src={shot} alt="" loading="lazy" /></span></i>
     </div>
   );
 }
@@ -126,10 +127,10 @@ function LoginPromoScene() {
     <div className="lgp-stage" aria-hidden="true">
       <span className="lgp-glow" />
       <div className="lgp-zoomer"><div className="lgp-mover"><div className="lgp-ring">
-        <div className="lgp-slot"><LoginPhone /></div>
-        <div className="lgp-slot"><LoginPhone /></div>
-        <div className="lgp-slot"><LoginPhone /></div>
-        <div className="lgp-slot"><LoginPhone /></div>
+        <div className="lgp-slot"><LoginPhone shot="/assets/login-phone.jpg" /></div>
+        <div className="lgp-slot"><LoginPhone shot="/assets/login-shot-2.jpg" /></div>
+        <div className="lgp-slot"><LoginPhone shot="/assets/login-shot-dash.jpg" /></div>
+        <div className="lgp-slot"><LoginPhone shot="/assets/login-shot-4.jpg" /></div>
       </div></div></div>
       <div className="lgp-cap lgp-r lgp-s1"><span className="lgp-ey">Featuring</span><span className="lgp-h">RSVP in one tap</span><span className="lgp-p">Guests reply from their phone — every answer lands live.</span></div>
       <div className="lgp-cap lgp-l lgp-s2"><span className="lgp-ey">Featuring</span><span className="lgp-h">Live dashboard</span><span className="lgp-p">RSVPs, guests, guestbook — one glance, always current.</span></div>
