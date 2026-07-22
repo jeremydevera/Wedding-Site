@@ -6,8 +6,7 @@ import { DISABLED_MODULES, moduleEnabled } from "@/lib/roles.js";
 import { useStore } from "@/lib/store.jsx";
 import { reconcileGuests } from "@/lib/guests.js";
 import { headsOf } from "@/lib/rsvp.js";
-import { signIn, requestPasswordReset } from "@/lib/auth.js";
-import { signInWithGoogle } from "@/lib/firebase.js";
+import { signIn, signInGoogle, requestPasswordReset } from "@/lib/auth.js";
 import { Button, Field, Icon, Input, Monogram, Placeholder, toast } from "@/ui/components.jsx";
 // Lazy: amCharts is heavy — split into its own chunk, loaded only when the
 // Dashboard tab renders.
@@ -163,13 +162,13 @@ export function AdminLogin({ onAuthed }) {
     toast("If that email has an account, we've sent a password reset link. Check your inbox (and spam).", "success");
   };
   const googleLogin = async () => {
-    setGBusy(true);
+    setGBusy(true); setErr("");
     try {
-      const { user } = await signInWithGoogle();
-      toast(`Signed in with Google as ${user.email} ✓ — Google login is finishing rollout. For now, sign in with your email & password.`, "success");
+      const p = await signInGoogle();
+      if (!p?.redirecting) { onAuthed && onAuthed(); }
     } catch (e2) {
       const m = e2?.message || "";
-      toast(/operation-not-allowed/.test(m) ? "Enable Google in the Firebase console first." : /popup-closed|cancelled/.test(m) ? "Google sign-in cancelled." : "Google sign-in failed: " + m, "err");
+      setErr(/popup-closed|cancelled/i.test(m) ? "Google sign-in was cancelled." : m || "Google sign-in failed.");
     } finally { setGBusy(false); }
   };
   return (

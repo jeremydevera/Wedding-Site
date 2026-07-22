@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase.js";
 import { Store } from "@/lib/store.jsx";
-import { neonAuth, authedRpc, neonAuthedSelect, NEON_SHARDS_KEY, setNeonRegistry, resolveShardId, setActiveShard } from "@/lib/neon.js";
+import { neonAuth, authedRpc, neonAuthedSelect, NEON_SHARDS_KEY, FB_AUTH_FLAG_KEY, setNeonRegistry, resolveShardId, setActiveShard, fbAuthMode, setFbAuthMode } from "@/lib/neon.js";
 import { resolveSubdomain } from "@/lib/tenant.js";
 
 async function profileFor(userId) {
@@ -21,6 +21,22 @@ async function regState() {
     st = await authedRpc("my_registration_state").catch(() => null);
   }
   return st;
+}
+
+// Apex helpers run OUTSIDE loadClientData's Neon branches, so the shard
+// registry AND the Firebase-auth flag are unloaded there — resolve both before
+// touching neonAuth. Direct supabase reads: importing getAppConfig from api.js
+// would be an import cycle (api.js imports this file).
+async function loadApexNeonCtx() {
+  try {
+    const [{ data: shards }, { data: fb }] = await Promise.all([
+      supabase.from("app_config").select("value").eq("key", NEON_SHARDS_KEY).maybeSingle(),
+      supabase.from("app_config").select("value").eq("key", FB_AUTH_FLAG_KEY).maybeSingle(),
+    ]);
+    setNeonRegistry(shards?.value || null);
+    setFbAuthMode(fb?.value?.enabled === true);
+  } catch (e) { /* builtin s1 fallback; fb mode stays as-is */ }
+  setActiveShard(resolveShardId(""));
 }
 
 // ---- Neon admin auth (Better Auth via the first-party /api/auth proxy) --------
@@ -78,13 +94,9 @@ export async function loadSession() {
     // /register itself never loops.
     if (!resolveSubdomain() && /^\/(admin\/?)?$/.test(window.location.pathname)) {
       try {
+        await loadApexNeonCtx();
         const s = await neonAuth.session();
         if (s && s.user) {
-          try {
-            const { data: cfg } = await supabase.from("app_config").select("value").eq("key", NEON_SHARDS_KEY).maybeSingle();
-            setNeonRegistry(cfg?.value || null);
-            setActiveShard(resolveShardId(""));
-          } catch (e3) { /* builtin s1 fallback */ }
           const prof = await neonAuthedSelect("profiles", `select=role&id=eq.${encodeURIComponent(s.user.id)}`).catch(() => null);
           const isSA = prof && prof[0] && prof[0].role === "superadmin";
           if (!isSA) {
@@ -120,15 +132,7 @@ export async function signIn(email, password) {
     // shared .celebrately.us session cookie means she lands signed in).
     if (!resolveSubdomain()) {
       try {
-        // Apex never runs loadClientData's Neon branch, so the shard registry is
-        // unloaded here — resolve it (default shard) before hitting Neon Auth.
-        // Direct supabase read: importing getAppConfig from api.js would be an
-        // import cycle (api.js imports this file).
-        try {
-          const { data } = await supabase.from("app_config").select("value").eq("key", NEON_SHARDS_KEY).maybeSingle();
-          setNeonRegistry(data?.value || null);
-          setActiveShard(resolveShardId(""));
-        } catch (e3) { /* builtin s1 fallback */ }
+        await loadApexNeonCtx();
         const ns = await neonAuth.signIn(email, password);
         // Superadmin guard (mirror loadNeonSession): the SA also has a Neon
         // account (ensure_superadmin). If they signed in with their NEON password
@@ -184,6 +188,39 @@ export async function requestPasswordReset(email) {
   try {
     await supabase.auth.resetPasswordForEmail(addr, { redirectTo: `${window.location.origin}/admin` });
   } catch (e) { /* enumeration-safe: never leak success/failure */ }
+}
+
+// Google login (Firebase). On a Neon client's admin: sign in + require owner/SA
+// of THIS site. On the apex hub: route like the password fallback — owner with a
+// live site → her admin; unfinished → /register; SA → refuse (console uses the
+// admin password). Supabase client sites: not supported, actionable error.
+export async function signInGoogle() {
+  if (Store.get().neonMode) {
+    await neonAuth.signInGoogle();
+    const p = await loadNeonSession();
+    if (!p) { await neonAuth.signOut().catch(() => {}); throw new Error("That Google account doesn't have access to this site's admin."); }
+    return p;
+  }
+  if (resolveSubdomain()) throw new Error("Google login isn't available for this site — sign in with your email & password.");
+  await loadApexNeonCtx();
+  if (!fbAuthMode()) throw new Error("Google login isn't available yet — sign in with your email & password.");
+  const ns = await neonAuth.signInGoogle();
+  const suid = ns?.user?.id;
+  if (suid) {
+    const prof = await neonAuthedSelect("profiles", `select=role&id=eq.${encodeURIComponent(suid)}`).catch(() => null);
+    if (prof && prof[0] && prof[0].role === "superadmin") {
+      await neonAuth.signOut().catch(() => {});
+      throw new Error("That's the platform admin's Google account — sign in below with your admin email & password.");
+    }
+  }
+  const st = await regState();
+  if (st?.state === "active" && st.subdomain) {
+    window.location.assign(`https://${st.subdomain}.celebrately.us/admin`);
+    return { role: "owner", client_id: null, redirecting: true };
+  }
+  if (st?.state === "pending") throw new Error("Your site is waiting for approval — check back soon.");
+  window.location.assign("/register");
+  return { role: "guest", client_id: null, redirecting: true };
 }
 
 export async function signOut() {
