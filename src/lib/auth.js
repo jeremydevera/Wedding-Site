@@ -23,6 +23,42 @@ async function regState() {
   return st;
 }
 
+// Where does this owner belong? Resolves the admin URL of the client an owner
+// profile points at (Supabase-side). Null if the client row can't be read.
+export async function ownerHomeUrl(clientId) {
+  if (!clientId) return null;
+  try {
+    const { data } = await supabase.from("clients").select("subdomain").eq("id", clientId).maybeSingle();
+    return data?.subdomain ? `https://${data.subdomain}.celebrately.us/admin` : null;
+  } catch (e) { return null; }
+}
+
+// Supabase sessions are per-origin (localStorage) — a cross-subdomain redirect
+// would land the owner signed OUT and make her log in twice. Hand the session
+// over in the URL FRAGMENT (never sent to any server; same pattern Supabase's
+// own email-link flow uses) and consume it immediately on the other side.
+function withSbHandoff(url) {
+  try {
+    const raw = localStorage.getItem(Object.keys(localStorage).find((k) => /^sb-.*-auth-token$/.test(k)));
+    const tok = JSON.parse(raw);
+    const at = tok?.access_token, rt = tok?.refresh_token;
+    if (at && rt) return `${url}#sbsess=${encodeURIComponent(btoa(JSON.stringify({ at, rt })))}`;
+  } catch (e) { /* no handoff — she'll sign in on her own site */ }
+  return url;
+}
+
+// Boot-time consumer for the handoff fragment. Called from loadSession before
+// the session read; strips the fragment from history either way.
+async function consumeSbHandoff() {
+  const m = /[#&]sbsess=([^&]+)/.exec(window.location.hash || "");
+  if (!m) return;
+  try { window.history.replaceState(null, "", window.location.pathname + window.location.search); } catch (e) { /* ignore */ }
+  try {
+    const { at, rt } = JSON.parse(atob(decodeURIComponent(m[1])));
+    if (at && rt) await supabase.auth.setSession({ access_token: at, refresh_token: rt });
+  } catch (e) { /* bad/expired handoff — normal login form takes over */ }
+}
+
 // Apex helpers run OUTSIDE loadClientData's Neon branches, so the shard
 // registry AND the Firebase-auth flag are unloaded there — resolve both before
 // touching neonAuth. Direct supabase reads: importing getAppConfig from api.js
@@ -83,6 +119,7 @@ async function loadNeonSession() {
 // Load the current session + profile into the store. Call once at boot.
 export async function loadSession() {
   if (Store.get().neonMode) return void (await loadNeonSession());
+  await consumeSbHandoff();
   const { data } = await supabase.auth.getSession();
   const session = data.session;
   if (!session) {
@@ -120,18 +157,45 @@ export async function loadSession() {
 
 export async function signIn(email, password) {
   if (Store.get().neonMode) {
-    await neonAuth.signIn(email, password);           // sets the Data API JWT via proxied header
-    const p = await loadNeonSession();
-    if (!p) throw new Error("This account doesn't have access to this site's admin.");
-    return p;
+    let fbErr = null;
+    try {
+      await neonAuth.signIn(email, password);         // Firebase (or legacy Neon Auth)
+      const p = await loadNeonSession();
+      if (p) return p;
+      // Signed in fine but this isn't her site — send her HOME instead of a
+      // dead "no access" (the shared fb-session cookie keeps her signed in).
+      const st = await regState();
+      if (st?.state === "active" && st.subdomain && st.subdomain !== resolveSubdomain()) {
+        window.location.assign(`https://${st.subdomain}.celebrately.us/admin`);
+        return { role: "owner", client_id: null, redirecting: true };
+      }
+      throw new Error("This account doesn't have access to this site's admin.");
+    } catch (e1) {
+      if (e1 && /doesn't have access/.test(e1.message || "")) throw e1;
+      fbErr = e1;
+    }
+    // Cross-backend: a SUPABASE-era owner (e.g. demo@) typed her password on a
+    // Firebase site's login. Sign her into Supabase and send her to HER site.
+    try {
+      const { data: d2, error: e2 } = await supabase.auth.signInWithPassword({ email, password });
+      if (!e2 && d2?.user) {
+        const p2 = await profileFor(d2.user.id);
+        if (p2.role === "owner" && p2.client_id) {
+          const url = await ownerHomeUrl(p2.client_id);
+          if (url) { window.location.assign(withSbHandoff(url)); return { ...p2, redirecting: true }; }
+        }
+        await supabase.auth.signOut().catch(() => {});
+      }
+    } catch (e3) { /* fall through to the Firebase error */ }
+    throw fbErr;
   }
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
-    // Apex (celebrately.us/admin) only: a self-serve owner's account lives in
-    // NEON Auth, not Supabase, so the Supabase sign-in fails. Try Neon — if the
-    // account owns a live site, send her to HER OWN admin (her subdomain; the
-    // shared .celebrately.us session cookie means she lands signed in).
-    if (!resolveSubdomain()) {
+    // A self-serve owner's account lives in FIREBASE, not Supabase, so the
+    // Supabase sign-in fails (apex AND Supabase-era client logins). Try the
+    // Firebase side — if the account owns a live site, send her to HER OWN
+    // admin (the shared .celebrately.us session cookie keeps her signed in).
+    {
       try {
         await loadApexNeonCtx();
         const ns = await neonAuth.signIn(email, password);
@@ -156,9 +220,11 @@ export async function signIn(email, password) {
         // finishing the wizard. Send her back to /register to continue (the
         // shared session cookie + saved draft resume exactly where she left off).
         // Without this she fell through to "wrong email or password" despite a
-        // successful sign-in.
-        window.location.assign("/register");
-        return { role: "guest", client_id: null, redirecting: true };
+        // successful sign-in. Only from the apex — on a client's login a
+        // site-less account is just a wrong account.
+        if (!resolveSubdomain()) { window.location.assign("/register"); return { role: "guest", client_id: null, redirecting: true }; }
+        await neonAuth.signOut().catch(() => {});
+        throw error;
       } catch (e2) {
         if (e2 && e2.message && /waiting for approval/.test(e2.message)) throw e2;
         // Registered but never entered the emailed code — the password was RIGHT,
@@ -172,6 +238,13 @@ export async function signIn(email, password) {
     throw error;
   }
   const p = await profileFor(data.user.id);
+  // Owner signing in at the apex or on someone ELSE's site: correct behavior is
+  // landing on HER OWN admin, not a "can't manage this site" wall (owner request
+  // 2026-07-22). Session rides along in the URL fragment.
+  if (p.role === "owner" && p.client_id && p.client_id !== Store.get().clientId) {
+    const url = await ownerHomeUrl(p.client_id);
+    if (url) { window.location.assign(withSbHandoff(url)); return { ...p, redirecting: true }; }
+  }
   Store.setAuth({ session: data.session, role: p.role, clientId: p.client_id, email: data.user.email });
   gateFlag();
   return p;
@@ -199,7 +272,15 @@ export async function signInGoogle() {
   if (Store.get().neonMode) {
     await neonAuth.signInGoogle();
     const p = await loadNeonSession();
-    if (!p) { await neonAuth.signOut().catch(() => {}); throw new Error("That Google account doesn't have access to this site's admin."); }
+    if (!p) {
+      const st = await regState();
+      if (st?.state === "active" && st.subdomain && st.subdomain !== resolveSubdomain()) {
+        window.location.assign(`https://${st.subdomain}.celebrately.us/admin`);
+        return { role: "owner", client_id: null, redirecting: true };
+      }
+      await neonAuth.signOut().catch(() => {});
+      throw new Error("That Google account doesn't have access to this site's admin.");
+    }
     return p;
   }
   if (resolveSubdomain()) throw new Error("Google login isn't available for this site — sign in with your email & password.");

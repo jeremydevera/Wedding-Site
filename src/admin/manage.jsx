@@ -8,7 +8,7 @@ import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { SupportWidget, SupportPanel, TicketForm } from "@/admin/SupportWidget.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
-import { signOut, createOwner } from "@/lib/auth.js";
+import { signOut, createOwner, ownerHomeUrl } from "@/lib/auth.js";
 import { supabase } from "@/lib/supabase.js";
 import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb, updateRsvpDietDb, listSiteRequests, subscribeSiteRequestsRealtime, listTickets, subscribeTicketsRealtime , listRecentClientReplies, listRecentSupportReplies, subscribeAllTicketMessagesRealtime, getAppConfig, setAppConfig} from "@/lib/api.js";
 import { DIET_OPTIONS } from "@/features/rsvp.jsx";
@@ -34,6 +34,27 @@ const AdminSaveCtx = React.createContext({ saving: false, dirty: false, save: ()
 
 // Up/down reorder arrows for admin list rows. `onMove(dir)` applies the move
 // (dir -1 = up, +1 = down); disabled at the ends.
+// Signed-in owner standing on a site that isn't hers → resolve her subdomain
+// and redirect. Renders the wall only if the lookup fails (deleted client).
+function OwnerGoHome({ clientId }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let dead = false;
+    ownerHomeUrl(clientId)
+      .then((url) => { if (dead) return; if (url) window.location.assign(url); else setFailed(true); })
+      .catch(() => { if (!dead) setFailed(true); });
+    return () => { dead = true; };
+  }, [clientId]);
+  if (failed) return (
+    <div className="card card--pad-lg" style={{ maxWidth: 420, margin: "10vh auto", textAlign: "center" }}>
+      <h2>No access</h2>
+      <p style={{ color: "var(--ink-soft)" }}>This account can't manage this site.</p>
+      <Button variant="ghost" onClick={() => signOut()}>Sign out</Button>
+    </div>
+  );
+  return <div style={{ position: "fixed", inset: 0, background: "#ffffff", color: "#6b7280", display: "grid", placeItems: "center" }}>Taking you to your site…</div>;
+}
+
 function MoveArrows({ i, count, onMove }) {
   return (
     <>
@@ -4458,6 +4479,10 @@ export function AdminApp() {
   if (!auth.session) return <AdminLogin onAuthed={() => setTab("dashboard")} />;
   const profile = { role: auth.role, clientId: auth.clientId };
   if (!canEnterAdmin(profile, clientId)) {
+    // An OWNER on the wrong door (apex console, someone else's subdomain) is a
+    // navigation problem, not an access problem — take her to her own admin
+    // instead of a dead "no access" wall. Anything else keeps the wall.
+    if (auth.role === "owner" && auth.clientId) return <OwnerGoHome clientId={auth.clientId} />;
     return (
       <div className="card card--pad-lg" style={{ maxWidth: 420, margin: "10vh auto", textAlign: "center" }}>
         <h2>No access</h2>
