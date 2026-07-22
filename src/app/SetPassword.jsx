@@ -71,7 +71,7 @@ export function SetPassword() {
               <h1 className="signin__title">Set your password</h1>
               <p className="signin__sub">Choose a password for your Celebrately admin. You'll use your email and this password to sign in.</p>
               <label className="field"><span className="field__label">New password</span>
-                <Input type="password" value={pw} autoFocus onChange={(e) => setPw(e.target.value)} placeholder="At least 8 characters" onKeyDown={(e) => e.key === "Enter" && save()} />
+                <Input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="At least 8 characters" onKeyDown={(e) => e.key === "Enter" && save()} />
               </label>
               <label className="field"><span className="field__label">Confirm password</span>
                 <Input type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} placeholder="Re-type it" onKeyDown={(e) => e.key === "Enter" && save()} />
