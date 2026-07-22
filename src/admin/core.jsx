@@ -178,7 +178,7 @@ export function AdminLogin({ onAuthed }) {
         ) : (
           // Apex: the portrait app-promo video FILLS the panel (full-bleed cover).
           <video className="signin__promo" autoPlay loop muted playsInline preload="auto" poster="/assets/login-phone.jpg" aria-hidden="true">
-            <source src="/promo/celebrately-promo-tall.mp4" type="video/mp4" />
+            <source src="/promo/celebrately-promo-tall-2.mp4" type="video/mp4" />
           </video>
         )}
       </aside>
