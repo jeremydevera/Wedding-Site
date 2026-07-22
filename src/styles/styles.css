@@ -3195,3 +3195,82 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   .apply-mfp__next { height: 44px; padding: 0 22px; font-size: 14px; }
   .apply-mfp__thanks { margin: 24px 16px; }
 }
+
+/* ============================================================
+   lgp — login promo scene (pure CSS, owner pick V1 2026-07-23).
+   Zoom intro (once) → ONE 3D iPhone snaps left (caption right) /
+   right (caption left) → 4-phone carousel. Replaces the mp4.
+   Scoped under .signin__aside--promo; hidden on mobile (brand
+   band only). 3D iPhone: 6 faces, titanium edges, camera plateau.
+   ============================================================ */
+.signin__aside--promo{position:relative;overflow:hidden}
+.lgp-stage{position:absolute;inset:0;z-index:1;display:grid;place-items:center;perspective:1400px;
+  --li:3.6s;--ll:32s;--lw:150px;--lh:309px;--ld:16px;--lti:#8e8a93;--lti2:#66626c;
+  --ldx:-9vw;--ldxr:9vw}
+.lgp-glow{position:absolute;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(233,124,93,.45),transparent 70%);filter:blur(8px)}
+.lgp-zoomer{transform-style:preserve-3d;animation:lgp-intro var(--li) cubic-bezier(.25,.9,.3,1) both}
+@keyframes lgp-intro{0%{transform:scale(1.45)}55%{transform:scale(1.45)}100%{transform:scale(1)}}
+.lgp-mover{transform-style:preserve-3d;animation:lgp-mover var(--ll) cubic-bezier(.25,.9,.3,1) var(--li) infinite}
+@keyframes lgp-mover{
+  0%,2%{transform:translateX(0) rotateY(0)}
+  6%,20%{transform:translateX(var(--ldx)) rotateY(30deg)}
+  24%,38%{transform:translateX(var(--ldxr)) rotateY(-30deg)}
+  41%,100%{transform:translateX(0) rotateY(0)}}
+.lgp-ring{position:relative;width:var(--lw);height:var(--lh);transform-style:preserve-3d;animation:lgp-ring var(--ll) cubic-bezier(.25,.9,.3,1) var(--li) infinite}
+@keyframes lgp-ring{
+  0%,41%{transform:rotateY(0)}44%,53%{transform:rotateY(-90deg)}
+  56%,65%{transform:rotateY(-180deg)}68%,77%{transform:rotateY(-270deg)}
+  80%,100%{transform:rotateY(-360deg)}}
+.lgp-slot{position:absolute;inset:0;transform-style:preserve-3d}
+.lgp-slot:nth-child(1){transform:rotateY(0) translateZ(200px)}
+.lgp-slot:nth-child(2){transform:rotateY(90deg) translateZ(200px)}
+.lgp-slot:nth-child(3){transform:rotateY(180deg) translateZ(200px)}
+.lgp-slot:nth-child(4){transform:rotateY(270deg) translateZ(200px)}
+.lgp-slot:nth-child(2),.lgp-slot:nth-child(3),.lgp-slot:nth-child(4){opacity:0;animation:lgp-join var(--ll) ease var(--li) infinite}
+@keyframes lgp-join{0%,40%{opacity:0}44%,95%{opacity:1}99%,100%{opacity:0}}
+/* 3D iPhone body */
+.lgp-iph{position:absolute;inset:0;transform-style:preserve-3d}
+.lgp-iph>i{position:absolute;left:50%;top:50%;display:block}
+.lgp-fF{width:var(--lw);height:var(--lh);transform:translate(-50%,-50%) translateZ(calc(var(--ld)/2));border-radius:26px;background:#000;padding:5px;backface-visibility:hidden;box-shadow:0 36px 66px -24px rgba(0,0,0,.66)}
+.lgp-scr{display:flex;flex-direction:column;gap:7px;width:100%;height:100%;border-radius:21px;overflow:hidden;position:relative;background:linear-gradient(180deg,#fff,#f2eef4);padding:26px 10px 10px}
+.lgp-isl{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:48px;height:12px;border-radius:7px;background:#000;z-index:2}
+.lgp-hd{height:7px;width:46%;border-radius:4px;background:#c9b7d6}
+.lgp-photo{height:42%;border-radius:10px;background:linear-gradient(135deg,#7a5c86,#e2b7c9)}
+.lgp-slot:nth-child(2) .lgp-photo{background:linear-gradient(135deg,#5c6f86,#b7cbe2)}
+.lgp-slot:nth-child(3) .lgp-photo{background:linear-gradient(135deg,#86755c,#e2d3b7)}
+.lgp-slot:nth-child(4) .lgp-photo{background:linear-gradient(135deg,#5c8672,#b7e2cd)}
+.lgp-ln{height:6px;border-radius:4px;background:#e3dbe9}.lgp-ln.lgp-s{width:60%}
+.lgp-pill{margin-top:auto;height:22px;border-radius:7px;background:#e97c5d}
+.lgp-fB{width:var(--lw);height:var(--lh);transform:translate(-50%,-50%) rotateY(180deg) translateZ(calc(var(--ld)/2));border-radius:26px;backface-visibility:hidden;background:linear-gradient(160deg,#27345b 0%,#1f2a44 55%,#17203a 100%);box-shadow:inset 0 0 0 2px rgba(255,255,255,.06)}
+.lgp-plateau{position:absolute;top:10px;left:10px;right:10px;height:72px;border-radius:18px;background:linear-gradient(160deg,#2c3a63,#1b2440);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.08),0 5px 12px -5px rgba(0,0,0,.5)}
+.lgp-lens{position:absolute;width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#4a5877 0%,#101726 45%,#000 100%);box-shadow:inset 0 0 0 2px #0b1220,inset 0 0 0 4px #2c3956}
+.lgp-l1{left:9px;top:7px}.lgp-l2{left:9px;top:39px}.lgp-l3{left:42px;top:23px}
+.lgp-flash{position:absolute;right:12px;top:10px;width:11px;height:11px;border-radius:50%;background:radial-gradient(circle,#f6edc8,#8f8657 70%)}
+.lgp-blogo{position:absolute;left:50%;top:58%;transform:translate(-50%,-50%);width:34px;height:34px;opacity:.9}
+.lgp-fR,.lgp-fL{width:var(--ld);height:calc(var(--lh) - 36px);border-radius:6px;background:linear-gradient(180deg,var(--lti) 0%,var(--lti2) 50%,var(--lti) 100%)}
+.lgp-fR{transform:translate(-50%,-50%) rotateY(90deg) translateZ(calc(var(--lw)/2 - 1px))}
+.lgp-fL{transform:translate(-50%,-50%) rotateY(-90deg) translateZ(calc(var(--lw)/2 - 1px))}
+.lgp-fT,.lgp-fBo{width:calc(var(--lw) - 36px);height:var(--ld);border-radius:6px;background:linear-gradient(90deg,var(--lti) 0%,var(--lti2) 50%,var(--lti) 100%)}
+.lgp-fT{transform:translate(-50%,-50%) rotateX(90deg) translateZ(calc(var(--lh)/2 - 1px))}
+.lgp-fBo{transform:translate(-50%,-50%) rotateX(-90deg) translateZ(calc(var(--lh)/2 - 1px))}
+.lgp-btnP{position:absolute;top:24%;left:22%;width:56%;height:34px;border-radius:3px;background:linear-gradient(180deg,#a5a1ab,#77737e)}
+.lgp-btnA{position:absolute;top:14%;left:22%;width:56%;height:15px;border-radius:3px;background:linear-gradient(180deg,#a5a1ab,#77737e)}
+.lgp-btnV1{position:absolute;top:23%;left:22%;width:56%;height:26px;border-radius:3px;background:linear-gradient(180deg,#a5a1ab,#77737e)}
+.lgp-btnV2{position:absolute;top:33%;left:22%;width:56%;height:26px;border-radius:3px;background:linear-gradient(180deg,#a5a1ab,#77737e)}
+.lgp-usb{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:26px;height:6px;border-radius:3px;background:#3a3741;box-shadow:inset 0 0 0 1px #1d1b22}
+/* captions */
+.lgp-cap{position:absolute;top:50%;max-width:200px;opacity:0;z-index:5;display:flex;flex-direction:column;animation-duration:var(--ll);animation-timing-function:ease;animation-iteration-count:infinite;animation-delay:var(--li)}
+.lgp-ey{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.lgp-h{font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1.05;margin-top:6px;color:#fff}
+.lgp-p{margin-top:8px;color:rgba(255,255,255,.72);font-size:12.5px;line-height:1.45}
+.lgp-r{right:22px;text-align:right;align-items:flex-end}.lgp-l{left:22px}
+.lgp-s1{animation-name:lgp-ks1}.lgp-s2{animation-name:lgp-ks2}
+.lgp-c1{animation-name:lgp-kc1}.lgp-c2{animation-name:lgp-kc2}.lgp-c3{animation-name:lgp-kc3}.lgp-c4{animation-name:lgp-kc4}
+@keyframes lgp-ks1{0%,7%{opacity:0;transform:translate(24px,-50%)}9%,17%{opacity:1;transform:translate(0,-50%)}19%,100%{opacity:0;transform:translate(24px,-50%)}}
+@keyframes lgp-ks2{0%,25%{opacity:0;transform:translate(-24px,-50%)}27%,35%{opacity:1;transform:translate(0,-50%)}37%,100%{opacity:0;transform:translate(-24px,-50%)}}
+@keyframes lgp-kc1{0%,45%{opacity:0;transform:translate(24px,-50%)}47%,50%{opacity:1;transform:translate(0,-50%)}52%,100%{opacity:0;transform:translate(24px,-50%)}}
+@keyframes lgp-kc2{0%,57%{opacity:0;transform:translate(-24px,-50%)}59%,62%{opacity:1;transform:translate(0,-50%)}64%,100%{opacity:0;transform:translate(-24px,-50%)}}
+@keyframes lgp-kc3{0%,69%{opacity:0;transform:translate(24px,-50%)}71%,74%{opacity:1;transform:translate(0,-50%)}76%,100%{opacity:0;transform:translate(24px,-50%)}}
+@keyframes lgp-kc4{0%,81%{opacity:0;transform:translate(-24px,-50%)}83%,88%{opacity:1;transform:translate(0,-50%)}90%,100%{opacity:0;transform:translate(-24px,-50%)}}
+@media (max-width: 820px){.lgp-stage{display:none}} /* mobile: brand band only */
+@media (prefers-reduced-motion: reduce){.lgp-zoomer,.lgp-mover,.lgp-ring,.lgp-cap,.lgp-slot{animation:none}.lgp-s1{opacity:1}}

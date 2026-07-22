@@ -100,6 +100,46 @@ export function Logo({ size = 30, className }) {
 }
 
 // --- Login ------------------------------------------------------------------
+
+// Pure-CSS 3D iPhone (17-Pro-style: titanium edges + buttons, camera plateau,
+// Dynamic Island). Six faces in preserve-3d; screens tinted per carousel slot.
+// Styles: styles.css ".lgp-*" (login promo scene).
+function LoginPhone() {
+  return (
+    <div className="lgp-iph">
+      <i className="lgp-fB">
+        <span className="lgp-plateau"><span className="lgp-lens lgp-l1" /><span className="lgp-lens lgp-l2" /><span className="lgp-lens lgp-l3" /><span className="lgp-flash" /></span>
+        <svg className="lgp-blogo" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="rgba(255,255,255,.1)" /><path d="M12 40 C20 24 28 24 32 32 C36 40 44 40 52 26" fill="none" stroke="rgba(255,255,255,.75)" strokeWidth="5" strokeLinecap="round" /></svg>
+      </i>
+      <i className="lgp-fR"><span className="lgp-btnP" /></i>
+      <i className="lgp-fL"><span className="lgp-btnA" /><span className="lgp-btnV1" /><span className="lgp-btnV2" /></i>
+      <i className="lgp-fT" /><i className="lgp-fBo"><span className="lgp-usb" /></i>
+      <i className="lgp-fF"><span className="lgp-isl" /><span className="lgp-scr"><span className="lgp-hd" /><span className="lgp-photo" /><span className="lgp-ln" /><span className="lgp-ln lgp-s" /><span className="lgp-pill" /></span></i>
+    </div>
+  );
+}
+
+// V1 login showcase (owner pick 2026-07-23): zoom intro → ONE phone snaps left
+// (caption right) / right (caption left) → 4-phone carousel. Pure CSS, no video.
+function LoginPromoScene() {
+  return (
+    <div className="lgp-stage" aria-hidden="true">
+      <span className="lgp-glow" />
+      <div className="lgp-zoomer"><div className="lgp-mover"><div className="lgp-ring">
+        <div className="lgp-slot"><LoginPhone /></div>
+        <div className="lgp-slot"><LoginPhone /></div>
+        <div className="lgp-slot"><LoginPhone /></div>
+        <div className="lgp-slot"><LoginPhone /></div>
+      </div></div></div>
+      <div className="lgp-cap lgp-r lgp-s1"><span className="lgp-ey">Featuring</span><span className="lgp-h">RSVP in one tap</span><span className="lgp-p">Guests reply from their phone — every answer lands live.</span></div>
+      <div className="lgp-cap lgp-l lgp-s2"><span className="lgp-ey">Featuring</span><span className="lgp-h">Live dashboard</span><span className="lgp-p">RSVPs, guests, guestbook — one glance, always current.</span></div>
+      <div className="lgp-cap lgp-r lgp-c1"><span className="lgp-ey">Featuring</span><span className="lgp-h">Guestbook</span><span className="lgp-p">Wishes from everyone you love — kept forever.</span></div>
+      <div className="lgp-cap lgp-l lgp-c2"><span className="lgp-ey">Featuring</span><span className="lgp-h">The day's schedule</span><span className="lgp-p">Ceremony to last dance — guests know what's next.</span></div>
+      <div className="lgp-cap lgp-r lgp-c3"><span className="lgp-ey">Featuring</span><span className="lgp-h">Your entourage</span><span className="lgp-p">Everyone honored by name, group by group.</span></div>
+      <div className="lgp-cap lgp-l lgp-c4"><span className="lgp-ey">Featuring</span><span className="lgp-h">Your invitation</span><span className="lgp-p">Opens like a real envelope — names, date, countdown.</span></div>
+    </div>
+  );
+}
 export function AdminLogin({ onAuthed }) {
   const store = useStore();
   const settings = store.settings || {};
@@ -179,10 +219,8 @@ export function AdminLogin({ onAuthed }) {
           </div>
           <p className="signin__tagline">Celebrate life's biggest moments, beautifully.</p>
         </div>
-        {/* portrait app-promo video FILLS the panel (full-bleed cover) */}
-        <video className="signin__promo" autoPlay loop muted playsInline preload="auto" poster="/assets/login-phone.jpg" aria-hidden="true">
-          <source src="/promo/celebrately-promo-tall-2.mp4" type="video/mp4" />
-        </video>
+        {/* pure-CSS V1 showcase (replaces the mp4): zoom → left/right → carousel */}
+        <LoginPromoScene />
       </aside>
 
       {/* RIGHT — form */}
