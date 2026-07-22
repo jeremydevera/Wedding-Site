@@ -127,6 +127,9 @@ export function AdminLogin({ onAuthed }) {
     finally { setBusy(false); }
   }
   const [showPw, setShowPw] = useState(false);
+  // Arrived from a client site's Google button (popups can't open there —
+  // Firebase authorizes exact domains only). Nudge them to tap Google again.
+  const gFrom = !isClient ? new URLSearchParams(window.location.search).get("gfrom") : null;
   const [remember, setRemember] = useState(false);
   const [gBusy, setGBusy] = useState(false);
   // "Remember me" — prefill the last email on this device (email only, never pw)
@@ -177,7 +180,7 @@ export function AdminLogin({ onAuthed }) {
         <div className="signin__center">
           <form className="signin__form" onSubmit={submit} noValidate>
             <h1 className="signin__title">Log in to Celebrately.</h1>
-            <p className="signin__sub">Welcome back! Sign in with the details you used during registration.</p>
+            <p className="signin__sub">{gFrom ? <>Tap <strong>Log in with Google</strong> below — we'll take you straight to your site's admin.</> : "Welcome back! Sign in with the details you used during registration."}</p>
 
             <div className="signin__field signin__field--icon">
               <label htmlFor="a-email">Email</label>

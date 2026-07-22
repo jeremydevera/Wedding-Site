@@ -283,7 +283,14 @@ export async function signInGoogle() {
     }
     return p;
   }
-  if (resolveSubdomain()) throw new Error("Google login isn't available for this site — sign in with your email & password.");
+  if (resolveSubdomain()) {
+    // Firebase popups only run on allow-listed domains (no wildcards), so a
+    // client subdomain can't open one. Hop to the apex login — one more click
+    // on its Google button, then the shared session cookie + wrong-door
+    // routing land her on her own admin automatically.
+    window.location.assign("https://celebrately.us/admin?gfrom=" + encodeURIComponent(resolveSubdomain()));
+    return { role: null, client_id: null, redirecting: true };
+  }
   await loadApexNeonCtx();
   if (!fbAuthMode()) throw new Error("Google login isn't available yet — sign in with your email & password.");
   const ns = await neonAuth.signInGoogle();
