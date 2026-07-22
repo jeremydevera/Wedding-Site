@@ -1073,7 +1073,30 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
      scroll area so LOGIN + Register sit above it, not tucked underneath */
   .signin--split .signin__center { padding: 28px 22px calc(104px + env(safe-area-inset-bottom, 0px)); justify-content: flex-start; }
   .signin--split .signin__form { max-width: 460px; }
-  .signin--split .signin__title { font-size: 26px; }
+  /* Supabase-style mobile sign-in, LIGHT (owner reference IMG_0991): one white
+     page — plain logo row up top (no dark brand band), big heading, social
+     button first, then "or", then the fields. Desktop split is untouched. */
+  .signin--split .signin__aside { background: var(--sg-bg); min-height: 0; }
+  .signin__aside--promo { padding: 22px 22px 4px !important; }
+  .signin--split .signin__aside .signin__word { color: #1b1b1b; }
+  .signin--split .signin__title { font-size: 32px; margin-top: 26px; }
+  .signin--split .signin__sub { margin-bottom: 24px; }
+  .signin--split .signin__form { display: flex; flex-direction: column; }
+  .signin--split .signin__title { order: 1; }
+  .signin--split .signin__sub { order: 2; }
+  .signin--split .signin__social { order: 3; margin-bottom: 0; }
+  .signin--split .signin__or { order: 4; margin: 20px 0; }
+  .signin--split .signin__field:has(#a-email) { order: 5; }
+  .signin--split .signin__field:has(#a-pw) { order: 6; }
+  .signin--split .signin__meta { order: 7; }
+  .signin--split .signin__err { order: 8; }
+  .signin--split .signin__btn { order: 9; }
+  .signin--split .signin__reg { order: 10; }
+  /* password row: "Forgot password?" only (Supabase keeps it minimal) */
+  .signin--split .signin__remember { display: none; }
+  .signin--split .signin__meta { justify-content: flex-end; margin-top: 0; }
+  /* back-to-website pill joins the logo row (it crowded the heading) */
+  .signin--split .signin__back { position: fixed; top: 20px; right: 16px; z-index: 5; background: var(--sg-bg); }
 }
 
 /* overscroll-behavior:contain stops a drag at the top/bottom of this scroller
