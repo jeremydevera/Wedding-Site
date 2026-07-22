@@ -212,7 +212,7 @@ export function AdminLogin({ onAuthed }) {
             <h1 className="signin__title">Log in to {isClient ? "your site." : "Celebrately."}</h1>
             <p className="signin__sub">Welcome back! Sign in with the details you used during registration.</p>
 
-            {!isClient && (
+            {(!isClient || store.neonMode === true) && (
               <>
                 <div className="signin__social">
                   <button type="button" className="signin__socialbtn" onClick={googleLogin} disabled={gBusy}>

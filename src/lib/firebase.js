@@ -39,6 +39,51 @@ async function getAuth() {
   return _authP;
 }
 
+// ---- Cross-subdomain session (the /api/fb-session cookie bridge) ------------
+// Firebase persists per-ORIGIN, so an apex sign-in (wizard / main login) would
+// be invisible on the owner's own subdomain and she'd sign in twice. After any
+// REAL sign-in we push the refresh token into a first-party HttpOnly cookie on
+// .celebrately.us (Pages Function /api/fb-session); origins with no local SDK
+// session restore from it by minting fresh ID tokens via securetoken.
+
+async function publishSession(user) {
+  try {
+    const rt = user && user.refreshToken;
+    if (rt) await fetch("/api/fb-session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ refreshToken: rt }) });
+  } catch (e) { /* cookie bridge is best-effort; same-origin login still works */ }
+}
+
+let _restored = null; // { uid, email, idToken, exp, refreshToken }
+const jwtPayload = (t) => { try { return JSON.parse(atob(t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))); } catch { return {}; } };
+
+async function mintFromRefreshToken(rt) {
+  const res = await fetch(`https://securetoken.googleapis.com/v1/token?key=${FIREBASE_CONFIG.apiKey}`, {
+    method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(rt)}`,
+  });
+  if (!res.ok) throw new Error("session expired");
+  const d = await res.json();
+  const p = jwtPayload(d.id_token);
+  return { uid: d.user_id, email: p.email || null, emailVerified: p.email_verified === true, idToken: d.id_token, exp: (p.exp || 0) * 1000, refreshToken: d.refresh_token || rt };
+}
+
+// Session restored from the shared cookie (or null). Cached; re-mints the ID
+// token when within 2 minutes of expiry. A dead/revoked token clears the cookie.
+async function restoredSession() {
+  if (_restored && _restored.exp - Date.now() > 120000) return _restored;
+  try {
+    const rt = _restored ? _restored.refreshToken
+      : (await (await fetch("/api/fb-session")).json()).refreshToken;
+    if (!rt) return null;
+    _restored = await mintFromRefreshToken(rt);
+    return _restored;
+  } catch (e) {
+    _restored = null;
+    try { await fetch("/api/fb-session", { method: "DELETE" }); } catch (e2) { /* ignore */ }
+    return null;
+  }
+}
+
 // Pop the Google consent, return { idToken, user }. idToken is the Firebase
 // JWT (verified server-side / by Neon's JWKS at cutover). Throws with a clean
 // message on cancel / provider-not-enabled.
@@ -48,22 +93,30 @@ export async function signInWithGoogle() {
   provider.setCustomParameters({ prompt: "select_account" });
   const res = await mod.signInWithPopup(auth, provider);
   const idToken = await res.user.getIdToken();
+  await publishSession(res.user);
   return { idToken, user: { uid: res.user.uid, email: res.user.email, name: res.user.displayName } };
 }
 
 // Current signed-in REAL Firebase user (or null). Anonymous guest sessions are
 // NOT a user — admin/session checks must never treat them as signed in.
+// Falls back to the shared-cookie session so an apex sign-in is visible on the
+// owner's subdomain (and vice versa).
 export async function currentFirebaseUser() {
   const { auth } = await getAuth();
   await new Promise((r) => { const un = auth.onAuthStateChanged(() => { un(); r(); }); });
   const u = auth.currentUser;
-  if (!u || u.isAnonymous) return null;
+  if (!u || u.isAnonymous) {
+    const s = await restoredSession();
+    return s ? { uid: s.uid, email: s.email, name: null, emailVerified: s.emailVerified, idToken: s.idToken } : null;
+  }
   return { uid: u.uid, email: u.email, name: u.displayName, emailVerified: u.emailVerified, idToken: await u.getIdToken() };
 }
 
 export async function firebaseSignOut() {
   const { auth, mod } = await getAuth();
   try { await mod.signOut(auth); } catch (e) { /* ignore */ }
+  _restored = null;
+  try { await fetch("/api/fb-session", { method: "DELETE" }); } catch (e) { /* sign-out is local-first */ }
 }
 
 // ---- Post-cutover primitives (Neon Data API trusts Firebase's JWKS) ---------
@@ -75,12 +128,14 @@ export async function firebaseSignUpEmail(email, password) {
   // Send the verification link (non-blocking — Turnstile already gates bots;
   // Google users arrive pre-verified).
   try { await mod.sendEmailVerification(res.user); } catch (e) { /* ignore */ }
+  await publishSession(res.user);
   return { uid: res.user.uid, email: res.user.email, idToken: await res.user.getIdToken() };
 }
 
 export async function firebaseSignInEmail(email, password) {
   const { auth, mod } = await getAuth();
   const res = await mod.signInWithEmailAndPassword(auth, email, password);
+  await publishSession(res.user);
   return { uid: res.user.uid, email: res.user.email, idToken: await res.user.getIdToken() };
 }
 
