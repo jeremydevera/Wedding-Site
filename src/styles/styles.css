@@ -1050,6 +1050,16 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 .signin--split .signin__btn { height: 50px; border-radius: 10px; letter-spacing: .04em; }
 .signin--split:not(.signin--themed) .signin__btn { background: #e97c5d; border-color: #e97c5d; color: #fff; }
 .signin--split:not(.signin--themed) .signin__btn:hover { background: #e26a49; }
+/* Safari/Chrome tint autofilled fields (pale yellow/blue) — reads as the email
+   being "highlighted" on load. Paint autofill back to a plain white field. */
+.signin__form input:-webkit-autofill,
+.signin__form input:-webkit-autofill:hover,
+.signin__form input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #fff inset;
+  -webkit-text-fill-color: var(--sg-text, #1b1b1b);
+  caret-color: var(--sg-text, #1b1b1b);
+  transition: background-color 999999s ease-out 0s; /* Chrome: defer its bg swap forever */
+}
 .signin__reg { text-align: center; font-size: 14px; color: var(--sg-sub); margin: 20px 0 0; }
 .signin__reg a { color: #e26a49; font-weight: 700; text-decoration: underline; }
 .signin--themed .signin__reg a { color: var(--accent); }

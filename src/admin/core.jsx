@@ -127,6 +127,16 @@ export function AdminLogin({ onAuthed }) {
     finally { setBusy(false); }
   }
   const [showPw, setShowPw] = useState(false);
+  // iOS Safari sometimes focuses/highlights the first field on load (autofill
+  // heuristics — no autofocus exists in our code). Never let the keyboard pop
+  // uninvited: blur any input that grabbed focus during mount.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const a = document.activeElement;
+      if (a && a.matches && a.matches(".signin__form input")) a.blur();
+    }, 120);
+    return () => clearTimeout(t);
+  }, []);
   // Arrived from a client site's Google button (popups can't open there —
   // Firebase authorizes exact domains only). Nudge them to tap Google again.
   const gFrom = !isClient ? new URLSearchParams(window.location.search).get("gfrom") : null;
