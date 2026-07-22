@@ -172,6 +172,20 @@ export async function signIn(email, password) {
   return p;
 }
 
+// "Forgot your password?" from the login screen. Supabase-side accounts
+// (superadmin + existing Supabase owners) get a reset link. Enumeration-safe:
+// Supabase always resolves without revealing whether the email exists, and we
+// never surface an error to the caller — the UI shows the same neutral message
+// regardless. Neon self-serve owners set their password via the emailed link
+// from approval, so this covers the accounts that have a password to reset.
+export async function requestPasswordReset(email) {
+  const addr = (email || "").trim();
+  if (!addr) return;
+  try {
+    await supabase.auth.resetPasswordForEmail(addr, { redirectTo: `${window.location.origin}/admin` });
+  } catch (e) { /* enumeration-safe: never leak success/failure */ }
+}
+
 export async function signOut() {
   if (Store.get().neonMode) {
     try { await neonAuth.signOut(); } catch (e) { /* ignore */ }

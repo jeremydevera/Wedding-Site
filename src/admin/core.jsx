@@ -6,7 +6,8 @@ import { DISABLED_MODULES, moduleEnabled } from "@/lib/roles.js";
 import { useStore } from "@/lib/store.jsx";
 import { reconcileGuests } from "@/lib/guests.js";
 import { headsOf } from "@/lib/rsvp.js";
-import { signIn } from "@/lib/auth.js";
+import { signIn, requestPasswordReset } from "@/lib/auth.js";
+import { signInWithGoogle } from "@/lib/firebase.js";
 import { Button, Field, Icon, Input, Monogram, Placeholder, toast } from "@/ui/components.jsx";
 // Lazy: amCharts is heavy — split into its own chunk, loaded only when the
 // Dashboard tab renders.
@@ -127,54 +128,103 @@ export function AdminLogin({ onAuthed }) {
     finally { setBusy(false); }
   }
   const [showPw, setShowPw] = useState(false);
+  const [remember, setRemember] = useState(false);
+  const [gBusy, setGBusy] = useState(false);
+  // "Remember me" — prefill the last email on this device (email only, never pw)
+  useEffect(() => {
+    try { const e = localStorage.getItem("celebrately_login_email"); if (e) { setEmail(e); setRemember(true); } } catch (_) {}
+  }, []);
+  useEffect(() => {
+    try { remember && email ? localStorage.setItem("celebrately_login_email", email) : (!remember && localStorage.removeItem("celebrately_login_email")); } catch (_) {}
+  }, [remember, email]);
+  const brandWord = isClient
+    ? <>{settings.partnerA}{settings.partnerB ? <> <span className="amp">&amp;</span> {settings.partnerB}</> : null}</>
+    : "Celebrately.";
+  const forgot = async (e) => {
+    e.preventDefault();
+    if (!email.trim()) { toast("Enter your email above first, then tap Forgot your password.", "err"); return; }
+    await requestPasswordReset(email);
+    toast("If that email has an account, we've sent a password reset link. Check your inbox (and spam).", "success");
+  };
+  const googleLogin = async () => {
+    setGBusy(true);
+    try {
+      const { user } = await signInWithGoogle();
+      toast(`Signed in with Google as ${user.email} ✓ — Google login is finishing rollout. For now, sign in with your email & password.`, "success");
+    } catch (e2) {
+      const m = e2?.message || "";
+      toast(/operation-not-allowed/.test(m) ? "Enable Google in the Firebase console first." : /popup-closed|cancelled/.test(m) ? "Google sign-in cancelled." : "Google sign-in failed: " + m, "err");
+    } finally { setGBusy(false); }
+  };
   return (
-    <div className={"signin" + (isClient ? " signin--themed" : "")}>
-      <div className="signin__pane">
-      <header className="signin__top">
-        {isClient ? (
+    <div className={"signin signin--split" + (isClient ? " signin--themed" : "")}>
+      {/* LEFT — brand panel (BelajarYuk-style split). Client sites brand with
+          the couple's names + their theme accent; the apex hub brands Celebrately. */}
+      <aside className="signin__aside">
+        <div className="signin__asidetop">
           <div className="signin__brand">
-            <Monogram a={settings.partnerA} b={settings.partnerB} size={34} />
-            <span className="signin__word">{settings.partnerA}{settings.partnerB ? <> <span className="amp">&amp;</span> {settings.partnerB}</> : null}</span>
+            {isClient ? <Monogram a={settings.partnerA} b={settings.partnerB} size={30} /> : <Logo size={28} />}
+            <span className="signin__word">{brandWord}</span>
           </div>
-        ) : (
-          <div className="signin__brand"><Logo size={30} /><span className="signin__word">Celebrately</span></div>
-        )}
+          <p className="signin__tagline">{isClient ? "Everything for your big day, in one place." : "Celebrate life's biggest moments, beautifully."}</p>
+        </div>
+        <div className="signin__art" aria-hidden="true">
+          <span className="signin__artcircle" />
+          <span className="signin__phone"><img src="/assets/login-phone.jpg" alt="" loading="lazy" /></span>
+        </div>
+      </aside>
+
+      {/* RIGHT — form */}
+      <div className="signin__pane">
         {isClient && <button className="signin__back" onClick={() => go("home")}>← Back to website</button>}
-      </header>
-      <div className="signin__center">
-        <form className="signin__form" onSubmit={submit} noValidate>
-          <h1 className="signin__title">Welcome back</h1>
-          <p className="signin__sub">Sign in to your account</p>
+        <div className="signin__center">
+          <form className="signin__form" onSubmit={submit} noValidate>
+            <h1 className="signin__title">Log in to {isClient ? "your site." : "Celebrately."}</h1>
+            <p className="signin__sub">Welcome back! Sign in with the details you used during registration.</p>
 
-          <div className="signin__field">
-            <label htmlFor="a-email">Email</label>
-            <input id="a-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-          </div>
+            {!isClient && (
+              <>
+                <div className="signin__social">
+                  <button type="button" className="signin__socialbtn" onClick={googleLogin} disabled={gBusy}>
+                    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.7 1.22 9.2 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                    {gBusy ? "Opening Google…" : "Log in with Google"}
+                  </button>
+                </div>
+                <div className="signin__or"><span>or</span></div>
+              </>
+            )}
 
-          <div className="signin__field">
-            <label htmlFor="a-pw">Password</label>
-            <div className="signin__pwwrap">
-              <input id="a-pw" type={showPw ? "text" : "password"} autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="••••••••" />
-              <button type="button" className="signin__eye" onClick={() => setShowPw((v) => !v)} aria-label={showPw ? "Hide password" : "Show password"}>{(showPw ? Icon.eyeOff : Icon.eye)({})}</button>
+            <div className="signin__field signin__field--icon">
+              <label htmlFor="a-email">Email</label>
+              <span className="signin__ficon" aria-hidden="true">{Icon.mail({})}</span>
+              <input id="a-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
             </div>
-            {err && <div className="signin__err">{err}</div>}
-          </div>
 
-          <button type="submit" className="signin__btn" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
-          {/* New sites: self-serve /register (Neon funnel). /apply stays live
-              as the manual-request path for shared links. */}
-          {!isClient && (
-            <>
-              <p style={{ textAlign: "center", fontSize: 13, color: "var(--sg-sub)", marginTop: 18 }}>
-                New here? <a href="/register" style={{ color: "#1E5BD6", fontWeight: 600, textDecoration: "none" }}>Sign up →</a>
-              </p>
-              <p style={{ textAlign: "center", fontSize: 13, color: "var(--sg-sub)", marginTop: 6 }}>
-                Want a look first? <a href="https://demo.celebrately.us/" style={{ color: "#1E5BD6", fontWeight: 600, textDecoration: "none" }}>View the demo site →</a>
-              </p>
-            </>
-          )}
-        </form>
-      </div>
+            <div className="signin__field signin__field--icon">
+              <label htmlFor="a-pw">Password</label>
+              <span className="signin__ficon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+              <div className="signin__pwwrap">
+                <input id="a-pw" type={showPw ? "text" : "password"} autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="••••••••" />
+                <button type="button" className="signin__eye" onClick={() => setShowPw((v) => !v)} aria-label={showPw ? "Hide password" : "Show password"}>{(showPw ? Icon.eyeOff : Icon.eye)({})}</button>
+              </div>
+            </div>
+
+            <div className="signin__meta">
+              <label className="signin__remember"><input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} /> Remember me</label>
+              <a href="#" className="signin__forgot" onClick={forgot}>Forgot your password?</a>
+            </div>
+
+            {err && <div className="signin__err">{err}</div>}
+
+            <button type="submit" className="signin__btn" disabled={busy}>{busy ? "Signing in…" : "LOGIN"}</button>
+
+            {!isClient ? (
+              <p className="signin__reg">Don't have an account? <a href="/register">Register</a></p>
+            ) : (
+              <p className="signin__reg">Want a look first? <a href="https://demo.celebrately.us/">View the demo site →</a></p>
+            )}
+          </form>
+        </div>
       </div>
     </div>
   );
