@@ -129,29 +129,6 @@ export function AdminLogin({ onAuthed }) {
   const [showPw, setShowPw] = useState(false);
   const [remember, setRemember] = useState(false);
   const [gBusy, setGBusy] = useState(false);
-  // Left-panel product showcase (app-promo style): the 3D phone cross-fades
-  // through real feature screens, each with a caption that transitions in sync.
-  // Apex only; client sites keep a single static device.
-  const FEATURES = [
-    { src: "/assets/login-phone.jpg", label: "Your invitation" },
-    { src: "/assets/login-shot-2.jpg", label: "RSVP in one tap" },
-    { src: "/assets/login-shot-dash.jpg", label: "Live dashboard" },
-    { src: "/assets/login-shot-4.jpg", label: "Your entourage" },
-    { src: "/assets/login-shot-3.jpg", label: "The day's schedule" },
-  ];
-  const [shot, setShot] = useState(0);
-  const [flipping, setFlipping] = useState(false); // "in transition" (screen + caption fade)
-  useEffect(() => {
-    if (isClient) return; // only the Celebrately marketing panel cycles features
-    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) return;
-    let swap;
-    const id = setInterval(() => {
-      setFlipping(true);                                  // fade screen + caption out
-      swap = setTimeout(() => { setShot((s) => (s + 1) % FEATURES.length); setFlipping(false); }, 340); // swap + fade the new one in
-    }, 3400);
-    return () => { clearInterval(id); clearTimeout(swap); };
-  }, [isClient]); // eslint-disable-line react-hooks/exhaustive-deps
   // "Remember me" — prefill the last email on this device (email only, never pw)
   useEffect(() => {
     try { const e = localStorage.getItem("celebrately_login_email"); if (e) { setEmail(e); setRemember(true); } } catch (_) {}
@@ -196,26 +173,14 @@ export function AdminLogin({ onAuthed }) {
               <span className="signin__device"><img src="/assets/login-phone.jpg" alt="" loading="lazy" /></span>
             </span>
           ) : (
-            // Diagonal cascade of 3 devices (app-promo style). Front rotates to
-            // swap the active feature; the two behind preview the next screens.
-            [0, 1, 2].map((depth) => {
-              const f = FEATURES[(shot + depth) % FEATURES.length];
-              return (
-                <span key={depth} className={`signin__phone signin__phone--${depth + 1}`}>
-                  <span className={"signin__device" + (depth === 0 && flipping ? " is-turn" : "")}>
-                    <img src={f.src} alt="" loading="lazy" />
-                  </span>
-                </span>
-              );
-            })
+            // Apex: the app-promo video plays as a centered card on the gradient
+            // (autoplay/loop/muted so browsers allow it; no crop — object-fit
+            // contain keeps the whole 16:9 frame).
+            <video className="signin__promo" autoPlay loop muted playsInline preload="auto" poster="/assets/login-phone.jpg">
+              <source src="/promo/celebrately-promo.mp4" type="video/mp4" />
+            </video>
           )}
         </div>
-        {!isClient && (
-          <div className="signin__feat">
-            <span className="signin__feateyebrow">Featuring</span>
-            <span className={"signin__featlabel" + (flipping ? " is-out" : "")}>{FEATURES[shot].label}</span>
-          </div>
-        )}
       </aside>
 
       {/* RIGHT — form */}
