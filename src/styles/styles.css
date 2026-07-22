@@ -979,6 +979,13 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .signin__phone { animation: none; transform: rotateY(-16deg) rotateX(5deg); } .signin__phone img { transition: none; } }
 
+/* per-feature caption — transitions in sync with the phone screen swap */
+.signin__feat { position: relative; z-index: 1; margin-top: 22px; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.signin__feateyebrow { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: rgba(255, 255, 255, .5); }
+.signin__featlabel { font-size: 24px; font-weight: 800; letter-spacing: -.01em; color: #fff; line-height: 1.1; transition: opacity .28s ease, transform .28s ease; }
+.signin__featlabel.is-out { opacity: 0; transform: translateY(10px); }
+@media (prefers-reduced-motion: reduce) { .signin__featlabel { transition: none; } .signin__featlabel.is-out { opacity: 1; transform: none; } }
+
 /* right pane: give the form room + a top-right back link on client sites */
 .signin--split .signin__pane { position: relative; }
 .signin--split .signin__back { position: absolute; top: 22px; right: 26px; z-index: 2; }
@@ -1025,6 +1032,7 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
   .signin--split { grid-template-columns: 1fr; }
   .signin--split .signin__aside { padding: 26px 24px; }
   .signin--split .signin__art { display: none; }
+  .signin__feat { display: none; } /* phone is hidden on mobile — no orphaned headline */
   .signin--split .signin__tagline { max-width: none; }
   .signin--split .signin__center { padding: 28px 22px 48px; }
   .signin--split .signin__form { max-width: 460px; }
