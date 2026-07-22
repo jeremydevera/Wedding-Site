@@ -40,6 +40,27 @@ function shard() {
 // control plane so the flag can never chicken-and-egg itself).
 export const NEON_FLAG_KEY = "use_neon_db";
 
+// ---- Firebase identity mode (post-cutover) ----------------------------------
+// app_config `use_firebase_auth` {enabled}: when ON, the Neon Data API trusts
+// FIREBASE's JWKS instead of Neon Auth — every token below (guest + signed-in)
+// comes from Firebase, and neonAuth.* delegates to Firebase (Google + email/pw).
+// Set at boot from the control plane via setFbAuthMode(). Flag-gated so the
+// flip is a config write + Data API JWKS change, and rollback is the reverse.
+import { firebaseAnonToken, firebaseUserToken, firebaseSignUpEmail, firebaseSignInEmail, firebaseSignOut, currentFirebaseUser, signInWithGoogle } from "@/lib/firebase.js";
+export const FB_AUTH_FLAG_KEY = "use_firebase_auth";
+let fbMode = false;
+export function setFbAuthMode(on) { fbMode = on === true; }
+export function fbAuthMode() { return fbMode; }
+// Friendly messages for Firebase error codes (auth/xyz-abc).
+function fbErr(e) {
+  const c = String(e?.code || e?.message || "");
+  if (/email-already-in-use/.test(c)) return new Error("That email already has an account — sign in instead.");
+  if (/invalid-credential|wrong-password|user-not-found/.test(c)) return new Error("Wrong email or password.");
+  if (/too-many-requests/.test(c)) return new Error("Too many attempts — wait a minute and try again.");
+  if (/network-request-failed/.test(c)) return new Error("Network problem — check your connection and retry.");
+  return e instanceof Error ? e : new Error(c || "auth error");
+}
+
 let anonTok = null; // { token, exp(ms) }
 function jwtExpMs(token) {
   try { return (JSON.parse(atob(token.split(".")[1])).exp || 0) * 1000; } catch { return 0; }
@@ -47,6 +68,7 @@ function jwtExpMs(token) {
 // Anonymous JWT for guests — fetched once, cached until ~1 min before expiry
 // (Neon anon tokens live ~15 min).
 async function anonToken() {
+  if (fbMode) return firebaseAnonToken(); // Firebase anonymous session (SDK caches/refreshes)
   if (anonTok && Date.now() < anonTok.exp - 60_000) return anonTok.token;
   const res = await fetch(`${shard().authUrl}/token/anonymous`);
   if (!res.ok) throw new Error(`neon anon token failed (${res.status})`);
@@ -125,21 +147,44 @@ async function authFetch(path, { method = "GET", body, headers = {} } = {}) {
 }
 export const neonAuth = {
   // turnstileToken: Cloudflare Turnstile response — verified SERVER-side by the
-  // /api/auth proxy (signup is refused without a valid token).
-  signUp: (email, password, turnstileToken) => authFetch("/sign-up/email", { method: "POST", body: { email, password, name: email.split("@")[0] }, headers: turnstileToken ? { "x-turnstile-token": turnstileToken } : {} }),
-  signIn: (email, password) => authFetch("/sign-in/email", { method: "POST", body: { email, password } }),
-  signOut: () => { userTok = null; return authFetch("/sign-out", { method: "POST", body: {} }).catch(() => null); },
-  // Email-verification OTP (Neon Auth shared sender supports OTP only). Verify
-  // with auto_sign_in_after_verification=true returns a session via the proxied
-  // set-auth-jwt header, so a successful verify leaves the user signed in.
-  sendVerifyOtp: (email) => authFetch("/email-otp/send-verification-otp", { method: "POST", body: { email, type: "email-verification" } }),
-  verifyEmailOtp: (email, otp) => authFetch("/email-otp/verify-email", { method: "POST", body: { email, otp } }),
+  // /api/auth proxy (Neon path). Firebase path: signup goes to Google directly
+  // (their own abuse protection + our register_site hourly cap still apply);
+  // the widget token is still required by the UI.
+  signUp: async (email, password, turnstileToken) => {
+    if (fbMode) { try { const r = await firebaseSignUpEmail(email, password); return { token: r.idToken, user: { id: r.uid, email: r.email } }; } catch (e) { throw fbErr(e); } }
+    return authFetch("/sign-up/email", { method: "POST", body: { email, password, name: email.split("@")[0] }, headers: turnstileToken ? { "x-turnstile-token": turnstileToken } : {} });
+  },
+  signIn: async (email, password) => {
+    if (fbMode) { try { const r = await firebaseSignInEmail(email, password); return { token: r.idToken, user: { id: r.uid, email: r.email } }; } catch (e) { throw fbErr(e); } }
+    return authFetch("/sign-in/email", { method: "POST", body: { email, password } });
+  },
+  // Google — Firebase mode only (Neon Auth's OAuth is the Safari-broken path).
+  signInGoogle: async () => {
+    if (!fbMode) throw new Error("Google sign-in isn't available yet.");
+    try { const r = await signInWithGoogle(); return { token: r.idToken, user: { id: r.user.uid, email: r.user.email } }; } catch (e) { throw fbErr(e); }
+  },
+  signOut: () => {
+    if (fbMode) return firebaseSignOut();
+    userTok = null; return authFetch("/sign-out", { method: "POST", body: {} }).catch(() => null);
+  },
+  // Email-verification. Neon path: OTP via shared sender. Firebase path:
+  // verification is a LINK email sent at signup (non-blocking) — resend only.
+  sendVerifyOtp: async (email) => {
+    if (fbMode) return null; // Firebase: verification LINK already emailed at signup
+    return authFetch("/email-otp/send-verification-otp", { method: "POST", body: { email, type: "email-verification" } });
+  },
+  verifyEmailOtp: (email, otp) => {
+    if (fbMode) return Promise.reject(new Error("Check your inbox for the verification LINK instead."));
+    return authFetch("/email-otp/verify-email", { method: "POST", body: { email, otp } });
+  },
   // null when signed out; { user } when signed in (also refreshes the JWT)
   session: async () => {
+    if (fbMode) { const u = await currentFirebaseUser(); return u ? { user: { id: u.uid, email: u.email, emailVerified: u.emailVerified } } : null; }
     try { const d = await authFetch("/get-session"); return d && d.user ? d : null; } catch { return null; }
   },
 };
 async function userToken() {
+  if (fbMode) { const t = await firebaseUserToken(); if (!t) throw new Error("not signed in"); return t; }
   if (userTok && Date.now() < userTok.exp - 60_000) return userTok.token;
   const s = await neonAuth.session(); // refreshes userTok via header
   if (!s || !userTok) throw new Error("not signed in");

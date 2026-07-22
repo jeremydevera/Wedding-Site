@@ -1,5 +1,5 @@
 import React from "react";
-import { neonAuth, authedRpc, neonRpc, neonAuthedSelect, NEON_FLAG_KEY, NEON_SHARDS_KEY, setNeonRegistry, resolveShardId, setActiveShard } from "@/lib/neon.js";
+import { neonAuth, authedRpc, neonRpc, neonAuthedSelect, NEON_FLAG_KEY, NEON_SHARDS_KEY, FB_AUTH_FLAG_KEY, setFbAuthMode, fbAuthMode, setNeonRegistry, resolveShardId, setActiveShard } from "@/lib/neon.js";
 import { getAppConfig, checkRequestSubdomainFree } from "@/lib/api.js";
 import { ApplyWizard } from "@/admin/apply.jsx";
 import { Logo } from "@/admin/core.jsx";
@@ -40,11 +40,13 @@ export function RegisterPage() {
     // Flag + shard registry together — new registrations land on the registry's
     // DEFAULT shard (bySubdomain can't match a not-yet-registered name), so
     // adding shard s2 later is a config write, no redeploy (was s1-hardcoded).
-    const [flag, shardCfg] = await Promise.all([
+    const [flag, shardCfg, fbFlag] = await Promise.all([
       getAppConfig(NEON_FLAG_KEY).catch(() => null),
       getAppConfig(NEON_SHARDS_KEY).catch(() => null),
+      getAppConfig(FB_AUTH_FLAG_KEY).catch(() => null),
     ]);
     if (flag?.enabled !== true) { setPhase("off"); return; }
+    setFbAuthMode(fbFlag?.enabled === true);
     setNeonRegistry(shardCfg);
     setActiveShard(resolveShardId(""));
     const s = await neonAuth.session();
@@ -344,6 +346,13 @@ function AuthCard({ onDone }) {
             onClick={async () => {
               setGBusy(true);
               try {
+                if (fbAuthMode()) {
+                  // Real flow: Google → Firebase session → registration state →
+                  // wizard/done, exactly like an email sign-in.
+                  await neonAuth.signInGoogle();
+                  await onDone();
+                  return;
+                }
                 const { user } = await signInWithGoogle();
                 toast(`Signed in with Google as ${user.email} ✓ — Google account creation is finishing rollout. For today, create your site with email & password below.`, "success");
               } catch (e2) {

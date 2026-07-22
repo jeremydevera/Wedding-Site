@@ -51,16 +51,50 @@ export async function signInWithGoogle() {
   return { idToken, user: { uid: res.user.uid, email: res.user.email, name: res.user.displayName } };
 }
 
-// Current signed-in Firebase user (or null). Fresh ID token included.
+// Current signed-in REAL Firebase user (or null). Anonymous guest sessions are
+// NOT a user — admin/session checks must never treat them as signed in.
 export async function currentFirebaseUser() {
   const { auth } = await getAuth();
   await new Promise((r) => { const un = auth.onAuthStateChanged(() => { un(); r(); }); });
   const u = auth.currentUser;
-  if (!u) return null;
-  return { uid: u.uid, email: u.email, name: u.displayName, idToken: await u.getIdToken() };
+  if (!u || u.isAnonymous) return null;
+  return { uid: u.uid, email: u.email, name: u.displayName, emailVerified: u.emailVerified, idToken: await u.getIdToken() };
 }
 
 export async function firebaseSignOut() {
   const { auth, mod } = await getAuth();
   try { await mod.signOut(auth); } catch (e) { /* ignore */ }
+}
+
+// ---- Post-cutover primitives (Neon Data API trusts Firebase's JWKS) ---------
+// Email/password + anonymous session helpers mirroring what Neon Auth provided.
+
+export async function firebaseSignUpEmail(email, password) {
+  const { auth, mod } = await getAuth();
+  const res = await mod.createUserWithEmailAndPassword(auth, email, password);
+  // Send the verification link (non-blocking — Turnstile already gates bots;
+  // Google users arrive pre-verified).
+  try { await mod.sendEmailVerification(res.user); } catch (e) { /* ignore */ }
+  return { uid: res.user.uid, email: res.user.email, idToken: await res.user.getIdToken() };
+}
+
+export async function firebaseSignInEmail(email, password) {
+  const { auth, mod } = await getAuth();
+  const res = await mod.signInWithEmailAndPassword(auth, email, password);
+  return { uid: res.user.uid, email: res.user.email, idToken: await res.user.getIdToken() };
+}
+
+// Guest token: Firebase ANONYMOUS session — signature-valid for the Data API's
+// JWKS check, maps to the `anonymous` role (no role claim), auth.user_id() is a
+// uid that matches no profile. Requires the Anonymous provider enabled.
+export async function firebaseAnonToken() {
+  const { auth, mod } = await getAuth();
+  if (!auth.currentUser) await mod.signInAnonymously(auth);
+  return auth.currentUser.getIdToken();
+}
+
+// Fresh ID token for the signed-in (non-anonymous) user, or null.
+export async function firebaseUserToken() {
+  const u = await currentFirebaseUser();
+  return u && u.idToken ? u.idToken : null;
 }

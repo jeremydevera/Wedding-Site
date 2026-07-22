@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase.js";
-import { neonSelect, neonInsert, neonRpc, neonAuthedSelect, neonAuthedInsert, neonAuthedUpdate, neonAuthedDelete, NEON_FLAG_KEY, NEON_SHARDS_KEY, setNeonRegistry, resolveShardId, setActiveShard } from "@/lib/neon.js";
+import { neonSelect, neonInsert, neonRpc, neonAuthedSelect, neonAuthedInsert, neonAuthedUpdate, neonAuthedDelete, NEON_FLAG_KEY, NEON_SHARDS_KEY, FB_AUTH_FLAG_KEY, setFbAuthMode, setNeonRegistry, resolveShardId, setActiveShard } from "@/lib/neon.js";
 import { Store } from "@/lib/store.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { clientToState, stateToClientRow, rowToGuestbook, rowToRsvp, rowToQuizSub, rsvpToRow, guestbookToRow, quizToRow, guestToRow, rowToGuest, ticketToRow } from "@/lib/mappers.js";
@@ -29,10 +29,11 @@ export async function loadClientData() {
     try {
       // Flag + shard registry in parallel (both live in Supabase app_config).
       // The registry lets future shards (s2…) go live via config, no redeploy.
-      const [flag, shardCfg] = await Promise.all([
-        getAppConfig(NEON_FLAG_KEY), getAppConfig(NEON_SHARDS_KEY).catch(() => null),
+      const [flag, shardCfg, fbFlag] = await Promise.all([
+        getAppConfig(NEON_FLAG_KEY), getAppConfig(NEON_SHARDS_KEY).catch(() => null), getAppConfig(FB_AUTH_FLAG_KEY).catch(() => null),
       ]);
       if (flag?.enabled === true) {
+        setFbAuthMode(fbFlag?.enabled === true);
         setNeonRegistry(shardCfg);
         setActiveShard(resolveShardId(subdomain));
         const rows = await neonSelect("clients", `select=${NEON_CLIENT_COLS}&subdomain=eq.${encodeURIComponent(subdomain)}&is_active=eq.true&limit=1`);
@@ -55,10 +56,11 @@ export async function loadClientData() {
     // clients ALWAYS resolve above; this branch cannot affect them.
     let nc = null;
     try {
-      const [flag, shardCfg] = await Promise.all([
-        getAppConfig(NEON_FLAG_KEY), getAppConfig(NEON_SHARDS_KEY).catch(() => null),
+      const [flag, shardCfg, fbFlag] = await Promise.all([
+        getAppConfig(NEON_FLAG_KEY), getAppConfig(NEON_SHARDS_KEY).catch(() => null), getAppConfig(FB_AUTH_FLAG_KEY).catch(() => null),
       ]);
       if (flag?.enabled === true) {
+        setFbAuthMode(fbFlag?.enabled === true);
         setNeonRegistry(shardCfg);
         setActiveShard(resolveShardId(subdomain));
         const rows = await neonSelect("clients", `select=${NEON_CLIENT_COLS}&subdomain=eq.${encodeURIComponent(subdomain)}&is_active=eq.true&limit=1`);
