@@ -1069,7 +1069,9 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
   .signin__aside--promo .signin__tagline { display: block !important; }
   .signin__promo { display: none !important; }
   .signin--split .signin__tagline { max-width: none; }
-  .signin--split .signin__center { padding: 28px 22px 48px; }
+  /* clear iOS Safari's bottom toolbar (overlaps position:fixed content): pad the
+     scroll area so LOGIN + Register sit above it, not tucked underneath */
+  .signin--split .signin__center { padding: 28px 22px calc(104px + env(safe-area-inset-bottom, 0px)); justify-content: flex-start; }
   .signin--split .signin__form { max-width: 460px; }
   .signin--split .signin__title { font-size: 26px; }
 }
