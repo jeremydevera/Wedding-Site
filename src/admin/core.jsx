@@ -191,12 +191,24 @@ export function AdminLogin({ onAuthed }) {
           <p className="signin__tagline">{isClient ? "Everything for your big day, in one place." : "Celebrate life's biggest moments, beautifully."}</p>
         </div>
         <div className="signin__art" aria-hidden="true">
-          <span className="signin__artcircle" />
-          <span className="signin__phone">
-            <span className={"signin__device" + (flipping ? " is-turn" : "")}>
-              <img src={isClient ? "/assets/login-phone.jpg" : FEATURES[shot].src} alt="" loading="lazy" />
+          {isClient ? (
+            <span className="signin__phone signin__phone--solo">
+              <span className="signin__device"><img src="/assets/login-phone.jpg" alt="" loading="lazy" /></span>
             </span>
-          </span>
+          ) : (
+            // Diagonal cascade of 3 devices (app-promo style). Front rotates to
+            // swap the active feature; the two behind preview the next screens.
+            [0, 1, 2].map((depth) => {
+              const f = FEATURES[(shot + depth) % FEATURES.length];
+              return (
+                <span key={depth} className={`signin__phone signin__phone--${depth + 1}`}>
+                  <span className={"signin__device" + (depth === 0 && flipping ? " is-turn" : "")}>
+                    <img src={f.src} alt="" loading="lazy" />
+                  </span>
+                </span>
+              );
+            })
+          )}
         </div>
         {!isClient && (
           <div className="signin__feat">

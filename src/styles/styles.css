@@ -961,14 +961,24 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 }
 .signin--split .signin__aside .signin__word { color: #fff; }
 .signin--split .signin__tagline { margin: 14px 0 0; font-size: 15px; line-height: 1.5; color: rgba(255,255,255,.72); max-width: 300px; }
-/* illustration: device on a coral disc, like the reference */
-.signin__art { position: relative; flex: 1; display: grid; place-items: center; min-height: 260px; margin-top: 24px; perspective: 1500px; perspective-origin: 62% 42%; }
-.signin__artcircle { position: absolute; width: min(58%, 300px); aspect-ratio: 1; border-radius: 50%; background: #e97c5d; }
-/* 3D device: rests tilted in space (rotateY/X), floats + yaws gently, has real
-   thickness (::before back-slab behind the screen) and a glass glare (::after).
-   Screens cross-fade on the angled face — no flat 2D flip. */
-/* outer = gentle float + yaw (never conflicts with the swap transform below) */
-.signin__phone { position: relative; width: min(46%, 210px); transform-style: preserve-3d; animation: phone3d 8s ease-in-out infinite; will-change: transform; }
+/* app-promo showcase: a diagonal cascade of angled 3D devices on a soft glow.
+   Front device rotates edge-on to swap the active feature; the two behind
+   preview upcoming screens. */
+.signin__art { position: relative; flex: 1; min-height: 340px; margin-top: 8px; perspective: 1700px; perspective-origin: 52% 42%; }
+.signin__artcircle { position: absolute; left: 46%; top: 46%; width: 92%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, rgba(233,124,93,.55) 0%, rgba(233,124,93,.12) 45%, rgba(233,124,93,0) 70%); filter: blur(4px); }
+
+/* cascade members — each angled the same, staggered up-and-right, floating on
+   slightly offset phases so the cluster feels alive */
+.signin__phone { position: absolute; width: 42%; max-width: 168px; transform-style: preserve-3d; will-change: transform; }
+.signin__phone--1 { left: 2%;  top: 32%; z-index: 3; animation: casc 8s ease-in-out infinite; }
+.signin__phone--2 { left: 30%; top: 16%; z-index: 2; animation: casc 8s ease-in-out infinite -1.2s; opacity: .97; }
+.signin__phone--3 { left: 58%; top: 0%;  z-index: 1; animation: casc 8s ease-in-out infinite -2.4s; opacity: .93; }
+.signin__phone--solo { position: relative; width: min(46%, 210px); margin: 24px auto 0; animation: phone3d 8s ease-in-out infinite; }
+@keyframes casc {
+  0%   { transform: rotateY(-27deg) rotateZ(-7deg) translateY(0); }
+  50%  { transform: rotateY(-21deg) rotateZ(-6deg) translateY(-16px); }
+  100% { transform: rotateY(-27deg) rotateZ(-7deg) translateY(0); }
+}
 /* inner device = the frame + depth + glare; ROTATES edge-on to swap screens
    (the reference video's motion). Nested so the outer float and this rotate
    compose instead of fighting over `transform`. */
@@ -982,7 +992,13 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
   50%  { transform: rotateY(-11deg) rotateX(2deg) translateY(-18px); }
   100% { transform: rotateY(-23deg) rotateX(6deg) translateY(0); }
 }
-@media (prefers-reduced-motion: reduce) { .signin__phone { animation: none; } .signin__device { transition: none; transform: rotateY(-16deg) rotateX(5deg); } .signin__device.is-turn { transform: rotateY(-16deg) rotateX(5deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .signin__phone { animation: none; }
+  .signin__phone--1, .signin__phone--2, .signin__phone--3 { transform: rotateY(-27deg) rotateZ(-7deg); }
+  .signin__phone--solo { transform: rotateY(-16deg) rotateX(5deg); }
+  .signin__device { transition: none; }
+  .signin__device.is-turn { transform: none; }
+}
 
 /* per-feature caption — transitions in sync with the phone screen swap */
 .signin__feat { position: relative; z-index: 1; margin-top: 22px; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
