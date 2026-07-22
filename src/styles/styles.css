@@ -962,10 +962,12 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 .signin--split .signin__aside .signin__word { color: #fff; }
 .signin--split .signin__tagline { margin: 14px 0 0; font-size: 15px; line-height: 1.5; color: rgba(255,255,255,.72); max-width: 300px; }
 /* illustration: device on a coral disc, like the reference */
-.signin__art { position: relative; flex: 1; display: grid; place-items: center; min-height: 240px; margin-top: 24px; }
+.signin__art { position: relative; flex: 1; display: grid; place-items: center; min-height: 240px; margin-top: 24px; perspective: 1200px; }
 .signin__artcircle { position: absolute; width: min(58%, 300px); aspect-ratio: 1; border-radius: 50%; background: #e97c5d; }
-.signin__phone { position: relative; width: min(46%, 210px); border-radius: 30px; overflow: hidden; border: 7px solid #14121a; background: #14121a; box-shadow: 0 26px 50px -18px rgba(0,0,0,.55); }
+.signin__phone { position: relative; width: min(46%, 210px); border-radius: 30px; overflow: hidden; border: 7px solid #14121a; background: #14121a; box-shadow: 0 26px 50px -18px rgba(0,0,0,.55); transform-style: preserve-3d; transition: transform .34s cubic-bezier(.4,0,.2,1); will-change: transform; }
+.signin__phone.is-flip { transform: rotateY(90deg); }
 .signin__phone img { display: block; width: 100%; }
+@media (prefers-reduced-motion: reduce) { .signin__phone { transition: none; } .signin__phone.is-flip { transform: none; } }
 
 /* right pane: give the form room + a top-right back link on client sites */
 .signin--split .signin__pane { position: relative; }
@@ -985,7 +987,10 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 
 /* icon-prefixed fields */
 .signin__field--icon { position: relative; }
-.signin__ficon { position: absolute; left: 14px; bottom: 15px; width: 18px; height: 18px; color: var(--sg-sub); pointer-events: none; }
+/* z-index:2 — the password field wraps its input in .signin__pwwrap
+   (position:relative), which otherwise paints over this earlier-in-DOM absolute
+   icon and hides the lock. Lifting the icon keeps it visible for both fields. */
+.signin__ficon { position: absolute; left: 14px; bottom: 15px; z-index: 2; width: 18px; height: 18px; color: var(--sg-sub); pointer-events: none; }
 .signin__ficon svg { width: 18px; height: 18px; }
 .signin--split .signin__field input { height: 50px; border-radius: 10px; }
 .signin__field--icon input { padding-left: 42px; }

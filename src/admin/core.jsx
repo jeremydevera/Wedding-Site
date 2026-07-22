@@ -130,6 +130,22 @@ export function AdminLogin({ onAuthed }) {
   const [showPw, setShowPw] = useState(false);
   const [remember, setRemember] = useState(false);
   const [gBusy, setGBusy] = useState(false);
+  // Left-panel device: flips edge-on and swaps to the next feature shot, so the
+  // brand panel showcases the product (apex only; client sites stay static).
+  const SHOTS = ["/assets/login-phone.jpg", "/assets/login-shot-2.jpg", "/assets/login-shot-3.jpg", "/assets/login-shot-4.jpg"];
+  const [shot, setShot] = useState(0);
+  const [flipping, setFlipping] = useState(false);
+  useEffect(() => {
+    if (isClient) return; // only the Celebrately marketing panel cycles features
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) return;
+    let swap;
+    const id = setInterval(() => {
+      setFlipping(true);                                  // rotate edge-on (invisible)
+      swap = setTimeout(() => { setShot((s) => (s + 1) % SHOTS.length); setFlipping(false); }, 320); // swap while hidden, rotate back
+    }, 3600);
+    return () => { clearInterval(id); clearTimeout(swap); };
+  }, [isClient]); // eslint-disable-line react-hooks/exhaustive-deps
   // "Remember me" — prefill the last email on this device (email only, never pw)
   useEffect(() => {
     try { const e = localStorage.getItem("celebrately_login_email"); if (e) { setEmail(e); setRemember(true); } } catch (_) {}
@@ -170,7 +186,9 @@ export function AdminLogin({ onAuthed }) {
         </div>
         <div className="signin__art" aria-hidden="true">
           <span className="signin__artcircle" />
-          <span className="signin__phone"><img src="/assets/login-phone.jpg" alt="" loading="lazy" /></span>
+          <span className={"signin__phone" + (flipping ? " is-flip" : "")}>
+            <img src={isClient ? "/assets/login-phone.jpg" : SHOTS[shot]} alt="" loading="lazy" />
+          </span>
         </div>
       </aside>
 
