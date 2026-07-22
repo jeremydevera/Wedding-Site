@@ -7,11 +7,11 @@ import { toast } from "@/ui/components.jsx";
 import { signInWithGoogle } from "@/lib/firebase.js";
 const { useState, useEffect } = React;
 
-// Google login is BEHIND a gate until the Neon Data-API cutover (see firebase.js):
-// pre-cutover it verifies the Safari-safe Google→Firebase token leg only, it does
-// NOT create a Neon session yet. Show it when ?google=1 is present (testing) or the
-// app_config flag flips it on. Real registrants never see it until it's wired.
-const googleEnabled = () => { try { return new URLSearchParams(window.location.search).has("google"); } catch { return false; } };
+// Google button is always visible (owner request). Until the Neon Data-API
+// cutover lands, a successful Google sign-in verifies identity via Firebase but
+// cannot yet mint the site session — the toast says so and points to email
+// signup, which works fully today.
+const googleEnabled = () => true;
 
 // Self-registration (Neon backend) — apex (celebrately.us/www) + sandbox hosts,
 // behind USE NEON DATABASE.
@@ -344,8 +344,8 @@ function AuthCard({ onDone }) {
             onClick={async () => {
               setGBusy(true);
               try {
-                const { idToken, user } = await signInWithGoogle();
-                toast(`Google verified: ${user.email} — Firebase token OK (${idToken.length} chars). Neon session lands at cutover.`, "success");
+                const { user } = await signInWithGoogle();
+                toast(`Signed in with Google as ${user.email} ✓ — Google account creation is finishing rollout. For today, create your site with email & password below.`, "success");
               } catch (e2) {
                 const m = e2?.message || "";
                 toast(/operation-not-allowed/.test(m) ? "Enable Google in the Firebase console first (Authentication → Sign-in method)." : /popup-closed|cancelled/.test(m) ? "Google sign-in cancelled." : "Google sign-in failed: " + m, "err");
@@ -355,7 +355,7 @@ function AuthCard({ onDone }) {
             <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.7 1.22 9.2 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
             {gBusy ? "Opening Google…" : "Continue with Google"}
           </button>
-          <p style={{ textAlign: "center", fontSize: 11, color: "var(--sg-sub)", marginTop: 6 }}>dev preview — verifies Google login; not yet linked to your site</p>
+
         </>
       )}
       <p style={{ textAlign: "center", fontSize: 13, color: "var(--sg-sub)", marginTop: 14 }}>
