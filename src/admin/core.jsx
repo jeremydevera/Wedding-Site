@@ -159,7 +159,9 @@ export function AdminLogin({ onAuthed }) {
     <div className={"signin signin--split" + (isClient ? " signin--themed" : "")}>
       {/* LEFT — brand panel (BelajarYuk-style split). Client sites brand with
           the couple's names + their theme accent; the apex hub brands Celebrately. */}
-      <aside className="signin__aside">
+      <aside className={"signin__aside" + (isClient ? "" : " signin__aside--promo")}>
+        {/* brand/tagline: shown for client (over their device) and on mobile for
+            apex; on desktop apex the full-bleed video self-brands, so it's hidden */}
         <div className="signin__asidetop">
           <div className="signin__brand">
             {isClient ? <Monogram a={settings.partnerA} b={settings.partnerB} size={30} /> : <Logo size={28} />}
@@ -167,20 +169,18 @@ export function AdminLogin({ onAuthed }) {
           </div>
           <p className="signin__tagline">{isClient ? "Everything for your big day, in one place." : "Celebrate life's biggest moments, beautifully."}</p>
         </div>
-        <div className="signin__art" aria-hidden="true">
-          {isClient ? (
+        {isClient ? (
+          <div className="signin__art" aria-hidden="true">
             <span className="signin__phone signin__phone--solo">
               <span className="signin__device"><img src="/assets/login-phone.jpg" alt="" loading="lazy" /></span>
             </span>
-          ) : (
-            // Apex: the app-promo video plays as a centered card on the gradient
-            // (autoplay/loop/muted so browsers allow it; no crop — object-fit
-            // contain keeps the whole 16:9 frame).
-            <video className="signin__promo" autoPlay loop muted playsInline preload="auto" poster="/assets/login-phone.jpg">
-              <source src="/promo/celebrately-promo.mp4" type="video/mp4" />
-            </video>
-          )}
-        </div>
+          </div>
+        ) : (
+          // Apex: the portrait app-promo video FILLS the panel (full-bleed cover).
+          <video className="signin__promo" autoPlay loop muted playsInline preload="auto" poster="/assets/login-phone.jpg" aria-hidden="true">
+            <source src="/promo/celebrately-promo-tall.mp4" type="video/mp4" />
+          </video>
+        )}
       </aside>
 
       {/* RIGHT — form */}

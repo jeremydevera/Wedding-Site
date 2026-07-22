@@ -965,8 +965,10 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
    Front device rotates edge-on to swap the active feature; the two behind
    preview upcoming screens. */
 .signin__art { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; min-height: 300px; margin-top: 8px; perspective: 1700px; perspective-origin: 52% 42%; }
-/* apex: app-promo video as a rounded card on the panel gradient (whole 16:9, no crop) */
-.signin__promo { width: 100%; max-width: 470px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 16px; background: #241733; box-shadow: 0 34px 64px -26px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.06); }
+/* apex: portrait app-promo video FILLS the whole panel (full-bleed, self-branded) */
+.signin__aside--promo { padding: 0; }
+.signin__aside--promo .signin__asidetop { display: none; }
+.signin__promo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; display: block; }
 .signin__artcircle { position: absolute; left: 46%; top: 46%; width: 92%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, rgba(233,124,93,.55) 0%, rgba(233,124,93,.12) 45%, rgba(233,124,93,0) 70%); filter: blur(4px); }
 
 /* cascade members — each angled the same, staggered up-and-right, floating on
@@ -1056,6 +1058,11 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
   .signin--split .signin__aside { padding: 26px 24px; }
   .signin--split .signin__art { display: none; }
   .signin__feat { display: none; } /* phone is hidden on mobile — no orphaned headline */
+  /* apex mobile: the tall video would crop badly in a short band — hide it and
+     show the brand band + restore padding instead */
+  .signin__aside--promo { padding: 26px 24px; }
+  .signin__aside--promo .signin__asidetop { display: block; }
+  .signin__promo { display: none; }
   .signin--split .signin__tagline { max-width: none; }
   .signin--split .signin__center { padding: 28px 22px 48px; }
   .signin--split .signin__form { max-width: 460px; }
