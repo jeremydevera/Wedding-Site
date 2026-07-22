@@ -967,17 +967,22 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 /* 3D device: rests tilted in space (rotateY/X), floats + yaws gently, has real
    thickness (::before back-slab behind the screen) and a glass glare (::after).
    Screens cross-fade on the angled face — no flat 2D flip. */
-.signin__phone { position: relative; width: min(46%, 210px); border-radius: 32px; border: 7px solid #14121a; background: #14121a; transform-style: preserve-3d; animation: phone3d 8s ease-in-out infinite; box-shadow: 0 44px 66px -22px rgba(0,0,0,.62), 0 10px 20px -12px rgba(0,0,0,.5); will-change: transform; }
-.signin__phone::before { content: ""; position: absolute; inset: -1px; border-radius: inherit; background: linear-gradient(120deg, #24222e, #0b0a10); transform: translateZ(-18px); box-shadow: 0 0 0 1px #000; }
-.signin__phone::after { content: ""; position: absolute; inset: 0; border-radius: 26px; pointer-events: none; background: linear-gradient(118deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,.02) 30%, rgba(255,255,255,0) 55%); }
-.signin__phone img { display: block; width: 100%; border-radius: 26px; transition: opacity .3s ease; backface-visibility: hidden; }
-.signin__phone.is-fading img { opacity: 0; }
+/* outer = gentle float + yaw (never conflicts with the swap transform below) */
+.signin__phone { position: relative; width: min(46%, 210px); transform-style: preserve-3d; animation: phone3d 8s ease-in-out infinite; will-change: transform; }
+/* inner device = the frame + depth + glare; ROTATES edge-on to swap screens
+   (the reference video's motion). Nested so the outer float and this rotate
+   compose instead of fighting over `transform`. */
+.signin__device { position: relative; display: block; border-radius: 32px; border: 7px solid #14121a; background: #14121a; transform-style: preserve-3d; transition: transform .34s cubic-bezier(.4,0,.2,1); box-shadow: 0 44px 66px -22px rgba(0,0,0,.62), 0 10px 20px -12px rgba(0,0,0,.5); }
+.signin__device.is-turn { transform: rotateY(-90deg); }
+.signin__device::before { content: ""; position: absolute; inset: -1px; border-radius: inherit; background: linear-gradient(120deg, #24222e, #0b0a10); transform: translateZ(-18px); box-shadow: 0 0 0 1px #000; }
+.signin__device::after { content: ""; position: absolute; inset: 0; border-radius: 26px; pointer-events: none; background: linear-gradient(118deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,.02) 30%, rgba(255,255,255,0) 55%); }
+.signin__device img { display: block; width: 100%; border-radius: 26px; backface-visibility: hidden; }
 @keyframes phone3d {
   0%   { transform: rotateY(-23deg) rotateX(6deg) translateY(0); }
   50%  { transform: rotateY(-11deg) rotateX(2deg) translateY(-18px); }
   100% { transform: rotateY(-23deg) rotateX(6deg) translateY(0); }
 }
-@media (prefers-reduced-motion: reduce) { .signin__phone { animation: none; transform: rotateY(-16deg) rotateX(5deg); } .signin__phone img { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .signin__phone { animation: none; } .signin__device { transition: none; transform: rotateY(-16deg) rotateX(5deg); } .signin__device.is-turn { transform: rotateY(-16deg) rotateX(5deg); } }
 
 /* per-feature caption — transitions in sync with the phone screen swap */
 .signin__feat { position: relative; z-index: 1; margin-top: 22px; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }

@@ -192,8 +192,10 @@ export function AdminLogin({ onAuthed }) {
         </div>
         <div className="signin__art" aria-hidden="true">
           <span className="signin__artcircle" />
-          <span className={"signin__phone" + (flipping ? " is-fading" : "")}>
-            <img src={isClient ? "/assets/login-phone.jpg" : FEATURES[shot].src} alt="" loading="lazy" />
+          <span className="signin__phone">
+            <span className={"signin__device" + (flipping ? " is-turn" : "")}>
+              <img src={isClient ? "/assets/login-phone.jpg" : FEATURES[shot].src} alt="" loading="lazy" />
+            </span>
           </span>
         </div>
         {!isClient && (
