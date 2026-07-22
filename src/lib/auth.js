@@ -269,6 +269,14 @@ export async function requestPasswordReset(email) {
 // live site → her admin; unfinished → /register; SA → refuse (console uses the
 // admin password). Supabase client sites: not supported, actionable error.
 export async function signInGoogle() {
+  if (resolveSubdomain()) {
+    // Firebase popups only run on allow-listed domains (no wildcards), so NO
+    // client subdomain can open one — Neon-backed or not. Hop to the apex
+    // login; its Google button + the shared session cookie + wrong-door
+    // routing land her on her own admin.
+    window.location.assign("https://celebrately.us/admin?gfrom=" + encodeURIComponent(resolveSubdomain()));
+    return { role: null, client_id: null, redirecting: true };
+  }
   if (Store.get().neonMode) {
     await neonAuth.signInGoogle();
     const p = await loadNeonSession();
@@ -282,14 +290,6 @@ export async function signInGoogle() {
       throw new Error("That Google account doesn't have access to this site's admin.");
     }
     return p;
-  }
-  if (resolveSubdomain()) {
-    // Firebase popups only run on allow-listed domains (no wildcards), so a
-    // client subdomain can't open one. Hop to the apex login — one more click
-    // on its Google button, then the shared session cookie + wrong-door
-    // routing land her on her own admin automatically.
-    window.location.assign("https://celebrately.us/admin?gfrom=" + encodeURIComponent(resolveSubdomain()));
-    return { role: null, client_id: null, redirecting: true };
   }
   await loadApexNeonCtx();
   if (!fbAuthMode()) throw new Error("Google login isn't available yet — sign in with your email & password.");
