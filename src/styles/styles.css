@@ -1064,9 +1064,9 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
      top") and the absolute logo overlay clips at the band edge — hide the video
      and put the brand band (logo + tagline) back in normal flow. !important so
      no source-order/specificity accident can leave the desktop overlay active. */
-  .signin__aside--promo { padding: 26px 24px !important; overflow: visible !important; }
+  .signin__aside--promo { padding: 16px 22px !important; overflow: visible !important; }
   .signin__aside--promo .signin__asidetop { position: static !important; top: auto !important; left: auto !important; }
-  .signin__aside--promo .signin__tagline { display: block !important; }
+  .signin__aside--promo .signin__tagline { display: none !important; } /* logo only on mobile — tagline crowds the band + pushes the form down */
   .signin__promo { display: none !important; }
   .signin--split .signin__tagline { max-width: none; }
   /* clear iOS Safari's bottom toolbar (overlaps position:fixed content): pad the

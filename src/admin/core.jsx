@@ -136,9 +136,6 @@ export function AdminLogin({ onAuthed }) {
   useEffect(() => {
     try { remember && email ? localStorage.setItem("celebrately_login_email", email) : (!remember && localStorage.removeItem("celebrately_login_email")); } catch (_) {}
   }, [remember, email]);
-  const brandWord = isClient
-    ? <>{settings.partnerA}{settings.partnerB ? <> <span className="amp">&amp;</span> {settings.partnerB}</> : null}</>
-    : "Celebrately.";
   const forgot = async (e) => {
     e.preventDefault();
     if (!email.trim()) { toast("Enter your email above first, then tap Forgot your password.", "err"); return; }
@@ -156,31 +153,22 @@ export function AdminLogin({ onAuthed }) {
     } finally { setGBusy(false); }
   };
   return (
-    <div className={"signin signin--split" + (isClient ? " signin--themed" : "")}>
-      {/* LEFT — brand panel (BelajarYuk-style split). Client sites brand with
-          the couple's names + their theme accent; the apex hub brands Celebrately. */}
-      <aside className={"signin__aside" + (isClient ? "" : " signin__aside--promo")}>
-        {/* brand/tagline: shown for client (over their device) and on mobile for
-            apex; on desktop apex the full-bleed video self-brands, so it's hidden */}
+    <div className="signin signin--split">
+      {/* LEFT — brand panel. ONE design everywhere (owner request 2026-07-22):
+          client logins inherit the apex panel exactly — Celebrately brand +
+          promo video — so a redesign here applies to every site's login. */}
+      <aside className="signin__aside signin__aside--promo">
         <div className="signin__asidetop">
           <div className="signin__brand">
-            {isClient ? <Monogram a={settings.partnerA} b={settings.partnerB} size={30} /> : <Logo size={28} />}
-            <span className="signin__word">{brandWord}</span>
+            <Logo size={28} />
+            <span className="signin__word">Celebrately.</span>
           </div>
-          <p className="signin__tagline">{isClient ? "Everything for your big day, in one place." : "Celebrate life's biggest moments, beautifully."}</p>
+          <p className="signin__tagline">Celebrate life's biggest moments, beautifully.</p>
         </div>
-        {isClient ? (
-          <div className="signin__art" aria-hidden="true">
-            <span className="signin__phone signin__phone--solo">
-              <span className="signin__device"><img src="/assets/login-phone.jpg" alt="" loading="lazy" /></span>
-            </span>
-          </div>
-        ) : (
-          // Apex: the portrait app-promo video FILLS the panel (full-bleed cover).
-          <video className="signin__promo" autoPlay loop muted playsInline preload="auto" poster="/assets/login-phone.jpg" aria-hidden="true">
-            <source src="/promo/celebrately-promo-tall-2.mp4" type="video/mp4" />
-          </video>
-        )}
+        {/* portrait app-promo video FILLS the panel (full-bleed cover) */}
+        <video className="signin__promo" autoPlay loop muted playsInline preload="auto" poster="/assets/login-phone.jpg" aria-hidden="true">
+          <source src="/promo/celebrately-promo-tall-2.mp4" type="video/mp4" />
+        </video>
       </aside>
 
       {/* RIGHT — form */}
@@ -188,20 +176,8 @@ export function AdminLogin({ onAuthed }) {
         {isClient && <button className="signin__back" onClick={() => go("home")}>← Back to website</button>}
         <div className="signin__center">
           <form className="signin__form" onSubmit={submit} noValidate>
-            <h1 className="signin__title">Log in to {isClient ? "your site." : "Celebrately."}</h1>
+            <h1 className="signin__title">Log in to Celebrately.</h1>
             <p className="signin__sub">Welcome back! Sign in with the details you used during registration.</p>
-
-            {(!isClient || store.neonMode === true) && (
-              <>
-                <div className="signin__social">
-                  <button type="button" className="signin__socialbtn" onClick={googleLogin} disabled={gBusy}>
-                    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.7 1.22 9.2 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-                    {gBusy ? "Opening Google…" : "Log in with Google"}
-                  </button>
-                </div>
-                <div className="signin__or"><span>or</span></div>
-              </>
-            )}
 
             <div className="signin__field signin__field--icon">
               <label htmlFor="a-email">Email</label>
@@ -227,11 +203,16 @@ export function AdminLogin({ onAuthed }) {
 
             <button type="submit" className="signin__btn" disabled={busy}>{busy ? "Signing in…" : "LOGIN"}</button>
 
-            {!isClient ? (
-              <p className="signin__reg">Don't have an account? <a href="/register">Register</a></p>
-            ) : (
-              <p className="signin__reg">Want a look first? <a href="https://demo.celebrately.us/">View the demo site →</a></p>
-            )}
+            {/* social BELOW email/password (owner request) */}
+            <div className="signin__or"><span>or</span></div>
+            <div className="signin__social">
+              <button type="button" className="signin__socialbtn" onClick={googleLogin} disabled={gBusy}>
+                <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.7 1.22 9.2 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                {gBusy ? "Opening Google…" : "Log in with Google"}
+              </button>
+            </div>
+
+            <p className="signin__reg">Don't have an account? <a href="https://celebrately.us/register">Register</a></p>
           </form>
         </div>
       </div>
