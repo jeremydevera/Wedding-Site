@@ -57,3 +57,7 @@ when a behavior is confirmed intentional.
 - **Neon rows in the console Clients list are un-paginated/un-searched** —
   appended after the Supabase page rows; fine at current volume.
 - **/register lives on celebrately.us (+www) and sandbox** — promoted from sandbox-only on owner request 2026-07-21; the login page's "Sign up →" links there. /apply remains the manual-request path.
+- **Self-registered (wizard) clients get the Settings tab by default** —
+  `_enrich_site_content` (s1) seeds `showSettingsToClient: true`, so both the
+  auto-approve and manual-approve paths inherit it (owner request 2026-07-23).
+  Superadmin-created Supabase clients keep the old default (off, SA flips it).
