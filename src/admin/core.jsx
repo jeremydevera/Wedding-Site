@@ -127,16 +127,17 @@ export function AdminLogin({ onAuthed }) {
     finally { setBusy(false); }
   }
   const [showPw, setShowPw] = useState(false);
-  // iOS Safari sometimes focuses/highlights the first field on load (autofill
-  // heuristics — no autofocus exists in our code). Never let the keyboard pop
-  // uninvited: blur any input that grabbed focus during mount.
-  useEffect(() => {
-    const t = setTimeout(() => {
-      const a = document.activeElement;
-      if (a && a.matches && a.matches(".signin__form input")) a.blur();
-    }, 120);
-    return () => clearTimeout(t);
-  }, []);
+  // iOS Safari focuses/fills the first field on load when it has saved
+  // credentials for the site (no autofocus exists in our code; Supabase's
+  // sign-in has the same plain markup — it just has no saved creds to push).
+  // Mechanical guarantee of the Supabase behavior on touch devices: fields are
+  // readOnly until the user's FIRST TAP (pointerdown fires before focus, so a
+  // real tap unlocks before the keyboard decision), and any unsolicited focus
+  // while still locked is blurred. Desktop keyboard/Tab flow is untouched.
+  const coarse = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+  const [fieldsArmed, setFieldsArmed] = useState(!coarse);
+  const armFields = () => { if (!fieldsArmed) setFieldsArmed(true); };
+  const guardFocus = (e) => { if (!fieldsArmed) e.target.blur(); };
   // Arrived from a client site's Google button (popups can't open there —
   // Firebase authorizes exact domains only). Nudge them to tap Google again.
   const gFrom = !isClient ? new URLSearchParams(window.location.search).get("gfrom") : null;
@@ -195,14 +196,14 @@ export function AdminLogin({ onAuthed }) {
             <div className="signin__field signin__field--icon">
               <label htmlFor="a-email">Email</label>
               <span className="signin__ficon" aria-hidden="true">{Icon.mail({})}</span>
-              <input id="a-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+              <input id="a-email" type="email" autoComplete="email" value={email} readOnly={!fieldsArmed} onPointerDown={armFields} onFocus={guardFocus} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
             </div>
 
             <div className="signin__field signin__field--icon">
               <label htmlFor="a-pw">Password</label>
               <span className="signin__ficon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
               <div className="signin__pwwrap">
-                <input id="a-pw" type={showPw ? "text" : "password"} autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="••••••••" />
+                <input id="a-pw" type={showPw ? "text" : "password"} autoComplete="current-password" value={pw} readOnly={!fieldsArmed} onPointerDown={armFields} onFocus={guardFocus} onChange={(e) => setPw(e.target.value)} placeholder="••••••••" />
                 <button type="button" className="signin__eye" onClick={() => setShowPw((v) => !v)} aria-label={showPw ? "Hide password" : "Show password"}>{(showPw ? Icon.eyeOff : Icon.eye)({})}</button>
               </div>
             </div>
