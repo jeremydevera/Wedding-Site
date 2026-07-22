@@ -3275,3 +3275,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 @keyframes lgp-kc4{0%,81%{opacity:0;transform:translate(-24px,-50%)}83%,88%{opacity:1;transform:translate(0,-50%)}90%,100%{opacity:0;transform:translate(-24px,-50%)}}
 @media (max-width: 820px){.lgp-stage{display:none}} /* mobile: brand band only */
 @media (prefers-reduced-motion: reduce){.lgp-zoomer,.lgp-mover,.lgp-ring,.lgp-cap,.lgp-slot{animation:none}.lgp-s1{opacity:1}}
+
+/* lgp 3D canvas (three.js) fills the panel; captions overlay above it */
+.lgp-canvas{position:absolute;inset:0;z-index:1}
+.lgp-canvas canvas{width:100%!important;height:100%!important;display:block}

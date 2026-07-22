@@ -11,6 +11,9 @@ import { Button, Field, Icon, Input, Monogram, Placeholder, toast } from "@/ui/c
 // Lazy: amCharts is heavy — split into its own chunk, loaded only when the
 // Dashboard tab renders.
 const RsvpCharts = React.lazy(() => import("@/admin/rsvp-charts.jsx"));
+// Real 3D iPhone login scene (three.js + owner's GLB) — heavy, so lazy: the
+// CSS phone rig renders instantly as the Suspense fallback and swaps to WebGL.
+const LoginPromo3D = React.lazy(() => import("@/admin/login-promo-3d.jsx"));
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
 // ============================================================================
@@ -126,12 +129,16 @@ function LoginPromoScene() {
   return (
     <div className="lgp-stage" aria-hidden="true">
       <span className="lgp-glow" />
-      <div className="lgp-zoomer"><div className="lgp-mover"><div className="lgp-ring">
-        <div className="lgp-slot"><LoginPhone shot="/assets/login-phone.jpg" /></div>
-        <div className="lgp-slot"><LoginPhone shot="/assets/login-shot-2.jpg" /></div>
-        <div className="lgp-slot"><LoginPhone shot="/assets/login-shot-dash.jpg" /></div>
-        <div className="lgp-slot"><LoginPhone shot="/assets/login-shot-4.jpg" /></div>
-      </div></div></div>
+      <React.Suspense fallback={
+        <div className="lgp-zoomer"><div className="lgp-mover"><div className="lgp-ring">
+          <div className="lgp-slot"><LoginPhone shot="/assets/login-phone.jpg" /></div>
+          <div className="lgp-slot"><LoginPhone shot="/assets/login-shot-2.jpg" /></div>
+          <div className="lgp-slot"><LoginPhone shot="/assets/login-shot-dash.jpg" /></div>
+          <div className="lgp-slot"><LoginPhone shot="/assets/login-shot-4.jpg" /></div>
+        </div></div></div>
+      }>
+        <LoginPromo3D />
+      </React.Suspense>
       <div className="lgp-cap lgp-r lgp-s1"><span className="lgp-ey">Featuring</span><span className="lgp-h">RSVP in one tap</span><span className="lgp-p">Guests reply from their phone — every answer lands live.</span></div>
       <div className="lgp-cap lgp-l lgp-s2"><span className="lgp-ey">Featuring</span><span className="lgp-h">Live dashboard</span><span className="lgp-p">RSVPs, guests, guestbook — one glance, always current.</span></div>
       <div className="lgp-cap lgp-r lgp-c1"><span className="lgp-ey">Featuring</span><span className="lgp-h">Guestbook</span><span className="lgp-p">Wishes from everyone you love — kept forever.</span></div>
