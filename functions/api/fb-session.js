@@ -26,9 +26,16 @@ function ourOrigin(request) {
 }
 
 function cookieDomain(request) {
-  // pages.dev previews get a host-only cookie; production shares across subdomains
-  const h = new URL(request.url).hostname;
-  return h.endsWith(".celebrately.us") || h === "celebrately.us" ? "; Domain=.celebrately.us" : "";
+  // pages.dev previews get a host-only cookie; production shares across
+  // subdomains. 🔴 request.url is USELESS for this — Pages Functions see the
+  // *.pages.dev host even for celebrately.us requests (same trap that broke
+  // the redirect experiments; see CLAUDE.md). The browser's Origin/Referer
+  // carries the real host, and ourOrigin() already validated it.
+  const src = request.headers.get("Origin") || request.headers.get("Referer") || "";
+  try {
+    const h = new URL(src).hostname;
+    return h === "celebrately.us" || h.endsWith(".celebrately.us") ? "; Domain=.celebrately.us" : "";
+  } catch { return ""; }
 }
 
 function readCookie(request) {
