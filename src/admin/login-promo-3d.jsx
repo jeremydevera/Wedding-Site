@@ -87,28 +87,33 @@ export default function LoginPromo3D() {
       norm.rotation.y = Math.PI / 2; // GLB display faces -X → face the camera (+Z)
       const outer = new THREE.Group(); outer.add(norm);
 
-      // The GLB screen mesh has unusable UVs (smeared) — instead, mount OUR OWN
-      // plane with clean UVs right on the display surface and show the real app
-      // screenshot there. Screen bounds measured from the mesh in outer space.
-      let screenMesh = null;
+      // The GLB screen mesh ships smeared UVs — rebuild them from the mesh's
+      // own flat geometry (display plane is local Y-Z), so the screenshot maps
+      // ONTO the actual display surface: exact fit, rounded corners, notch cut.
       outer.updateMatrixWorld(true);
       outer.traverse((o) => {
         if (!o.isMesh || !o.material) return;
         const n = o.material.name || "";
-        if (/screen/i.test(n)) { screenMesh = o; o.material = new THREE.MeshBasicMaterial({ color: 0x05060a }); }
-        else if (/^glass/i.test(n)) { o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = 0.06; o.material.depthWrite = false; }
+        if (/screen/i.test(n)) {
+          const g = o.geometry, pos = g.attributes.position;
+          let minY = 1e9, maxY = -1e9, minZ = 1e9, maxZ = -1e9;
+          for (let vi = 0; vi < pos.count; vi++) {
+            const y = pos.getY(vi), z = pos.getZ(vi);
+            if (y < minY) minY = y; if (y > maxY) maxY = y;
+            if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+          }
+          const uv = new Float32Array(pos.count * 2);
+          for (let vi = 0; vi < pos.count; vi++) {
+            uv[vi * 2] = 1 - (pos.getY(vi) - minY) / (maxY - minY); // u across width (local Y, mirrored)
+            uv[vi * 2 + 1] = (pos.getZ(vi) - minZ) / (maxZ - minZ);     // v up height
+          }
+          g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+          o.userData.lgpScreen = true;
+          o.material = new THREE.MeshBasicMaterial({ color: 0x05060a });
+        } else if (/^glass/i.test(n)) {
+          o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = 0.06; o.material.depthWrite = false;
+        }
       });
-      if (screenMesh) {
-        const sb = new THREE.Box3().setFromObject(screenMesh);
-        const ssz = sb.getSize(new THREE.Vector3()), sc = sb.getCenter(new THREE.Vector3());
-        const plane = new THREE.Mesh(
-          new THREE.PlaneGeometry(ssz.x * 0.985, ssz.y * 0.985),
-          new THREE.MeshBasicMaterial({ toneMapped: false })
-        );
-        plane.name = "lgpShot";
-        plane.position.set(sc.x, sc.y, sb.max.z + 0.004);
-        outer.add(plane);
-      }
 
       const texAt = (i) => {
         const tex = texLoader.load(SHOTS[i]);
@@ -119,7 +124,7 @@ export default function LoginPromo3D() {
       for (let i = 0; i < 4; i++) {
         const phone = i === 0 ? outer : outer.clone(true);
         phone.traverse((o) => {
-          if (o.name === "lgpShot") o.material = new THREE.MeshBasicMaterial({ map: texAt(i), toneMapped: false });
+          if (o.userData && o.userData.lgpScreen) o.material = new THREE.MeshBasicMaterial({ map: texAt(i), toneMapped: false, side: THREE.DoubleSide });
         });
         const slot = new THREE.Group();
         slot.rotation.y = i * Math.PI / 2;
