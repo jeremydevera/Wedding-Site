@@ -86,13 +86,14 @@ export async function loadSession() {
   const { data } = await supabase.auth.getSession();
   const session = data.session;
   if (!session) {
-    // Apex hub (/ or /admin) with NO Supabase session: an existing NEON session
-    // (self-serve registrant) must not be shown the login form again — route her
-    // onward: site owner → her admin; wizard unfinished → /register to resume.
-    // Switching accounts = the wizard's Sign out. The superadmin (who also has a
-    // Neon profile) falls through to the normal console login. Path-guarded so
-    // /register itself never loops.
-    if (!resolveSubdomain() && /^\/(admin\/?)?$/.test(window.location.pathname)) {
+    // Apex /admin ONLY, with NO Supabase session: an existing NEON/Firebase
+    // session (self-serve registrant) must not be shown the login form again —
+    // route her onward: site owner → her admin; wizard unfinished → /register.
+    // The BARE apex (/) never auto-redirects (owner request 2026-07-22: with the
+    // shared session cookie it made celebrately.us itself unreachable for
+    // signed-in owners). The superadmin (who also has a Neon profile) falls
+    // through to the normal console login. /register itself never loops.
+    if (!resolveSubdomain() && /^\/admin\/?$/.test(window.location.pathname)) {
       try {
         await loadApexNeonCtx();
         const s = await neonAuth.session();
