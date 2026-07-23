@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase.js";
 import { Store } from "@/lib/store.jsx";
 import { neonAuth, authedRpc, neonAuthedSelect, NEON_SHARDS_KEY, FB_AUTH_FLAG_KEY, setNeonRegistry, resolveShardId, setActiveShard, fbAuthMode, setFbAuthMode } from "@/lib/neon.js";
 import { resolveSubdomain, subdomainFromHost } from "@/lib/tenant.js";
+import { startGoogleRedirect, consumeGoogleRedirect } from "@/lib/firebase.js";
 
 // The REAL host's client label, ignoring any ?client= console override. A
 // Firebase popup can only run on an allow-listed domain (celebrately.us / apex),
@@ -304,14 +305,24 @@ export async function signInGoogle() {
   }
   await loadApexNeonCtx();
   if (!fbAuthMode()) throw new Error("Google login isn't available yet — sign in with your email & password.");
+  const gfrom = new URLSearchParams(window.location.search).get("gfrom");
   const ns = await neonAuth.signInGoogle();
-  const suid = ns?.user?.id;
-  if (suid) {
-    const prof = await neonAuthedSelect("profiles", `select=role&id=eq.${encodeURIComponent(suid)}`).catch(() => null);
-    if (prof && prof[0] && prof[0].role === "superadmin") {
-      await neonAuth.signOut().catch(() => {});
-      throw new Error("That's the platform admin's Google account — sign in below with your admin email & password.");
-    }
+  return routeAfterGoogle(ns?.user?.id, gfrom);
+}
+
+// Where a just-completed Google sign-in should land (shared by the popup path
+// and the redirect auto-continue). The SUPERADMIN is accepted on ANY site: with
+// a `gfrom` (came from a client's admin) they're taken to that site's admin —
+// the shared Firebase cookie makes loadNeonSession grant superadmin there;
+// without one they stay on the console (their Firebase session is now set, so
+// every client admin recognizes them). Owners go to their own site; site-less
+// accounts go to /register.
+async function routeAfterGoogle(uid, gfrom) {
+  await loadApexNeonCtx();
+  const prof = uid ? await neonAuthedSelect("profiles", `select=role&id=eq.${encodeURIComponent(uid)}`).catch(() => null) : null;
+  if (prof && prof[0] && prof[0].role === "superadmin") {
+    if (gfrom) { window.location.assign(`https://${gfrom}.celebrately.us/admin`); return { role: "superadmin", client_id: null, redirecting: true }; }
+    return { role: "superadmin", client_id: null, note: "You're signed in with Google — open any client's admin to manage it." };
   }
   const st = await regState();
   if (st?.state === "active" && st.subdomain) {
@@ -322,6 +333,21 @@ export async function signInGoogle() {
   window.location.assign("/register");
   return { role: "guest", client_id: null, redirecting: true };
 }
+
+// Apex auto-continue: called on mount when `?gfrom=` is present. On the return
+// leg from Google it consumes the redirect result and routes; on the first leg
+// (no result yet) it returns {consumed:false} so the caller can START the
+// redirect. Keeps the whole flow to ONE click on the client subdomain.
+export async function completeGoogleRedirect() {
+  const gfrom = new URLSearchParams(window.location.search).get("gfrom");
+  let res = null;
+  try { res = await consumeGoogleRedirect(); } catch (e) { /* none pending */ }
+  if (!res) return { consumed: false, gfrom };
+  try { await loadApexNeonCtx(); return { consumed: true, ...(await routeAfterGoogle(res.user.uid, gfrom)) }; }
+  catch (e) { return { consumed: true, error: e.message || "Google sign-in failed.", gfrom }; }
+}
+
+export async function beginGoogleRedirect() { await startGoogleRedirect(); }
 
 export async function signOut() {
   if (Store.get().neonMode) {

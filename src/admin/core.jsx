@@ -6,7 +6,7 @@ import { DISABLED_MODULES, moduleEnabled } from "@/lib/roles.js";
 import { useStore } from "@/lib/store.jsx";
 import { reconcileGuests } from "@/lib/guests.js";
 import { headsOf } from "@/lib/rsvp.js";
-import { signIn, signInGoogle, requestPasswordReset } from "@/lib/auth.js";
+import { signIn, signInGoogle, requestPasswordReset, completeGoogleRedirect, beginGoogleRedirect } from "@/lib/auth.js";
 import { Button, Field, Icon, Input, Monogram, Placeholder, toast } from "@/ui/components.jsx";
 // Lazy: amCharts is heavy — split into its own chunk, loaded only when the
 // Dashboard tab renders.
@@ -206,10 +206,35 @@ export function AdminLogin({ onAuthed }) {
   const armFields = () => { if (!fieldsArmed) setFieldsArmed(true); };
   const guardFocus = (e) => { if (!fieldsArmed) e.target.blur(); };
   // Arrived from a client site's Google button (popups can't open there —
-  // Firebase authorizes exact domains only). Nudge them to tap Google again.
+  // Firebase authorizes exact domains only). We land here and continue Google
+  // automatically (redirect flow) so it's ONE click on the client subdomain.
   const gFrom = !isClient ? new URLSearchParams(window.location.search).get("gfrom") : null;
   const [remember, setRemember] = useState(false);
   const [gBusy, setGBusy] = useState(false);
+  // Auto-continue the Google redirect for a client-subdomain hop.
+  useEffect(() => {
+    if (isClient || !gFrom) return;
+    let alive = true;
+    (async () => {
+      const r = await completeGoogleRedirect();      // consumes the result on the return leg
+      if (!alive) return;
+      if (r.consumed) {
+        try { sessionStorage.removeItem("gauth_started"); } catch (_) {}
+        if (r.error) setErr(r.error);
+        else if (!r.redirecting) { onAuthed && onAuthed(); } // superadmin w/o gfrom → console
+        return;
+      }
+      // First leg: kick off the redirect once (guarded against a cancel loop).
+      try {
+        if (sessionStorage.getItem("gauth_started")) { sessionStorage.removeItem("gauth_started"); return; }
+        sessionStorage.setItem("gauth_started", "1");
+      } catch (_) {}
+      setGBusy(true);
+      try { await beginGoogleRedirect(); }
+      catch (e) { if (alive) { setGBusy(false); setErr("Couldn't start Google sign-in — tap the button below."); } }
+    })();
+    return () => { alive = false; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // "Remember me" — prefill the last email on this device (email only, never pw)
   useEffect(() => {
     try { const e = localStorage.getItem("celebrately_login_email"); if (e) { setEmail(e); setRemember(true); } } catch (_) {}

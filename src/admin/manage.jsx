@@ -2475,7 +2475,11 @@ export function SettingsAdmin() {
   const f = settings;
   const set = (k) => (e) => Store.updateSettings({ [k]: e.target && e.target.type === "checkbox" ? e.target.checked : e.target.value });
   const setKey = (k, v) => Store.updateSettings({ [k]: v });
-  const [tab, setTab] = useState("features");
+  // accessV2 (every client now) has no "Features" tab — defaulting to it left an
+  // orphaned legacy panel showing until the owner clicked a real tab. Seed from
+  // the loaded client so v2 opens on Moderation; an effect below snaps `tab`
+  // back into range if the flag resolves late.
+  const [tab, setTab] = useState(() => (Store.get().settings?.accessV2 === true ? "rsvp" : "features"));
   // Theme options are scoped to the active event type via the registry.
   const allowedBase = themesForEvent(f.eventType || DEFAULT_EVENT_TYPE);
   // Olive Envelope is retired from the picker (see eventTypes.js), but a client
@@ -2503,6 +2507,13 @@ export function SettingsAdmin() {
        // Admin folder: superadmin-only master switches (never shown to owners).
        ...(isSuper ? [["admin", "Admin", "gear"]] : [])]
     : [["features", "Features", "check"], ["appearance", "Theme", "grid"], ["access", "Access", "check"], ["account", "Account", "user"]];
+
+  // Keep `tab` inside the current tab set — if the accessV2 flag (or grants)
+  // resolve after mount and drop the active tab, snap to the first valid one so
+  // no orphaned/hidden panel lingers.
+  useEffect(() => {
+    if (!STABS.some(([k]) => k === tab)) setTab(STABS[0][0]);
+  }, [settings.accessV2, isSuper, showToClient]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div>
@@ -2585,7 +2596,7 @@ export function SettingsAdmin() {
         <SaveFooter />
       </div>)}
 
-      {tab === "features" && (<div className="panel">
+      {tab === "features" && settings.accessV2 !== true && (<div className="panel">
         <div className="panel__head"><div className="panel__title">Features</div></div>
         <div className="panel__body" style={{ maxWidth: 760 }}>
           <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>Turn sections of this site on or off — disabled ones are hidden from guests and the menu. Click <strong>Save changes</strong> to apply.</p>
@@ -2888,7 +2899,7 @@ export function SettingsAdmin() {
         <SaveFooter />
       </div>)}
 
-      {tab === "access" && (<>
+      {tab === "access" && settings.accessV2 !== true && (<>
       {/* Moderation panel only has the gallery toggle left (guestbook auto-approve
           moved to Features) — hide the whole panel while the gallery is shelved. */}
       {!DISABLED_MODULES.has("gallery") && (<div className="panel">

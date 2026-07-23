@@ -114,6 +114,28 @@ export async function signInWithGoogle() {
   return { idToken, user: { uid: res.user.uid, email: res.user.email, name: res.user.displayName } };
 }
 
+// Redirect-based Google (no popup). Used for the apex auto-continue after a
+// client-subdomain hop: the popup can't open on an unlisted subdomain, so we
+// land on the authorized apex and start the redirect immediately — one flow,
+// no second button. signInWithRedirect performs a top-level navigation, so it
+// needs no user gesture and works on page load.
+export async function startGoogleRedirect() {
+  const { auth, mod } = await getAuth();
+  const provider = new mod.GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
+  await mod.signInWithRedirect(auth, provider);
+}
+
+// Consume the redirect result on the return load (or null if none pending / the
+// user cancelled). Publishes the shared-cookie session on success.
+export async function consumeGoogleRedirect() {
+  const { auth, mod } = await getAuth();
+  const res = await mod.getRedirectResult(auth).catch(() => null);
+  if (!res || !res.user) return null;
+  await publishSession(res.user);
+  return { idToken: await res.user.getIdToken(), user: { uid: res.user.uid, email: res.user.email, name: res.user.displayName } };
+}
+
 // Current signed-in REAL Firebase user (or null). Anonymous guest sessions are
 // NOT a user — admin/session checks must never treat them as signed in.
 // Falls back to the shared-cookie session so an apex sign-in is visible on the
