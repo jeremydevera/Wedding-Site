@@ -246,7 +246,7 @@ export function AdminLogin({ onAuthed }) {
         <div className="signin__center">
           <form className="signin__form" onSubmit={submit} noValidate>
             <h1 className="signin__title">Log in to Celebrately.</h1>
-            <p className="signin__sub">{gFrom ? <>Tap <strong>Log in with Google</strong> below — we'll take you straight to your site's admin.</> : "Welcome back! Sign in with the details you used during registration."}</p>
+            <p className="signin__sub">{gFrom ? <>Tap <strong>Log in with Google</strong> below — we'll take you straight to your site's admin.</> : "Sign in to see who's coming to your celebration."}</p>
 
             <div className="signin__field signin__field--icon">
               <label htmlFor="a-email">Email</label>
