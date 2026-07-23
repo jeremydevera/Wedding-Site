@@ -2,7 +2,7 @@ import React from "react";
 import { neonAuth, authedRpc, neonRpc, neonAuthedSelect, NEON_FLAG_KEY, NEON_SHARDS_KEY, FB_AUTH_FLAG_KEY, setFbAuthMode, fbAuthMode, setNeonRegistry, resolveShardId, setActiveShard } from "@/lib/neon.js";
 import { getAppConfig, checkRequestSubdomainFree } from "@/lib/api.js";
 import { ApplyWizard } from "@/admin/apply.jsx";
-import { Logo } from "@/admin/core.jsx";
+import { Logo, SigninAside } from "@/admin/core.jsx";
 import { toast } from "@/ui/components.jsx";
 import { signInWithGoogle } from "@/lib/firebase.js";
 const { useState, useEffect } = React;
@@ -26,15 +26,7 @@ function Shell({ children }) {
   // page via the same .signin--split media block.
   return (
     <div className="signin signin--split admin--sa apply-page">
-      <aside className="signin__aside signin__aside--promo">
-        <div className="signin__asidetop">
-          <div className="signin__brand"><Logo size={28} /><span className="signin__word">Celebrately.</span></div>
-          <p className="signin__tagline">Celebrate life's biggest moments, beautifully.</p>
-        </div>
-        <video className="signin__promo" autoPlay loop muted playsInline preload="auto" poster="/assets/login-phone.jpg" aria-hidden="true">
-          <source src="/promo/celebrately-promo-tall-2.mp4" type="video/mp4" />
-        </video>
-      </aside>
+      <SigninAside />
       <div className="signin__pane">
         <div className="signin__center">{children}</div>
       </div>
@@ -385,7 +377,7 @@ function AuthCard({ onDone }) {
       <p style={{ textAlign: "center", fontSize: 13, color: "var(--sg-sub)", marginTop: 14 }}>
         {mode === "signup" ? "Already have an account? " : "New here? "}
         <a href="#" style={{ color: "#1E5BD6", fontWeight: 600, textDecoration: "none" }}
-          onClick={(e) => { e.preventDefault(); setMode(mode === "signup" ? "signin" : "signup"); setF((p) => ({ ...p, pw: "", pw2: "" })); setTsToken(""); }}>
+          onClick={(e) => { e.preventDefault(); if (mode === "signup") { window.location.assign("/admin"); return; } setMode("signup"); setF((p) => ({ ...p, pw: "", pw2: "" })); setTsToken(""); }}>
           {mode === "signup" ? "Sign in →" : "Create one →"}
         </a>
       </p>

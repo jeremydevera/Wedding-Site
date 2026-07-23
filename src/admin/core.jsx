@@ -123,6 +123,24 @@ function LoginPhone({ shot }) {
   );
 }
 
+// The split-shell LEFT panel — brand + tagline + promo scene. ONE component
+// shared by the main login AND /register (login-design-single-source): change
+// it here and both pages move together.
+export function SigninAside() {
+  return (
+    <aside className="signin__aside signin__aside--promo">
+      <div className="signin__asidetop">
+        <div className="signin__brand">
+          <Logo size={28} />
+          <span className="signin__word">Celebrately.</span>
+        </div>
+        <p className="signin__tagline">Celebrate life's biggest moments, beautifully.</p>
+      </div>
+      <LoginPromoScene />
+    </aside>
+  );
+}
+
 // V1 login showcase (owner pick 2026-07-23): zoom intro → ONE phone snaps left
 // (caption right) / right (caption left) → 4-phone carousel. Pure CSS, no video.
 function LoginPromoScene() {
@@ -215,21 +233,10 @@ export function AdminLogin({ onAuthed }) {
     } finally { setGBusy(false); }
   };
   return (
-    <div className="signin signin--split">
-      {/* LEFT — brand panel. ONE design everywhere (owner request 2026-07-22):
-          client logins inherit the apex panel exactly — Celebrately brand +
-          promo video — so a redesign here applies to every site's login. */}
-      <aside className="signin__aside signin__aside--promo">
-        <div className="signin__asidetop">
-          <div className="signin__brand">
-            <Logo size={28} />
-            <span className="signin__word">Celebrately.</span>
-          </div>
-          <p className="signin__tagline">Celebrate life's biggest moments, beautifully.</p>
-        </div>
-        {/* pure-CSS V1 showcase (replaces the mp4): zoom → left/right → carousel */}
-        <LoginPromoScene />
-      </aside>
+    <div className="signin signin--split signin--login">
+      {/* LEFT — the shared SigninAside (also used by /register). ONE design
+          everywhere: a redesign there applies to every login and the sign-up. */}
+      <SigninAside />
 
       {/* RIGHT — form */}
       <div className="signin__pane">
