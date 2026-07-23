@@ -3279,7 +3279,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .lgp-l{left:7%}
 /* carousel captions: bottom-center, larger, rise-up entrance over a soft scrim */
 .lgp-c1,.lgp-c2,.lgp-c3,.lgp-c4{top:auto;bottom:40px;left:50%;right:auto;max-width:460px;text-align:center;align-items:center;padding:0 24px}
-.lgp-c1 .lgp-h,.lgp-c2 .lgp-h,.lgp-c3 .lgp-h,.lgp-c4 .lgp-h{font-size:40px}
+.lgp-c1 .lgp-h,.lgp-c2 .lgp-h,.lgp-c3 .lgp-h,.lgp-c4 .lgp-h{font-size:40px;white-space:nowrap}
 .lgp-c1 .lgp-p,.lgp-c2 .lgp-p,.lgp-c3 .lgp-p,.lgp-c4 .lgp-p{font-size:15.5px;color:rgba(255,255,255,.82)}
 .lgp-c1 .lgp-h::after,.lgp-c2 .lgp-h::after,.lgp-c3 .lgp-h::after,.lgp-c4 .lgp-h::after{margin-left:auto;margin-right:auto}
 /* readability scrim behind the bottom captions during the carousel phase */
