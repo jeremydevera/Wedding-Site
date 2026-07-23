@@ -3270,16 +3270,16 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .lgp-btnV2{position:absolute;top:33%;left:22%;width:56%;height:26px;border-radius:3px;background:linear-gradient(180deg,#a5a1ab,#77737e)}
 .lgp-usb{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:26px;height:6px;border-radius:3px;background:#3a3741;box-shadow:inset 0 0 0 1px #1d1b22}
 /* captions — snap phase beside the phone; carousel phase = bottom billboard */
-.lgp-cap{position:absolute;top:50%;max-width:250px;opacity:0;z-index:5;display:flex;flex-direction:column;animation-duration:var(--ll);animation-timing-function:ease;animation-iteration-count:infinite;animation-delay:var(--li)}
+.lgp-cap{position:absolute;top:50%;max-width:300px;opacity:0;z-index:5;display:flex;flex-direction:column;animation-duration:var(--ll);animation-timing-function:ease;animation-iteration-count:infinite;animation-delay:var(--li)}
 .lgp-ey{font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.6);font-weight:700}
-.lgp-h{font-size:32px;font-weight:800;letter-spacing:-.02em;line-height:1.05;margin-top:8px;color:#fff;text-wrap:balance}
-.lgp-p{margin-top:10px;color:rgba(255,255,255,.78);font-size:15px;line-height:1.5}
+.lgp-h{font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1.05;margin-top:8px;color:#fff;text-wrap:balance}
+.lgp-p{margin-top:12px;color:rgba(255,255,255,.8);font-size:16px;line-height:1.5}
 .lgp-h::after{content:"";display:block;width:44px;height:4px;border-radius:2px;background:#e97c5d;margin-top:12px}
-.lgp-r{right:26px;text-align:right;align-items:flex-end}.lgp-r .lgp-h::after{margin-left:auto}
-.lgp-l{left:26px}
+.lgp-r{right:7%;text-align:right;align-items:flex-end}.lgp-r .lgp-h::after{margin-left:auto}
+.lgp-l{left:7%}
 /* carousel captions: bottom-center, larger, rise-up entrance over a soft scrim */
 .lgp-c1,.lgp-c2,.lgp-c3,.lgp-c4{top:auto;bottom:40px;left:50%;right:auto;max-width:460px;text-align:center;align-items:center;padding:0 24px}
-.lgp-c1 .lgp-h,.lgp-c2 .lgp-h,.lgp-c3 .lgp-h,.lgp-c4 .lgp-h{font-size:38px}
+.lgp-c1 .lgp-h,.lgp-c2 .lgp-h,.lgp-c3 .lgp-h,.lgp-c4 .lgp-h{font-size:40px}
 .lgp-c1 .lgp-p,.lgp-c2 .lgp-p,.lgp-c3 .lgp-p,.lgp-c4 .lgp-p{font-size:15.5px;color:rgba(255,255,255,.82)}
 .lgp-c1 .lgp-h::after,.lgp-c2 .lgp-h::after,.lgp-c3 .lgp-h::after,.lgp-c4 .lgp-h::after{margin-left:auto;margin-right:auto}
 /* readability scrim behind the bottom captions during the carousel phase */
