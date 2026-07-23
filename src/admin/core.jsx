@@ -274,7 +274,6 @@ export function AdminLogin({ onAuthed }) {
   };
   const welcomeFooter = gateEligible ? (
     <div className="signin__welcome">
-      <h2 className="signin__welcometitle">Celebrate life's biggest moments.</h2>
       <a className="lgw-btn lgw-btn--primary" href="https://celebrately.us/register">Create my website</a>
       <button type="button" className="lgw-btn lgw-btn--ghost" onClick={() => setShowForm(true)}>Log in</button>
       <a className="lgw-btn lgw-btn--text" href="https://demo.celebrately.us">See the demo</a>
