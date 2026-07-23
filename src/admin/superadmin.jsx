@@ -637,6 +637,17 @@ export function ClientsAdmin() {
     });
   }
 
+  // Neon client Edit: list_clients trims content, so fetch the full row via the
+  // bridge first, tag it __neon so the save handlers route back through the
+  // bridge (a Neon client has no Supabase row to UPDATE).
+  async function openEditNeon(c) {
+    await runBusy("Loading…", async () => {
+      try {
+        const { client } = await neonAdmin("get_client", { id: c.id });
+        openEdit({ ...client, __neon: true });
+      } catch (e) { toast("Couldn't load client: " + e.message, "err"); }
+    });
+  }
   function openEdit(c) {
     const ct = c.content || {};
     setEditing(c);
@@ -669,11 +680,22 @@ export function ClientsAdmin() {
     if (!editing) return;
     if (!isValidSubdomain(p.subdomain)) throw new Error("Invalid subdomain — lowercase letters, numbers, hyphens; not a reserved name.");
     const id = editing.id;
+    const isNeon = editing.__neon === true;
     await runBusy("Saving…", async () => {
       const content = { ...(editing.content || {}), partnerA: p.partnerA, partnerB: p.partnerB, ...p.content };
+      const email = (p.email || "").trim();
+      if (isNeon) {
+        // Neon: identity + merged content go through the bridge in one write;
+        // owner_email is a plain column here (no Supabase Auth account to rename).
+        try { await neonAdmin("update_client_identity", { id, subdomain: p.subdomain, template_key: p.templateKey, owner_email: email || (editing.owner_email || null), content }); }
+        catch (e2) { toast(e2.message === "subdomain already taken" ? "That subdomain is taken." : "Save failed: " + e2.message, "err"); return; }
+        toast("Client updated", "success");
+        await loadNeon();
+        setEditing(null);
+        return;
+      }
       const { error } = await supabase.from("clients").update({ subdomain: p.subdomain, template_key: p.templateKey, content }).eq("id", id);
       if (error) { toast("Save failed: " + error.message, "err"); return; }
-      const email = (p.email || "").trim();
       try {
         if (email && email !== (editing.owner_email || "")) {
           if (editing.owner_email) await updateOwnerEmail({ old_email: editing.owner_email, new_email: email });
@@ -691,6 +713,7 @@ export function ClientsAdmin() {
   async function saveClientAccess() {
     if (busy || !editing) return;
     const id = editing.id;
+    const isNeon = editing.__neon === true;
     await runBusy("Saving…", async () => {
       const content = {
         ...(editing.content || {}),
@@ -703,6 +726,18 @@ export function ClientsAdmin() {
         accessV2: editForm.accessV2 === true,
         features: editForm.features || null,
       };
+      if (isNeon) {
+        // Neon: content + status via the bridge. Owner PASSWORD reset is skipped
+        // — Neon owners authenticate with Firebase (Google / their own email
+        // reset), there's no Supabase Auth password for the console to set.
+        try { await neonAdmin("update_client_access", { id, content, status: editForm.status || "not_paid" }); }
+        catch (e2) { toast("Save failed: " + e2.message, "err"); return; }
+        setEditing((c) => (c ? { ...c, content } : c));
+        await loadNeon();
+        if (editForm.ownerPassword) toast("Settings saved. (Password reset isn't available for Google/Firebase owners.)", "success");
+        else toast("Access settings saved", "success");
+        return;
+      }
       const { error } = await supabase.from("clients").update({ content, status: editForm.status || "not_paid" }).eq("id", id);
       if (error) { toast("Save failed: " + error.message, "err"); return; }
       try { await saveNote(id, editForm.note); } catch (_) { /* note is best-effort */ }
@@ -760,29 +795,39 @@ export function ClientsAdmin() {
   // Bulk: checked rows -> one confirm listing the sites -> delete them all.
   const toggleSel = (id) => setSel((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   async function deleteSelected() {
-    const targets = clients.filter((c) => sel.has(c.id));
-    if (!targets.length) return;
+    // A selection can mix Supabase and Neon rows (both keyed by UUID). Route each
+    // to its own backend: Supabase via deleteClientCore, Neon via the bridge.
+    const supaTargets = clients.filter((c) => sel.has(c.id));
+    const neonTargets = neonClients.filter((c) => sel.has(c.id));
+    const total = supaTargets.length + neonTargets.length;
+    if (!total) return;
+    const names = [...supaTargets, ...neonTargets].map((c) => c.subdomain).join(", ");
     const ok = await confirmDialog({
-      title: `Delete ${targets.length} client${targets.length === 1 ? "" : "s"}?`,
-      message: `Delete ${targets.map((c) => c.subdomain).join(", ")} — including all their data (RSVPs, guestbook, quiz) and owner logins? This can't be undone.`,
-      confirmLabel: `Delete ${targets.length}`,
+      title: `Delete ${total} client${total === 1 ? "" : "s"}?`,
+      message: `Delete ${names} — including all their data (RSVPs, guestbook, quiz) and owner logins? This can't be undone.`,
+      confirmLabel: `Delete ${total}`,
       danger: true,
     });
     if (!ok) return;
     setBusy(true);
-    let fail = 0, warn = 0;
-    for (let i = 0; i < targets.length; i++) {
-      setBusyLabel(`Deleting ${i + 1}/${targets.length}…`);
-      try { const { ownerWarn } = await deleteClientCore(targets[i]); if (ownerWarn) warn++; }
+    let fail = 0, warn = 0, done = 0;
+    for (const c of supaTargets) {
+      setBusyLabel(`Deleting ${++done}/${total}…`);
+      try { const { ownerWarn } = await deleteClientCore(c); if (ownerWarn) warn++; }
+      catch (_) { fail++; }
+    }
+    for (const c of neonTargets) {
+      setBusyLabel(`Deleting ${++done}/${total}…`);
+      try { await neonAdmin("delete_client", { id: c.id }); }
       catch (_) { fail++; }
     }
     setSel(new Set()); // clear selection so the stale "Delete selected (N)" button goes away
-    await load();
+    await Promise.all([load(), loadNeon()]);
     setBusy(false); setBusyLabel("");
     toast(
-      fail ? `Deleted ${targets.length - fail} — ${fail} failed` :
-      warn ? `Deleted ${targets.length} — ${warn} owner login(s) may remain (Supabase Auth)` :
-      `Deleted ${targets.length} client${targets.length === 1 ? "" : "s"}`,
+      fail ? `Deleted ${total - fail} — ${fail} failed` :
+      warn ? `Deleted ${total} — ${warn} owner login(s) may remain (Supabase Auth)` :
+      `Deleted ${total} client${total === 1 ? "" : "s"}`,
       fail ? "err" : "success",
     );
   }
@@ -1125,7 +1170,7 @@ export function ClientsAdmin() {
                   ))}
                   {neonClients.map((c) => (
                     <tr key={"n-" + c.id}>
-                      <td></td>
+                      <td><input type="checkbox" aria-label={`Select ${c.subdomain}`} checked={sel.has(c.id)} onChange={() => toggleSel(c.id)} /></td>
                       <td>
                         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                           <span className={"sa-dot" + (c.is_active ? "" : " sa-dot--off")} title={c.is_active ? "Active" : "Disabled"} />
@@ -1165,10 +1210,11 @@ export function ClientsAdmin() {
                             })}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 3.5v8" /><path d="M6.6 6.8a8 8 0 1 0 10.8 0" /></svg>
                           </button>
-                          <a className="icon-btn" href={clientUrl(c.subdomain) + "/admin"} target="_blank" rel="noreferrer" title="Open admin (you have superadmin access)">{Icon.edit({})}</a>
-                          <a className="icon-btn" href={clientUrl(c.subdomain)} target="_blank" rel="noreferrer" title="Open live site">{Icon.arrow({})}</a>
+                          <a className="icon-btn" href={`/admin?client=${c.subdomain}`} title="Open admin">{Icon.grid({})}</a>
+                          <button className="icon-btn" onClick={() => setInfo({ ...c, __neon: true })} title="Client info">{Icon.eye({})}</button>
+                          <button className="icon-btn" onClick={() => openEditNeon(c)} title="Edit">{Icon.edit({})}</button>
                           <button className="icon-btn icon-btn--danger" title="Delete site permanently" disabled={busy}
-                            onClick={() => confirmDialog({ title: "Delete this Neon site?", message: `Permanently delete ${c.subdomain}.${PLATFORM_DOMAIN} and all its RSVPs, guestbook and quiz data? The owner's login is kept. This can't be undone.`, confirmLabel: "Delete site", danger: true }).then((ok) => { if (!ok) return; runBusy("Deleting…", async () => {
+                            onClick={() => confirmDialog({ title: "Delete this Neon site?", message: `Permanently delete ${c.subdomain}.${PLATFORM_DOMAIN} and all its RSVPs, guestbook and quiz data, plus the owner's account link (so they can register again with the same Google/email). This can't be undone.`, confirmLabel: "Delete site", danger: true }).then((ok) => { if (!ok) return; runBusy("Deleting…", async () => {
                               try { await neonAdmin("delete_client", { id: c.id }); toast("Site deleted.", "success"); await loadNeon(); }
                               catch (e2) { toast("Delete failed: " + e2.message, "err"); }
                             }); })}>
@@ -1340,7 +1386,7 @@ export function ClientsAdmin() {
                 {notes[c.id] && <div style={row}><span style={lab}>Note</span><span>{notes[c.id]}</span></div>}
               </div>
               <div style={{ display: "flex", gap: 10, marginTop: 18, flexWrap: "wrap" }}>
-                <Button variant="primary" onClick={() => { setInfo(null); openEdit(c); }}>{Icon.edit({})} Edit client</Button>
+                <Button variant="primary" onClick={() => { setInfo(null); c.__neon ? openEditNeon(c) : openEdit(c); }}>{Icon.edit({})} Edit client</Button>
                 <a className="btn btn--ghost" href={clientUrl(c.subdomain)} target="_blank" rel="noreferrer">{Icon.eye({})} Open live site</a>
                 <a className="btn btn--ghost" href={`/admin?client=${c.subdomain}`}>{Icon.grid({})} Open admin</a>
               </div>

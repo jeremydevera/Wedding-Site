@@ -58,17 +58,60 @@ export async function onRequestPost({ request, env }) {
       // Permanently remove a Neon client site: unlink/remove owner profiles first
       // (profiles.client_id references the client), then the client row. Guest
       // rows (rsvps/guestbook/quiz) cascade via their client_id FKs where defined;
-      // delete explicitly to be safe. The owner's AUTH account is kept — they
-      // could register a new site later.
+      // delete explicitly to be safe. Removing the owner PROFILE is what frees
+      // the account to register again (register_site keys off the profile, not
+      // the identity provider) — so a Google owner can sign up fresh afterward
+      // WITHOUT their Firebase record being purged. We return owner_uid so the
+      // caller can additionally delete the Firebase identity when configured.
       case "delete_client": {
         if (!body.id) return json({ error: "id required" }, 400);
+        const [own] = await sql`select id from profiles where client_id = ${body.id} and role = 'owner'`;
+        const ownerUid = own?.id || null;
         await sql`delete from rsvps where client_id = ${body.id}`;
         await sql`delete from guestbook where client_id = ${body.id}`;
         await sql`delete from quiz_answers where client_id = ${body.id}`;
         await sql`delete from guests where client_id = ${body.id}`.catch(() => {});
         await sql`delete from profiles where client_id = ${body.id} and role = 'owner'`;
+        // Legacy Neon-Auth owners also had a neon_auth.user row (Firebase owners
+        // don't) — drop it so the email is free to register again on that path.
+        if (ownerUid) await sql`delete from neon_auth."user" where id = ${String(ownerUid)}::uuid`.catch(() => {});
         const del = await sql`delete from clients where id = ${body.id} returning subdomain`;
-        return json({ ok: true, deleted: del[0]?.subdomain || null });
+        return json({ ok: true, deleted: del[0]?.subdomain || null, owner_uid: ownerUid });
+      }
+      // Full row incl. content for the console Edit modal (list_clients trims it).
+      case "get_client": {
+        if (!body.id) return json({ error: "id required" }, 400);
+        const [row] = await sql`select id, subdomain, event_type, template_key, is_active, owner_email, status, content from clients where id = ${body.id}`;
+        if (!row) return json({ error: "client not found" }, 404);
+        return json({ ok: true, client: row });
+      }
+      // Edit → Design tab: identity fields (subdomain / owner email / status) +
+      // a merged content patch (couple names, theme, date, venue, schedule…).
+      case "update_client_identity": {
+        if (!body.id) return json({ error: "id required" }, 400);
+        const sub = String(body.subdomain || "").trim().toLowerCase();
+        if (!/^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])?$/.test(sub)) return json({ error: "invalid subdomain" }, 400);
+        const clash = await sql`select 1 from clients where subdomain = ${sub} and id <> ${body.id} limit 1`;
+        if (clash.length) return json({ error: "subdomain already taken" }, 409);
+        const [cur] = await sql`select content from clients where id = ${body.id}`;
+        if (!cur) return json({ error: "client not found" }, 404);
+        const merged = { ...(cur.content || {}), ...(body.content || {}) };
+        await sql`update clients set subdomain = ${sub},
+          template_key = coalesce(${body.template_key || null}, template_key),
+          owner_email = ${body.owner_email ?? null},
+          status = coalesce(${body.status || null}, status),
+          content = ${JSON.stringify(merged)}::jsonb where id = ${body.id}`;
+        return json({ ok: true });
+      }
+      // Edit → Access tab: merge the feature/access keys into content + status.
+      case "update_client_access": {
+        if (!body.id) return json({ error: "id required" }, 400);
+        const [cur] = await sql`select content from clients where id = ${body.id}`;
+        if (!cur) return json({ error: "client not found" }, 404);
+        const merged = { ...(cur.content || {}), ...(body.content || {}) };
+        await sql`update clients set content = ${JSON.stringify(merged)}::jsonb,
+          status = coalesce(${body.status || null}, status) where id = ${body.id}`;
+        return json({ ok: true });
       }
       // Registered accounts that never finished the wizard: no client, no pending
       // request. Surfaced in the console so signups aren't invisible.
@@ -173,7 +216,21 @@ AS $function$ declare v_uid text; v_sub text := lower(btrim(coalesce(p_subdomain
         const [r] = await sql`select pg_get_functiondef('public.register_site(text,text,text,text,text,text,jsonb)'::regprocedure) as def`;
         return json({ ok: true, hasGuard: /superadmin/.test(r?.def || ""), hasCap: /registration_limits/.test(r?.def || "") });
       }
-      case "ensure_superadmin": {
+      // Firebase-cutover prep (idempotent): Firebase tokens carry no `role`
+      // claim, so PostgREST maps them to the ANONYMOUS role. Mirror every
+      // authenticated-role policy to anonymous (suffix _fb; RLS quals still
+      // gate by auth.user_id(), which a guest's anonymous-session uid never
+      // matches), copy authenticated's table grants EXCEPT clients (column
+      // grants there protect owner_email), give anonymous the owner-editable
+      // clients columns, and mirror function EXECUTE grants.
+      case "fb_role_prep": {
+        await sql`do $do$
+declare r record;
+begin
+  for r in select tablename, policyname, cmd, qual, with_check from pg_policies
+    where schemaname='public' and 'authenticated'=any(roles) and policyname not like '%_fb'
+  loop
+    if not exists (select 1
         const email = String(body.email || "").trim().toLowerCase();
         if (!email) return json({ error: "email required" }, 400);
         let u;

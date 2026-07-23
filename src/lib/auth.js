@@ -1,7 +1,14 @@
 import { supabase } from "@/lib/supabase.js";
 import { Store } from "@/lib/store.jsx";
 import { neonAuth, authedRpc, neonAuthedSelect, NEON_SHARDS_KEY, FB_AUTH_FLAG_KEY, setNeonRegistry, resolveShardId, setActiveShard, fbAuthMode, setFbAuthMode } from "@/lib/neon.js";
-import { resolveSubdomain } from "@/lib/tenant.js";
+import { resolveSubdomain, subdomainFromHost } from "@/lib/tenant.js";
+
+// The REAL host's client label, ignoring any ?client= console override. A
+// Firebase popup can only run on an allow-listed domain (celebrately.us / apex),
+// never an arbitrary client subdomain — so this decides whether Google must hop
+// to the apex. On the apex with ?client= (superadmin "Open admin"), the host is
+// celebrately.us → no hop, the popup runs right there.
+const hostIsClientSubdomain = () => !!subdomainFromHost(window.location.hostname, "");
 
 async function profileFor(userId) {
   const { data } = await supabase.from("profiles").select("role,client_id").eq("id", userId).single();
@@ -270,15 +277,18 @@ export async function requestPasswordReset(email) {
 // live site → her admin; unfinished → /register; SA → refuse (console uses the
 // admin password). Supabase client sites: not supported, actionable error.
 export async function signInGoogle() {
-  if (resolveSubdomain()) {
-    // Firebase popups only run on allow-listed domains (no wildcards), so NO
-    // client subdomain can open one — Neon-backed or not. Hop to the apex
-    // login; its Google button + the shared session cookie + wrong-door
-    // routing land her on her own admin.
-    window.location.assign("https://celebrately.us/admin?gfrom=" + encodeURIComponent(resolveSubdomain()));
+  if (hostIsClientSubdomain()) {
+    // On a real client subdomain the popup can't open (domain not allow-listed)
+    // — hop to the apex login; the shared cookie + wrong-door routing land her
+    // on her own admin. NOTE: host-based, so the superadmin "Open admin"
+    // (celebrately.us/admin?client=…) does NOT hop — the popup runs on the apex.
+    window.location.assign("https://celebrately.us/admin?gfrom=" + encodeURIComponent(resolveSubdomain() || ""));
     return { role: null, client_id: null, redirecting: true };
   }
   if (Store.get().neonMode) {
+    // neonMode on the apex = superadmin "Open admin" via ?client= (or a Neon
+    // owner). Google popup runs here (apex is allow-listed); loadNeonSession
+    // grants superadmin (SA profile) or owner-of-this-site, else no access.
     await neonAuth.signInGoogle();
     const p = await loadNeonSession();
     if (!p) {
