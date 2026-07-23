@@ -10,6 +10,7 @@ import { SupportWidget, SupportPanel, TicketForm } from "@/admin/SupportWidget.j
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { signOut, createOwner, ownerHomeUrl } from "@/lib/auth.js";
 import { supabase } from "@/lib/supabase.js";
+import { firebaseSignInProvider, firebaseUpdatePassword } from "@/lib/firebase.js";
 import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb, updateRsvpDietDb, listSiteRequests, subscribeSiteRequestsRealtime, listTickets, subscribeTicketsRealtime , listRecentClientReplies, listRecentSupportReplies, subscribeAllTicketMessagesRealtime, getAppConfig, setAppConfig} from "@/lib/api.js";
 import { DIET_OPTIONS } from "@/features/rsvp.jsx";
 import { reconcileGuests, guestFromRsvp, findDuplicateGuest } from "@/lib/guests.js";
@@ -2246,22 +2247,54 @@ function ClientPasswordReset() {
 function SelfPasswordReset() {
   const { auth } = useStore();
   const email = auth?.email || auth?.session?.user?.email || "";
+  const neon = Store.get().neonMode === true;
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [busy, setBusy] = useState(false);
+  // For Neon owners (Firebase auth) find HOW they signed in. A Google account
+  // has no password in our system — the credential lives with Google — so we
+  // hide the change form and point them at their Google account instead of
+  // showing a box that can't work. null while loading; "supabase" for legacy
+  // Supabase-session owners (provider concept doesn't apply, keep the form).
+  const [provider, setProvider] = useState(neon ? "loading" : "supabase");
+  useEffect(() => {
+    if (!neon) return;
+    let alive = true;
+    firebaseSignInProvider().then((p) => { if (alive) setProvider(p || "password"); }).catch(() => { if (alive) setProvider("password"); });
+    return () => { alive = false; };
+  }, [neon]);
 
   async function change() {
     if (pw.length < 6) return toast("Use a password of at least 6 characters.", "err");
     if (pw !== pw2) return toast("The two passwords don't match.", "err");
     setBusy(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password: pw });
-      if (error) throw error;
+      if (neon) await firebaseUpdatePassword(pw);          // Firebase email/password owner
+      else { const { error } = await supabase.auth.updateUser({ password: pw }); if (error) throw error; }
       setPw(""); setPw2("");
       toast("Password updated", "success");
     } catch (e) {
       toast("Couldn't update password: " + (e?.message || "error"), "err");
     } finally { setBusy(false); }
+  }
+
+  // Google (or any OAuth) sign-in → no password to change here.
+  if (provider === "google.com" || provider === "facebook.com") {
+    const label = provider === "google.com" ? "Google" : "Facebook";
+    return (
+      <div className="panel">
+        <div className="panel__head"><div><div className="panel__title">Your login</div><div className="panel__sub">How you sign in to your admin.</div></div></div>
+        <div className="panel__body" style={{ maxWidth: 460 }}>
+          <Field label="Email" id="spr-email" hint={`You sign in with ${label}`}>
+            <Input id="spr-email" type="email" value={email} readOnly disabled placeholder="you@yourdomain" />
+          </Field>
+          <p style={{ color: "var(--ink-soft)", fontSize: 14, lineHeight: 1.5, margin: "4px 0 0" }}>
+            You sign in with <strong>{label}</strong>, so there's no password to change here — your password is managed by your {label} account.
+            {provider === "google.com" && <> Manage it at <a href="https://myaccount.google.com/security" target="_blank" rel="noreferrer" style={{ color: "#1E5BD6", fontWeight: 600 }}>your Google account security</a>.</>}
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -2277,7 +2310,7 @@ function SelfPasswordReset() {
         <Field label="Confirm new password" id="spr-pw2">
           <Input id="spr-pw2" type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} placeholder="••••••••" autoComplete="new-password" />
         </Field>
-        <Button variant="primary" disabled={busy || !pw} onClick={change}>{busy ? "Updating…" : "Update password"}</Button>
+        <Button variant="primary" disabled={busy || !pw || provider === "loading"} onClick={change}>{busy ? "Updating…" : "Update password"}</Button>
       </div>
     </div>
   );

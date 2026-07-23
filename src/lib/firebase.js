@@ -204,3 +204,28 @@ export async function firebaseUserToken() {
   const u = await currentFirebaseUser();
   return u && u.idToken ? u.idToken : null;
 }
+
+// How the current user signed in: "google.com" | "password" | "anonymous" |
+// null. Read from the ID token's firebase.sign_in_provider claim, so it works
+// for BOTH a live SDK session and one restored from the shared cookie.
+export async function firebaseSignInProvider() {
+  const u = await currentFirebaseUser();
+  if (!u || !u.idToken) return null;
+  try {
+    const p = JSON.parse(atob(u.idToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return (p.firebase && p.firebase.sign_in_provider) || null;
+  } catch (e) { return null; }
+}
+
+// Change the password of a Firebase EMAIL/PASSWORD user. Throws a friendly
+// message if there's no live SDK session or Firebase demands a recent login.
+export async function firebaseUpdatePassword(newPassword) {
+  const { auth, mod } = await getAuth();
+  const u = auth.currentUser;
+  if (!u || u.isAnonymous) throw new Error("Please sign out and sign in again, then change your password.");
+  try { await mod.updatePassword(u, newPassword); }
+  catch (e) {
+    if (/requires-recent-login/i.test(e?.code || e?.message || "")) throw new Error("For your security, sign out and sign back in, then change your password.");
+    throw e;
+  }
+}
