@@ -3285,9 +3285,9 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* readability scrim behind the bottom captions during the carousel phase */
 .lgp-scrim{position:absolute;left:0;right:0;bottom:0;height:270px;z-index:4;pointer-events:none;opacity:0;background:linear-gradient(180deg,transparent,rgba(24,15,34,.78));animation:lgp-scrim var(--ll) ease var(--li) infinite}
 @keyframes lgp-scrim{0%,43%{opacity:0}47%,89%{opacity:1}93%,100%{opacity:0}}
-.lgp-s1{animation-name:lgp-ks1}.lgp-s2{animation-name:lgp-ks2}
+.lgp-s1{animation-name:lgp-ks1;animation-delay:0s}.lgp-s2{animation-name:lgp-ks2}
 .lgp-c1{animation-name:lgp-kc1}.lgp-c2{animation-name:lgp-kc2}.lgp-c3{animation-name:lgp-kc3}.lgp-c4{animation-name:lgp-kc4}
-@keyframes lgp-ks1{0%,7%{opacity:0;transform:translate(28px,-50%)}9%,17%{opacity:1;transform:translate(0,-50%)}19%,100%{opacity:0;transform:translate(28px,-50%)}}
+@keyframes lgp-ks1{0%,1%{opacity:0;transform:translate(28px,-50%)}4%,29%{opacity:1;transform:translate(0,-50%)}33%,100%{opacity:0;transform:translate(28px,-50%)}}
 @keyframes lgp-ks2{0%,25%{opacity:0;transform:translate(-28px,-50%)}27%,35%{opacity:1;transform:translate(0,-50%)}37%,100%{opacity:0;transform:translate(-28px,-50%)}}
 @keyframes lgp-kc1{0%,45%{opacity:0;transform:translate(-50%,26px)}47%,50%{opacity:1;transform:translate(-50%,0)}52%,100%{opacity:0;transform:translate(-50%,26px)}}
 @keyframes lgp-kc2{0%,57%{opacity:0;transform:translate(-50%,26px)}59%,62%{opacity:1;transform:translate(-50%,0)}64%,100%{opacity:0;transform:translate(-50%,26px)}}

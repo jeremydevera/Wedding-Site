@@ -32,7 +32,7 @@ function kf(points, pct) {
 }
 const D = Math.PI / 180;
 // mover: x offset + yaw (matches CSS 0/2→6/20→24/38→41)
-const MX = [[0, 0], [2, 0], [6, -0.8], [20, -0.8], [24, 0.8], [38, 0.8], [41, 0], [100, 0]];
+const MX = [[0, -0.45], [2, -0.45], [6, -0.8], [20, -0.8], [24, 0.8], [38, 0.8], [41, 0], [100, 0]];
 const MR = [[0, 0], [2, 0], [6, 30 * D], [20, 30 * D], [24, -30 * D], [38, -30 * D], [41, 0], [100, 0]];
 // carousel ring rotation (matches CSS 41→44/53→56/65→68/77→80)
 const RING = [[0, 0], [41, 0], [44, -90 * D], [53, -90 * D], [56, -180 * D], [65, -180 * D], [68, -270 * D], [77, -270 * D], [80, -360 * D], [100, -360 * D]];
@@ -130,6 +130,7 @@ export default function LoginPromo3D() {
         slot.rotation.y = i * Math.PI / 2;
         const arm = new THREE.Group(); arm.position.z = R; arm.add(phone);
         slot.add(arm); ring.add(slot);
+        if (i > 0) slot.visible = false; // intro + snap phase show ONE phone
         slots.push({ slot, phone });
       }
       ring.position.z = -R; // front phone sits at world z=0
@@ -145,6 +146,7 @@ export default function LoginPromo3D() {
       } else if (t < INTRO) {
         const pct = (t / INTRO) * 100;
         rig.scale.setScalar(kf(ZOOM, pct));
+        mover.position.x = -0.45; // caption sits beside the zoomed phone
       } else {
         rig.scale.setScalar(1);
         // debug freeze: #lgp=<pct> pins the loop position (visual QA)
