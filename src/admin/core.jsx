@@ -157,12 +157,14 @@ function LoginPromoScene() {
       }>
         <LoginPromo3D />
       </React.Suspense>
-      <div className="lgp-cap lgp-r lgp-s1"><span className="lgp-ey">Featuring</span><span className="lgp-h">RSVP in one tap</span><span className="lgp-p">Guests reply from their phone — every answer lands live.</span></div>
-      <div className="lgp-cap lgp-l lgp-s2"><span className="lgp-ey">Featuring</span><span className="lgp-h">Live dashboard</span><span className="lgp-p">RSVPs, guests, guestbook — one glance, always current.</span></div>
-      <div className="lgp-cap lgp-r lgp-c1"><span className="lgp-ey">Featuring</span><span className="lgp-h">Guestbook</span><span className="lgp-p">Wishes from everyone you love — kept forever.</span></div>
-      <div className="lgp-cap lgp-l lgp-c2"><span className="lgp-ey">Featuring</span><span className="lgp-h">The day's schedule</span><span className="lgp-p">Ceremony to last dance — guests know what's next.</span></div>
-      <div className="lgp-cap lgp-r lgp-c3"><span className="lgp-ey">Featuring</span><span className="lgp-h">Your entourage</span><span className="lgp-p">Everyone honored by name, group by group.</span></div>
-      <div className="lgp-cap lgp-l lgp-c4"><span className="lgp-ey">Featuring</span><span className="lgp-h">Your invitation</span><span className="lgp-p">Opens like a real envelope — names, date, countdown.</span></div>
+      <span className="lgp-scrim" />
+      {/* captions match the screen facing front at each stop */}
+      <div className="lgp-cap lgp-r lgp-s1"><span className="lgp-ey">Featuring</span><span className="lgp-h">Your invitation</span><span className="lgp-p">Opens like a real envelope — names, date, and the big day.</span></div>
+      <div className="lgp-cap lgp-l lgp-s2"><span className="lgp-ey">Featuring</span><span className="lgp-h">One link, your whole day</span><span className="lgp-p">Share it once — guests find everything in one place.</span></div>
+      <div className="lgp-cap lgp-c1"><span className="lgp-ey">Featuring</span><span className="lgp-h">RSVP in one tap</span><span className="lgp-p">Guests reply from their phone — every answer lands live.</span></div>
+      <div className="lgp-cap lgp-c2"><span className="lgp-ey">Featuring</span><span className="lgp-h">Live dashboard</span><span className="lgp-p">RSVPs, guests, guestbook — one glance, always current.</span></div>
+      <div className="lgp-cap lgp-c3"><span className="lgp-ey">Featuring</span><span className="lgp-h">Your entourage</span><span className="lgp-p">Everyone honored by name, group by group.</span></div>
+      <div className="lgp-cap lgp-c4"><span className="lgp-ey">Featuring</span><span className="lgp-h">Set up in minutes</span><span className="lgp-p">No code, nothing to install — it's all yours.</span></div>
     </div>
   );
 }
