@@ -49,8 +49,26 @@ async function getAuth() {
 async function publishSession(user) {
   try {
     const rt = user && user.refreshToken;
-    if (rt) await fetch("/api/fb-session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ refreshToken: rt }) });
+    if (rt) {
+      await fetch("/api/fb-session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ refreshToken: rt }) });
+      _ck = { t: Date.now(), rt };
+    }
   } catch (e) { /* cookie bridge is best-effort; same-origin login still works */ }
+}
+
+// Shared-cookie probe with a short cache (userToken() runs on every authed API
+// call — don't hammer /api/fb-session). Returns the refresh token, null when
+// the cookie is DEFINITIVELY absent (signed out somewhere), or undefined when
+// unknowable (local dev / endpoint unreachable — keep the local session then).
+let _ck = { t: 0, rt: undefined };
+async function cookieToken() {
+  if (Date.now() - _ck.t < 20000) return _ck.rt;
+  try {
+    const r = await fetch("/api/fb-session");
+    const d = r.ok ? await r.json() : null;
+    _ck = { t: Date.now(), rt: r.ok ? (d.refreshToken || null) : undefined };
+  } catch (e) { _ck = { t: Date.now(), rt: undefined }; }
+  return _ck.rt;
 }
 
 let _restored = null; // { uid, email, idToken, exp, refreshToken }
@@ -72,8 +90,7 @@ async function mintFromRefreshToken(rt) {
 async function restoredSession() {
   if (_restored && _restored.exp - Date.now() > 120000) return _restored;
   try {
-    const rt = _restored ? _restored.refreshToken
-      : (await (await fetch("/api/fb-session")).json()).refreshToken;
+    const rt = _restored ? _restored.refreshToken : await cookieToken();
     if (!rt) return null;
     _restored = await mintFromRefreshToken(rt);
     return _restored;
@@ -109,6 +126,14 @@ export async function currentFirebaseUser() {
     const s = await restoredSession();
     return s ? { uid: s.uid, email: s.email, name: null, emailVerified: s.emailVerified, idToken: s.idToken } : null;
   }
+  // Local session exists — but the shared cookie is the CROSS-ORIGIN source of
+  // truth: signing out on any subdomain deletes it, and every other origin
+  // must drop its own local copy too (otherwise the apex kept resuming to a
+  // site the owner had just signed out of). Unknown (dev/api down) = keep.
+  if ((await cookieToken()) === null) {
+    try { const { auth: a2, mod } = await getAuth(); await mod.signOut(a2); } catch (e) { /* ignore */ }
+    return null;
+  }
   return { uid: u.uid, email: u.email, name: u.displayName, emailVerified: u.emailVerified, idToken: await u.getIdToken() };
 }
 
@@ -116,6 +141,7 @@ export async function firebaseSignOut() {
   const { auth, mod } = await getAuth();
   try { await mod.signOut(auth); } catch (e) { /* ignore */ }
   _restored = null;
+  _ck = { t: Date.now(), rt: null };
   try { await fetch("/api/fb-session", { method: "DELETE" }); } catch (e) { /* sign-out is local-first */ }
 }
 
