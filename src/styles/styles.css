@@ -3295,3 +3295,48 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* lgp 3D canvas (three.js) fills the panel; captions overlay above it */
 .lgp-canvas{position:absolute;inset:0;z-index:1}
 .lgp-canvas canvas{width:100%!important;height:100%!important;display:block}
+
+/* ============================================================
+   rdone — register success screen ("You're all set!"). Friendly
+   onboarding: the site link front-and-center (copyable), then two
+   numbered next-steps. Rendered inside the neutral signin Shell.
+   ============================================================ */
+.rdone{width:100%;max-width:480px;margin:0 auto;text-align:center}
+.rdone__badge{width:64px;height:64px;margin:0 auto 18px;border-radius:50%;display:grid;place-items:center;color:#fff;
+  background:linear-gradient(150deg,#34c98a,#16a34a);box-shadow:0 12px 26px -10px rgba(22,163,74,.55);
+  animation:rdone-pop .5s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes rdone-pop{0%{opacity:0;transform:scale(.4)}100%{opacity:1;transform:scale(1)}}
+.rdone__title{font-family:"Mulish",system-ui,sans-serif;font-size:30px;font-weight:800;letter-spacing:-.02em;color:var(--sg-text,#171717);margin:0 0 6px}
+.rdone__sub{color:var(--sg-sub,#6b7280);font-size:15px;margin:0 0 22px}
+
+/* link card — the hero */
+.rdone__linkcard{text-align:left;border:1.5px solid var(--sg-line,#e5e7eb);border-radius:16px;padding:16px;background:linear-gradient(180deg,#fff,#faf7fb)}
+.rdone__linklabel{display:block;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--sg-sub,#8b8b93);margin-bottom:8px}
+.rdone__linkrow{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--sg-line,#e5e7eb);border-radius:10px;padding:6px 6px 6px 14px}
+.rdone__url{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:14.5px;color:var(--sg-text,#171717)}
+.rdone__copy{flex:none;border:none;background:#1E5BD6;color:#fff;font:inherit;font-weight:700;font-size:13px;padding:9px 14px;border-radius:8px;cursor:pointer;transition:background .15s}
+.rdone__copy:hover{background:#1a4fbb}
+.rdone__open{display:flex;align-items:center;justify-content:center;height:50px;margin-top:12px;border-radius:10px;background:#e97c5d;color:#fff;font-weight:800;letter-spacing:.02em;text-decoration:none;transition:background .15s}
+.rdone__open:hover{background:#e26a49}
+
+/* next steps */
+.rdone__next{text-align:left;margin-top:24px}
+.rdone__nexthead{display:block;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--sg-sub,#8b8b93);margin-bottom:12px}
+.rdone__steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:16px}
+.rdone__step{display:flex;gap:14px;align-items:flex-start}
+.rdone__num{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:14px;color:#1E5BD6;background:#e8f0ff}
+.rdone__stepbody b{display:block;font-size:15.5px;color:var(--sg-text,#171717);margin-bottom:3px}
+.rdone__stepbody p{margin:0;font-size:13.5px;line-height:1.5;color:var(--sg-sub,#6b7280)}
+.rdone__adminbtn{display:inline-flex;align-items:center;margin-top:10px;padding:9px 16px;border:1.5px solid var(--sg-line,#dcdce0);border-radius:9px;font-size:13.5px;font-weight:700;color:var(--sg-text,#171717);text-decoration:none;background:#fff;transition:border-color .15s,background .15s}
+.rdone__adminbtn:hover{border-color:#e97c5d;background:#fff7f4}
+.rdone__hint{margin-top:12px}
+.rdone__hint summary{cursor:pointer;font-size:13px;font-weight:600;color:#1E5BD6;list-style:none}
+.rdone__hint summary::-webkit-details-marker{display:none}
+.rdone__hint summary::before{content:"▸ ";color:var(--sg-sub)}
+.rdone__hint[open] summary::before{content:"▾ "}
+.rdone__hint p{margin:10px 0;font-size:13px;line-height:1.5;color:var(--sg-sub,#6b7280)}
+.rdone__hint img{width:100%;border-radius:10px;border:1px solid var(--sg-line,#e5e7eb);display:block}
+
+.rdone__foot{margin:26px 0 0;font-size:13px;color:var(--sg-sub,#8b8b93)}
+.rdone__signout{margin-top:10px;background:none;border:none;font:inherit;font-size:13.5px;color:var(--sg-sub,#6b7280);text-decoration:underline;cursor:pointer}
+.rdone__signout:hover{color:var(--sg-text,#171717)}

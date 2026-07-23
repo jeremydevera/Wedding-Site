@@ -3,7 +3,7 @@ import { neonAuth, authedRpc, neonRpc, neonAuthedSelect, NEON_FLAG_KEY, NEON_SHA
 import { getAppConfig, checkRequestSubdomainFree } from "@/lib/api.js";
 import { ApplyWizard } from "@/admin/apply.jsx";
 import { Logo, SigninAside } from "@/admin/core.jsx";
-import { toast } from "@/ui/components.jsx";
+import { toast, Icon } from "@/ui/components.jsx";
 import { signInWithGoogle } from "@/lib/firebase.js";
 const { useState, useEffect } = React;
 
@@ -136,33 +136,62 @@ export function RegisterPage() {
       </div>
     </Shell>
   );
-  if (phase === "done") return (
-    <Shell>
-      <div className="signin__form" style={{ textAlign: "center" }}>
-        <h1 className="signin__title">Your site is live! 🎉</h1>
-        <p className="signin__sub">Here's your website — save this link and share it with your guests:</p>
-        <a className="signin__btn" style={{ display: "block", marginTop: 18, textDecoration: "none", textAlign: "center" }} href={`https://${sub}.celebrately.us`}>
-          Open {sub}.celebrately.us →
-        </a>
-        <div style={{ textAlign: "left", marginTop: 22, padding: "14px 16px", border: "1px solid var(--sg-line, #e5e7eb)", borderRadius: 12 }}>
-          <p style={{ fontWeight: 700, margin: 0, fontSize: 14 }}>Manage your site</p>
-          <p style={{ fontSize: 13, color: "var(--sg-sub)", margin: "6px 0 8px" }}>
-            Open your site and tap <strong>Admin sign in</strong> at the very bottom, then sign in with the email and password you used here:
-          </p>
-          <img src="/assets/register-admin-hint.png" alt="The Admin sign in link at the bottom of your site" style={{ width: "100%", borderRadius: 8, border: "1px solid var(--sg-line, #e5e7eb)", display: "block" }} />
-          <a href={`https://${sub}.celebrately.us/admin`} style={{ display: "inline-block", marginTop: 10, fontSize: 13, fontWeight: 600 }}>
-            Or go straight to your admin: {sub}.celebrately.us/admin →
-          </a>
+  if (phase === "done") {
+    const siteUrl = `${sub}.celebrately.us`;
+    const copyLink = async () => {
+      try { await navigator.clipboard.writeText(`https://${siteUrl}`); toast("Link copied — share it with your guests!", "success"); }
+      catch { toast("Couldn't copy — long-press the link to copy it.", "err"); }
+    };
+    return (
+      <Shell>
+        <div className="rdone">
+          <div className="rdone__badge">{Icon.check({ style: { width: 30, height: 30 } })}</div>
+          <h1 className="rdone__title">You're all set! 🎉</h1>
+          <p className="rdone__sub">Your website is live and ready to share.</p>
+
+          {/* the one thing they want: their link */}
+          <div className="rdone__linkcard">
+            <span className="rdone__linklabel">Your website</span>
+            <div className="rdone__linkrow">
+              <span className="rdone__url" title={siteUrl}>{siteUrl}</span>
+              <button type="button" className="rdone__copy" onClick={copyLink}>Copy link</button>
+            </div>
+            <a className="rdone__open" href={`https://${siteUrl}`} target="_blank" rel="noreferrer">Open my website →</a>
+          </div>
+
+          {/* clear next steps */}
+          <div className="rdone__next">
+            <span className="rdone__nexthead">What now?</span>
+            <ol className="rdone__steps">
+              <li className="rdone__step">
+                <span className="rdone__num">1</span>
+                <div className="rdone__stepbody">
+                  <b>Share it with your guests</b>
+                  <p>Send the link above by text, email, or your group chat. Guests can view everything and RSVP — no app needed.</p>
+                </div>
+              </li>
+              <li className="rdone__step">
+                <span className="rdone__num">2</span>
+                <div className="rdone__stepbody">
+                  <b>Manage your site anytime</b>
+                  <p>Edit your details, track RSVPs, and read wishes from your dashboard.</p>
+                  <a className="rdone__adminbtn" href={`https://${siteUrl}/admin`} target="_blank" rel="noreferrer">Open my dashboard →</a>
+                  <details className="rdone__hint">
+                    <summary>Or sign in from your website</summary>
+                    <p>Scroll to the very bottom of your site and tap <strong>Admin sign in</strong>, then use the same email &amp; password from today.</p>
+                    <img src="/assets/register-admin-hint.png" alt="The Admin sign in link at the bottom of your site" />
+                  </details>
+                </div>
+              </li>
+            </ol>
+          </div>
+
+          <p className="rdone__foot">Bookmark this page — sign in anytime to find these links again.</p>
+          <button type="button" className="rdone__signout" onClick={signOut}>Sign out</button>
         </div>
-        <p style={{ textAlign: "center", fontSize: 13, color: "var(--sg-sub)", marginTop: 16 }}>
-          You can come back to this page and sign in anytime to find these links again.
-        </p>
-        <p style={{ textAlign: "center", fontSize: 13, marginTop: 6 }}>
-          <a href="#" style={{ color: "var(--sg-sub)" }} onClick={(e) => { e.preventDefault(); signOut(); }}>Sign out</a>
-        </p>
-      </div>
-    </Shell>
-  );
+      </Shell>
+    );
+  }
   // wizard — fullscreen (the wizard creates the site; it renders its own
   // signin-style shell). draftKey: fields + step survive refresh, session
   // expiry, and coming back later — resumes where she left off. The floating
