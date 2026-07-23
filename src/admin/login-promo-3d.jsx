@@ -32,7 +32,9 @@ function kf(points, pct) {
 }
 const D = Math.PI / 180;
 // mover: x offset + yaw (matches CSS 0/2→6/20→24/38→41)
-const MX = [[0, -0.45], [2, -0.45], [6, -0.8], [20, -0.8], [24, 0.8], [38, 0.8], [41, 0], [100, 0]];
+// ends at -0.45 (== the 0% start) so the loop wraps with NO position jump — the
+// phone eases back to its rest spot over 84→100% while no caption is showing.
+const MX = [[0, -0.45], [2, -0.45], [6, -0.8], [20, -0.8], [24, 0.8], [38, 0.8], [41, 0], [84, 0], [100, -0.45]];
 const MR = [[0, 0], [2, 0], [6, 30 * D], [20, 30 * D], [24, -30 * D], [38, -30 * D], [41, 0], [100, 0]];
 // carousel ring rotation (matches CSS 41→44/53→56/65→68/77→80)
 const RING = [[0, 0], [41, 0], [44, -90 * D], [53, -90 * D], [56, -180 * D], [65, -180 * D], [68, -270 * D], [77, -270 * D], [80, -360 * D], [100, -360 * D]];
