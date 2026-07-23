@@ -41,9 +41,12 @@ const RING = [[0, 0], [41, 0], [44, -90 * D], [53, -90 * D], [56, -180 * D], [65
 // intro zoom (camera dolly scale on the whole rig)
 const ZOOM = [[0, 1.35], [55, 1.35], [100, 1]];
 
-// Varied pages from a real site (no repeated envelope): invite hero → schedule
-// → entourage → dashboard. Phone 0 (shown most) = the invite hero.
-const SHOTS = ["/assets/login-shot-2.jpg", "/assets/login-shot-3.jpg", "/assets/login-shot-4.jpg", "/assets/login-shot-dash.jpg"];
+// One screenshot PER FEATURE. slot0 = the invite hero (front during the s1
+// "invitation" beat); it swaps to the schedule shot for the s2 "everything in
+// one place" beat. Carousel fronts map to their captions: dashboard → "know
+// your guest list", entourage → "your entourage", setup → "set up fast".
+const SHOTS = ["/assets/login-shot-2.jpg", "/assets/login-shot-dash.jpg", "/assets/login-shot-4.jpg", "/assets/login-setup.jpg"];
+const S2_SHOT = "/assets/login-shot-3.jpg"; // schedule — swapped onto the front phone for the s2 caption
 
 export default function LoginPromo3D() {
   const hostRef = useRef(null);
@@ -85,6 +88,7 @@ export default function LoginPromo3D() {
     const loader = new GLTFLoader(); loader.setDRACOLoader(draco);
     const texLoader = new THREE.TextureLoader();
     const slots = [];
+    let texInvite = null, texSchedule = null; // front-phone swap (s1 invite ↔ s2 schedule)
     loader.load("/models/iphone17promax.glb", (gltf) => {
       if (disposed) return;
       // normalize: center + scale to a known height, rotate display toward +Z
@@ -125,23 +129,22 @@ export default function LoginPromo3D() {
         }
       });
 
-      const texAt = (i) => {
-        const tex = texLoader.load(SHOTS[i]);
-        tex.colorSpace = THREE.SRGBColorSpace;
-        return tex;
-      };
+      const loadTex = (url) => { const tex = texLoader.load(url); tex.colorSpace = THREE.SRGBColorSpace; return tex; };
+      texInvite = loadTex(SHOTS[0]);   // slot0 default (s1 "invitation")
+      texSchedule = loadTex(S2_SHOT);  // slot0 during s2 "everything in one place"
       const R = 1.55;
       for (let i = 0; i < 4; i++) {
         const phone = i === 0 ? outer : outer.clone(true);
+        let screen = null;
         phone.traverse((o) => {
-          if (o.userData && o.userData.lgpScreen) o.material = new THREE.MeshBasicMaterial({ map: texAt(i), toneMapped: false, side: THREE.DoubleSide });
+          if (o.userData && o.userData.lgpScreen) { o.material = new THREE.MeshBasicMaterial({ map: i === 0 ? texInvite : loadTex(SHOTS[i]), toneMapped: false, side: THREE.DoubleSide }); screen = o; }
         });
         const slot = new THREE.Group();
         slot.rotation.y = i * Math.PI / 2;
         const arm = new THREE.Group(); arm.position.z = R; arm.add(phone);
         slot.add(arm); ring.add(slot);
         if (i > 0) slot.visible = false; // intro + snap phase show ONE phone
-        slots.push({ slot, phone });
+        slots.push({ slot, phone, screen });
       }
       ring.position.z = -R; // front phone sits at world z=0
     });
@@ -168,6 +171,13 @@ export default function LoginPromo3D() {
         // phones 2-4 join for the carousel phase (match CSS lgp-join 40→44/95→99)
         const joinOp = kf([[0, 0], [40, 0], [44, 1], [95, 1], [99, 0], [100, 0]], pct);
         for (let i = 1; i < slots.length; i++) slots[i].slot.visible = joinOp > 0.5;
+        // Front phone swaps invite → schedule for the right-snap "everything in
+        // one place / schedule" beat (s2, ~24-38%), then back for the carousel.
+        const s0 = slots[0] && slots[0].screen;
+        if (s0 && texInvite && texSchedule) {
+          const want = pct >= 21 && pct < 40 ? texSchedule : texInvite;
+          if (s0.material.map !== want) { s0.material.map = want; s0.material.needsUpdate = true; }
+        }
       }
       renderer.render(scene, cam);
       raf = requestAnimationFrame(tick);

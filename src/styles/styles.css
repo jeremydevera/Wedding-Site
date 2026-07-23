@@ -1136,7 +1136,9 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
     display: flex; flex-direction: column; justify-content: space-between;
     background: linear-gradient(165deg, #241634 0%, #180f28 55%, #0c0714 100%) !important;
   }
-  .signin--welcome .lgp-stage { display: grid !important; }          /* un-hide the animation on mobile */
+  /* Un-hide the animation; stop the stage ABOVE the button block so the phone
+     centers in the upper area with clear space under it (owner: gap under phone). */
+  .signin--welcome .lgp-stage { display: grid !important; top: 0 !important; bottom: calc(env(safe-area-inset-bottom, 0px) + 232px) !important; }
   .signin--welcome .lgp-scrim { display: none !important; }           /* text-shadow carries legibility */
   /* Captions TRACK the phone (owner request): phone snaps LEFT → text on the
      RIGHT; snaps RIGHT → text on the LEFT; centered/carousel → text on TOP.

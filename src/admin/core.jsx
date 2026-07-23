@@ -154,9 +154,9 @@ function LoginPromoScene() {
       <React.Suspense fallback={
         <div className="lgp-zoomer"><div className="lgp-mover"><div className="lgp-ring">
           <div className="lgp-slot"><LoginPhone shot="/assets/login-shot-2.jpg" /></div>
-          <div className="lgp-slot"><LoginPhone shot="/assets/login-shot-3.jpg" /></div>
-          <div className="lgp-slot"><LoginPhone shot="/assets/login-shot-4.jpg" /></div>
           <div className="lgp-slot"><LoginPhone shot="/assets/login-shot-dash.jpg" /></div>
+          <div className="lgp-slot"><LoginPhone shot="/assets/login-shot-4.jpg" /></div>
+          <div className="lgp-slot"><LoginPhone shot="/assets/login-setup.jpg" /></div>
         </div></div></div>
       }>
         <LoginPromo3D />
