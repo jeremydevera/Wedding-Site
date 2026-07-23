@@ -7,6 +7,7 @@ import { useStore } from "@/lib/store.jsx";
 import { reconcileGuests } from "@/lib/guests.js";
 import { headsOf } from "@/lib/rsvp.js";
 import { signIn, signInGoogle, requestPasswordReset, completeGoogleRedirect, beginGoogleRedirect } from "@/lib/auth.js";
+import { preloadFirebase } from "@/lib/firebase.js";
 import { Button, Field, Icon, Input, Monogram, Placeholder, toast } from "@/ui/components.jsx";
 // Lazy: amCharts is heavy — split into its own chunk, loaded only when the
 // Dashboard tab renders.
@@ -211,6 +212,10 @@ export function AdminLogin({ onAuthed }) {
   const gFrom = !isClient ? new URLSearchParams(window.location.search).get("gfrom") : null;
   const [remember, setRemember] = useState(false);
   const [gBusy, setGBusy] = useState(false);
+  // Warm the Firebase SDK when a Google button is on screen, so the popup opens
+  // inside the click gesture (iOS blocks a popup that awaits a fresh import).
+  const googleShown = !isClient || store.neonMode === true;
+  useEffect(() => { if (googleShown) preloadFirebase(); }, [googleShown]);
   // Auto-continue the Google redirect for a client-subdomain hop.
   useEffect(() => {
     if (isClient || !gFrom) return;

@@ -277,20 +277,29 @@ export async function requestPasswordReset(email) {
 // of THIS site. On the apex hub: route like the password fallback — owner with a
 // live site → her admin; unfinished → /register; SA → refuse (console uses the
 // admin password). Supabase client sites: not supported, actionable error.
+const isUnauthorizedDomain = (e) => /unauthorized[-_]domain/i.test((e && (e.code || e.message)) || "");
+function hopToApex() {
+  // Fallback only: a client subdomain NOT on Firebase's authorized-domains list
+  // can't open the popup. Hop to the apex (always authorized) which auto-
+  // continues Google and routes back. Authorized subdomains never reach here.
+  window.location.assign("https://celebrately.us/admin?gfrom=" + encodeURIComponent(resolveSubdomain() || ""));
+  return { role: null, client_id: null, redirecting: true };
+}
+
 export async function signInGoogle() {
-  if (hostIsClientSubdomain()) {
-    // On a real client subdomain the popup can't open (domain not allow-listed)
-    // — hop to the apex login; the shared cookie + wrong-door routing land her
-    // on her own admin. NOTE: host-based, so the superadmin "Open admin"
-    // (celebrately.us/admin?client=…) does NOT hop — the popup runs on the apex.
-    window.location.assign("https://celebrately.us/admin?gfrom=" + encodeURIComponent(resolveSubdomain() || ""));
-    return { role: null, client_id: null, redirecting: true };
-  }
   if (Store.get().neonMode) {
-    // neonMode on the apex = superadmin "Open admin" via ?client= (or a Neon
-    // owner). Google popup runs here (apex is allow-listed); loadNeonSession
-    // grants superadmin (SA profile) or owner-of-this-site, else no access.
-    await neonAuth.signInGoogle();
+    // A Neon client's admin (subdomain OR the superadmin's apex ?client=) or a
+    // Neon owner login. Open the Google popup RIGHT HERE — one click, no hop —
+    // now that client subdomains are on the authorized-domains list. Only if
+    // Firebase rejects the domain (a brand-new subdomain not yet authorized) do
+    // we fall back to the apex hop. loadNeonSession then grants superadmin (SA
+    // profile) or owner-of-this-site.
+    try {
+      await neonAuth.signInGoogle();
+    } catch (e) {
+      if (isUnauthorizedDomain(e) && hostIsClientSubdomain()) return hopToApex();
+      throw e;
+    }
     const p = await loadNeonSession();
     if (!p) {
       const st = await regState();
@@ -303,6 +312,9 @@ export async function signInGoogle() {
     }
     return p;
   }
+  // Non-neon (Supabase-era) client site: Google isn't wired there — hop to the
+  // apex login. Host-based, so the SA "Open admin" (apex ?client=) never hops.
+  if (hostIsClientSubdomain()) return hopToApex();
   await loadApexNeonCtx();
   if (!fbAuthMode()) throw new Error("Google login isn't available yet — sign in with your email & password.");
   const gfrom = new URLSearchParams(window.location.search).get("gfrom");

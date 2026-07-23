@@ -21,6 +21,9 @@ const FIREBASE_CONFIG = {
 };
 
 let _authP = null;
+// Warm the SDK ahead of a click so signInWithPopup fires inside the gesture —
+// iOS Safari blocks a popup if the heavy dynamic import happens mid-click.
+export function preloadFirebase() { try { getAuth(); } catch (e) { /* ignore */ } }
 // Returns { auth, mod } where mod is the firebase/auth namespace. One instance.
 async function getAuth() {
   if (_authP) return _authP;
