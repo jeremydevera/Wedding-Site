@@ -300,7 +300,10 @@ export function ApplyWizard({ initial = null, onSave, onCancel, submitOverride =
       if (f.eventType === "birthday") {
         if (!f.eventTitle.trim()) return "Please enter the event title.";
       } else if (!f.partnerA.trim() || !f.partnerB.trim()) return "Please enter both names.";
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email.trim())) return "Please enter a valid email.";
+      // presetEmail = the already-registered account's email; the field is hidden
+      // in that case (nothing to validate). Only the manual /apply + SA editor
+      // paths (no preset) still ask for and validate an email.
+      if (!presetEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email.trim())) return "Please enter a valid email.";
       if (!f.subdomain.trim()) return "Please choose a site address.";
       if (subState === "checking") return "Checking availability…";
       if (subState === "taken") return "That site address is already taken — try another.";
@@ -349,7 +352,10 @@ export function ApplyWizard({ initial = null, onSave, onCancel, submitOverride =
             <Field label="Partner B — first name" id="a-pb"><Input id="a-pb" value={f.partnerB} onChange={set("partnerB")} placeholder="Juliet" /></Field>
           </div>
         )}
-        <Field label="Your email" id="a-email" hint="We'll reach you here once your site is approved."><Input id="a-email" type="email" value={f.email} onChange={set("email")} placeholder="you@example.com" /></Field>
+        {/* Email is only asked when there's no registered account yet. Self-serve
+            registrants already signed up, so f.email is their login email
+            (presetEmail) — hide the field to avoid asking twice. */}
+        {!presetEmail && <Field label="Your email" id="a-email" hint="We'll reach you here once your site is approved."><Input id="a-email" type="email" value={f.email} onChange={set("email")} placeholder="you@example.com" /></Field>}
         <Field label="Mobile number" id="a-phone" hint="So we can reach you about your site."><Input id="a-phone" type="tel" value={f.phone} onChange={set("phone")} placeholder="(555) 123-4567" /></Field>
         <Field label="Event date" id="a-date" hint="Optional — skip it if you haven't picked a date yet.">
           <EasyDateInput value={f.weddingDate} onChange={set("weddingDate")} />
