@@ -167,20 +167,15 @@ export function RegisterPage() {
                 <span className="rdone__num">1</span>
                 <div className="rdone__stepbody">
                   <b>Share it with your guests</b>
-                  <p>Send the link above by text, email, or your group chat. Guests can view everything and RSVP — no app needed.</p>
+                  <p>Tap <strong>Copy link</strong>, then share it with your guests.</p>
                 </div>
               </li>
               <li className="rdone__step">
                 <span className="rdone__num">2</span>
                 <div className="rdone__stepbody">
                   <b>Manage your site anytime</b>
-                  <p>Edit your details, track RSVPs, and read wishes from your dashboard.</p>
+                  <p>Tap <strong>Open my dashboard</strong> to manage RSVPs, edit details, and more.</p>
                   <a className="rdone__adminbtn" href={`https://${siteUrl}/admin`} target="_blank" rel="noreferrer">Open my dashboard →</a>
-                  <details className="rdone__hint">
-                    <summary>Or sign in from your website</summary>
-                    <p>Scroll to the very bottom of your site and tap <strong>Admin sign in</strong>, then use the same email &amp; password from today.</p>
-                    <img src="/assets/register-admin-hint.png" alt="The Admin sign in link at the bottom of your site" />
-                  </details>
                 </div>
               </li>
             </ol>
