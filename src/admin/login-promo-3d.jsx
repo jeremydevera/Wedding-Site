@@ -68,7 +68,13 @@ export default function LoginPromo3D() {
 
     const size = () => {
       const w = host.clientWidth || 600, h = host.clientHeight || 700;
-      renderer.setSize(w, h); cam.aspect = w / h; cam.updateProjectionMatrix();
+      const aspect = w / h;
+      renderer.setSize(w, h); cam.aspect = aspect;
+      // Tall/narrow (mobile welcome) viewports: dolly the camera back so the ±X
+      // snaps and the 4-phone carousel don't clip at the edges. Desktop (wide
+      // aspect) keeps the original z=6.6 framing.
+      cam.position.z = Math.max(6.6, 4.9 / Math.max(aspect, 0.35));
+      cam.updateProjectionMatrix();
     };
     size();
     const ro = new ResizeObserver(size); ro.observe(host);

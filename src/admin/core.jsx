@@ -127,7 +127,7 @@ function LoginPhone({ shot }) {
 // The split-shell LEFT panel — brand + tagline + promo scene. ONE component
 // shared by the main login AND /register (login-design-single-source): change
 // it here and both pages move together.
-export function SigninAside() {
+export function SigninAside({ footer = null }) {
   return (
     <aside className="signin__aside signin__aside--promo">
       <div className="signin__asidetop">
@@ -138,6 +138,9 @@ export function SigninAside() {
         <p className="signin__tagline">Celebrate life's biggest moments, beautifully.</p>
       </div>
       <LoginPromoScene />
+      {/* Mobile-only welcome CTAs (apex login). Hidden on desktop + on /register
+          via CSS; only rendered when AdminLogin passes them. */}
+      {footer}
     </aside>
   );
 }
@@ -210,6 +213,12 @@ export function AdminLogin({ onAuthed }) {
   // Firebase authorizes exact domains only). We land here and continue Google
   // automatically (redirect flow) so it's ONE click on the client subdomain.
   const gFrom = !isClient ? new URLSearchParams(window.location.search).get("gfrom") : null;
+  // Mobile welcome gate (apex only) — Spotify-style: the promo animation +
+  // Create/Log in/See demo buttons fill the screen; tapping Log in reveals the
+  // form. Skipped for client subdomains and the Google-redirect hop (they land
+  // straight on the form). Desktop ignores the gate entirely (CSS media query).
+  const gateEligible = !isClient && !gFrom;
+  const [showForm, setShowForm] = useState(!gateEligible);
   const [remember, setRemember] = useState(false);
   const [gBusy, setGBusy] = useState(false);
   // Warm the Firebase SDK when a Google button is on screen, so the popup opens
@@ -263,15 +272,25 @@ export function AdminLogin({ onAuthed }) {
       setErr(/popup-closed|cancelled/i.test(m) ? "Google sign-in was cancelled." : m || "Google sign-in failed.");
     } finally { setGBusy(false); }
   };
+  const welcomeFooter = gateEligible ? (
+    <div className="signin__welcome">
+      <h2 className="signin__welcometitle">Celebrate life's biggest moments.</h2>
+      <a className="lgw-btn lgw-btn--primary" href="https://celebrately.us/register">Create my website</a>
+      <button type="button" className="lgw-btn lgw-btn--ghost" onClick={() => setShowForm(true)}>Log in</button>
+      <a className="lgw-btn lgw-btn--text" href="https://demo.celebrately.us">See the demo</a>
+    </div>
+  ) : null;
   return (
-    <div className="signin signin--split signin--login">
+    <div className={"signin signin--split signin--login" + (gateEligible && !showForm ? " signin--welcome" : "")}>
       {/* LEFT — the shared SigninAside (also used by /register). ONE design
-          everywhere: a redesign there applies to every login and the sign-up. */}
-      <SigninAside />
+          everywhere: a redesign there applies to every login and the sign-up.
+          On apex mobile it doubles as the welcome hero (footer CTAs + animation). */}
+      <SigninAside footer={welcomeFooter} />
 
       {/* RIGHT — form */}
       <div className="signin__pane">
         {isClient && <button className="signin__back" onClick={() => go("home")}>← Back to website</button>}
+        {gateEligible && <button type="button" className="signin__welcomeback" onClick={() => setShowForm(false)}>← Back</button>}
         <div className="signin__center">
           <form className="signin__form" onSubmit={submit} noValidate>
             <h1 className="signin__title">Log in to Celebrately.</h1>
