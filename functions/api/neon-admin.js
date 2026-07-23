@@ -216,21 +216,7 @@ AS $function$ declare v_uid text; v_sub text := lower(btrim(coalesce(p_subdomain
         const [r] = await sql`select pg_get_functiondef('public.register_site(text,text,text,text,text,text,jsonb)'::regprocedure) as def`;
         return json({ ok: true, hasGuard: /superadmin/.test(r?.def || ""), hasCap: /registration_limits/.test(r?.def || "") });
       }
-      // Firebase-cutover prep (idempotent): Firebase tokens carry no `role`
-      // claim, so PostgREST maps them to the ANONYMOUS role. Mirror every
-      // authenticated-role policy to anonymous (suffix _fb; RLS quals still
-      // gate by auth.user_id(), which a guest's anonymous-session uid never
-      // matches), copy authenticated's table grants EXCEPT clients (column
-      // grants there protect owner_email), give anonymous the owner-editable
-      // clients columns, and mirror function EXECUTE grants.
-      case "fb_role_prep": {
-        await sql`do $do$
-declare r record;
-begin
-  for r in select tablename, policyname, cmd, qual, with_check from pg_policies
-    where schemaname='public' and 'authenticated'=any(roles) and policyname not like '%_fb'
-  loop
-    if not exists (select 1
+      case "ensure_superadmin": {
         const email = String(body.email || "").trim().toLowerCase();
         if (!email) return json({ error: "email required" }, 400);
         let u;
