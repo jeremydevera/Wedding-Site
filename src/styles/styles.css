@@ -146,7 +146,7 @@ body.env-sealed main { padding-top: 0; }
 .nav__burger svg { width: 22px; height: 22px; pointer-events: none; }
 
 /* Demo/showcase theme picker — replaces the RSVP CTA on the demo site */
-.nav__themepick { display: none; align-items: center; gap: 8px; min-width: 0; }
+.nav__themepick { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
 .nav__themepick-label { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
 .nav__themepick select {
   appearance: none; -webkit-appearance: none; font-family: var(--font-body); font-size: 14px;
@@ -158,7 +158,14 @@ body.env-sealed main { padding-top: 0; }
 .nav__themepick select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .nav__themepick--block { display: flex; flex-direction: column; align-items: stretch; gap: 9px; }
 .nav__themepick--block select { width: 100%; max-width: none; }
-@media (min-width: 940px) { .nav__themepick { display: inline-flex; } }
+@media (max-width: 640px) {
+  /* phone top bar: compact select, label dropped */
+  .nav__themepick-label { display: none; }
+  .nav__themepick select { max-width: 138px; font-size: 13px; }
+}
+/* decoration picker rides the bar on desktop only (phone bar has no room) */
+.nav__pick-desktop { display: none; }
+@media (min-width: 940px) { .nav__pick-desktop { display: inline-flex; } }
 
 /* Demo showcase: floating action button (support-icon style) at bottom-right.
    Tapping it opens a panel to preview any theme + decoration. Replaces the old

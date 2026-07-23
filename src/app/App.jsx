@@ -111,7 +111,6 @@ export function Nav({ route }) {
   const [drawer, setDrawer] = useState(false);
   // Demo theme/decor picker: a floating action button (support-icon style) that
   // opens a small panel — replaces the old sticky try-bar + inline nav selects.
-  const [fabOpen, setFabOpen] = useState(false);
   // Demo site (demo.<platform> / apex) is a theme showcase: swap the RSVP CTA for
   // a live theme picker so prospective clients can preview every design.
   // In the admin Theme picker the home page is embedded via /?preview — hide the
@@ -170,10 +169,12 @@ export function Nav({ route }) {
           ))}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {/* RSVP button shows on every site. On the demo, the theme + decoration
-              pickers now live in the floating button (bottom-right), not the nav. */}
+          {/* Demo: theme picker sits in the TOP BAR on every width (owner request
+              2026-07-23); decoration stays desktop-only for space. */}
+          {isDemo && <ThemePicker />}
+          {isDemo && !isPremiumTheme(settings.theme) && <span className="nav__pick-desktop"><DecorPicker /></span>}
           <Button className="nav__cta" variant="primary" size="sm" onClick={() => go("rsvp")}>{sectionLabel("rsvp", settings.moduleLabels)}</Button>
-          {isDemo && <Button className="nav__cta" variant="ghost" size="sm" onClick={() => { window.location.href = "https://celebrately.us/apply"; }}>Register</Button>}
+          {isDemo && <Button className="nav__cta" variant="ghost" size="sm" onClick={() => { window.location.href = "https://celebrately.us/register"; }}>Register</Button>}
           <button className="nav__burger" onClick={() => setDrawer(true)} aria-label="Menu">{Icon.menu({})}</button>
         </div>
       </div>
@@ -195,31 +196,17 @@ export function Nav({ route }) {
             <div style={{ marginTop: 20 }}>
               <Button variant="primary" block onClick={() => { go("rsvp"); setDrawer(false); }}>{sectionLabel("rsvp", settings.moduleLabels)} Now</Button>
             </div>
-            {isDemo && (
-              <div style={{ marginTop: 10 }}>
-                <Button variant="ghost" block onClick={() => { window.location.href = "https://celebrately.us/apply"; }}>Register — get your own site</Button>
-              </div>
-            )}
           </div>
         </div>
       )}
 
-      {/* Demo showcase: a floating action button (support-icon style, bottom-
-          right) opens a panel to preview any theme + decoration. Works on every
-          width and even over the sealed envelope cover where the nav is hidden. */}
+      {/* Demo: floating Register button (bottom-right — where the theme picker
+          used to float; the picker moved into the top bar). Visible on every
+          width and over the sealed envelope cover where the nav is hidden. */}
       {isDemo && (
-        <div className={"theme-fab" + (fabOpen ? " theme-fab--open" : "")}>
-          {fabOpen && (
-            <div className="theme-fab__panel" role="dialog" aria-label="Preview a theme and decoration">
-              <div className="theme-fab__title">Select a theme</div>
-              <div className="theme-fab__hint">Preview any design on this site — pick one below.</div>
-              <ThemePicker block />
-              {!isPremiumTheme(settings.theme) && <DecorPicker block />}
-              <Button className="theme-fab__reg" variant="primary" size="sm" block onClick={() => { window.location.href = "https://celebrately.us/apply"; }}>Register</Button>
-            </div>
-          )}
-          <button className={"theme-fab__btn" + (fabOpen ? " theme-fab__btn--open" : "")} aria-label={fabOpen ? "Close theme picker" : "Select a theme"} aria-expanded={fabOpen} onClick={() => setFabOpen((o) => !o)}>
-            {fabOpen ? Icon.close({}) : <>{Icon.palette({})}<span className="theme-fab__btnlabel">Select a theme</span></>}
+        <div className="theme-fab">
+          <button className="theme-fab__btn" aria-label="Register — get your own site" onClick={() => { window.location.href = "https://celebrately.us/register"; }}>
+            <span className="theme-fab__btnlabel">Register</span>
           </button>
         </div>
       )}
