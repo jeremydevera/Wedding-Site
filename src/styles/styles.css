@@ -1142,13 +1142,13 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
      RIGHT; snaps RIGHT → text on the LEFT; centered/carousel → text on TOP.
      Mobile-sized; opacity-only keyframes (lgpcap*) fade them in place. */
   .signin--welcome .lgp-cap {
-    max-width: 46% !important; padding: 0 !important;
+    max-width: 50% !important; padding: 0 !important;
     text-shadow: 0 2px 16px rgba(8, 4, 16, .62);
   }
-  .signin--welcome .lgp-ey { font-size: 10px; letter-spacing: .2em; }
-  .signin--welcome .lgp-h { font-size: 20px; margin-top: 4px; line-height: 1.08; }
-  .signin--welcome .lgp-p { font-size: 13px; margin-top: 6px; }
-  .signin--welcome .lgp-h::after { width: 30px; height: 3px; margin-top: 8px; }
+  .signin--welcome .lgp-ey { font-size: 11.5px; letter-spacing: .2em; }
+  .signin--welcome .lgp-h { font-size: 25px; margin-top: 5px; line-height: 1.1; }
+  .signin--welcome .lgp-p { font-size: 15.5px; margin-top: 7px; }
+  .signin--welcome .lgp-h::after { width: 36px; height: 3px; margin-top: 9px; }
   /* s1: phone snaps LEFT → caption RIGHT, vertically centered */
   .signin--welcome .lgp-s1 {
     animation-name: lgpcap1; animation-delay: var(--li);
@@ -1173,8 +1173,8 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
   .signin--welcome .lgp-c1 { animation-name: lgpcap3; }
   .signin--welcome .lgp-c2 { animation-name: lgpcap4; }
   .signin--welcome .lgp-c3 { animation-name: lgpcap5; }
-  .signin--welcome .lgp-c1 .lgp-h, .signin--welcome .lgp-c2 .lgp-h, .signin--welcome .lgp-c3 .lgp-h { font-size: 22px; white-space: normal; }
-  .signin--welcome .lgp-c1 .lgp-p, .signin--welcome .lgp-c2 .lgp-p, .signin--welcome .lgp-c3 .lgp-p { font-size: 14px; }
+  .signin--welcome .lgp-c1 .lgp-h, .signin--welcome .lgp-c2 .lgp-h, .signin--welcome .lgp-c3 .lgp-h { font-size: 29px; white-space: normal; }
+  .signin--welcome .lgp-c1 .lgp-p, .signin--welcome .lgp-c2 .lgp-p, .signin--welcome .lgp-c3 .lgp-p { font-size: 16px; }
   .signin--welcome .lgp-c1 .lgp-h::after, .signin--welcome .lgp-c2 .lgp-h::after, .signin--welcome .lgp-c3 .lgp-h::after { margin-left: auto !important; margin-right: auto !important; }
   .signin--welcome .signin__asidetop {
     position: relative !important; top: auto !important; left: auto !important; z-index: 3;
