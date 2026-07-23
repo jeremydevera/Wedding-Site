@@ -91,10 +91,23 @@ export async function onRequestPost({ request, env }) {
         if (!body.id) return json({ error: "id required" }, 400);
         const sub = String(body.subdomain || "").trim().toLowerCase();
         if (!/^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])?$/.test(sub)) return json({ error: "invalid subdomain" }, 400);
-        const clash = await sql`select 1 from clients where subdomain = ${sub} and id <> ${body.id} limit 1`;
-        if (clash.length) return json({ error: "subdomain already taken" }, 409);
-        const [cur] = await sql`select content from clients where id = ${body.id}`;
+        const [cur] = await sql`select subdomain, content from clients where id = ${body.id}`;
         if (!cur) return json({ error: "client not found" }, 404);
+        // Only validate availability on an ACTUAL rename (keeping the same name
+        // must never trip the "taken" guard). subdomain_free rejects reserved
+        // names (demo/www/…) + other Neon clients + pending requests; a separate
+        // Supabase lookup catches names already used by an existing Supabase
+        // client (different database — subdomain_free can't see those).
+        if (sub !== cur.subdomain) {
+          const [{ subdomain_free: free }] = await sql`select public.subdomain_free(${sub}) as subdomain_free`;
+          if (!free) return json({ error: "subdomain already taken" }, 409);
+          const SUPABASE_URL = env.SUPABASE_URL || "https://xprynknppsehuzqqdvue.supabase.co";
+          const ANON = env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhwcnlua25wcHNlaHV6cXFkdnVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwODg1OTUsImV4cCI6MjA5NzY2NDU5NX0._S3xdNXBm6d4SI8MO0MNoZ3bT8uspEd8lrdVm29Efgo";
+          const token = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+          const supa = await fetch(`${SUPABASE_URL}/rest/v1/clients?select=id&subdomain=eq.${encodeURIComponent(sub)}&limit=1`, { headers: { apikey: ANON, authorization: `Bearer ${token}` } });
+          const taken = supa.ok ? (await supa.json()) : [];
+          if (Array.isArray(taken) && taken.length) return json({ error: "subdomain already taken" }, 409);
+        }
         const merged = { ...(cur.content || {}), ...(body.content || {}) };
         await sql`update clients set subdomain = ${sub},
           template_key = coalesce(${body.template_key || null}, template_key),
