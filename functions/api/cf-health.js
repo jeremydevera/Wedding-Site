@@ -198,9 +198,43 @@ export async function onRequestGet(context) {
     } catch { return null; }
   };
 
-  let data, buildsMonth, dbBytes, domainCount, supaPlan;
+  // Neon storage — new registrations live on Neon (5 shards). No Neon API key
+  // needed: read the shard registry from app_config, then ask each shard's Data
+  // API for pg_database_size via the public db_size_bytes() RPC (anon token).
+  // Free tier = 512 MB storage per project; total capacity = 512 MB × shards.
+  const NEON_LIMIT_MB = +(env.CF_LIMIT_NEON_DB_MB || 512);
+  const fetchNeonUsage = async () => {
+    try {
+      const cr = await fetch(`${SUPABASE_URL}/rest/v1/app_config?key=eq.neon_shards&select=value`, {
+        headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+      });
+      if (!cr.ok) return null;
+      const rows = await cr.json();
+      const shards = rows?.[0]?.value?.shards || {};
+      const ids = Object.keys(shards);
+      if (!ids.length) return null;
+      const per = await Promise.all(ids.map(async (id) => {
+        const s = shards[id];
+        try {
+          const tj = await (await fetch(`${s.authUrl}/token/anonymous`)).json();
+          const tok = tj.token || tj.jwt;
+          if (!tok) return { id, bytes: null };
+          const rr = await fetch(`${s.dataApiUrl}/rpc/db_size_bytes`, {
+            method: "POST", headers: { authorization: `Bearer ${tok}`, "content-type": "application/json" }, body: "{}",
+          });
+          if (!rr.ok) return { id, bytes: null };
+          const v = await rr.json();
+          return { id, bytes: Number.isFinite(+v) ? +v : null };
+        } catch { return { id, bytes: null }; }
+      }));
+      const known = per.filter((s) => s.bytes != null);
+      return { shards: per, count: ids.length, totalBytes: known.length ? known.reduce((a, s) => a + s.bytes, 0) : null, limitBytesPerShard: NEON_LIMIT_MB * 1024 * 1024 };
+    } catch { return null; }
+  };
+
+  let data, buildsMonth, dbBytes, domainCount, supaPlan, neon;
   try {
-    const [resp, builds, db, doms, plan] = await Promise.all([
+    const [resp, builds, db, doms, plan, neonU] = await Promise.all([
       fetch("https://api.cloudflare.com/client/v4/graphql", {
         method: "POST",
         headers: { authorization: `Bearer ${CF_TOKEN}`, "content-type": "application/json" },
@@ -210,8 +244,9 @@ export async function onRequestGet(context) {
       fetchDbSize(),
       fetchDomainCount(),
       fetchSupaPlan(),
+      fetchNeonUsage(),
     ]);
-    buildsMonth = builds; dbBytes = db; domainCount = doms; supaPlan = plan;
+    buildsMonth = builds; dbBytes = db; domainCount = doms; supaPlan = plan; neon = neonU;
     const jr = await resp.json();
     if (!resp.ok || (jr.errors && jr.errors.length) || !jr.data) {
       return json({ configured: true, error: "upstream" }); // soft — do not cache, do not leak details
@@ -233,6 +268,10 @@ export async function onRequestGet(context) {
   // Live plan limit wins when a PAT let us read it; else the env var / 500.
   const dbLimitMb = supaPlan?.limitMb || LIMIT_SUPA_DB_MB;
   payload.supa = { dbBytes, dbLimitBytes: dbLimitMb * 1024 * 1024, plan: supaPlan?.plan || null };
+  // Neon (new registrations, sharded). null => registry unreadable or all shards down.
+  payload.neon = neon
+    ? { totalBytes: neon.totalBytes, shardCount: neon.count, limitBytesPerShard: neon.limitBytesPerShard, totalLimitBytes: neon.limitBytesPerShard * neon.count, shards: neon.shards }
+    : null;
 
   const res = json(payload);
   res.headers.set("cache-control", "max-age=300");
