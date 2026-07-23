@@ -41,7 +41,9 @@ const RING = [[0, 0], [41, 0], [44, -90 * D], [53, -90 * D], [56, -180 * D], [65
 // intro zoom (camera dolly scale on the whole rig)
 const ZOOM = [[0, 1.35], [55, 1.35], [100, 1]];
 
-const SHOTS = ["/assets/login-phone.jpg", "/assets/login-shot-2.jpg", "/assets/login-shot-4.jpg", "/assets/login-shot-dash.jpg"];
+// Varied pages from a real site (no repeated envelope): invite hero → schedule
+// → entourage → dashboard. Phone 0 (shown most) = the invite hero.
+const SHOTS = ["/assets/login-shot-2.jpg", "/assets/login-shot-3.jpg", "/assets/login-shot-4.jpg", "/assets/login-shot-dash.jpg"];
 
 export default function LoginPromo3D() {
   const hostRef = useRef(null);

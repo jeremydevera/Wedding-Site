@@ -1137,31 +1137,45 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
     background: linear-gradient(165deg, #241634 0%, #180f28 55%, #0c0714 100%) !important;
   }
   .signin--welcome .lgp-stage { display: grid !important; }          /* un-hide the animation on mobile */
-  .signin--welcome .lgp-scrim { display: none !important; }           /* our button gradient + text-shadow carry legibility */
-  /* Promo captions ON — re-anchored to ONE centered band above the buttons,
-     mobile-sized, fading in place (opacity-only keyframes lgp-m*). The desktop
-     edge anchors + 40px nowrap type would overflow the phone; these don't. */
+  .signin--welcome .lgp-scrim { display: none !important; }           /* text-shadow carries legibility */
+  /* Captions TRACK the phone (owner request): phone snaps LEFT → text on the
+     RIGHT; snaps RIGHT → text on the LEFT; centered/carousel → text on TOP.
+     Mobile-sized; opacity-only keyframes (lgpcap*) fade them in place. */
   .signin--welcome .lgp-cap {
-    top: auto !important; bottom: calc(env(safe-area-inset-bottom, 0px) + 210px) !important;
-    left: 0 !important; right: 0 !important; max-width: none !important;
-    transform: none !important; padding: 0 30px !important;
-    align-items: center !important; text-align: center !important;
+    max-width: 46% !important; padding: 0 !important;
     text-shadow: 0 2px 16px rgba(8, 4, 16, .62);
   }
   .signin--welcome .lgp-ey { font-size: 10px; letter-spacing: .2em; }
-  .signin--welcome .lgp-h { font-size: 23px; margin-top: 4px; }
-  .signin--welcome .lgp-p { font-size: 14px; margin-top: 6px; }
-  .signin--welcome .lgp-h::after { width: 34px; height: 3px; margin: 8px auto 0 !important; }
-  .signin--welcome .lgp-c1 .lgp-h, .signin--welcome .lgp-c2 .lgp-h, .signin--welcome .lgp-c3 .lgp-h { font-size: 23px; white-space: normal; }
-  .signin--welcome .lgp-c1 .lgp-p, .signin--welcome .lgp-c2 .lgp-p, .signin--welcome .lgp-c3 .lgp-p { font-size: 14px; }
-  /* s1 plays during the desktop zoom-intro (delay:0); on mobile that early
-     window races the 3D/model load and often never paints. Give it the same
-     loop delay as the others so it reliably shows once the loop is running. */
-  .signin--welcome .lgp-s1 { animation-name: lgpcap1; animation-delay: var(--li); }
-  .signin--welcome .lgp-s2 { animation-name: lgpcap2; }
+  .signin--welcome .lgp-h { font-size: 20px; margin-top: 4px; line-height: 1.08; }
+  .signin--welcome .lgp-p { font-size: 13px; margin-top: 6px; }
+  .signin--welcome .lgp-h::after { width: 30px; height: 3px; margin-top: 8px; }
+  /* s1: phone snaps LEFT → caption RIGHT, vertically centered */
+  .signin--welcome .lgp-s1 {
+    animation-name: lgpcap1; animation-delay: var(--li);
+    left: auto !important; right: 5% !important; top: 46% !important; bottom: auto !important;
+    transform: translateY(-50%) !important; text-align: right !important; align-items: flex-end !important;
+  }
+  .signin--welcome .lgp-s1 .lgp-h::after { margin-left: auto !important; margin-right: 0 !important; }
+  /* s2: phone snaps RIGHT → caption LEFT, vertically centered */
+  .signin--welcome .lgp-s2 {
+    animation-name: lgpcap2;
+    left: 5% !important; right: auto !important; top: 46% !important; bottom: auto !important;
+    transform: translateY(-50%) !important; text-align: left !important; align-items: flex-start !important;
+  }
+  .signin--welcome .lgp-s2 .lgp-h::after { margin-left: 0 !important; margin-right: auto !important; }
+  /* c1-c3: phone centered (carousel) → caption on TOP, centered above the phone */
+  .signin--welcome .lgp-c1, .signin--welcome .lgp-c2, .signin--welcome .lgp-c3 {
+    top: calc(env(safe-area-inset-top, 0px) + 84px) !important; bottom: auto !important;
+    left: 0 !important; right: 0 !important; max-width: none !important;
+    transform: none !important; padding: 0 26px !important;
+    text-align: center !important; align-items: center !important;
+  }
   .signin--welcome .lgp-c1 { animation-name: lgpcap3; }
   .signin--welcome .lgp-c2 { animation-name: lgpcap4; }
   .signin--welcome .lgp-c3 { animation-name: lgpcap5; }
+  .signin--welcome .lgp-c1 .lgp-h, .signin--welcome .lgp-c2 .lgp-h, .signin--welcome .lgp-c3 .lgp-h { font-size: 22px; white-space: normal; }
+  .signin--welcome .lgp-c1 .lgp-p, .signin--welcome .lgp-c2 .lgp-p, .signin--welcome .lgp-c3 .lgp-p { font-size: 14px; }
+  .signin--welcome .lgp-c1 .lgp-h::after, .signin--welcome .lgp-c2 .lgp-h::after, .signin--welcome .lgp-c3 .lgp-h::after { margin-left: auto !important; margin-right: auto !important; }
   .signin--welcome .signin__asidetop {
     position: relative !important; top: auto !important; left: auto !important; z-index: 3;
     padding: calc(env(safe-area-inset-top, 0px) + 20px) 22px 0 !important;
