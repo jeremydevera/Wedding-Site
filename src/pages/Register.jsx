@@ -21,10 +21,21 @@ const googleEnabled = () => true;
 // All phases render in the neutral "signin" shell (owner rule: NO wedding theme
 // on the registration flow — same clean design as the login page and /apply).
 function Shell({ children }) {
+  // Same split shell as the main login (promo-video aside) — the sign-up card
+  // and the login page share one look; mobile collapses to the light single
+  // page via the same .signin--split media block.
   return (
-    <div className="signin admin--sa apply-page">
+    <div className="signin signin--split admin--sa apply-page">
+      <aside className="signin__aside signin__aside--promo">
+        <div className="signin__asidetop">
+          <div className="signin__brand"><Logo size={28} /><span className="signin__word">Celebrately.</span></div>
+          <p className="signin__tagline">Celebrate life's biggest moments, beautifully.</p>
+        </div>
+        <video className="signin__promo" autoPlay loop muted playsInline preload="auto" poster="/assets/login-phone.jpg" aria-hidden="true">
+          <source src="/promo/celebrately-promo-tall-2.mp4" type="video/mp4" />
+        </video>
+      </aside>
       <div className="signin__pane">
-        <header className="signin__top"><div className="signin__brand"><Logo size={30} /><span className="signin__word">Celebrately</span></div></header>
         <div className="signin__center">{children}</div>
       </div>
     </div>

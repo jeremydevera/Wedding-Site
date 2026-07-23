@@ -161,7 +161,7 @@ body.env-sealed main { padding-top: 0; }
 @media (max-width: 640px) {
   /* phone top bar: compact select, label dropped */
   .nav__themepick-label { display: none; }
-  .nav__themepick select { max-width: 138px; font-size: 13px; }
+  .nav__themepick select { max-width: min(52vw, 220px); font-size: 13px; }
 }
 /* decoration picker rides the bar on desktop only (phone bar has no room) */
 .nav__pick-desktop { display: none; }
