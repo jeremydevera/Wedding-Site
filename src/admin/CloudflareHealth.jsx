@@ -155,6 +155,24 @@ export function CloudflareHealth() {
           250, Business 500). Nearing the cap: serve client subdomains through a wildcard{" "}
           <code>*.celebrately.us</code> Worker route instead of attaching them — unlimited and free. Clients bringing
           their <em>own</em> domain scale via Cloudflare for SaaS (first 100 hostnames free, then ~$0.10/mo each).
+          {data.domains?.count == null && <><br /><strong style={{ color: "#a05a1a" }}>Showing "—"?</strong> The
+          Cloudflare token can't read this yet — add <em>Account · Cloudflare Pages · Read</em> to the{" "}
+          <code>CF_ANALYTICS_TOKEN</code> and redeploy. (Client subdomains resolve via the zone, not Pages custom
+          domains, so this currently reads <strong>0 attached</strong>.)</>}
+        </div>
+
+        {/* Firebase Auth — where the Neon clients' logins live. Not a database, so
+            "size" is really account/rate limits. */}
+        <div style={{ background: "var(--panel-2, #f7f6f2)", border: "1px solid var(--line, #e4e1d8)", borderRadius: 8, padding: "10px 14px", fontSize: 13, lineHeight: 1.55, color: "var(--muted)" }}>
+          <strong style={{ color: "var(--ink)" }}>Firebase Auth</strong> holds the logins for Neon-backed client sites
+          (email/password, Google, and guest sessions) — the sites' data lives in Neon, not here. It stores accounts,
+          not files, so the limits are on <em>rate</em>, not size:
+          <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+            <li>~<strong>100 new signups per hour per IP</strong> (anti-abuse) — which is why we already added the hourly
+              registration cap.</li>
+            <li>If it's ever upgraded to Identity Platform, the free tier is <strong>50,000 monthly active users</strong>,
+              then paid per user. Plain email / Google / anonymous auth stays free regardless.</li>
+          </ul>
         </div>
 
         {/* No-limit metrics stay KPI tiles (same design as the Overview tab). */}
