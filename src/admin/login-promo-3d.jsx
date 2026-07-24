@@ -102,7 +102,7 @@ export default function LoginPromo3D() {
       const c = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3());
       base.position.sub(c);
       const norm = new THREE.Group(); norm.add(base);
-      norm.scale.setScalar(2.05 / sz.y);
+      norm.scale.setScalar(2.35 / sz.y);
       norm.rotation.y = Math.PI / 2; // GLB display faces -X → face the camera (+Z)
       const outer = new THREE.Group(); outer.add(norm);
 
@@ -137,7 +137,7 @@ export default function LoginPromo3D() {
       const loadTex = (url) => { const tex = texLoader.load(url); tex.colorSpace = THREE.SRGBColorSpace; return tex; };
       texInvite = loadTex(SHOTS[0]);   // slot0 default (s1 "invitation")
       texSchedule = loadTex(S2_SHOT);  // slot0 during s2 "everything in one place"
-      const R = 1.55;
+      const R = 1.72;
       for (let i = 0; i < 4; i++) {
         const phone = i === 0 ? outer : outer.clone(true);
         let screen = null;
