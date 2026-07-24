@@ -34,8 +34,8 @@ const D = Math.PI / 180;
 // mover: x offset + yaw. Starts/ends CENTERED (x=0) so the phone settles in the
 // middle after the intro, THEN moves left (caption right, s1), then right
 // (caption left, s2), then back to center for the carousel. 0%==100% → seamless.
-const MX = [[0, 0], [4, 0], [6, -0.8], [20, -0.8], [24, 0.8], [38, 0.8], [41, 0], [100, 0]];
-const MR = [[0, 0], [4, 0], [6, 30 * D], [20, 30 * D], [24, -30 * D], [38, -30 * D], [41, 0], [100, 0]];
+const MX = [[0, -0.8], [18, -0.8], [24, 0.8], [38, 0.8], [41, 0], [80, 0], [100, -0.8]];
+const MR = [[0, 30 * D], [18, 30 * D], [24, -30 * D], [38, -30 * D], [41, 0], [80, 0], [100, 30 * D]];
 // carousel ring rotation (matches CSS 41→44/53→56/65→68/77→80)
 const RING = [[0, 0], [41, 0], [44, -90 * D], [53, -90 * D], [56, -180 * D], [65, -180 * D], [68, -270 * D], [77, -270 * D], [80, -360 * D], [100, -360 * D]];
 // intro zoom (gentle settle on the whole rig). Kept small — a big zoom + the
@@ -177,8 +177,11 @@ export default function LoginPromo3D() {
         const pct = dbgi ? parseFloat(dbgi[1]) : (t / INTRO) * 100;
         const scale = kf(ZOOM, pct);
         rig.scale.setScalar(scale);
-        mover.position.x = 0;          // intro: phone CENTERED
-        mover.rotation.y = 0; ring.rotation.y = 0;
+        // intro: zoom in WHILE sliding to the left pose, so the phone is already
+        // on the left when the "invitation" caption appears (loop starts left).
+        mover.position.x = kf([[0, 0], [100, -0.8]], pct);
+        mover.rotation.y = kf([[0, 0], [100, 30 * D]], pct);
+        ring.rotation.y = 0;
         // Lift as it zooms so the enlarged phone's BOTTOM stays put (never drops
         // onto the buttons). halfWorld ≈ 2.05/2; no top caption during the intro.
         rig.position.y = nudgeY + (scale - 1) * 1.025;

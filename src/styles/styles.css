@@ -3316,7 +3316,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   --ldx:-9vw;--ldxr:9vw}
 .lgp-glow{position:absolute;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(233,124,93,.45),transparent 70%);filter:blur(8px)}
 .lgp-zoomer{transform-style:preserve-3d;animation:lgp-intro var(--li) cubic-bezier(.25,.9,.3,1) both}
-@keyframes lgp-intro{0%{transform:scale(1.45)}55%{transform:scale(1.45)}100%{transform:scale(1)}}
+@keyframes lgp-intro{0%{opacity:0;transform:translateX(-4vw) scale(1.04)}45%{opacity:1}100%{opacity:1;transform:translateX(-4vw) scale(1)}}
 .lgp-mover{transform-style:preserve-3d;animation:lgp-mover var(--ll) cubic-bezier(.25,.9,.3,1) var(--li) infinite}
 @keyframes lgp-mover{0%,2%{transform:translateX(-4vw) rotateY(0)}6%,20%{transform:translateX(-8vw) rotateY(26deg)}24%,38%{transform:translateX(8vw) rotateY(-26deg)}41%,84%{transform:translateX(0) rotateY(0)}100%{transform:translateX(-4vw) rotateY(0)}}
 .lgp-ring{position:relative;width:var(--lw);height:var(--lh);transform-style:preserve-3d;animation:lgp-ring var(--ll) cubic-bezier(.25,.9,.3,1) var(--li) infinite}
