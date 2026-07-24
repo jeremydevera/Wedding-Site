@@ -1190,7 +1190,7 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
   .signin--welcome .signin__welcome {
     display: flex; flex-direction: column; gap: 9px;
     position: relative; z-index: 5;
-    padding: 20px 24px calc(env(safe-area-inset-bottom, 0px) + 18px);
+    padding: 14px 24px calc(env(safe-area-inset-bottom, 0px) + 16px);
     background: linear-gradient(180deg, transparent 0%, rgba(12,7,20,.68) 34%, rgba(12,7,20,.97) 70%);
   }
   .lgw-btn {

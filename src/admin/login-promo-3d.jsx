@@ -77,14 +77,16 @@ export default function LoginPromo3D() {
       const w = host.clientWidth || 600, h = host.clientHeight || 700;
       const aspect = w / h;
       renderer.setSize(w, h); cam.aspect = aspect;
-      // Dolly back on narrow/tall (mobile) so the phone fits with room for the top
-      // caption and the bottom buttons. Extra back-off (6.5) keeps the enlarged
-      // phone (world scale 2.35) from touching the buttons on short screens; desktop
-      // (wide aspect) stays at 6.6 and keeps the phone big.
-      cam.position.z = Math.max(6.6, 6.5 / Math.max(aspect, 0.35));
-      // Tiny downward nudge (mobile) so the phone sits a hair lower without reaching
-      // the buttons on the shortest screens. Desktop centered.
-      nudgeY = aspect < 0.8 ? -0.05 : 0;
+      // Size the phone to a fixed fraction of the viewport HEIGHT (not width) so it
+      // stays consistent across short (SE) → tall screens and always leaves room for
+      // the caption + buttons. Keying off aspect made SHORT screens get a BIGGER
+      // phone (backwards) → it touched the buttons. zHoriz guards the ±0.8 x-snaps
+      // from clipping on very narrow viewports. Desktop keeps its big z=6.6 framing.
+      const tanHalf = 0.2867; // tan(FOV/2), FOV=32°
+      const zVert = 2.35 / (0.43 * 2 * tanHalf);           // phone ≈ 43% of height
+      const zHoriz = 1.35 / (tanHalf * Math.max(aspect, 0.35));
+      cam.position.z = aspect < 0.8 ? Math.max(zVert, zHoriz) : 6.6;
+      nudgeY = aspect < 0.8 ? -0.03 : 0; // tiny downward nudge on mobile
       rig.position.y = nudgeY;
       cam.updateProjectionMatrix();
     };
