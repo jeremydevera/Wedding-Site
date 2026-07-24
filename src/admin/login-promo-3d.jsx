@@ -86,7 +86,7 @@ export default function LoginPromo3D() {
       const zVert = 2.35 / (0.43 * 2 * tanHalf);           // phone ≈ 43% of height
       const zHoriz = 1.35 / (tanHalf * Math.max(aspect, 0.35));
       cam.position.z = aspect < 0.8 ? Math.max(zVert, zHoriz) : 6.6;
-      nudgeY = aspect < 0.8 ? -0.03 : 0; // tiny downward nudge on mobile
+      nudgeY = aspect < 0.8 ? 0.1 : 0; // nudge the phone slightly UP on mobile
       rig.position.y = nudgeY;
       cam.updateProjectionMatrix();
     };
