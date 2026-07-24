@@ -145,15 +145,21 @@ export default function LoginPromo3D() {
       for (let i = 0; i < 4; i++) {
         const phone = i === 0 ? outer : outer.clone(true);
         let screen = null;
+        // Carousel phones (i>0) get INDEPENDENT material copies so they can fade
+        // out on their own at the loop's end (a graceful dissolve, not a pop).
+        const fade = []; // {m, base} — base opacity to scale by the exit factor
         phone.traverse((o) => {
+          if (!o.isMesh || !o.material) return;
           if (o.userData && o.userData.lgpScreen) { o.material = new THREE.MeshBasicMaterial({ map: i === 0 ? texInvite : loadTex(SHOTS[i]), toneMapped: false, side: THREE.DoubleSide }); screen = o; }
+          else if (i > 0) { o.material = o.material.clone(); }
+          if (i > 0) { o.material.transparent = true; fade.push({ m: o.material, base: o.material.opacity }); }
         });
         const slot = new THREE.Group();
         slot.rotation.y = i * Math.PI / 2;
         const arm = new THREE.Group(); arm.position.z = R; arm.add(phone);
         slot.add(arm); ring.add(slot);
         if (i > 0) slot.visible = false; // intro + snap phase show ONE phone
-        slots.push({ slot, phone, screen });
+        slots.push({ slot, phone, screen, fade });
       }
       ring.position.z = -R; // front phone sits at world z=0
     });
@@ -185,9 +191,18 @@ export default function LoginPromo3D() {
         mover.position.x = kf(MX, pct);
         mover.rotation.y = kf(MR, pct);
         ring.rotation.y = kf(RING, pct);
-        // phones 2-4 join for the carousel phase (match CSS lgp-join 40→44/95→99)
-        const joinOp = kf([[0, 0], [40, 0], [44, 1], [95, 1], [99, 0], [100, 0]], pct);
-        for (let i = 1; i < slots.length; i++) slots[i].slot.visible = joinOp > 0.5;
+        // Carousel phones fade IN as they join and gracefully DISSOLVE + recede at
+        // the end (no abrupt pop). Smoothstep opacity, plus a slight shrink so they
+        // ease away rather than blink out. Fade-out spread over 90→99% (~3s).
+        const joinOp = kf([[0, 0], [40, 0], [45, 1], [90, 1], [99, 0], [100, 0]], pct);
+        for (let i = 1; i < slots.length; i++) {
+          const s = slots[i];
+          s.slot.visible = joinOp > 0.01;
+          if (joinOp > 0.01) {
+            for (let k = 0; k < s.fade.length; k++) s.fade[k].m.opacity = s.fade[k].base * joinOp;
+            s.slot.scale.setScalar(0.92 + 0.08 * joinOp); // subtle recede as it dissolves
+          }
+        }
         // Front phone swaps invite → schedule for the right-snap "everything in
         // one place / schedule" beat (s2, ~24-38%), then back for the carousel.
         const s0 = slots[0] && slots[0].screen;
