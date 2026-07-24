@@ -3400,6 +3400,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 
 /* lgp 3D canvas (three.js) fills the panel; captions overlay above it */
 .lgp-canvas{position:absolute;inset:0;z-index:1}
+.lgp-cap,.lgp-scrim{display:none!important}/* emulator: live-iframe phone, no carousel captions */
 .lgp-canvas canvas{width:100%!important;height:100%!important;display:block}
 
 /* ============================================================
