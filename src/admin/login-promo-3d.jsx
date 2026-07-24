@@ -98,45 +98,54 @@ export default function LoginPromo3D() {
     const texLoader = new THREE.TextureLoader();
     const slots = [];
     let texInvite = null, texSchedule = null; // front-phone swap (s1 invite ↔ s2 schedule)
-    loader.load("/models/iphone17promax.glb", (gltf) => {
+    loader.load("/models/iphonex.glb", (gltf) => {
       if (disposed) return;
-      // normalize: center + scale to a known height, rotate display toward +Z
+      // normalize: center, rotate the long axis (local X = phone length) upright
+      // to world +Y — the front already faces the camera (+Z) — then scale to a
+      // known on-screen height.
       const base = gltf.scene;
       const box = new THREE.Box3().setFromObject(base);
       const c = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3());
       base.position.sub(c);
       const norm = new THREE.Group(); norm.add(base);
+      // Model is already upright (long axis = world Y) + front-facing (+Z toward
+      // camera), so NO rotation — just scale to a known on-screen height.
       norm.scale.setScalar(2.35 / sz.y);
-      norm.rotation.y = Math.PI / 2; // GLB display faces -X → face the camera (+Z)
       const outer = new THREE.Group(); outer.add(norm);
-
-      // The GLB screen mesh ships smeared UVs — rebuild them from the mesh's
-      // own flat geometry (display plane is local Y-Z), so the screenshot maps
-      // ONTO the actual display surface: exact fit, rounded corners, notch cut.
       outer.updateMatrixWorld(true);
-      outer.traverse((o) => {
-        if (!o.isMesh || !o.material) return;
-        const n = o.material.name || "";
-        if (/screen/i.test(n)) {
-          const g = o.geometry, pos = g.attributes.position;
-          let minY = 1e9, maxY = -1e9, minZ = 1e9, maxZ = -1e9;
-          for (let vi = 0; vi < pos.count; vi++) {
-            const y = pos.getY(vi), z = pos.getZ(vi);
-            if (y < minY) minY = y; if (y > maxY) maxY = y;
-            if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
-          }
-          const uv = new Float32Array(pos.count * 2);
-          for (let vi = 0; vi < pos.count; vi++) {
-            uv[vi * 2] = 1 - (pos.getY(vi) - minY) / (maxY - minY); // u across width (local Y, mirrored)
-            uv[vi * 2 + 1] = (pos.getZ(vi) - minZ) / (maxZ - minZ);     // v up height
-          }
-          g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
-          o.userData.lgpScreen = true;
-          o.material = new THREE.MeshBasicMaterial({ color: 0x05060a });
-        } else if (/^glass/i.test(n)) {
-          o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = 0.06; o.material.depthWrite = false;
-        }
+
+      // No tagged screen mesh + no screen UVs. The display is the THINNEST large
+      // plane (the glossy glass/bezel layer is thin too but not zero — pick the
+      // truly-planar one with the biggest area). Rebuild its UVs from the in-plane
+      // axes (local X = length -> v, local Y = width -> u) so the screenshot maps
+      // exactly; the clearcoat material (per-slot below) keeps the screen glare.
+      const cands = [];
+      base.traverse((o) => {
+        if (!o.isMesh || !o.geometry) return;
+        o.geometry.computeBoundingBox();
+        const s = o.geometry.boundingBox.getSize(new THREE.Vector3());
+        const dims = [s.x, s.y, s.z].slice().sort((a, b) => a - b);
+        cands.push({ o, thick: dims[0], area: dims[1] * dims[2] });
       });
+      const minThick = Math.min(...cands.map((c) => c.thick));
+      let screenMesh = null, bestArea = -1;
+      for (const c of cands) if (c.thick <= minThick + 0.5 && c.area > bestArea) { bestArea = c.area; screenMesh = c.o; }
+      if (screenMesh) {
+        const g = screenMesh.geometry, pos = g.attributes.position;
+        let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+        for (let vi = 0; vi < pos.count; vi++) {
+          const x = pos.getX(vi), y = pos.getY(vi);
+          if (x < minX) minX = x; if (x > maxX) maxX = x;
+          if (y < minY) minY = y; if (y > maxY) maxY = y;
+        }
+        const uv = new Float32Array(pos.count * 2);
+        for (let vi = 0; vi < pos.count; vi++) {
+          uv[vi * 2] = 1 - (pos.getY(vi) - minY) / (maxY - minY);      // u = width (local Y, mirrored to read correctly)
+          uv[vi * 2 + 1] = (pos.getX(vi) - minX) / (maxX - minX);      // v = length (local X)
+        }
+        g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+        screenMesh.userData.lgpScreen = true;
+      }
 
       const loadTex = (url) => { const tex = texLoader.load(url); tex.colorSpace = THREE.SRGBColorSpace; return tex; };
       texInvite = loadTex(SHOTS[0]);   // slot0 default (s1 "invitation")
@@ -150,7 +159,13 @@ export default function LoginPromo3D() {
         const fade = []; // {m, base} — base opacity to scale by the exit factor
         phone.traverse((o) => {
           if (!o.isMesh || !o.material) return;
-          if (o.userData && o.userData.lgpScreen) { o.material = new THREE.MeshBasicMaterial({ map: i === 0 ? texInvite : loadTex(SHOTS[i]), toneMapped: false, side: THREE.DoubleSide }); screen = o; }
+          if (o.userData && o.userData.lgpScreen) {
+            const tex = i === 0 ? texInvite : loadTex(SHOTS[i]);
+            // Emissive screenshot = bright/readable regardless of lights; clearcoat
+            // over it reflects the key/rim lights as a glass GLARE streak (retained).
+            o.material = new THREE.MeshPhysicalMaterial({ color: 0x000000, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 1, map: tex, roughness: 0.5, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.06, side: THREE.DoubleSide, toneMapped: false });
+            screen = o;
+          }
           else if (i > 0) { o.material = o.material.clone(); }
           if (i > 0) { o.material.transparent = true; fade.push({ m: o.material, base: o.material.opacity }); }
         });
@@ -211,7 +226,7 @@ export default function LoginPromo3D() {
         const s0 = slots[0] && slots[0].screen;
         if (s0 && texInvite && texSchedule) {
           const want = pct >= 21 && pct < 40 ? texSchedule : texInvite;
-          if (s0.material.map !== want) { s0.material.map = want; s0.material.needsUpdate = true; }
+          if (s0.material.emissiveMap !== want) { s0.material.emissiveMap = want; s0.material.map = want; s0.material.needsUpdate = true; }
         }
       }
       renderer.render(scene, cam);
