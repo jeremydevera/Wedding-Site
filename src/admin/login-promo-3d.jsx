@@ -78,7 +78,12 @@ export default function LoginPromo3D() {
       // Tall/narrow (mobile welcome) viewports: dolly the camera back so the ±X
       // snaps and the 4-phone carousel don't clip at the edges. Desktop (wide
       // aspect) keeps the original z=6.6 framing.
-      cam.position.z = Math.max(6.6, 4.9 / Math.max(aspect, 0.35));
+      // Dolly back on narrow/tall (mobile) so the phone fits with room for the top
+      // caption and the bottom buttons; more back-off than desktop keeps it smaller.
+      cam.position.z = Math.max(6.6, 5.4 / Math.max(aspect, 0.35));
+      // Small downward nudge (mobile) so the phone sits a touch lower — tighter gap
+      // to the buttons without tucking under them on short screens. Desktop centered.
+      rig.position.y = aspect < 0.8 ? -0.12 : 0;
       cam.updateProjectionMatrix();
     };
     size();

@@ -1136,9 +1136,9 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
     display: flex; flex-direction: column; justify-content: space-between;
     background: linear-gradient(165deg, #241634 0%, #180f28 55%, #0c0714 100%) !important;
   }
-  /* Un-hide the animation; stop the stage ABOVE the button block so the phone
-     centers in the upper area with clear space under it (owner: gap under phone). */
-  .signin--welcome .lgp-stage { display: grid !important; top: 0 !important; bottom: calc(env(safe-area-inset-bottom, 0px) + 232px) !important; }
+  /* Un-hide the animation; stop the stage a touch above the button block so the
+     phone centers with a modest, balanced gap beneath it (not floating). */
+  .signin--welcome .lgp-stage { display: grid !important; inset: 0 !important; }
   .signin--welcome .lgp-scrim { display: none !important; }           /* text-shadow carries legibility */
   /* Captions TRACK the phone (owner request): phone snaps LEFT → text on the
      RIGHT; snaps RIGHT → text on the LEFT; centered/carousel → text on TOP.
@@ -1165,9 +1165,10 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
     transform: translateY(-50%) !important; text-align: left !important; align-items: flex-start !important;
   }
   .signin--welcome .lgp-s2 .lgp-h::after { margin-left: 0 !important; margin-right: auto !important; }
-  /* c1-c3: phone centered (carousel) → caption on TOP, centered above the phone */
+  /* c1-c3: phone centered (carousel) → caption on TOP, just under the brand and
+     clear of the phone. Anchored high so the phone (stage-centered) never reaches it. */
   .signin--welcome .lgp-c1, .signin--welcome .lgp-c2, .signin--welcome .lgp-c3 {
-    top: calc(env(safe-area-inset-top, 0px) + 84px) !important; bottom: auto !important;
+    top: calc(env(safe-area-inset-top, 0px) + 56px) !important; bottom: auto !important;
     left: 0 !important; right: 0 !important; max-width: none !important;
     transform: none !important; padding: 0 26px !important;
     text-align: center !important; align-items: center !important;
@@ -1189,8 +1190,8 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
   .signin--welcome .signin__welcome {
     display: flex; flex-direction: column; gap: 9px;
     position: relative; z-index: 5;
-    padding: 34px 24px calc(env(safe-area-inset-bottom, 0px) + 20px);
-    background: linear-gradient(180deg, transparent 0%, rgba(12,7,20,.68) 30%, rgba(12,7,20,.97) 66%);
+    padding: 20px 24px calc(env(safe-area-inset-bottom, 0px) + 18px);
+    background: linear-gradient(180deg, transparent 0%, rgba(12,7,20,.68) 34%, rgba(12,7,20,.97) 70%);
   }
   .lgw-btn {
     display: flex; align-items: center; justify-content: center;
