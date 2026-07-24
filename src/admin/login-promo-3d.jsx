@@ -31,15 +31,16 @@ function kf(points, pct) {
   return points[points.length - 1][1];
 }
 const D = Math.PI / 180;
-// mover: x offset + yaw (matches CSS 0/2→6/20→24/38→41)
-// ends at -0.45 (== the 0% start) so the loop wraps with NO position jump — the
-// phone eases back to its rest spot over 84→100% while no caption is showing.
-const MX = [[0, -0.45], [2, -0.45], [6, -0.8], [20, -0.8], [24, 0.8], [38, 0.8], [41, 0], [84, 0], [100, -0.45]];
-const MR = [[0, 0], [2, 0], [6, 30 * D], [20, 30 * D], [24, -30 * D], [38, -30 * D], [41, 0], [100, 0]];
+// mover: x offset + yaw. Starts/ends CENTERED (x=0) so the phone settles in the
+// middle after the intro, THEN moves left (caption right, s1), then right
+// (caption left, s2), then back to center for the carousel. 0%==100% → seamless.
+const MX = [[0, 0], [4, 0], [6, -0.8], [20, -0.8], [24, 0.8], [38, 0.8], [41, 0], [100, 0]];
+const MR = [[0, 0], [4, 0], [6, 30 * D], [20, 30 * D], [24, -30 * D], [38, -30 * D], [41, 0], [100, 0]];
 // carousel ring rotation (matches CSS 41→44/53→56/65→68/77→80)
 const RING = [[0, 0], [41, 0], [44, -90 * D], [53, -90 * D], [56, -180 * D], [65, -180 * D], [68, -270 * D], [77, -270 * D], [80, -360 * D], [100, -360 * D]];
-// intro zoom (camera dolly scale on the whole rig)
-const ZOOM = [[0, 1.35], [55, 1.35], [100, 1]];
+// intro zoom (gentle settle on the whole rig). Kept small — a big zoom + the
+// mobile down-nudge dropped the enlarged phone onto the buttons.
+const ZOOM = [[0, 1.14], [40, 1.14], [100, 1]];
 
 // One screenshot PER FEATURE. slot0 = the invite hero (front during the s1
 // "invitation" beat); it swaps to the schedule shot for the s2 "everything in
@@ -70,20 +71,19 @@ export default function LoginPromo3D() {
     const mover = new THREE.Group();     // left/right snaps
     const ring = new THREE.Group();      // carousel
     rig.add(mover); mover.add(ring); scene.add(rig);
+    let nudgeY = 0;                      // mobile downward nudge (set in size())
 
     const size = () => {
       const w = host.clientWidth || 600, h = host.clientHeight || 700;
       const aspect = w / h;
       renderer.setSize(w, h); cam.aspect = aspect;
-      // Tall/narrow (mobile welcome) viewports: dolly the camera back so the ±X
-      // snaps and the 4-phone carousel don't clip at the edges. Desktop (wide
-      // aspect) keeps the original z=6.6 framing.
       // Dolly back on narrow/tall (mobile) so the phone fits with room for the top
       // caption and the bottom buttons; more back-off than desktop keeps it smaller.
       cam.position.z = Math.max(6.6, 5.4 / Math.max(aspect, 0.35));
       // Small downward nudge (mobile) so the phone sits a touch lower — tighter gap
       // to the buttons without tucking under them on short screens. Desktop centered.
-      rig.position.y = aspect < 0.8 ? -0.12 : 0;
+      nudgeY = aspect < 0.8 ? -0.12 : 0;
+      rig.position.y = nudgeY;
       cam.updateProjectionMatrix();
     };
     size();
@@ -159,16 +159,24 @@ export default function LoginPromo3D() {
     const tick = () => {
       if (disposed) return;
       const t = (performance.now() - t0) / 1000;
+      const hash = window.location.hash || "";
+      const dbgi = /lgpi=([\d.]+)/.exec(hash); // debug freeze: #lgpi=<pct> pins the INTRO
       if (reduce) {
-        rig.scale.setScalar(1); mover.rotation.y = 16 * D;
-      } else if (t < INTRO) {
-        const pct = (t / INTRO) * 100;
-        rig.scale.setScalar(kf(ZOOM, pct));
-        mover.position.x = -0.45; // caption sits beside the zoomed phone
+        rig.scale.setScalar(1); mover.rotation.y = 16 * D; rig.position.y = nudgeY;
+      } else if (dbgi || t < INTRO) {
+        const pct = dbgi ? parseFloat(dbgi[1]) : (t / INTRO) * 100;
+        const scale = kf(ZOOM, pct);
+        rig.scale.setScalar(scale);
+        mover.position.x = 0;          // intro: phone CENTERED
+        mover.rotation.y = 0; ring.rotation.y = 0;
+        // Lift as it zooms so the enlarged phone's BOTTOM stays put (never drops
+        // onto the buttons). halfWorld ≈ 2.05/2; no top caption during the intro.
+        rig.position.y = nudgeY + (scale - 1) * 1.025;
       } else {
         rig.scale.setScalar(1);
+        rig.position.y = nudgeY;
         // debug freeze: #lgp=<pct> pins the loop position (visual QA)
-        const dbg = /lgp=([\d.]+)/.exec(window.location.hash || "");
+        const dbg = /lgp=([\d.]+)/.exec(hash);
         const pct = dbg ? parseFloat(dbg[1]) : (((t - INTRO) % LOOP) / LOOP) * 100;
         mover.position.x = kf(MX, pct);
         mover.rotation.y = kf(MR, pct);
