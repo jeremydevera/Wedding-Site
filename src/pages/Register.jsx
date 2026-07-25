@@ -174,14 +174,12 @@ export function RegisterPage() {
                 <span className="rdone__num">2</span>
                 <div className="rdone__stepbody">
                   <b>Manage your site anytime</b>
-                  <p>Tap <strong>Open my dashboard</strong> to manage RSVPs, edit details, and more.</p>
-                  <a className="rdone__adminbtn" href={`https://${siteUrl}/admin`} target="_blank" rel="noreferrer">Open my dashboard →</a>
+                  <p>Tap <strong>Open my website</strong>, scroll to the bottom, then tap <strong>Admin sign in</strong>.</p>
                 </div>
               </li>
             </ol>
           </div>
 
-          <p className="rdone__foot">Bookmark this page — sign in anytime to find these links again.</p>
           <button type="button" className="rdone__signout" onClick={signOut}>Sign out</button>
         </div>
       </Shell>
