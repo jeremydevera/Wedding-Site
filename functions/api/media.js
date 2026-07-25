@@ -2,6 +2,11 @@
 // Cloudflare Pages Function — GET /api/media?type=image|audio
 // Auth-gated global listing of R2 media by type across all clients (binding: env.MEDIA).
 // Returns bare keys the caller renders via mediaUrl(). Scoped to /api/* via _routes.json.
+import { neon } from "@neondatabase/serverless";
+
+// Public web API key (already in the client bundle) — scopes the Firebase token
+// check to OUR project. Overridable via env.
+const FIREBASE_API_KEY = "AIzaSyC4zUcZH06Te0CQLwn9r3VdAeb3Rcf4K0k";
 
 const TYPES = new Set(["image", "audio"]);
 
@@ -48,28 +53,59 @@ async function requireSuperadmin(SUPABASE_URL, SUPABASE_ANON_KEY, token) {
 // not bound to a client (e.g. a bare 'guest' account). Superadmin sees the whole
 // library; an owner is scoped to their own client's prefix so they can never see
 // another tenant's media.
-async function resolveCaller(SUPABASE_URL, SUPABASE_ANON_KEY, token) {
+// Verify a Firebase ID token with Google (project-scoped by the API key).
+// Returns the uid or null — same "ask the provider" model as the Supabase check.
+async function firebaseUid(apiKey, token) {
+  try {
+    const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ idToken: token }),
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return (d && d.users && d.users[0] && d.users[0].localId) || null;
+  } catch { return null; }
+}
+
+async function resolveCaller(env, SUPABASE_URL, SUPABASE_ANON_KEY, token) {
   if (!token) return { ok: false, status: 401 };
-  let uid;
+  // 1. Supabase: confirm the user; a non-Supabase token → !ok → try Firebase; a
+  //    network error → 502. A confirmed Supabase user's profile is authoritative
+  //    (fail CLOSED on lookup error, never fall through to Firebase).
+  let supaUid = null;
   try {
     const who = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
     });
-    if (!who.ok) return { ok: false, status: 401 };
-    const user = await who.json();
-    uid = user && user.id;
+    if (who.ok) { const user = await who.json(); supaUid = (user && user.id) || null; }
   } catch { return { ok: false, status: 502 }; }
-  if (!uid) return { ok: false, status: 401 };
-  try {
-    const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${uid}&select=role,client_id`, {
-      headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
-    });
-    if (!pr.ok) return { ok: false, status: 502 };
-    const rows = await pr.json();
-    const row = Array.isArray(rows) && rows[0];
-    if (!row) return { ok: false, status: 403 };
-    return { ok: true, uid, role: row.role, clientId: row.client_id || null };
-  } catch { return { ok: false, status: 502 }; }
+  if (supaUid) {
+    try {
+      const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${supaUid}&select=role,client_id`, {
+        headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
+      });
+      if (!pr.ok) return { ok: false, status: 502 };
+      const rows = await pr.json();
+      const row = Array.isArray(rows) && rows[0];
+      if (!row) return { ok: false, status: 403 };
+      return { ok: true, uid: supaUid, role: row.role, clientId: row.client_id || null };
+    } catch { return { ok: false, status: 502 }; }
+  }
+  // 2. Firebase ID token (Neon clients) → role + client_id from Neon profiles.
+  if (env && env.NEON_DATABASE_URL) {
+    const uid = await firebaseUid(env.FIREBASE_API_KEY || FIREBASE_API_KEY, token);
+    if (uid) {
+      try {
+        const sql = neon(env.NEON_DATABASE_URL);
+        const rows = await sql`select role, client_id from profiles where id = ${uid}`;
+        const row = rows && rows[0];
+        if (!row) return { ok: false, status: 403 };
+        return { ok: true, uid, role: row.role, clientId: row.client_id || null };
+      } catch { return { ok: false, status: 502 }; }
+    }
+  }
+  return { ok: false, status: 401 };
 }
 
 // Fetch EVERY client's stringified content. Returns the same shape as
@@ -127,7 +163,7 @@ export async function onRequestGet(context) {
     const chk = await requireSuperadmin(SUPABASE_URL, SUPABASE_ANON_KEY, token);
     if (!chk.ok) return json({ error: chk.status === 403 ? "forbidden" : "unauthorized" }, chk.status);
   } else {
-    const who = await resolveCaller(SUPABASE_URL, SUPABASE_ANON_KEY, token);
+    const who = await resolveCaller(env, SUPABASE_URL, SUPABASE_ANON_KEY, token);
     if (!who.ok) return json({ error: who.status === 403 ? "forbidden" : "unauthorized" }, who.status);
     if (who.role !== "superadmin") {
       // Non-superadmin must be an owner bound to a client; scope to that prefix.

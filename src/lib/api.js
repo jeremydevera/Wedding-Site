@@ -391,11 +391,19 @@ async function freshToken() {
   if (!valid(session, 60000)) {
     try { const { data: r } = await supabase.auth.refreshSession(); if (r && r.session) session = r.session; } catch (_) {}
   }
-  // Final guard: never send an expired/absent token — the auth-gated Functions
-  // would just reject it as "unauthorized", which reads as a cryptic failure.
-  // Throw a clear, actionable message so the caller can prompt a re-login.
-  if (!valid(session, 0)) throw new Error("Your session expired — please log out and log back in, then try again.");
-  return session.access_token;
+  if (valid(session, 0)) return session.access_token;
+  // No Supabase session → this is a Neon client, who authenticates via Firebase.
+  // Send their fresh Firebase ID token; /api/upload verifies it with Google and
+  // resolves the Neon tenant. Dynamic import avoids a load-time cycle with
+  // firebase.js. Fall through to the clear error only if there's no token at all.
+  try {
+    const { firebaseUserToken } = await import("@/lib/firebase.js");
+    const fb = await firebaseUserToken();
+    if (fb) return fb;
+  } catch (_) { /* no Firebase session either */ }
+  // Never send an expired/absent token — the auth-gated Functions would reject it
+  // as "unauthorized". Throw a clear, actionable message so the caller re-logs in.
+  throw new Error("Your session expired — please log out and log back in, then try again.");
 }
 
 export async function uploadToR2(file, opts, clientId) {

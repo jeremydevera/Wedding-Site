@@ -1,5 +1,11 @@
 // src/lib/__tests__/mediaEndpoint.test.js
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+
+// Firebase-token path (Neon clients) reads role+client_id from Neon via
+// @neondatabase/serverless. Stub neon() so `sql`…`` resolves to controllable rows.
+const { neonRows } = vi.hoisted(() => ({ neonRows: { value: [] } }));
+vi.mock("@neondatabase/serverless", () => ({ neon: () => (() => Promise.resolve(neonRows.value)) }));
+
 import { onRequestGet, onRequestDelete } from "../../../functions/api/media.js";
 import { onRequestPost } from "../../../functions/api/upload.js";
 
@@ -322,6 +328,43 @@ describe("POST /api/upload", () => {
     const env = envMedia();
     const res = await onRequestPost({ request: uploadReq({ file: imgFile(), clientId: "c1" }), env });
     expect(res.status).toBe(502);
+    expect(env.MEDIA.put).not.toHaveBeenCalled();
+  });
+
+  // Firebase-authed Neon owner (no Supabase session): /auth/v1/user returns !ok,
+  // so resolveCaller falls to Firebase (accounts:lookup) → Neon profile.
+  it("Firebase (Neon) owner CAN upload to their own tenant", async () => {
+    neonRows.value = [{ role: "owner", client_id: "c1" }];
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, json: async () => ({}) })                             // supabase auth: not a supabase token
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ users: [{ localId: "fb-uid" }] }) }); // firebase accounts:lookup
+    const env = { MEDIA: { put: vi.fn().mockResolvedValue(undefined) }, NEON_DATABASE_URL: "postgres://x" };
+    const res = await onRequestPost({ request: uploadReq({ file: imgFile(), clientId: "c1" }), env });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.key.startsWith("c1/")).toBe(true);
+    expect(env.MEDIA.put).toHaveBeenCalledTimes(1);
+  });
+
+  it("Firebase (Neon) owner CANNOT upload to another tenant", async () => {
+    neonRows.value = [{ role: "owner", client_id: "c1" }];
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ users: [{ localId: "fb-uid" }] }) });
+    const env = { MEDIA: { put: vi.fn() }, NEON_DATABASE_URL: "postgres://x" };
+    const res = await onRequestPost({ request: uploadReq({ file: imgFile(), clientId: "other" }), env });
+    expect(res.status).toBe(403);
+    expect(env.MEDIA.put).not.toHaveBeenCalled();
+  });
+
+  it("Firebase token with no Neon profile is rejected (403)", async () => {
+    neonRows.value = [];
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ users: [{ localId: "fb-uid" }] }) });
+    const env = { MEDIA: { put: vi.fn() }, NEON_DATABASE_URL: "postgres://x" };
+    const res = await onRequestPost({ request: uploadReq({ file: imgFile(), clientId: "c1" }), env });
+    expect(res.status).toBe(403);
     expect(env.MEDIA.put).not.toHaveBeenCalled();
   });
 

@@ -1,9 +1,15 @@
 // Cloudflare Pages Function — POST /api/upload
 // Auth-gated upload to the R2 bucket (binding: env.MEDIA). Only a logged-in
-// admin (valid Supabase session) may upload; guests are anonymous (no token),
-// so this also blocks the public. Returns a same-origin URL ("/r2/<key>")
-// served back by functions/r2/[[path]].js — no public bucket / custom domain
-// needed. Scoped to /api/* via public/_routes.json so the SPA is untouched.
+// admin may upload — a valid Supabase session (Supabase clients + the superadmin
+// console) OR a Firebase ID token (Neon clients, post-cutover 2026-07-22).
+// Guests are anonymous (no token), so this also blocks the public. Returns a
+// same-origin URL ("/r2/<key>") served back by functions/r2/[[path]].js — no
+// public bucket needed. Scoped to /api/* via public/_routes.json.
+import { neon } from "@neondatabase/serverless";
+
+// Public web API key (already shipped in the client bundle) — scopes the Firebase
+// token check to OUR project. Overridable via env.
+const FIREBASE_API_KEY = "AIzaSyC4zUcZH06Te0CQLwn9r3VdAeb3Rcf4K0k";
 
 // One flat per-file cap for every media kind (owner decision 2026-07-10:
 // keep storage + guest bandwidth predictable).
@@ -17,33 +23,68 @@ const PURPOSES = new Set(["hero", "attire", "story", "frame", "envbg", "playlist
 const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json" } });
 
-// Resolve the caller's identity for tenant scoping. Verifies the bearer token,
-// then reads their role + client_id from profiles. Returns { ok, status } on
-// failure (fail CLOSED), or { ok:true, uid, role, clientId } — clientId is null
-// for anyone not bound to a client (e.g. a bare 'guest' account). Mirror of
-// functions/api/media.js resolveCaller — change both together.
-async function resolveCaller(SUPABASE_URL, SUPABASE_ANON_KEY, token) {
+// Verify a Firebase ID token by asking Google (project-scoped by the API key —
+// rejects tokens from other projects, expired, or tampered). Returns the uid or
+// null. Same "ask the provider" trust model as the Supabase /auth/v1/user check
+// below — no hand-rolled JWT crypto.
+async function firebaseUid(apiKey, token) {
+  try {
+    const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ idToken: token }),
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return (d && d.users && d.users[0] && d.users[0].localId) || null;
+  } catch { return null; }
+}
+
+// Resolve the caller's identity for tenant scoping. Accepts EITHER a Supabase
+// session (Supabase clients + superadmin console) OR a Firebase ID token (Neon
+// clients). Returns { ok, status } on failure (fail CLOSED), or { ok:true, uid,
+// role, clientId } — clientId is null for anyone not bound to a client. Mirror
+// of functions/api/media.js resolveCaller — change both together.
+async function resolveCaller(env, SUPABASE_URL, SUPABASE_ANON_KEY, token) {
   if (!token) return { ok: false, status: 401 };
-  let uid;
+  // 1. Supabase: confirm the user. A non-Supabase token makes /auth/v1/user
+  //    return !ok (→ try Firebase); a network error throws (→ 502, transient).
+  //    Once a Supabase user is confirmed, their profile is AUTHORITATIVE — fail
+  //    CLOSED on a lookup error, never fall through to Firebase.
+  let supaUid = null;
   try {
     const who = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
     });
-    if (!who.ok) return { ok: false, status: 401 };
-    const user = await who.json();
-    uid = user && user.id;
+    if (who.ok) { const user = await who.json(); supaUid = (user && user.id) || null; }
   } catch { return { ok: false, status: 502 }; }
-  if (!uid) return { ok: false, status: 401 };
-  try {
-    const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${uid}&select=role,client_id`, {
-      headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
-    });
-    if (!pr.ok) return { ok: false, status: 502 };
-    const rows = await pr.json();
-    const row = Array.isArray(rows) && rows[0];
-    if (!row) return { ok: false, status: 403 };
-    return { ok: true, uid, role: row.role, clientId: row.client_id || null };
-  } catch { return { ok: false, status: 502 }; }
+  if (supaUid) {
+    try {
+      const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${supaUid}&select=role,client_id`, {
+        headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
+      });
+      if (!pr.ok) return { ok: false, status: 502 };
+      const rows = await pr.json();
+      const row = Array.isArray(rows) && rows[0];
+      if (!row) return { ok: false, status: 403 };
+      return { ok: true, uid: supaUid, role: row.role, clientId: row.client_id || null };
+    } catch { return { ok: false, status: 502 }; }
+  }
+  // 2. Firebase ID token — Neon clients. Verify with Google, then read role +
+  //    client_id from the Neon profiles table. Fail CLOSED on any gap.
+  if (env && env.NEON_DATABASE_URL) {
+    const uid = await firebaseUid(env.FIREBASE_API_KEY || FIREBASE_API_KEY, token);
+    if (uid) {
+      try {
+        const sql = neon(env.NEON_DATABASE_URL);
+        const rows = await sql`select role, client_id from profiles where id = ${uid}`;
+        const row = rows && rows[0];
+        if (!row) return { ok: false, status: 403 };
+        return { ok: true, uid, role: row.role, clientId: row.client_id || null };
+      } catch { return { ok: false, status: 502 }; }
+    }
+  }
+  return { ok: false, status: 401 };
 }
 
 // SSRF allowlist for the server-side sourceUrl fetch. Only hosts we deliberately
@@ -94,7 +135,7 @@ export async function onRequestPost(context) {
   //    client so we can enforce tenant ownership below. Fail CLOSED on any
   //    unexpected state (no token / bad token / role lookup error).
   const token = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
-  const who = await resolveCaller(SUPABASE_URL, SUPABASE_ANON_KEY, token);
+  const who = await resolveCaller(env, SUPABASE_URL, SUPABASE_ANON_KEY, token);
   if (!who.ok) {
     return json(
       { error: who.status === 403 ? "forbidden" : who.status === 502 ? "auth check failed" : "unauthorized" },
