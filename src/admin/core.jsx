@@ -310,14 +310,15 @@ export function AdminLogin({ onAuthed }) {
       setErr(/popup-closed|cancelled/i.test(m) ? "Google sign-in was cancelled." : m || "Google sign-in failed.");
     } finally { setGBusy(false); }
   };
-  // Navigate via JS on tap (some iOS Safari cases swallow an <a> default inside
-  // the transformed/canvas welcome); keep href for accessibility + right-click.
-  const goRegister = (e) => { e.preventDefault(); window.location.assign("https://celebrately.us/register"); };
+  // Navigate on POINTERUP (fires on an iOS tap even when the <a> click is
+  // swallowed inside the transformed/canvas welcome); keep href for accessibility.
+  const goRegister = () => window.location.assign("https://celebrately.us/register");
+  const goDemo = () => window.location.assign("https://demo.celebrately.us");
   const welcomeFooter = gateEligible ? (
     <div className="signin__welcome">
-      <a className="lgw-btn lgw-btn--primary" href="https://celebrately.us/register" onClick={goRegister}>Create my website</a>
+      <a className="lgw-btn lgw-btn--primary" href="https://celebrately.us/register" onPointerUp={goRegister} onClick={goRegister}>Create my website</a>
       <button type="button" className="lgw-btn lgw-btn--ghost" onClick={() => setShowForm(true)}>Log in</button>
-      <a className="lgw-btn lgw-btn--text" href="https://demo.celebrately.us" onClick={(e) => { e.preventDefault(); window.location.assign("https://demo.celebrately.us"); }}>See the demo</a>
+      <a className="lgw-btn lgw-btn--text" href="https://demo.celebrately.us" onPointerUp={goDemo} onClick={goDemo}>See the demo</a>
     </div>
   ) : null;
   return (
@@ -386,7 +387,7 @@ export function AdminLogin({ onAuthed }) {
               </button>
             </div>
 
-            <p className="signin__reg">Don't have an account? <a href="https://celebrately.us/register" onClick={goRegister}>Register</a></p>
+            <p className="signin__reg">Don't have an account? <a href="https://celebrately.us/register" onPointerUp={goRegister} onClick={goRegister}>Register</a></p>
           </form>
           )}
         </div>
