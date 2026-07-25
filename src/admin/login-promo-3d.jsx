@@ -164,7 +164,7 @@ export default function LoginPromo3D() {
         const fade = []; // {m, base} — base opacity to scale by the exit factor
         phone.traverse((o) => {
           if (!o.isMesh || !o.material) return;
-          if (o.userData && o.userData.lgpScreen) { o.material = new THREE.MeshBasicMaterial({ map: i === 0 ? texInvite : loadTex(SHOTS[i]), toneMapped: false, side: THREE.DoubleSide }); screen = o; }
+          if (o.userData && o.userData.lgpScreen) { o.material = new THREE.MeshBasicMaterial({ map: i === 0 ? texInvite : loadTex(SHOTS[i]), toneMapped: false, side: THREE.BackSide }); screen = o; }
           else if (i > 0) { o.material = o.material.clone(); }
           if (i > 0) { o.material.transparent = true; fade.push({ m: o.material, base: o.material.opacity }); }
         });
