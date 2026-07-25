@@ -9,6 +9,8 @@ const CLIENTS = [
   { id: "c1", subdomain: "demo", event_type: "wedding", template_key: "classic", is_active: true, owner_email: "o@x.com", created_at: "2026-07-01T00:00:00Z", content: { partnerA: "Jeremy", partnerB: "Irish", phone: "0917", weddingDate: "2026-09-19T15:00", venueName: "Villa" } },
   { id: "c2", subdomain: "leo-7", event_type: "birthday", template_key: "blush", is_active: true, owner_email: null, created_at: "2026-07-02T00:00:00Z", content: { partnerA: "Leo's 7th Birthday", partnerB: "" } },
   { id: "c3", subdomain: "bare", event_type: "wedding", template_key: "classic", is_active: false, owner_email: null, created_at: "2026-07-03T00:00:00Z", content: null },
+  // the signed-in superadmin's OWN account — must be hidden from the list
+  { id: "cme", subdomain: "my-own-site", event_type: "wedding", template_key: "classic", is_active: true, owner_email: "su@x", created_at: "2026-07-04T00:00:00Z", content: { partnerA: "Me", partnerB: "" } },
 ];
 
 vi.mock("@/lib/supabase.js", () => {
@@ -26,7 +28,7 @@ vi.mock("@/lib/supabase.js", () => {
       from: (table) => chain({ data: table === "clients" ? CLIENTS : [] }),
       channel: () => ({ on() { return this; }, subscribe() { return this; } }),
       removeChannel: () => {},
-      auth: { getSession: async () => ({ data: { session: null } }) },
+      auth: { getSession: async () => ({ data: { session: { user: { email: "su@x" } } } }) },
       functions: { invoke: async () => ({ data: null }) },
     },
   };
@@ -46,6 +48,13 @@ describe("superadmin Clients list with real rows", () => {
     await waitFor(() => expect(container.textContent).toContain("demo"));
     expect(container.textContent).toContain("leo-7");
     expect(container.textContent).toContain("bare");
+  });
+
+  it("hides the signed-in superadmin's own account from the list", async () => {
+    const { container } = render(<ClientsAdmin />);
+    await waitFor(() => expect(container.textContent).toContain("demo"));
+    expect(container.textContent).not.toContain("my-own-site");
+    expect(container.textContent).not.toContain("su@x");
   });
 
   it("site address is a link that opens the live site in a new tab", async () => {

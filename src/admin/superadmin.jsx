@@ -388,9 +388,17 @@ export function ClientsAdmin() {
   const [delReq, setDelReq] = useState(null);        // { r, typed } — type-the-address delete confirm
   const [sel, setSel] = useState(() => new Set());   // client ids checked for bulk delete
 
+  // The signed-in superadmin is not a "client" — hide their own account from
+  // every list (Supabase clients, Neon clients, Neon signups) so it never shows.
+  async function myEmail() {
+    const { data: { session } } = await supabase.auth.getSession();
+    return (session?.user?.email || "").toLowerCase();
+  }
+
   async function load() {
+    const me = await myEmail();
     const { data } = await supabase.from("clients").select("*").order("created_at", { ascending: false });
-    setClients(data || []);
+    setClients((data || []).filter((c) => (c.owner_email || "").toLowerCase() !== me));
     setSel(new Set()); // rows changed — stale checks would be dangerous on delete
     try { setRequests(await listSiteRequests()); } catch (_) { /* non-superadmin or table missing */ }
     // Notes live in a superadmin-only table (never exposed to anon/owners).
@@ -413,8 +421,11 @@ export function ClientsAdmin() {
   }
   async function loadNeon() {
     try {
+      const me = await myEmail();
       const [rq, cl, su] = await Promise.all([neonAdmin("list_requests"), neonAdmin("list_clients"), neonAdmin("list_signups").catch(() => ({ rows: [] }))]);
-      setNeonReqs(rq.rows || []); setNeonClients(cl.rows || []); setNeonSignups(su.rows || []);
+      setNeonReqs(rq.rows || []);
+      setNeonClients((cl.rows || []).filter((c) => (c.owner_email || "").toLowerCase() !== me));
+      setNeonSignups((su.rows || []).filter((u) => (u.email || "").toLowerCase() !== me));
     } catch (e) { console.warn("[neon-admin] load failed:", e.message); }
   }
   useEffect(() => { load(); loadNeon(); }, []);
