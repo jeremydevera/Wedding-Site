@@ -3380,6 +3380,11 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .lgp-usb{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:26px;height:6px;border-radius:3px;background:#3a3741;box-shadow:inset 0 0 0 1px #1d1b22}
 /* captions — snap phase beside the phone; carousel phase = bottom billboard */
 .lgp-cap{position:absolute;top:50%;max-width:300px;opacity:0;z-index:5;display:flex;flex-direction:column;animation-duration:var(--ll);animation-timing-function:ease;animation-iteration-count:infinite;animation-delay:var(--li)}
+/* Captions + scrim stay PAUSED until the 3D phone is ready (JS adds .lgp-go to the
+   stage), so they start in lockstep with the phone — no caption over a centered
+   phone, and the two 32s loops never drift apart. */
+.lgp-cap,.lgp-scrim{animation-play-state:paused}
+.lgp-stage.lgp-go .lgp-cap,.lgp-stage.lgp-go .lgp-scrim{animation-play-state:running}
 .lgp-ey{font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.6);font-weight:700}
 .lgp-h{font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1.05;margin-top:8px;color:#fff;text-wrap:balance}
 .lgp-p{margin-top:12px;color:rgba(255,255,255,.8);font-size:16px;line-height:1.5}
@@ -3394,7 +3399,9 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* readability scrim behind the bottom captions during the carousel phase */
 .lgp-scrim{position:absolute;left:0;right:0;bottom:0;height:270px;z-index:4;pointer-events:none;opacity:0;background:linear-gradient(180deg,transparent,rgba(24,15,34,.78));animation:lgp-scrim var(--ll) ease var(--li) infinite}
 @keyframes lgp-scrim{0%,43%{opacity:0}47%,89%{opacity:1}93%,100%{opacity:0}}
-.lgp-s1{animation-name:lgp-ks1;animation-delay:0s}.lgp-s2{animation-name:lgp-ks2}
+/* s1 inherits the .lgp-cap loop delay (var(--li)) so it plays in the loop with
+   the phone at LEFT — not during the centered intro, where it overlapped. */
+.lgp-s1{animation-name:lgp-ks1}.lgp-s2{animation-name:lgp-ks2}
 .lgp-c1{animation-name:lgp-kc1}.lgp-c2{animation-name:lgp-kc2}.lgp-c3{animation-name:lgp-kc3}.lgp-c4{animation-name:lgp-kc4}
 @keyframes lgp-ks1{0%{opacity:0;transform:translate(22px,-50%)}4%,17%{opacity:1;transform:translate(0,-50%)}22%,100%{opacity:0;transform:translate(22px,-50%)}}
 @keyframes lgp-ks2{0%,20%{opacity:0;transform:translate(-28px,-50%)}23%,38%{opacity:1;transform:translate(0,-50%)}41%,100%{opacity:0;transform:translate(-28px,-50%)}}

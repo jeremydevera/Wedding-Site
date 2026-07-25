@@ -162,32 +162,24 @@ export default function LoginPromo3D() {
         slots.push({ slot, phone, screen, fade });
       }
       ring.position.z = -R; // front phone sits at world z=0
+      // Phone is ready → start this rig's clock AND un-pause the CSS captions at the
+      // same instant, so they run in lockstep (no early "invitation" over a centered
+      // phone; loops stay aligned).
+      t0 = performance.now();
+      host.closest(".lgp-stage")?.classList.add("lgp-go");
     });
 
-    const t0 = performance.now();
-    // Phase-lock the phone to the CSS caption timeline. The captions animate on
-    // the document timeline from paint, but this WebGL rig is lazy-loaded (three.js
-    // chunk) so its own clock starts LATE — on a slow load the phone was still
-    // centered while the "The invitation" caption showed (overlap), and the two
-    // 32s loops stayed permanently offset so the snaps looked mistimed ("obvious
-    // loop"). Anchoring to a caption's Animation.startTime (a delay:3.6s cap so its
-    // post-delay loop matches our (t-INTRO) loop) keeps phone + captions in lockstep
-    // regardless of when the chunk finishes loading. Falls back to t0 until the CSS
-    // animation is queryable.
-    let capStart = null;
-    const capClock = () => {
-      if (capStart == null) {
-        const el = document.querySelector(".lgp-s2") || document.querySelector(".lgp-cap");
-        const a = el && el.getAnimations && el.getAnimations()[0];
-        if (a && a.startTime != null) capStart = a.startTime;
-      }
-      return capStart;
-    };
+    // The phone starts in lockstep with the CSS captions: both begin the instant the
+    // GLB is ready. The captions are CSS-paused until the stage gets .lgp-go; this
+    // rig's clock (t0) is set at that same moment (in the loader callback). The 3D
+    // chunk loads late, so without this the captions ran ahead — "The invitation"
+    // showed while the phone was still centered (overlap) and the loops stayed
+    // permanently offset ("obvious loop").
+    let t0 = null;
     const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const tick = () => {
       if (disposed) return;
-      const cs = capClock();
-      const t = cs != null ? (document.timeline.currentTime - cs) / 1000 : (performance.now() - t0) / 1000;
+      const t = t0 == null ? 0 : (performance.now() - t0) / 1000;
       const hash = window.location.hash || "";
       const dbgi = /lgpi=([\d.]+)/.exec(hash); // debug freeze: #lgpi=<pct> pins the INTRO
       if (reduce) {
@@ -196,10 +188,11 @@ export default function LoginPromo3D() {
         const pct = dbgi ? parseFloat(dbgi[1]) : (t / INTRO) * 100;
         const scale = kf(ZOOM, pct);
         rig.scale.setScalar(scale);
-        // intro: zoom in WHILE sliding to the left pose, so the phone is already
-        // on the left when the "invitation" caption appears (loop starts left).
-        mover.position.x = kf([[0, 0], [100, -0.8]], pct);
-        mover.rotation.y = kf([[0, 0], [100, 30 * D]], pct);
+        // intro: settle CENTERED (matches loop 0% and the carousel), so the wrap and
+        // the intro→loop handoff are seamless. Captions are gated until now, so the
+        // "invitation" caption only appears once the loop moves the phone left.
+        mover.position.x = 0;
+        mover.rotation.y = 0;
         ring.rotation.y = 0;
         // Lift as it zooms so the enlarged phone's BOTTOM stays put (never drops
         // onto the buttons). halfWorld ≈ 2.05/2; no top caption during the intro.
