@@ -199,21 +199,23 @@ export async function firebaseAnonToken() {
   return auth.currentUser.getIdToken();
 }
 
-// Send a Firebase password-reset email (Neon clients). Returns a status the UI
-// acts on: { sent } on success, { notFound } when no account has that email,
-// { error } otherwise. NOTE: "notFound" only fires when the Firebase project's
-// Email Enumeration Protection is OFF — with it ON, Firebase reports success for
-// any email (by design) and this returns { sent } regardless.
+// Password reset for Firebase (Neon) clients. Goes through OUR /api/reset-password
+// endpoint, which generates the reset link with the Admin SDK and emails it via
+// Resend from send.celebrately.us — so the mail comes from our authenticated
+// domain (inbox, not spam) instead of Firebase's default firebaseapp.com sender.
+// Returns { sent } | { notFound } | { error } for the UI.
 export async function firebaseSendPasswordReset(email) {
   try {
-    const { auth, mod } = await getAuth();
-    await mod.sendPasswordResetEmail(auth, email);
-    return { sent: true };
+    const r = await fetch("/api/reset-password", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (d.notFound) return { notFound: true };
+    if (d.sent) return { sent: true };
+    return { error: d.error || "Couldn't send the reset link. Please try again." };
   } catch (e) {
-    const code = (e && (e.code || e.message)) || "";
-    if (/user-not-found|EMAIL_NOT_FOUND/i.test(code)) return { notFound: true };
-    if (/invalid-email/i.test(code)) return { error: "That email address doesn't look valid." };
-    if (/too-many-requests/i.test(code)) return { error: "Too many attempts — please wait a minute and try again." };
     return { error: "Couldn't send the reset link. Please try again." };
   }
 }
