@@ -459,7 +459,7 @@ function GuestForm({ initial, companions, rsvpDiet, onSave, onCancel }) {
 // Guests tab — invited-list CRUD + reconciliation against RSVPs (who replied,
 // headcount). Shown only when settings.strictRsvp is on (gated in AdminApp).
 export function GuestsAdmin() {
-  const { guests, rsvps, settings } = useStore();
+  const { guests, rsvps, settings, neonMode } = useStore();
   const { run } = React.useContext(AdminSaveCtx);
   const [filter, setFilter] = useState("attending");
   const [q, setQ] = useState("");
@@ -689,7 +689,7 @@ export function GuestsAdmin() {
         <div className="panel__head">
           <div className="panel__title">{onUnmatched ? "RSVPs for approval" : "Guests"} <span style={{ color: "var(--muted)", fontSize: 15 }}>({onUnmatched ? unmatched.length : filtered.length})</span></div>
           <div className="admin-toolbar"><div className="admin-toolbar__end">
-            <Button variant="ghost" className="admin-toolbar__action" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>{Icon.mail({})} Email</Button>
+            {neonMode && <Button variant="ghost" className="admin-toolbar__action" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>{Icon.mail({})} Email</Button>}
             <Button variant="ghost" className="admin-toolbar__action" onClick={exportGuestsCsv}>{Icon.download({})} Export</Button>
             <Button variant="primary" className="admin-toolbar__action" onClick={() => setEditing({ ...blank })}>Add guest</Button>
             <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
@@ -791,7 +791,7 @@ export function GuestsAdmin() {
 }
 
 export function RsvpsAdmin() {
-  const { rsvps, settings } = useStore();
+  const { rsvps, settings, neonMode } = useStore();
   const { run } = React.useContext(AdminSaveCtx);   // wrap server ops in the saving overlay
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("all");
@@ -883,7 +883,7 @@ export function RsvpsAdmin() {
           <div className="admin-toolbar">
             {/* Email results + Export CSV grouped to the right, directly left of search. */}
             <div className="admin-toolbar__end">
-              <Button variant="ghost" className="admin-toolbar__action" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>{Icon.mail({})} Email</Button>
+              {neonMode && <Button variant="ghost" className="admin-toolbar__action" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>{Icon.mail({})} Email</Button>}
               <Button variant="primary" className="admin-toolbar__action" onClick={exportCsv}>{Icon.download({})} Export</Button>
               <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
             </div>
@@ -1030,7 +1030,7 @@ export function MediaAdmin() {
 }
 
 export function GuestbookAdmin() {
-  const { guestbook, settings } = useStore();
+  const { guestbook, settings, neonMode } = useStore();
   const { run } = React.useContext(AdminSaveCtx);   // wrap server ops in the saving overlay
   const [q, setQ] = useState("");
   const [view, setView] = useState("published");
@@ -1110,7 +1110,7 @@ export function GuestbookAdmin() {
         <div className="admin-toolbar">
           {/* Email + Export directly left of search (right group). */}
           <div className="admin-toolbar__end">
-            <Button variant="ghost" className="admin-toolbar__action" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>{Icon.mail({})} Email</Button>
+            {neonMode && <Button variant="ghost" className="admin-toolbar__action" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>{Icon.mail({})} Email</Button>}
             <Button variant="primary" className="admin-toolbar__action" onClick={exportCsv}>{Icon.download({})} Export</Button>
             <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
           </div>
