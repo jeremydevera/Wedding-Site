@@ -60,10 +60,10 @@ export function RegisterPage() {
     // the superadmin profile to 'owner' (also guarded server-side in SQL).
     const prof = await neonAuthedSelect("profiles", `select=role&id=eq.${encodeURIComponent(s.user?.id || "")}`).catch(() => null);
     if (prof && prof[0] && prof[0].role === "superadmin") {
-      // The platform admin never registers — take them straight to the console
-      // (no interstitial). Testing registration as a client = private window.
+      // The platform admin can't register. DON'T silently redirect to /admin — from
+      // the "Create my website" button that lands back on the welcome and reads as
+      // broken. Show a clear message instead (private window = test as a client).
       setPhase("sa");
-      window.location.replace("/admin");
       return;
     }
     // First authed RPC after sign-in can flake to {state:'anon'} while the JWT
@@ -117,12 +117,11 @@ export function RegisterPage() {
     </Shell>
   );
   if (phase === "sa") return (
-    // Auto-redirecting to /admin (resolvePhase issued the replace). This renders
-    // only for the brief moment before navigation lands.
     <Shell>
-      <div className="signin__form" style={{ textAlign: "center", color: "var(--sg-sub)" }}>
-        You're the platform admin — taking you to your console…
-        <p style={{ fontSize: 13, marginTop: 12 }}><a href="/admin">Open the console →</a></p>
+      <div className="signin__form" style={{ textAlign: "center" }}>
+        <h1 className="signin__title" style={{ fontSize: 26 }}>You're signed in as admin</h1>
+        <p className="signin__sub" style={{ marginBottom: 22 }}>Platform admins can't create a client site from here. To see the sign-up a new client gets, open a <strong>private / incognito window</strong>. To manage sites, go to your console.</p>
+        <p><a href="/admin" style={{ color: "#e26a49", fontWeight: 700, textDecoration: "underline" }}>Open the console →</a></p>
       </div>
     </Shell>
   );
