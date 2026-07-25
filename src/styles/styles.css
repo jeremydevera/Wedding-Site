@@ -3433,7 +3433,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   .lgp-feat .lgp-feat-h::after{width:34px;height:3px}
   .lgp-feat--v2,.lgp-feat--v3,.lgp-feat--v5{max-width:none}
 }
-.lgp-ey{font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.6);font-weight:700}
+.lgp-ey{display:none} /* "Featuring" eyebrow removed (owner request) */
 .lgp-h{font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1.05;margin-top:8px;color:#fff;text-wrap:balance}
 .lgp-p{margin-top:12px;color:rgba(255,255,255,.8);font-size:16px;line-height:1.5}
 .lgp-h::after{content:"";display:block;width:44px;height:4px;border-radius:2px;background:#e97c5d;margin-top:12px}
@@ -3470,7 +3470,10 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 @media (prefers-reduced-motion: reduce){.lgp-zoomer,.lgp-mover,.lgp-ring,.lgp-cap,.lgp-slot{animation:none}.lgp-s1{opacity:1}}
 
 /* lgp 3D canvas (three.js) fills the panel; captions overlay above it */
-.lgp-canvas{position:absolute;inset:0;z-index:1}
+/* Phone fades in on entrance (the 3D is gated to appear when the GLB is ready via
+   .lgp-go) instead of popping in from nowhere. */
+.lgp-canvas{position:absolute;inset:0;z-index:1;opacity:0;transition:opacity .7s ease}
+.lgp-stage.lgp-go .lgp-canvas{opacity:1}
 .lgp-canvas canvas{width:100%!important;height:100%!important;display:block}
 
 /* ============================================================

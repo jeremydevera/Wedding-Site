@@ -327,7 +327,6 @@ export function AdminLogin({ onAuthed }) {
       {/* RIGHT — form */}
       <div className="signin__pane">
         {isClient && <button className="signin__back" onClick={() => go("home")}>← Back to website</button>}
-        {gateEligible && <button type="button" className="signin__welcomeback" onClick={() => setShowForm(false)}>← Back</button>}
         <div className="signin__center">
           {forgotOpen ? (
             /* Dedicated reset screen — ONLY the email, no password / Google. */
