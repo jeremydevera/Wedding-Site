@@ -98,6 +98,10 @@ export default function LoginPromo3D() {
     const texLoader = new THREE.TextureLoader();
     const slots = [];
     let texInvite = null, texSchedule = null; // front-phone swap (s1 invite ↔ s2 schedule)
+    // Preview variants: ?lgpv=1..5 swaps in an alternate single-phone choreography
+    // (no param = the default carousel). Lets the owner pick a favorite live.
+    const V = +(new URLSearchParams(window.location.search).get("lgpv") || 0);
+    let cycleTex = null, screen0 = null; // 5-screen cycle + front screen mesh (variants)
     loader.load("/models/iphone17promax.glb", (gltf) => {
       if (disposed) return;
       // normalize: center + scale to a known height, rotate display toward +Z
@@ -166,7 +170,14 @@ export default function LoginPromo3D() {
       // same instant, so they run in lockstep (no early "invitation" over a centered
       // phone; loops stay aligned).
       t0 = performance.now();
-      host.closest(".lgp-stage")?.classList.add("lgp-go");
+      const stage = host.closest(".lgp-stage");
+      stage?.classList.add("lgp-go");
+      if (V >= 1 && V <= 5) {
+        cycleTex = [texInvite, texSchedule, loadTex(SHOTS[1]), loadTex(SHOTS[2]), loadTex(SHOTS[3])];
+        screen0 = slots[0].screen;
+        if (screen0) screen0.material.transparent = true; // allow the swap cross-dip
+        stage?.classList.add("lgp-variant"); // CSS hides the default-timed captions
+      }
     });
 
     // The phone starts in lockstep with the CSS captions: both begin the instant the
@@ -177,6 +188,39 @@ export default function LoginPromo3D() {
     // permanently offset ("obvious loop").
     let t0 = null;
     const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // ── Preview variants (single phone, distinct feel). lt = loop seconds. Each
+    // cycles the 5 screens with a soft cross-dip that masks the swap. Pick one
+    // via ?lgpv=N; captions are hidden during previews and re-added on the winner.
+    const variantTick = (v, lt) => {
+      ring.rotation.y = 0;
+      for (let i = 1; i < slots.length; i++) slots[i].slot.visible = false; // single phone
+      const sin = Math.sin;
+      if (cycleTex && screen0) {
+        const INT = v === 3 ? 4.5 : 3.6;                 // screen dwell time
+        const seg = lt % INT, idx = Math.floor(lt / INT) % cycleTex.length;
+        const tex = cycleTex[idx];
+        if (screen0.material.map !== tex) { screen0.material.map = tex; screen0.material.needsUpdate = true; }
+        screen0.material.opacity = 0.12 + 0.88 * Math.min(1, seg / 0.4, (INT - seg) / 0.4); // dip at the swap
+      }
+      let sx = 0, sy = 0, ry = 0, rx = 0, sc = 1;
+      if (v === 1) {                                     // 1 — Turntable float
+        sy = 0.05 * sin(lt * 1.1); ry = 0.6 * sin(lt * 0.5);
+      } else if (v === 2) {                              // 2 — Pendulum sway
+        sx = 0.85 * sin(lt * 0.5); ry = -0.5 * sin(lt * 0.5); sy = 0.04 * sin(lt * 1.0);
+      } else if (v === 3) {                              // 3 — Flip cards
+        const f = lt % 4.5, flip = f > 3.55 ? kf([[0, 0], [100, Math.PI]], ((f - 3.55) / 0.95) * 100) : 0;
+        ry = 0.22 * sin(lt * 0.7) + flip; rx = 0.1 * sin(lt * 0.5);
+        sc = f > 3.55 ? 1 + 0.09 * sin(((f - 3.55) / 0.95) * Math.PI) : 1;
+      } else if (v === 4) {                              // 4 — Parallax orbit
+        sx = 0.18 * sin(lt * 0.6); sy = 0.06 * sin(lt * 0.9); ry = 0.42 * sin(lt * 0.6); rx = 0.16 * sin(lt * 0.9);
+      } else {                                           // 5 — Minimal breathing
+        sy = 0.03 * sin(lt * 1.3); ry = 0.05 * sin(lt * 0.6); sc = 1 + 0.015 * sin(lt * 1.3);
+      }
+      mover.position.x = sx; mover.position.y = sy; mover.rotation.y = ry; mover.rotation.x = rx;
+      rig.scale.setScalar(sc);
+    };
+
     const tick = () => {
       if (disposed) return;
       const t = t0 == null ? 0 : (performance.now() - t0) / 1000;
@@ -197,6 +241,9 @@ export default function LoginPromo3D() {
         // Lift as it zooms so the enlarged phone's BOTTOM stays put (never drops
         // onto the buttons). halfWorld ≈ 2.05/2; no top caption during the intro.
         rig.position.y = nudgeY + (scale - 1) * 1.025;
+      } else if (V >= 1 && V <= 5) {
+        rig.position.y = nudgeY;
+        variantTick(V, t - INTRO);
       } else {
         rig.scale.setScalar(1);
         rig.position.y = nudgeY;

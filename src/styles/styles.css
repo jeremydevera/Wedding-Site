@@ -3385,6 +3385,8 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    phone, and the two 32s loops never drift apart. */
 .lgp-cap,.lgp-scrim{animation-play-state:paused}
 .lgp-stage.lgp-go .lgp-cap,.lgp-stage.lgp-go .lgp-scrim{animation-play-state:running}
+/* Preview variants (?lgpv=N): motion-only, captions hidden until a winner is picked. */
+.lgp-stage.lgp-variant .lgp-cap,.lgp-stage.lgp-variant .lgp-scrim{display:none!important}
 .lgp-ey{font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.6);font-weight:700}
 .lgp-h{font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1.05;margin-top:8px;color:#fff;text-wrap:balance}
 .lgp-p{margin-top:12px;color:rgba(255,255,255,.8);font-size:16px;line-height:1.5}
