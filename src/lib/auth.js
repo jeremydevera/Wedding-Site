@@ -265,21 +265,24 @@ export async function signIn(email, password) {
 // never surface an error to the caller — the UI shows the same neutral message
 // regardless. Neon self-serve owners set their password via the emailed link
 // from approval, so this covers the accounts that have a password to reset.
+// Returns a status the login UI acts on: { sent } | { notFound } | { error }.
+// Firebase-backed site (Neon clients): Firebase can report a missing account
+// (when enumeration protection is OFF) → { notFound }. Supabase's reset API is
+// enumeration-safe and never reveals existence, so Supabase sites always resolve
+// to { sent }.
 export async function requestPasswordReset(email) {
   const addr = (email || "").trim();
-  if (!addr) return;
-  // Firebase-backed site (Neon clients) → Firebase sends the reset link + hosts
-  // the reset page. Supabase sites (apex/superadmin + legacy owners) → Supabase.
+  if (!addr) return { error: "Enter your email." };
   if (Store.get().neonMode) {
     try {
       const { firebaseSendPasswordReset } = await import("@/lib/firebase.js");
-      await firebaseSendPasswordReset(addr);
-    } catch (e) { /* enumeration-safe: never leak success/failure */ }
-    return;
+      return await firebaseSendPasswordReset(addr);
+    } catch (e) { return { error: "Couldn't send the reset link. Please try again." }; }
   }
   try {
     await supabase.auth.resetPasswordForEmail(addr, { redirectTo: `${window.location.origin}/admin` });
-  } catch (e) { /* enumeration-safe: never leak success/failure */ }
+    return { sent: true };
+  } catch (e) { return { error: "Couldn't send the reset link. Please try again." }; }
 }
 
 // Google login (Firebase). On a Neon client's admin: sign in + require owner/SA

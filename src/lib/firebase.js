@@ -199,14 +199,23 @@ export async function firebaseAnonToken() {
   return auth.currentUser.getIdToken();
 }
 
-// Send a Firebase password-reset email (Neon clients). Enumeration-safe: swallow
-// errors (e.g. auth/user-not-found) so the UI shows one neutral message whether
-// or not the account exists. Firebase emails the reset link + hosts the reset page.
+// Send a Firebase password-reset email (Neon clients). Returns a status the UI
+// acts on: { sent } on success, { notFound } when no account has that email,
+// { error } otherwise. NOTE: "notFound" only fires when the Firebase project's
+// Email Enumeration Protection is OFF — with it ON, Firebase reports success for
+// any email (by design) and this returns { sent } regardless.
 export async function firebaseSendPasswordReset(email) {
   try {
     const { auth, mod } = await getAuth();
     await mod.sendPasswordResetEmail(auth, email);
-  } catch (e) { /* ignore — never reveal whether the email has an account */ }
+    return { sent: true };
+  } catch (e) {
+    const code = (e && (e.code || e.message)) || "";
+    if (/user-not-found|EMAIL_NOT_FOUND/i.test(code)) return { notFound: true };
+    if (/invalid-email/i.test(code)) return { error: "That email address doesn't look valid." };
+    if (/too-many-requests/i.test(code)) return { error: "Too many attempts — please wait a minute and try again." };
+    return { error: "Couldn't send the reset link. Please try again." };
+  }
 }
 
 // Fresh ID token for the signed-in (non-anonymous) user, or null.

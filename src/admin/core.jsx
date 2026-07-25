@@ -291,9 +291,10 @@ export function AdminLogin({ onAuthed }) {
     if (!addr || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(addr)) { toast("Enter a valid email address.", "err"); return; }
     setResetBusy(true);
     try {
-      await requestPasswordReset(addr);
-      toast("If that email has an account, we've sent a password reset link. Check your inbox (and spam).", "success");
-      setForgotOpen(false);
+      const r = await requestPasswordReset(addr);
+      if (r && r.notFound) { toast("No account found for that email. Check the spelling, or register instead.", "err"); }
+      else if (r && r.error) { toast(r.error, "err"); }
+      else { toast("Password reset link sent — check your inbox (and spam).", "success"); setForgotOpen(false); }
     } finally { setResetBusy(false); }
   };
   const googleLogin = async () => {
