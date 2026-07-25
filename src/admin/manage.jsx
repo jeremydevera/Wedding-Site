@@ -18,7 +18,7 @@ import { headsOf } from "@/lib/rsvp.js";
 import { cropTransform, mediaUrl } from "@/lib/media.js";
 import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
-import { featureLevel, visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel, moduleEnabled, OWNER_EDIT_HOME, OWNER_EDIT_TABS, FEATURE_ROWS } from "@/lib/roles.js";
+import { featureLevel, visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel, moduleEnabled, OWNER_EDIT_HOME, OWNER_EDIT_TABS, FEATURE_ROWS, FEATURE_LEVELS, FEATURE_DEFAULTS } from "@/lib/roles.js";
 import { MAP_STYLES, mapStyleKey, mapStyleFilter } from "@/lib/mapStyles.js";
 import { ClientsAdmin, R2LibraryAdmin, SuperOverview, SupportAdmin } from "@/admin/superadmin.jsx";
 import { CloudflareHealth } from "@/admin/CloudflareHealth.jsx";
@@ -2601,19 +2601,34 @@ export function SettingsAdmin() {
           </label>
 
           <div style={{ marginTop: 26, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
-            <div style={{ fontWeight: 600, color: "var(--ink)", textTransform: "uppercase", letterSpacing: ".04em" }}>Features</div>
-            <p style={{ margin: "4px 0 12px", color: "var(--muted)", fontSize: 13 }}>Turn this client's sections on or off. <strong>On</strong> = the section shows on their site and the owner can edit it; <strong>off</strong> = hidden from guests, the menu, and the owner's admin.</p>
-            <div className="mod-toggles mod-toggles--edit">
-              {FEATURE_ROWS.filter((r) => r.k !== "home").map((r) => {
-                const on = featureLevel(f, r.k) !== "none";
-                return (
-                  <label key={r.k} className={"mod-pill" + (on ? " mod-pill--on" : "")} title={r.desc}>
-                    <input type="checkbox" checked={on}
-                      onChange={(e) => Store.updateSettings({ features: { ...(f.features || {}), [r.k]: e.target.checked ? "edit" : "none" } })} /> {r.label}
-                  </label>
-                );
-              })}
-            </div>
+            <div style={{ fontWeight: 600, color: "var(--ink)", textTransform: "uppercase", letterSpacing: ".04em" }}>Features &amp; permissions</div>
+            <p style={{ margin: "4px 0 12px", color: "var(--muted)", fontSize: 13 }}>None = not on their site · View = on the site, you manage the content · Edit = they get the admin tab. Click <strong>Save changes</strong> to apply.</p>
+            <table className="tbl" style={{ width: "100%" }}>
+              <tbody>
+                {FEATURE_ROWS.map((r) => {
+                  const lvl = (f.features && FEATURE_LEVELS.includes(f.features[r.k])) ? f.features[r.k] : FEATURE_DEFAULTS[r.k];
+                  return (
+                    <tr key={r.k}>
+                      <td><strong>{r.label}</strong><div style={{ color: "var(--muted)", fontSize: 12 }}>{r.desc}</div></td>
+                      <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
+                        <div className="seg">
+                          {["none", "view", "edit"].filter((l) => !(r.noNone && l === "none")).map((l) => (
+                            <button key={l} type="button" className={lvl === l ? "on" : ""}
+                              onClick={() => Store.updateSettings({ features: { ...(f.features || {}), [r.k]: l } })}>
+                              {l === "none" ? "None" : l === "view" ? "View" : "Edit"}
+                            </button>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                <tr>
+                  <td><strong>RSVP</strong><div style={{ color: "var(--muted)", fontSize: 12 }}>Core feature of the system</div></td>
+                  <td style={{ textAlign: "right" }}><span className="tag tag--hidden">Edit — always</span></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
         <SaveFooter />

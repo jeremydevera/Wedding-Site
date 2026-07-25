@@ -72,23 +72,26 @@ describe("accessV2 — owner tabs from featureLevel", () => {
     expect(folders).not.toContain("Admin");
   });
 
-  it("superadmin Admin-folder feature toggles map on->edit, off->none", () => {
+  it("superadmin Admin-folder Features & permissions set None/View/Edit levels", () => {
     Store.set({ clientId: "c1", loading: false });
     Store.updateSettings({ accessV2: true, features: {} });
     Store.setAuth({ session: { user: { email: "su@x" } }, role: "superadmin", clientId: null, email: "su@x" });
     const { container } = render(<AdminApp />);
     fireEvent.click([...container.querySelectorAll("nav.admin__nav button")].find((b) => b.textContent.trim() === "Settings"));
     fireEvent.click([...container.querySelectorAll(".folders .folder")].find((b) => b.textContent.trim() === "Admin"));
-    const pill = (label) => [...container.querySelectorAll(".mod-toggles .mod-pill")].find((l) => l.textContent.includes(label));
-    // Our Story defaults to none -> unchecked; turning it on writes "edit"
-    const story = pill("Our Story").querySelector("input");
-    expect(story.checked).toBe(false);
-    fireEvent.click(story);
+    // find a feature row by its label, then its None/View/Edit segmented button
+    const seg = (label, level) => {
+      const row = [...container.querySelectorAll("table.tbl tr")].find((tr) => tr.querySelector("strong")?.textContent === label);
+      return [...row.querySelectorAll(".seg button")].find((b) => b.textContent.trim() === level);
+    };
+    // Our Story defaults to None -> set it to Edit
+    fireEvent.click(seg("Our Story", "Edit"));
     expect(Store.get().settings.features.story).toBe("edit");
-    // Guestbook defaults to edit -> checked; turning it off writes "none"
-    const gb = pill("Guestbook").querySelector("input");
-    expect(gb.checked).toBe(true);
-    fireEvent.click(gb);
+    // Guestbook -> View (superadmin manages content, owner can't edit)
+    fireEvent.click(seg("Guestbook", "View"));
+    expect(Store.get().settings.features.guestbook).toBe("view");
+    // Guestbook -> None (off the site)
+    fireEvent.click(seg("Guestbook", "None"));
     expect(Store.get().settings.features.guestbook).toBe("none");
   });
 
