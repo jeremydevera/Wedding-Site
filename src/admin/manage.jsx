@@ -2536,8 +2536,6 @@ export function SettingsAdmin() {
   const themeToClient = isSuper || showToClient; // Theme + Tab names visibility
   const STABS = settings.accessV2 === true
     ? [["rsvp", "Moderation", "check"],
-       // Features: superadmin-only on-the-subdomain enable/disable per section.
-       ...(isSuper ? [["features", "Features", "check"]] : []),
        ...(themeToClient ? [["tabnames", "Tab names", "edit"]] : []),
        ...(themeToClient ? [["appearance", "Theme", "grid"]] : []),
        ["account", "Account", "user"],
@@ -2601,6 +2599,22 @@ export function SettingsAdmin() {
               <span style={{ display: "block", color: "var(--muted)", fontSize: 13, marginTop: 2 }}>Stop showing the "Donate to Dev" popup to this client (e.g. once they've donated). The Donate tab stays available.</span>
             </span>
           </label>
+
+          <div style={{ marginTop: 26, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
+            <div style={{ fontWeight: 600, color: "var(--ink)", textTransform: "uppercase", letterSpacing: ".04em" }}>Features</div>
+            <p style={{ margin: "4px 0 12px", color: "var(--muted)", fontSize: 13 }}>Turn this client's sections on or off. <strong>On</strong> = the section shows on their site and the owner can edit it; <strong>off</strong> = hidden from guests, the menu, and the owner's admin.</p>
+            <div className="mod-toggles mod-toggles--edit">
+              {FEATURE_ROWS.filter((r) => r.k !== "home").map((r) => {
+                const on = featureLevel(f, r.k) !== "none";
+                return (
+                  <label key={r.k} className={"mod-pill" + (on ? " mod-pill--on" : "")} title={r.desc}>
+                    <input type="checkbox" checked={on}
+                      onChange={(e) => Store.updateSettings({ features: { ...(f.features || {}), [r.k]: e.target.checked ? "edit" : "none" } })} /> {r.label}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
         </div>
         <SaveFooter />
       </div>)}
@@ -2628,25 +2642,6 @@ export function SettingsAdmin() {
               <div style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: ".03em" }}>Auto-approve guestbook messages</div>
               <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>When on, messages post immediately. When off, they stay hidden until you approve them in the Guestbook tab.</div>
             </div>
-          </div>
-        </div>
-        <SaveFooter />
-      </div>)}
-
-      {tab === "features" && settings.accessV2 === true && isSuper && (<div className="panel">
-        <div className="panel__head"><div className="panel__title">Features</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Superadmin only</span></div>
-        <div className="panel__body" style={{ maxWidth: 760 }}>
-          <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>Turn this client's sections on or off. <strong>On</strong> = the section shows on their site and the owner can edit it; <strong>off</strong> = hidden from guests, the menu, and the owner's admin. Click <strong>Save changes</strong> to apply.</p>
-          <div className="mod-toggles mod-toggles--edit">
-            {FEATURE_ROWS.filter((r) => r.k !== "home").map((r) => {
-              const on = featureLevel(f, r.k) !== "none";
-              return (
-                <label key={r.k} className={"mod-pill" + (on ? " mod-pill--on" : "")} title={r.desc}>
-                  <input type="checkbox" checked={on}
-                    onChange={(e) => Store.updateSettings({ features: { ...(f.features || {}), [r.k]: e.target.checked ? "edit" : "none" } })} /> {r.label}
-                </label>
-              );
-            })}
           </div>
         </div>
         <SaveFooter />

@@ -47,7 +47,7 @@ describe("accessV2 — owner tabs from featureLevel", () => {
     expect(tabs).toContain("Guestbook");
   });
 
-  it("accessV2 Settings drops the legacy Access folder; superadmin gets Features + Moderation", () => {
+  it("accessV2 Settings drops the legacy Access folder; superadmin gets Admin + Moderation", () => {
     Store.set({ clientId: "c1", loading: false });
     Store.updateSettings({ accessV2: true, features: {} });
     Store.setAuth({ session: { user: { email: "su@x" } }, role: "superadmin", clientId: null, email: "su@x" });
@@ -55,29 +55,30 @@ describe("accessV2 — owner tabs from featureLevel", () => {
     fireEvent.click([...container.querySelectorAll("nav.admin__nav button")].find((b) => b.textContent.trim() === "Settings"));
     const folders = [...container.querySelectorAll(".folders .folder")].map((b) => b.textContent.trim());
     expect(folders).toContain("Moderation");
-    expect(folders).toContain("Features");   // superadmin-only enable/disable panel
+    expect(folders).toContain("Admin");      // superadmin-only folder (holds the feature toggles)
     expect(folders).not.toContain("Access"); // legacy owner-grant folder is gone under v2
+    expect(folders).not.toContain("Features"); // no standalone Features folder — lives under Admin
   });
 
-  it("accessV2 owner does NOT see the superadmin-only Features folder", () => {
+  it("accessV2 owner does NOT see the superadmin-only Admin folder", () => {
     Store.set({ clientId: "c1", loading: false });
-    // showSettingsToClient lets the owner open Settings at all; Features must still hide.
+    // themeToClient lets the owner open more of Settings; Admin must still hide.
     Store.updateSettings({ accessV2: true, features: {}, showSettingsToClient: true });
     Store.setAuth({ session: { user: { email: "o@x" } }, role: "owner", clientId: "c1", email: "o@x" });
     const { container } = render(<AdminApp />);
     fireEvent.click([...container.querySelectorAll("nav.admin__nav button")].find((b) => b.textContent.trim() === "Settings"));
     const folders = [...container.querySelectorAll(".folders .folder")].map((b) => b.textContent.trim());
     expect(folders).toContain("Moderation");
-    expect(folders).not.toContain("Features");
+    expect(folders).not.toContain("Admin");
   });
 
-  it("superadmin Features panel maps on->edit, off->none", () => {
+  it("superadmin Admin-folder feature toggles map on->edit, off->none", () => {
     Store.set({ clientId: "c1", loading: false });
     Store.updateSettings({ accessV2: true, features: {} });
     Store.setAuth({ session: { user: { email: "su@x" } }, role: "superadmin", clientId: null, email: "su@x" });
     const { container } = render(<AdminApp />);
     fireEvent.click([...container.querySelectorAll("nav.admin__nav button")].find((b) => b.textContent.trim() === "Settings"));
-    fireEvent.click([...container.querySelectorAll(".folders .folder")].find((b) => b.textContent.trim() === "Features"));
+    fireEvent.click([...container.querySelectorAll(".folders .folder")].find((b) => b.textContent.trim() === "Admin"));
     const pill = (label) => [...container.querySelectorAll(".mod-toggles .mod-pill")].find((l) => l.textContent.includes(label));
     // Our Story defaults to none -> unchecked; turning it on writes "edit"
     const story = pill("Our Story").querySelector("input");
