@@ -3400,11 +3400,6 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 
 /* lgp 3D canvas (three.js) fills the panel; captions overlay above it */
 .lgp-canvas{position:absolute;inset:0;z-index:1}
-.lgp-scrim{display:none!important}/* emulator: live-iframe phone; no bottom scrim */
-/* JS (login-promo-3d) drives the two SIDE captions in sync with the phone slide;
-   kill the old CSS carousel timing and hide the unused center captions. */
-.lgp-cap{animation:none!important;transition:opacity .5s ease,transform .55s cubic-bezier(.25,.9,.3,1);text-shadow:0 2px 18px rgba(10,6,16,.55),0 1px 3px rgba(10,6,16,.5)}
-.lgp-c1,.lgp-c2,.lgp-c3,.lgp-c4{display:none!important}
 .lgp-canvas canvas{width:100%!important;height:100%!important;display:block}
 
 /* ============================================================
