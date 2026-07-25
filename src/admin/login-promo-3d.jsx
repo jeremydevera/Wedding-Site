@@ -48,6 +48,15 @@ const ZOOM = [[0, 1.14], [40, 1.14], [100, 1]];
 // your guest list", entourage → "your entourage", setup → "set up fast".
 const SHOTS = ["/assets/login-shot-2.jpg", "/assets/login-shot-dash.jpg", "/assets/login-shot-4.jpg", "/assets/login-setup.jpg"];
 const S2_SHOT = "/assets/login-shot-3.jpg"; // schedule — swapped onto the front phone for the s2 caption
+// Feature copy for the ?lgpv showcases — names each screen as it appears. Order
+// matches cycleTex = [invite, schedule, dashboard, entourage, setup].
+const FEATURES = [
+  ["The invitation", "Where your celebration begins."],
+  ["Everything in one place", "Schedule, venue and more."],
+  ["Know your guest list", "RSVPs made simple."],
+  ["Your entourage", "Introduce your wedding party."],
+  ["Set up in minutes", "Pick, personalize, share."],
+];
 
 export default function LoginPromo3D() {
   const hostRef = useRef(null);
@@ -101,7 +110,8 @@ export default function LoginPromo3D() {
     // Preview variants: ?lgpv=1..5 swaps in an alternate single-phone choreography
     // (no param = the default carousel). Lets the owner pick a favorite live.
     const V = +(new URLSearchParams(window.location.search).get("lgpv") || 0);
-    let cycleTex = null, screen0 = null; // 5-screen cycle + front screen mesh (variants)
+    let cycleTex = null, screen0 = null;       // 5-screen cycle + front screen mesh (variants)
+    let featEl = null, featH = null, featP = null; // JS-driven feature caption overlay
     loader.load("/models/iphone17promax.glb", (gltf) => {
       if (disposed) return;
       // normalize: center + scale to a known height, rotate display toward +Z
@@ -177,6 +187,10 @@ export default function LoginPromo3D() {
         screen0 = slots[0].screen;
         if (screen0) screen0.material.transparent = true; // allow the swap cross-dip
         stage?.classList.add("lgp-variant"); // CSS hides the default-timed captions
+        featEl = stage?.querySelector(".lgp-feat") || null;
+        if (featEl) { featEl.className = "lgp-feat lgp-feat--v" + V; featH = featEl.querySelector(".lgp-feat-h"); featP = featEl.querySelector(".lgp-feat-p"); }
+        // Variant 5 = gallery: give each of the 4 phones its own feature screen.
+        if (V === 5) for (let i = 0; i < slots.length; i++) { const s = slots[i].screen; if (s) { s.material.map = cycleTex[i]; s.material.needsUpdate = true; } }
       }
     });
 
@@ -189,36 +203,49 @@ export default function LoginPromo3D() {
     let t0 = null;
     const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    // ── Preview variants (single phone, distinct feel). lt = loop seconds. Each
-    // cycles the 5 screens with a soft cross-dip that masks the swap. Pick one
-    // via ?lgpv=N; captions are hidden during previews and re-added on the winner.
+    // ── App showcases (?lgpv=N). Each walks through the app's FEATURES: the screen
+    // changes and the JS caption names it ("Featuring — Know your guest list"). lt =
+    // loop seconds. 1 Tour · 2 Billboard · 3 Flip · 4 Orbit · 5 Gallery (4 phones).
+    const sin = Math.sin;
+    const setFeat = (idx, op) => {
+      if (!featEl) return;
+      if (featEl.__i !== idx) { featEl.__i = idx; if (featH) featH.textContent = FEATURES[idx][0]; if (featP) featP.textContent = FEATURES[idx][1]; }
+      featEl.style.opacity = String(Math.max(0, Math.min(1, op)));
+    };
     const variantTick = (v, lt) => {
+      if (v === 5) {                                     // Gallery — 4 phones, slow turntable
+        for (let i = 1; i < slots.length; i++) slots[i].slot.visible = true;
+        ring.rotation.y = -lt * 0.2;
+        mover.position.x = 0; mover.position.y = 0.03 * sin(lt * 0.8); mover.rotation.y = 0; mover.rotation.x = 0.06; rig.scale.setScalar(1);
+        const raw = (-ring.rotation.y) / (Math.PI / 2), nearest = Math.round(raw);
+        setFeat(((nearest % 4) + 4) % 4, 1 - Math.min(1, Math.abs(raw - nearest) * 3.2)); // fade between stops
+        return;
+      }
       ring.rotation.y = 0;
       for (let i = 1; i < slots.length; i++) slots[i].slot.visible = false; // single phone
-      const sin = Math.sin;
-      if (cycleTex && screen0) {
-        const INT = v === 3 ? 4.5 : 3.6;                 // screen dwell time
-        const seg = lt % INT, idx = Math.floor(lt / INT) % cycleTex.length;
+      const INT = v === 3 ? 4.6 : 4.0;                   // feature dwell
+      const seg = lt % INT, idx = Math.floor(lt / INT) % FEATURES.length;
+      if (screen0) {
         const tex = cycleTex[idx];
         if (screen0.material.map !== tex) { screen0.material.map = tex; screen0.material.needsUpdate = true; }
-        screen0.material.opacity = 0.12 + 0.88 * Math.min(1, seg / 0.4, (INT - seg) / 0.4); // dip at the swap
+        screen0.material.opacity = 0.12 + 0.88 * Math.min(1, seg / 0.45, (INT - seg) / 0.45); // cross-dip
       }
+      setFeat(idx, Math.min(1, seg / 0.6, (INT - seg) / 0.6));
       let sx = 0, sy = 0, ry = 0, rx = 0, sc = 1;
-      if (v === 1) {                                     // 1 — Turntable float
-        sy = 0.05 * sin(lt * 1.1); ry = 0.6 * sin(lt * 0.5);
-      } else if (v === 2) {                              // 2 — Pendulum sway
-        sx = 0.85 * sin(lt * 0.5); ry = -0.5 * sin(lt * 0.5); sy = 0.04 * sin(lt * 1.0);
-      } else if (v === 3) {                              // 3 — Flip cards
-        const f = lt % 4.5, flip = f > 3.55 ? kf([[0, 0], [100, Math.PI]], ((f - 3.55) / 0.95) * 100) : 0;
-        ry = 0.22 * sin(lt * 0.7) + flip; rx = 0.1 * sin(lt * 0.5);
-        sc = f > 3.55 ? 1 + 0.09 * sin(((f - 3.55) / 0.95) * Math.PI) : 1;
-      } else if (v === 4) {                              // 4 — Parallax orbit
-        sx = 0.18 * sin(lt * 0.6); sy = 0.06 * sin(lt * 0.9); ry = 0.42 * sin(lt * 0.6); rx = 0.16 * sin(lt * 0.9);
-      } else {                                           // 5 — Minimal breathing
-        sy = 0.03 * sin(lt * 1.3); ry = 0.05 * sin(lt * 0.6); sc = 1 + 0.015 * sin(lt * 1.3);
+      if (v === 1) {                                     // Tour — caption beside, phone eases opposite
+        const capLeft = idx % 2 === 1;
+        if (featEl) featEl.setAttribute("data-side", capLeft ? "left" : "right");
+        sx = capLeft ? 0.5 : -0.5; ry = capLeft ? -0.16 : 0.16; sy = 0.03 * sin(lt * 1.1);
+      } else if (v === 2) {                              // Billboard — caption on top, gentle bob
+        sy = -0.02 + 0.03 * sin(lt * 0.9); ry = 0.06 * sin(lt * 0.6);
+      } else if (v === 3) {                              // Flip — flips to the next feature
+        const f = lt % INT, fl = f > INT - 0.95 ? kf([[0, 0], [100, Math.PI]], ((f - (INT - 0.95)) / 0.95) * 100) : 0;
+        ry = 0.18 * sin(lt * 0.7) + fl; rx = 0.08 * sin(lt * 0.5);
+        sc = f > INT - 0.95 ? 1 + 0.08 * sin(((f - (INT - 0.95)) / 0.95) * Math.PI) : 1;
+      } else {                                           // Orbit — parallax tilt, caption bottom-left
+        sx = 0.14 * sin(lt * 0.6); sy = 0.06 * sin(lt * 0.9); ry = 0.4 * sin(lt * 0.6); rx = 0.15 * sin(lt * 0.9);
       }
-      mover.position.x = sx; mover.position.y = sy; mover.rotation.y = ry; mover.rotation.x = rx;
-      rig.scale.setScalar(sc);
+      mover.position.x = sx; mover.position.y = sy; mover.rotation.y = ry; mover.rotation.x = rx; rig.scale.setScalar(sc);
     };
 
     const tick = () => {

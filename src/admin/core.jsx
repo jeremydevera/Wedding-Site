@@ -188,6 +188,9 @@ function LoginPromoScene() {
       <div className="lgp-cap lgp-c1"><span className="lgp-h">Know your guest list</span><span className="lgp-p">RSVPs made simple.</span></div>
       <div className="lgp-cap lgp-c2"><span className="lgp-h">Your entourage</span><span className="lgp-p">Introduce your wedding party.</span></div>
       <div className="lgp-cap lgp-c3"><span className="lgp-h">Set up fast</span><span className="lgp-p">Pick, personalize, share.</span></div>
+      {/* Showcase caption overlay — driven by JS (login-promo-3d) in ?lgpv preview
+          mode: names each feature as its screen appears. Idle (opacity 0) otherwise. */}
+      <div className="lgp-feat" aria-hidden="true"><span className="lgp-ey">Featuring</span><span className="lgp-feat-h" /><span className="lgp-feat-p" /></div>
     </div>
   );
 }
