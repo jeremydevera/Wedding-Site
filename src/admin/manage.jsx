@@ -18,7 +18,7 @@ import { headsOf } from "@/lib/rsvp.js";
 import { cropTransform, mediaUrl } from "@/lib/media.js";
 import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
-import { featureLevel, visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel, moduleEnabled, OWNER_EDIT_HOME, OWNER_EDIT_TABS } from "@/lib/roles.js";
+import { featureLevel, visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel, moduleEnabled, OWNER_EDIT_HOME, OWNER_EDIT_TABS, FEATURE_ROWS } from "@/lib/roles.js";
 import { MAP_STYLES, mapStyleKey, mapStyleFilter } from "@/lib/mapStyles.js";
 import { ClientsAdmin, R2LibraryAdmin, SuperOverview, SupportAdmin } from "@/admin/superadmin.jsx";
 import { CloudflareHealth } from "@/admin/CloudflareHealth.jsx";
@@ -2529,17 +2529,21 @@ export function SettingsAdmin() {
   // module toggles, renames and owner-grants disappear here. RSVP options and
   // guestbook moderation stay (RSVP has no content tab).
   const isSuper = auth.role === "superadmin";
-  // When the superadmin turns on "Show Settings to Client" (Admin folder), the
-  // owner sees Moderation / Tab names / Theme / Account — everything EXCEPT the
-  // superadmin-only Admin folder.
+  // The client ALWAYS sees the Settings tab (Moderation / Account). "Show Settings
+  // to Client" now only gates the design folders inside it — Theme + Tab names —
+  // so the owner can withhold theming while still giving Moderation/Account.
   const showToClient = settings.showSettingsToClient === true;
+  const themeToClient = isSuper || showToClient; // Theme + Tab names visibility
   const STABS = settings.accessV2 === true
     ? [["rsvp", "Moderation", "check"],
-       ...((isSuper || showToClient) ? [["tabnames", "Tab names", "edit"]] : []),
-       ["appearance", "Theme", "grid"], ["account", "Account", "user"],
+       // Features: superadmin-only on-the-subdomain enable/disable per section.
+       ...(isSuper ? [["features", "Features", "check"]] : []),
+       ...(themeToClient ? [["tabnames", "Tab names", "edit"]] : []),
+       ...(themeToClient ? [["appearance", "Theme", "grid"]] : []),
+       ["account", "Account", "user"],
        // Admin folder: superadmin-only master switches (never shown to owners).
        ...(isSuper ? [["admin", "Admin", "gear"]] : [])]
-    : [["features", "Features", "check"], ["appearance", "Theme", "grid"], ["access", "Access", "check"], ["account", "Account", "user"]];
+    : [["features", "Features", "check"], ...(themeToClient ? [["appearance", "Theme", "grid"]] : []), ["access", "Access", "check"], ["account", "Account", "user"]];
 
   // Keep `tab` inside the current tab set — if the accessV2 flag (or grants)
   // resolve after mount and drop the active tab, snap to the first valid one so
@@ -2587,7 +2591,7 @@ export function SettingsAdmin() {
             <input type="checkbox" checked={f.showSettingsToClient === true} onChange={(e) => setKey("showSettingsToClient", e.target.checked)} style={{ width: 18, height: 18, marginTop: 2, accentColor: "var(--accent)" }} />
             <span>
               <span style={{ fontWeight: 600, color: "var(--ink)", textTransform: "uppercase", letterSpacing: ".04em" }}>Show Settings to Client</span>
-              <span style={{ display: "block", color: "var(--muted)", fontSize: 13, marginTop: 2 }}>When on, the client sees the Settings tab with Moderation, Tab names, Theme &amp; Account (never this Admin folder). Off = the client has no Settings tab.</span>
+              <span style={{ display: "block", color: "var(--muted)", fontSize: 13, marginTop: 2 }}>The client always has a Settings tab (Moderation &amp; Account). When on, it also shows the <strong>Theme</strong> &amp; Tab names folders; off hides Theme so the client can't change their design (never this Admin folder).</span>
             </span>
           </label>
           <label style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer", marginTop: 16 }}>
@@ -2624,6 +2628,25 @@ export function SettingsAdmin() {
               <div style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: ".03em" }}>Auto-approve guestbook messages</div>
               <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>When on, messages post immediately. When off, they stay hidden until you approve them in the Guestbook tab.</div>
             </div>
+          </div>
+        </div>
+        <SaveFooter />
+      </div>)}
+
+      {tab === "features" && settings.accessV2 === true && isSuper && (<div className="panel">
+        <div className="panel__head"><div className="panel__title">Features</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Superadmin only</span></div>
+        <div className="panel__body" style={{ maxWidth: 760 }}>
+          <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>Turn this client's sections on or off. <strong>On</strong> = the section shows on their site and the owner can edit it; <strong>off</strong> = hidden from guests, the menu, and the owner's admin. Click <strong>Save changes</strong> to apply.</p>
+          <div className="mod-toggles mod-toggles--edit">
+            {FEATURE_ROWS.filter((r) => r.k !== "home").map((r) => {
+              const on = featureLevel(f, r.k) !== "none";
+              return (
+                <label key={r.k} className={"mod-pill" + (on ? " mod-pill--on" : "")} title={r.desc}>
+                  <input type="checkbox" checked={on}
+                    onChange={(e) => Store.updateSettings({ features: { ...(f.features || {}), [r.k]: e.target.checked ? "edit" : "none" } })} /> {r.label}
+                </label>
+              );
+            })}
           </div>
         </div>
         <SaveFooter />
@@ -2689,7 +2712,7 @@ export function SettingsAdmin() {
         <SaveFooter />
       </div>)}
 
-      {tab === "appearance" && (<><div className="panel">
+      {tab === "appearance" && themeToClient && (<><div className="panel">
         <div className="panel__head"><div className="panel__title">Theme</div><span style={{ color: "var(--muted)", fontSize: 14 }}>Preview updates instantly — Save changes to publish</span></div>
         <div className="panel__body theme-layout">
           <div className="theme-layout__controls">
@@ -4557,9 +4580,8 @@ export function AdminApp() {
     // doesn't apply to v2 clients (levels are the only authority).
     tabs = ADMIN_TABS.filter((t) => {
       const fk = V2_TAB_FEATURE[t.key];
-      // Settings is owner-visible only when the superadmin flips
-      // "Show Settings to Client" (Settings → Admin). Superadmin always sees it.
-      if (t.key === "settings" && auth.role !== "superadmin") return settings.showSettingsToClient === true;
+      // Settings is ALWAYS owner-visible now (Moderation / Account). "Show Settings
+      // to Client" only gates the Theme + Tab names folders inside it (see STABS).
       if (!fk) return true;                       // dashboard, rsvps, settings…
       return auth.role === "superadmin" ? true : lvl(fk) === "edit";
     });
