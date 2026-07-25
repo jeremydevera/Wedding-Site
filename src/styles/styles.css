@@ -3315,6 +3315,20 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   --li:3.6s;--ll:32s;--lw:150px;--lh:309px;--ld:16px;--lti:#8e8a93;--lti2:#66626c;
   --ldx:-9vw;--ldxr:9vw}
 .lgp-glow{position:absolute;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(233,124,93,.45),transparent 70%);filter:blur(8px)}
+/* Falling petals behind the phone (z:0; the 3D canvas is z:1). overflow:hidden
+   contains the drift so no horizontal scroll leaks past. */
+.lgp-petals{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.lgp-petal{position:absolute;top:-6vh;display:block;border-radius:52% 8% 52% 8%;opacity:0;
+  animation-name:lgp-fall;animation-timing-function:linear;animation-iteration-count:infinite;will-change:transform,opacity}
+.lgp-petal--0{background:radial-gradient(120% 120% at 30% 25%,rgba(255,228,235,.95),rgba(240,170,150,.55))}
+.lgp-petal--1{background:radial-gradient(120% 120% at 30% 25%,rgba(255,255,255,.9),rgba(233,124,93,.5))}
+.lgp-petal--2{background:radial-gradient(120% 120% at 30% 25%,rgba(255,214,224,.92),rgba(200,120,140,.5))}
+@keyframes lgp-fall{
+  0%{transform:translate3d(0,-6vh,0) rotate(0deg);opacity:0}
+  10%{opacity:.85}
+  88%{opacity:.85}
+  100%{transform:translate3d(var(--sway,20px),110vh,0) rotate(340deg);opacity:0}}
+@media (prefers-reduced-motion: reduce){.lgp-petal{display:none}}
 .lgp-zoomer{transform-style:preserve-3d;animation:lgp-intro var(--li) cubic-bezier(.25,.9,.3,1) both}
 @keyframes lgp-intro{0%{opacity:0;transform:translateX(-4vw) scale(1.04)}45%{opacity:1}100%{opacity:1;transform:translateX(-4vw) scale(1)}}
 .lgp-mover{transform-style:preserve-3d;animation:lgp-mover var(--ll) cubic-bezier(.25,.9,.3,1) var(--li) infinite}

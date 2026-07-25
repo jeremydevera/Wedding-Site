@@ -151,6 +151,26 @@ function LoginPromoScene() {
   return (
     <div className="lgp-stage" aria-hidden="true">
       <span className="lgp-glow" />
+      {/* Falling petals BEHIND the phone (z:0, canvas is z:1). Pure CSS. */}
+      <span className="lgp-petals">
+        {Array.from({ length: 16 }).map((_, i) => {
+          const sz = 9 + (i % 4) * 4;
+          return (
+            <i
+              key={i}
+              className={"lgp-petal lgp-petal--" + (i % 3)}
+              style={{
+                left: (i * 61) % 100 + "%",
+                width: sz + "px",
+                height: sz + "px",
+                animationDuration: 9 + (i % 6) * 1.9 + "s",
+                animationDelay: "-" + ((i * 1.6) % 12).toFixed(1) + "s",
+                "--sway": (i % 2 ? 1 : -1) * (16 + (i % 3) * 15) + "px",
+              }}
+            />
+          );
+        })}
+      </span>
       <React.Suspense fallback={
         <div className="lgp-zoomer"><div className="lgp-mover"><div className="lgp-ring">
           <div className="lgp-slot"><LoginPhone shot="/assets/login-shot-2.jpg" /></div>
