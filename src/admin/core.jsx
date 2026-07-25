@@ -310,15 +310,15 @@ export function AdminLogin({ onAuthed }) {
       setErr(/popup-closed|cancelled/i.test(m) ? "Google sign-in was cancelled." : m || "Google sign-in failed.");
     } finally { setGBusy(false); }
   };
-  // Navigate on POINTERUP (fires on an iOS tap even when the <a> click is
-  // swallowed inside the transformed/canvas welcome); keep href for accessibility.
+  // Use real <button>s like the working "Log in" button — the styled <a> pills
+  // weren't firing navigation on the owner's iPhone, but the <button> does.
   const goRegister = () => window.location.assign("https://celebrately.us/register");
   const goDemo = () => window.location.assign("https://demo.celebrately.us");
   const welcomeFooter = gateEligible ? (
     <div className="signin__welcome">
-      <a className="lgw-btn lgw-btn--primary" href="https://celebrately.us/register" onPointerUp={goRegister} onClick={goRegister}>Create my website</a>
+      <button type="button" className="lgw-btn lgw-btn--primary" onClick={goRegister}>Create my website</button>
       <button type="button" className="lgw-btn lgw-btn--ghost" onClick={() => setShowForm(true)}>Log in</button>
-      <a className="lgw-btn lgw-btn--text" href="https://demo.celebrately.us" onPointerUp={goDemo} onClick={goDemo}>See the demo</a>
+      <button type="button" className="lgw-btn lgw-btn--text" onClick={goDemo}>See the demo</button>
     </div>
   ) : null;
   return (
@@ -387,7 +387,7 @@ export function AdminLogin({ onAuthed }) {
               </button>
             </div>
 
-            <p className="signin__reg">Don't have an account? <a href="https://celebrately.us/register" onPointerUp={goRegister} onClick={goRegister}>Register</a></p>
+            <p className="signin__reg">Don't have an account? <button type="button" className="signin__reglink" onClick={goRegister}>Register</button></p>
           </form>
           )}
         </div>
