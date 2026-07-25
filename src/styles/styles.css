@@ -1058,18 +1058,6 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 .signin__forgot { color: var(--sg-sub); text-decoration: underline; }
 .signin__forgot:hover { color: var(--sg-text); }
 
-/* inline "forgot password" panel: enter an email → send a reset link */
-.signin__reset { margin: -8px 0 20px; padding: 14px; border: 1px solid var(--sg-border, #e2e2e2); border-radius: 12px; background: var(--sg-bg-soft, #fafafa); display: flex; flex-direction: column; gap: 10px; }
-.signin__reset > label { font-size: 13px; color: var(--sg-label, #555); line-height: 1.4; }
-.signin__reset-row { display: flex; gap: 8px; }
-.signin__reset-row input { flex: 1 1 auto; min-width: 0; padding: 10px 12px; border: 1px solid var(--sg-border, #d8d8d8); border-radius: 9px; font-size: 14.5px; background: #fff; color: var(--sg-text, #1b1b1b); }
-.signin__reset-row input:focus { outline: none; border-color: #e97c5d; box-shadow: 0 0 0 3px rgba(233, 124, 93, .16); }
-.signin__reset-send { flex: none; padding: 10px 14px; border: 0; border-radius: 9px; background: #e97c5d; color: #fff; font-weight: 600; font-size: 13.5px; cursor: pointer; white-space: nowrap; }
-.signin__reset-send:hover { background: #e06a49; }
-.signin__reset-send:disabled { opacity: .6; cursor: default; }
-.signin__reset-cancel { align-self: flex-start; background: none; border: 0; padding: 0; color: var(--sg-sub, #888); font-size: 13px; text-decoration: underline; cursor: pointer; }
-@media (max-width: 560px) { .signin__reset-row { flex-direction: column; } .signin__reset-send { width: 100%; } }
-
 /* coral LOGIN button (apex only; themed client sites keep their accent) */
 .signin--split .signin__btn { height: 50px; border-radius: 10px; letter-spacing: .04em; }
 .signin--split:not(.signin--themed) .signin__btn { background: #e97c5d; border-color: #e97c5d; color: #fff; }

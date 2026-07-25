@@ -325,6 +325,24 @@ export function AdminLogin({ onAuthed }) {
         {isClient && <button className="signin__back" onClick={() => go("home")}>← Back to website</button>}
         {gateEligible && <button type="button" className="signin__welcomeback" onClick={() => setShowForm(false)}>← Back</button>}
         <div className="signin__center">
+          {forgotOpen ? (
+            /* Dedicated reset screen — ONLY the email, no password / Google. */
+            <form className="signin__form" onSubmit={(e) => { e.preventDefault(); sendReset(); }} noValidate>
+              <h1 className="signin__title">Reset your password.</h1>
+              <p className="signin__sub">Enter your account email and we'll send you a link to reset your password.</p>
+
+              <div className="signin__field signin__field--icon">
+                <label htmlFor="a-reset">Email</label>
+                <span className="signin__ficon" aria-hidden="true">{Icon.mail({})}</span>
+                <input id="a-reset" type="email" autoComplete="email" value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)} placeholder="you@example.com" autoFocus />
+              </div>
+
+              <button type="submit" className="signin__btn" disabled={resetBusy}>{resetBusy ? "Sending…" : "Send reset link"}</button>
+
+              <p className="signin__reg"><a href="#" onClick={(e) => { e.preventDefault(); setForgotOpen(false); }}>← Back to login</a></p>
+            </form>
+          ) : (
           <form className="signin__form" onSubmit={submit} noValidate>
             <h1 className="signin__title">Log in to Celebrately.</h1>
             <p className="signin__sub">{gFrom ? <>Tap <strong>Log in with Google</strong> below — we'll take you straight to your site's admin.</> : "Sign in to see who's coming to your celebration."}</p>
@@ -349,22 +367,6 @@ export function AdminLogin({ onAuthed }) {
               <a href="#" className="signin__forgot" onClick={openForgot}>Forgot your password?</a>
             </div>
 
-            {forgotOpen && (
-              <div className="signin__reset">
-                <label htmlFor="a-reset">Enter your account email — we'll send a password reset link.</label>
-                <div className="signin__reset-row">
-                  <input id="a-reset" type="email" autoComplete="email" value={forgotEmail}
-                    onChange={(e) => setForgotEmail(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); sendReset(); } }}
-                    placeholder="you@example.com" autoFocus />
-                  <button type="button" className="signin__reset-send" onClick={sendReset} disabled={resetBusy}>
-                    {resetBusy ? "Sending…" : "Send reset link"}
-                  </button>
-                </div>
-                <button type="button" className="signin__reset-cancel" onClick={() => setForgotOpen(false)}>Cancel</button>
-              </div>
-            )}
-
             {err && <div className="signin__err">{err}</div>}
 
             <button type="submit" className="signin__btn" disabled={busy}>{busy ? "Signing in…" : "LOGIN"}</button>
@@ -380,6 +382,7 @@ export function AdminLogin({ onAuthed }) {
 
             <p className="signin__reg">Don't have an account? <a href="https://celebrately.us/register">Register</a></p>
           </form>
+          )}
         </div>
       </div>
     </div>
