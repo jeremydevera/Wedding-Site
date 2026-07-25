@@ -20,6 +20,35 @@ async function requireSuperadmin(env, request) {
   return rows?.[0]?.role === "superadmin" ? uid : null;
 }
 
+// Best-effort delete of a Firebase Auth user so a removed client's owner LOGIN
+// is fully gone, not just their Neon profile. Uses a scoped service-account key
+// (env.FIREBASE_SA_KEY = base64 of the SA JSON; role = firebaseauth.admin). Mints
+// a token via the Worker's Web Crypto (RS256 JWT → jwt-bearer exchange), then
+// calls accounts:delete. No-op (never throws) if the key is absent or the uid
+// isn't a Firebase uid (legacy Neon-Auth owners).
+const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+async function firebaseDeleteUser(env, uid) {
+  try {
+    if (!env.FIREBASE_SA_KEY || !uid) return { purged: false, reason: "no-key-or-uid" };
+    const sa = JSON.parse(atob(env.FIREBASE_SA_KEY));
+    const now = Math.floor(Date.now() / 1000);
+    const enc = (o) => b64url(new TextEncoder().encode(JSON.stringify(o)));
+    const claim = { iss: sa.client_email, scope: "https://www.googleapis.com/auth/cloud-platform", aud: "https://oauth2.googleapis.com/token", iat: now, exp: now + 3600 };
+    const signingInput = enc({ alg: "RS256", typ: "JWT" }) + "." + enc(claim);
+    const pemBody = sa.private_key.replace(/-----[^-]+-----/g, "").replace(/\s+/g, "");
+    const der = Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0));
+    const key = await crypto.subtle.importKey("pkcs8", der, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
+    const sig = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, new TextEncoder().encode(signingInput));
+    const jwt = signingInput + "." + b64url(sig);
+    const tr = await fetch("https://oauth2.googleapis.com/token", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: jwt }) });
+    if (!tr.ok) return { purged: false, reason: "token-" + tr.status };
+    const { access_token } = await tr.json();
+    const pid = sa.project_id || "wedding-dc35d";
+    const dr = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${pid}/accounts:delete`, { method: "POST", headers: { authorization: "Bearer " + access_token, "content-type": "application/json" }, body: JSON.stringify({ localId: uid }) });
+    return { purged: dr.ok, reason: dr.ok ? "ok" : "delete-" + dr.status };
+  } catch (e) { return { purged: false, reason: String((e && e.message) || e).slice(0, 80) }; }
+}
+
 export async function onRequestPost({ request, env }) {
   if (!(await requireSuperadmin(env, request))) return json({ error: "forbidden" }, 403);
   if (!env.NEON_DATABASE_URL) return json({ error: "NEON_DATABASE_URL not configured" }, 500);
@@ -75,8 +104,12 @@ export async function onRequestPost({ request, env }) {
         // Legacy Neon-Auth owners also had a neon_auth.user row (Firebase owners
         // don't) — drop it so the email is free to register again on that path.
         if (ownerUid) await sql`delete from neon_auth."user" where id = ${String(ownerUid)}::uuid`.catch(() => {});
+        // Also purge the owner's Firebase login (best-effort) so a deleted client
+        // can't still reset/sign in — closes the "deleted client's email still
+        // exists in Firebase" gap. No-op if FIREBASE_SA_KEY isn't configured.
+        const fb = await firebaseDeleteUser(env, ownerUid);
         const del = await sql`delete from clients where id = ${body.id} returning subdomain`;
-        return json({ ok: true, deleted: del[0]?.subdomain || null, owner_uid: ownerUid });
+        return json({ ok: true, deleted: del[0]?.subdomain || null, owner_uid: ownerUid, firebase_purged: fb.purged });
       }
       // Full row incl. content for the console Edit modal (list_clients trims it).
       case "get_client": {
