@@ -499,14 +499,23 @@ export function ClientsAdmin() {
       await load();
     });
   }
+  // Refined billing-status chip: a small, low-weight tinted select (was 13px/600
+  // which read heavy). One soft tint per state — green/blue/amber — so status
+  // scans at a glance without shouting.
+  const STATUS_STYLE = {
+    paid: { fg: "#1d7a3d", bg: "#eef7f0", bd: "#cfe8d6" },
+    demo: { fg: "#38659e", bg: "#eef3fb", bd: "#d4e2f4" },
+    not_paid: { fg: "#9a591c", bg: "#faf2e8", bd: "#eeddc6" },
+  };
   const statusCell = (cl) => {
     if (!cl) return <span style={{ color: "var(--muted)" }}>—</span>;
     const v = cl.status || "not_paid";
+    const s = STATUS_STYLE[v] || STATUS_STYLE.not_paid;
     return (
       <select value={v} disabled={busy} onChange={(e) => setClientStatus(cl, e.target.value)}
         title="Billing status" aria-label={`Status for ${cl.subdomain}`}
-        style={{ fontSize: 13, fontWeight: 600, padding: "3px 6px", borderRadius: 6, border: "1px solid var(--line)",
-          background: "transparent", color: v === "paid" ? "#1d7a3d" : v === "demo" ? "#3b6fb5" : "#a05a1a" }}>
+        style={{ fontSize: 12, fontWeight: 500, letterSpacing: ".01em", padding: "3px 7px", borderRadius: 999,
+          border: `1px solid ${s.bd}`, background: s.bg, color: s.fg, cursor: "pointer" }}>
         {STATUS_OPTS.map(([val, label]) => <option key={val} value={val}>{label}</option>)}
       </select>
     );
@@ -1129,8 +1138,8 @@ export function ClientsAdmin() {
                         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                           <span className={"sa-dot" + (c.is_active ? "" : " sa-dot--off")} title={c.is_active ? "Active" : "Disabled"} />
                           <div>
-                            <span className="tag" style={{ marginRight: 8 }}>Neon</span>
                             <a className="client-domain client-domain--link" href={clientUrl(c.subdomain)} target="_blank" rel="noreferrer">{c.subdomain}.{PLATFORM_DOMAIN}</a>
+                            <div style={{ marginTop: 4 }}><span className="tag">Neon</span></div>
                           </div>
                         </div>
                       </td>
