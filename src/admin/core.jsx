@@ -241,6 +241,10 @@ export function AdminLogin({ onAuthed }) {
   const [showForm, setShowForm] = useState(!gateEligible);
   const [remember, setRemember] = useState(false);
   const [gBusy, setGBusy] = useState(false);
+  // Forgot-password: an inline panel to enter the account email, then send.
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [resetBusy, setResetBusy] = useState(false);
   // Warm the Firebase SDK when a Google button is on screen, so the popup opens
   // inside the click gesture (iOS blocks a popup that awaits a fresh import).
   const googleShown = !isClient || store.neonMode === true;
@@ -276,11 +280,21 @@ export function AdminLogin({ onAuthed }) {
   useEffect(() => {
     try { remember && email ? localStorage.setItem("celebrately_login_email", email) : (!remember && localStorage.removeItem("celebrately_login_email")); } catch (_) {}
   }, [remember, email]);
-  const forgot = async (e) => {
+  // Open the inline reset panel, prefilling whatever's in the email field.
+  const openForgot = (e) => {
     e.preventDefault();
-    if (!email.trim()) { toast("Enter your email above first, then tap Forgot your password.", "err"); return; }
-    await requestPasswordReset(email);
-    toast("If that email has an account, we've sent a password reset link. Check your inbox (and spam).", "success");
+    setForgotEmail(email.trim());
+    setForgotOpen(true);
+  };
+  const sendReset = async () => {
+    const addr = forgotEmail.trim();
+    if (!addr || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(addr)) { toast("Enter a valid email address.", "err"); return; }
+    setResetBusy(true);
+    try {
+      await requestPasswordReset(addr);
+      toast("If that email has an account, we've sent a password reset link. Check your inbox (and spam).", "success");
+      setForgotOpen(false);
+    } finally { setResetBusy(false); }
   };
   const googleLogin = async () => {
     setGBusy(true); setErr("");
@@ -332,8 +346,24 @@ export function AdminLogin({ onAuthed }) {
 
             <div className="signin__meta">
               <label className="signin__remember"><input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} /> Remember me</label>
-              <a href="#" className="signin__forgot" onClick={forgot}>Forgot your password?</a>
+              <a href="#" className="signin__forgot" onClick={openForgot}>Forgot your password?</a>
             </div>
+
+            {forgotOpen && (
+              <div className="signin__reset">
+                <label htmlFor="a-reset">Enter your account email — we'll send a password reset link.</label>
+                <div className="signin__reset-row">
+                  <input id="a-reset" type="email" autoComplete="email" value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); sendReset(); } }}
+                    placeholder="you@example.com" autoFocus />
+                  <button type="button" className="signin__reset-send" onClick={sendReset} disabled={resetBusy}>
+                    {resetBusy ? "Sending…" : "Send reset link"}
+                  </button>
+                </div>
+                <button type="button" className="signin__reset-cancel" onClick={() => setForgotOpen(false)}>Cancel</button>
+              </div>
+            )}
 
             {err && <div className="signin__err">{err}</div>}
 

@@ -268,6 +268,15 @@ export async function signIn(email, password) {
 export async function requestPasswordReset(email) {
   const addr = (email || "").trim();
   if (!addr) return;
+  // Firebase-backed site (Neon clients) → Firebase sends the reset link + hosts
+  // the reset page. Supabase sites (apex/superadmin + legacy owners) → Supabase.
+  if (Store.get().neonMode) {
+    try {
+      const { firebaseSendPasswordReset } = await import("@/lib/firebase.js");
+      await firebaseSendPasswordReset(addr);
+    } catch (e) { /* enumeration-safe: never leak success/failure */ }
+    return;
+  }
   try {
     await supabase.auth.resetPasswordForEmail(addr, { redirectTo: `${window.location.origin}/admin` });
   } catch (e) { /* enumeration-safe: never leak success/failure */ }
