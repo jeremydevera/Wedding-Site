@@ -279,6 +279,13 @@ export async function requestPasswordReset(email) {
       return await firebaseSendPasswordReset(addr);
     } catch (e) { return { error: "Couldn't send the reset link. Please try again." }; }
   }
+  // Supabase's reset API is enumeration-safe (never reveals existence), so ask
+  // the email_has_account RPC first — owner opted to reveal non-existent emails.
+  // If the RPC is unavailable, fall through to a normal send (fail open to sent).
+  try {
+    const { data: exists, error } = await supabase.rpc("email_has_account", { p_email: addr });
+    if (!error && exists === false) return { notFound: true };
+  } catch (_) { /* RPC missing/err → send normally */ }
   try {
     await supabase.auth.resetPasswordForEmail(addr, { redirectTo: `${window.location.origin}/admin` });
     return { sent: true };
