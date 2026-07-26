@@ -120,8 +120,9 @@ export function RegisterPage() {
     <Shell>
       <div className="signin__form" style={{ textAlign: "center" }}>
         <h1 className="signin__title" style={{ fontSize: 26 }}>You're signed in as admin</h1>
-        <p className="signin__sub" style={{ marginBottom: 22 }}>Platform admins can't create a client site from here. To see the sign-up a new client gets, open a <strong>private / incognito window</strong>. To manage sites, go to your console.</p>
-        <p><a href="/admin" style={{ color: "#e26a49", fontWeight: 700, textDecoration: "underline" }}>Open the console →</a></p>
+        <p className="signin__sub" style={{ marginBottom: 20 }}>Platform admins can't create a client site from here. Manage your sites in the console — or sign out to register a brand-new site.</p>
+        <p style={{ margin: "0 0 14px" }}><a href="/admin" style={{ color: "#e26a49", fontWeight: 700, textDecoration: "underline" }}>Open the console →</a></p>
+        <button type="button" onClick={async () => { await neonAuth.signOut(); window.location.assign("/register"); }} style={{ background: "none", border: "none", padding: 0, color: "var(--sg-sub)", textDecoration: "underline", cursor: "pointer", font: "inherit", fontSize: 14 }}>Sign out &amp; register a new site</button>
       </div>
     </Shell>
   );
