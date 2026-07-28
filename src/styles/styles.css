@@ -2145,6 +2145,13 @@ body.env-sealed .decor { display: none; }
 .crop__view { position: relative; overflow: hidden; border-radius: var(--radius); background: #111; cursor: grab; touch-action: none; }
 .crop__view:active { cursor: grabbing; }
 .crop__frame { position: absolute; inset: 0; box-shadow: inset 0 0 0 2px var(--accent); pointer-events: none; border-radius: var(--radius); }
+/* Rule-of-thirds guide over the crop box (owner request): two light lines each
+   way, offset -1px so no line paints along the top/left edge. */
+.crop__grid { position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  background-image: linear-gradient(to right, rgba(255,255,255,.55) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(255,255,255,.55) 1px, transparent 1px);
+  background-size: 33.334% 33.334%; background-position: -1px -1px;
+  mix-blend-mode: difference; }
 .crop__zoom { display: flex; align-items: center; gap: 12px; width: 100%; font-size: 13px; color: var(--ink-soft); }
 
 /* schedule editor cards */

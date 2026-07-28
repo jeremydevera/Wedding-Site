@@ -547,6 +547,7 @@ export function CropModal({ open, src, aspect = 1, onCancel, onApply, frameSrc, 
                  so "In the frame" shows the video without waiting for a drag. */
               ? <video ref={imgRef} src={corsSrc} crossOrigin="anonymous" preload="auto" muted loop autoPlay playsInline draggable="false" onLoadedMetadata={(e) => setNat({ w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })} onLoadedData={() => setMediaTick((t) => t + 1)} style={{ position: "absolute", left: off.x, top: off.y, width: dispW, height: dispH, maxWidth: "none" }} />
               : <img ref={imgRef} src={blobSrc} alt="" draggable="false" onLoad={() => setMediaTick((t) => t + 1)} style={{ position: "absolute", left: off.x, top: off.y, width: dispW, height: dispH, maxWidth: "none" }} />)}
+            <div className="crop__grid" aria-hidden="true" />
             <div className="crop__frame" />
           </div>
           {frameSrc && (() => { const g = frameGeom || FRAME_GEOM_OLIVE; return (
