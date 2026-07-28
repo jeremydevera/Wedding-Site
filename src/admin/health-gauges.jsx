@@ -5,6 +5,7 @@
 // Lazy-loaded (like rsvp-charts.jsx) so Chart.js stays out of the main bundle.
 import React from "react";
 import { Chart as ChartJS, DoughnutController, ArcElement } from "chart.js";
+import { InfoPop, InfoDot, useInfoHover } from "@/admin/health-info.jsx";
 
 const { useRef, useEffect, useState } = React;
 
@@ -67,24 +68,34 @@ function Breakdown({ rows, fmt }) {
   );
 }
 
-function Ring({ label, used, limit, fmt, suffix, detail, note, breakdown }) {
+function Ring({ label, used, limit, fmt, suffix, detail, note, breakdown, info }) {
   const ref = useRef(null);
   const [hover, setHover] = useState(false);
   const has = used != null && limit > 0;
   const pct = has ? Math.round((used / limit) * 1000) / 10 : 0;
   const hasBreakdown = Array.isArray(breakdown) && breakdown.length > 0;
+  const hasInfo = !!info && !hasBreakdown; // breakdown wins the popover slot
+  const infoHover = useInfoHover(hasInfo);
+  const interactive = hasBreakdown || hasInfo;
   useChart(ref, () => ringConfig(pct, has), [used, limit, has]);
+  // The info bubble is portalled + anchored (see health-info.jsx); the breakdown
+  // stays a plain absolute child since this tile doesn't clip.
+  const hoverBind = hasInfo ? infoHover.bind : (hasBreakdown ? {
+    onMouseEnter: () => setHover(true), onMouseLeave: () => setHover(false),
+    onClick: () => setHover((v) => !v), onFocus: () => setHover(true), onBlur: () => setHover(false),
+    tabIndex: 0,
+  } : {});
   return (
     <div
-      style={{ position: "relative", background: "#fff", border: "1px solid #e4e8ef", borderRadius: 14, padding: "14px 14px 12px", textAlign: "center", minWidth: 0, cursor: hasBreakdown ? "help" : "default" }}
-      onMouseEnter={hasBreakdown ? () => setHover(true) : undefined}
-      onMouseLeave={hasBreakdown ? () => setHover(false) : undefined}
-      onClick={hasBreakdown ? () => setHover((v) => !v) : undefined}
+      {...hoverBind}
+      style={{ position: "relative", background: "#fff", border: "1px solid #e4e8ef", borderRadius: 14, padding: "14px 14px 12px", textAlign: "center", minWidth: 0, cursor: interactive ? "help" : "default" }}
     >
       {hasBreakdown && hover && <Breakdown rows={breakdown} fmt={fmt} />}
+      {hasInfo && infoHover.open && <InfoPop anchor={infoHover.anchor}>{info}</InfoPop>}
       <div style={{ fontSize: 13, fontWeight: 600, color: "#334155", marginBottom: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
         {label}
         {detail && <span style={{ color: "#94a3b8", fontWeight: 500 }}> · {detail}</span>}
+        {hasInfo && <InfoDot />}
       </div>
       <div style={{ position: "relative", height: 118 }}>
         <canvas ref={ref} aria-label={`${label} usage`} role="img" />

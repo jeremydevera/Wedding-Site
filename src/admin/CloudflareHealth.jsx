@@ -5,6 +5,7 @@
 import React from "react";
 import { adminBridgeToken } from "@/lib/auth.js";
 import { Button, Icon } from "@/ui/components.jsx";
+import { InfoPop, InfoDot, useInfoHover } from "@/admin/health-info.jsx";
 const { useState, useEffect, useCallback, Suspense } = React;
 
 // Chart.js gauges load lazily (same pattern as rsvp-charts) to keep the main bundle lean.
@@ -38,14 +39,52 @@ function ago(iso) {
 // shows usage against that free allowance.
 const R2_FREE_BYTES = 10 * 1024 ** 3;
 
+// ── Tile explainers ─────────────────────────────────────────────────────────
+// These used to be two always-open blocks that dominated the tab. They now live
+// as hover popovers on their OWN tile (owner request): Custom domains gauge and
+// the Firebase Auth KPI tile.
+const domainsInfo = (missing) => (
+  <>
+    <strong style={{ color: "var(--ink)" }}>Custom domains</strong> counts every hostname attached to the
+    Pages project — <code>demo</code>, <code>www</code> and the apex each take a slot
+    (<code>wedding-site-8nh.pages.dev</code> is free). The free plan caps at <strong>100 per project</strong> (Pro
+    250, Business 500). Nearing the cap: serve client subdomains through a wildcard{" "}
+    <code>*.celebrately.us</code> Worker route instead of attaching them — unlimited and free. Clients bringing
+    their <em>own</em> domain scale via Cloudflare for SaaS (first 100 hostnames free, then ~$0.10/mo each).
+    {missing && <><br /><strong style={{ color: "#a05a1a" }}>Showing "—"?</strong> The
+    Cloudflare token can't read this yet — add <em>Account · Cloudflare Pages · Read</em> to the{" "}
+    <code>CF_ANALYTICS_TOKEN</code> and redeploy. (Client subdomains resolve via the zone, not Pages custom
+    domains, so this currently reads <strong>0 attached</strong>.)</>}
+  </>
+);
+
+// Firebase Auth holds the Neon clients' logins — not a database, so its limits
+// are about rate, not size.
+const FIREBASE_INFO = (
+  <>
+    <strong style={{ color: "var(--ink)" }}>Firebase Auth</strong> holds the logins for Neon-backed client sites
+    (email/password, Google, and guest sessions) — the sites' data lives in Neon, not here. It stores accounts,
+    not files, so the limits are on <em>rate</em>, not size:
+    <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+      <li>~<strong>100 new signups per hour per IP</strong> (anti-abuse) — which is why we already added the hourly
+        registration cap.</li>
+      <li>If it's ever upgraded to Identity Platform, the free tier is <strong>50,000 monthly active users</strong>,
+        then paid per user. Plain email / Google / anonymous auth stays free regardless.</li>
+    </ul>
+  </>
+);
+
 // Same KPI card design as SuperOverview / the client dashboard tiles
 // (chip icon, bold value, dashed footer) so Health matches the console look.
-function Stat({ label, value, sub, icon = "grid", accent = "info" }) {
+function Stat({ label, value, sub, icon = "grid", accent = "info", info }) {
+  // `info` = long-form explainer revealed on hover/focus/tap of this tile only.
+  const { open, anchor, bind } = useInfoHover(!!info);
   return (
-    <div className={"kpi kpi--" + accent}>
+    <div className={"kpi kpi--" + accent} {...bind} style={{ position: "relative", ...(bind.style || {}) }}>
+      {info && open && <InfoPop anchor={anchor}>{info}</InfoPop>}
       <div className="kpi__top">
         <span className="kpi__chip" aria-hidden="true">{Icon[icon] ? Icon[icon]({}) : null}</span>
-        <span className="kpi__label">{label}</span>
+        <span className="kpi__label">{label}{info && <InfoDot />}</span>
       </div>
       {/* Slightly smaller + nowrap than the stock 44px — health values ("144.8k",
           "43.9 MB") are wider than Overview's tiny counts and a tile can be ~158px. */}
@@ -139,46 +178,20 @@ export function CloudflareHealth() {
           <HealthGauges items={[
             { label: "Router requests", detail: `${nfc(data.router?.today)} today`, used: data.router?.month, limit: data.limitMonth, fmt: nf, suffix: "this month" },
             { label: "Pages builds", used: data.builds?.month, limit: data.builds?.limit || 500, fmt: nf, suffix: "this month", note: data.builds?.month == null ? "token needs Pages: Read" : null },
-            { label: "Custom domains", used: data.domains?.count, limit: data.domains?.limit || 100, fmt: nf, suffix: "attached", note: data.domains?.count == null ? "token needs Pages: Read" : null },
+            { label: "Custom domains", used: data.domains?.count, limit: data.domains?.limit || 100, fmt: nf, suffix: "attached", note: data.domains?.count == null ? "token needs Pages: Read" : null, info: domainsInfo(data.domains?.count == null) },
             { label: "R2 storage", detail: `${nf(data.r2?.objects)} objects`, used: data.r2?.storageBytes, limit: data.r2?.limitBytes || R2_FREE_BYTES, fmt: fmtBytes, suffix: "free tier" },
             { label: "Neon database", detail: data.neon?.shardCount ? `across ${data.neon.shardCount} shards` : undefined, used: data.neon?.totalBytes, limit: data.neon?.totalLimitBytes || 536870912, fmt: fmtBytes, suffix: "free tier", note: data.neon == null ? "no shards configured" : (data.neon?.totalBytes == null ? "unavailable" : null), breakdown: (data.neon?.shards || []).map((s) => ({ name: s.id, bytes: s.bytes, limit: data.neon.limitBytesPerShard })) },
           ]} />
         </Suspense>
 
-        {/* What the domain cap means + the scaling paths past it. */}
-        <div style={{ background: "var(--panel-2, #f7f6f2)", border: "1px solid var(--line, #e4e1d8)", borderRadius: 8, padding: "10px 14px", fontSize: 13, lineHeight: 1.55, color: "var(--muted)" }}>
-          <strong style={{ color: "var(--ink)" }}>Custom domains</strong> counts every hostname attached to the
-          Pages project — <code>demo</code>, <code>www</code> and the apex each take a slot
-          (<code>wedding-site-8nh.pages.dev</code> is free). The free plan caps at <strong>100 per project</strong> (Pro
-          250, Business 500). Nearing the cap: serve client subdomains through a wildcard{" "}
-          <code>*.celebrately.us</code> Worker route instead of attaching them — unlimited and free. Clients bringing
-          their <em>own</em> domain scale via Cloudflare for SaaS (first 100 hostnames free, then ~$0.10/mo each).
-          {data.domains?.count == null && <><br /><strong style={{ color: "#a05a1a" }}>Showing "—"?</strong> The
-          Cloudflare token can't read this yet — add <em>Account · Cloudflare Pages · Read</em> to the{" "}
-          <code>CF_ANALYTICS_TOKEN</code> and redeploy. (Client subdomains resolve via the zone, not Pages custom
-          domains, so this currently reads <strong>0 attached</strong>.)</>}
-        </div>
-
-        {/* Firebase Auth — where the Neon clients' logins live. Not a database, so
-            "size" is really account/rate limits. */}
-        <div style={{ background: "var(--panel-2, #f7f6f2)", border: "1px solid var(--line, #e4e1d8)", borderRadius: 8, padding: "10px 14px", fontSize: 13, lineHeight: 1.55, color: "var(--muted)" }}>
-          <strong style={{ color: "var(--ink)" }}>Firebase Auth</strong> holds the logins for Neon-backed client sites
-          (email/password, Google, and guest sessions) — the sites' data lives in Neon, not here. It stores accounts,
-          not files, so the limits are on <em>rate</em>, not size:
-          <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
-            <li>~<strong>100 new signups per hour per IP</strong> (anti-abuse) — which is why we already added the hourly
-              registration cap.</li>
-            <li>If it's ever upgraded to Identity Platform, the free tier is <strong>50,000 monthly active users</strong>,
-              then paid per user. Plain email / Google / anonymous auth stays free regardless.</li>
-          </ul>
-        </div>
-
-        {/* No-limit metrics stay KPI tiles (same design as the Overview tab). */}
+        {/* No-limit metrics stay KPI tiles (same design as the Overview tab).
+            Firebase Auth gets a tile so its explainer has a home to hover. */}
         <div className="sa-stats" style={{ marginBottom: 0 }}>
           <Stat label="Functions" value={nfc(data.functions?.today)} sub={`today · ${nfc(data.functions?.month)} this month`} icon="gear" accent="success" />
           <Stat label="R2 ops" value={nfc(data.r2?.opsToday)} sub="reads + writes today" icon="download" accent="amber" />
           <Stat label="Cache hit" value={`${data.zone?.cacheHitPct ?? 0}%`} sub={`${nfc(data.zone?.reqToday)} edge req today`} icon="check" accent="success" />
           <Stat label="5xx errors" value={nf(data.zone?.err5xx)} sub="server errors today" icon="bell" accent="amber" />
+          <Stat label="Firebase Auth" value="Free" sub="client logins" icon="user" accent="info" info={FIREBASE_INFO} />
         </div>
 
         {/* 7-day trend */}
