@@ -1704,6 +1704,10 @@ a.client-domain--link:hover { text-decoration: underline; }
 
 /* Pager — client-side pagination footer for admin lists (20 rows/page) */
 .pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 14px; border-top: 1px solid var(--line); }
+/* Public guestbook wall: the page footer sits right under the cards — its rule
+   read as a stray line across the page (owner: no divider lines here). The
+   admin-table pagers keep their border. */
+.gb-grid + .pager, .gal-empty + .pager { border-top: none; padding-left: 0; padding-right: 0; }
 .pager__info { font-size: 13px; color: var(--muted); }
 .pager__nav { display: inline-flex; align-items: center; gap: 8px; }
 .pager__page { font-size: 13px; color: var(--ink-soft); min-width: 84px; text-align: center; }
