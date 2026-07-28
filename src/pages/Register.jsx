@@ -83,11 +83,9 @@ export function RegisterPage() {
 
   // both databases must agree the address is free
   const subCheck = async (s) => {
-    const [supaFree, neonFree] = await Promise.all([
-      checkRequestSubdomainFree(s).catch(() => false),
-      neonRpc("subdomain_free", { p_sub: s }).then((v) => v === true).catch(() => false),
-    ]);
-    return supaFree && neonFree;
+    // Neon is the only backend now — reserved_subdomains + clients + pending
+    // site_requests are all covered by subdomain_free.
+    return await neonRpc("subdomain_free", { p_sub: s }).then((v) => v === true).catch(() => false);
   };
   const submitOverride = async (p) => {
     const res = await authedRpc("register_site", {

@@ -9,7 +9,6 @@ import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fm
 import { SupportWidget, SupportPanel, TicketForm } from "@/admin/SupportWidget.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { signOut, createOwner, ownerHomeUrl, adminBridgeToken } from "@/lib/auth.js";
-import { supabase } from "@/lib/supabase.js";
 import { firebaseSignInProvider, firebaseUpdatePassword } from "@/lib/firebase.js";
 import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb, updateRsvpDietDb, listSiteRequests, subscribeSiteRequestsRealtime, listTickets, subscribeTicketsRealtime , listRecentClientReplies, listRecentSupportReplies, subscribeAllTicketMessagesRealtime, getAppConfig, setAppConfig} from "@/lib/api.js";
 import { DIET_OPTIONS } from "@/features/rsvp.jsx";
@@ -2202,9 +2201,14 @@ function ClientPasswordReset() {
   useEffect(() => {
     let dead = false;
     if (!clientId) { setLoaded(true); return; }
-    supabase.from("clients").select("owner_email").eq("id", clientId).single()
-      .then(({ data }) => { if (!dead) { setEmail(data?.owner_email || ""); setLoaded(true); } })
-      .catch(() => { if (!dead) setLoaded(true); });
+    (async () => {
+      try {
+        const token = await adminBridgeToken();
+        const res = await fetch("/api/neon-admin", { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify({ action: "get_client", id: clientId }) });
+        const j = await res.json().catch(() => ({}));
+        if (!dead) { setEmail(j.client?.owner_email || ""); setLoaded(true); }
+      } catch { if (!dead) setLoaded(true); }
+    })();
     return () => { dead = true; };
   }, [clientId]);
 
@@ -2215,7 +2219,6 @@ function ClientPasswordReset() {
     setBusy(true);
     try {
       await createOwner({ email: mail, password: pw, client_id: clientId });
-      await supabase.from("clients").update({ owner_email: mail }).eq("id", clientId);
       setPw("");
       toast("Owner password updated", "success");
     } catch (e) {
@@ -2269,8 +2272,7 @@ function SelfPasswordReset() {
     if (pw !== pw2) return toast("The two passwords don't match.", "err");
     setBusy(true);
     try {
-      if (neon) await firebaseUpdatePassword(pw);          // Firebase email/password owner
-      else { const { error } = await supabase.auth.updateUser({ password: pw }); if (error) throw error; }
+      await firebaseUpdatePassword(pw);                    // Firebase email/password owner
       setPw(""); setPw2("");
       toast("Password updated", "success");
     } catch (e) {

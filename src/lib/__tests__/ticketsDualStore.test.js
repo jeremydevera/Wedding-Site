@@ -1,12 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Tickets live in BOTH stores after the Neon migration: Neon clients file into
-// Neon (Firebase-authed, RLS-scoped), legacy Supabase clients into Supabase.
-// These guard the routing — a ticket must be mutated in the store it came from,
-// and the superadmin console must see BOTH.
+// Tickets live on Neon now (Supabase retired). Owners file into Neon directly
+// (Firebase-authed, RLS-scoped); the apex superadmin console reads/writes every
+// ticket through the /api/neon-admin bridge. These guard that routing.
 
-const neonCalls = [];   // { kind, table|action, arg }
-const supaCalls = [];
+const neonCalls = [];
 
 vi.mock("@/lib/neon.js", () => ({
   neonSelect: vi.fn(), neonInsert: vi.fn(), neonRpc: vi.fn(),
@@ -17,31 +15,20 @@ vi.mock("@/lib/neon.js", () => ({
   setFbAuthMode: vi.fn(), setNeonRegistry: vi.fn(), resolveShardId: () => "s1", setActiveShard: vi.fn(),
 }));
 
+// api.js still imports the supabase client (dead legacy branches). Provide a
+// minimal stub; it must never be CALLED on the Neon paths (asserted below).
+const supaCalls = [];
 vi.mock("@/lib/supabase.js", () => {
-  const chain = (table) => {
-    const o = {
-      select: () => o, eq: () => o, order: () => Promise.resolve({ data: [{ id: "s1", created_at: "2026-07-01T00:00:00Z" }], error: null }),
-      limit: () => Promise.resolve({ data: [], error: null }),
-      insert: (row) => { supaCalls.push({ kind: "insert", table, row }); return Promise.resolve({ error: null }); },
-      update: (patch) => { supaCalls.push({ kind: "update", table, patch }); return { eq: () => Promise.resolve({ error: null }) }; },
-      delete: () => { supaCalls.push({ kind: "delete", table }); return { eq: () => Promise.resolve({ error: null }) }; },
-    };
-    return o;
-  };
-  return {
-    supabase: {
-      from: (table) => chain(table),
-      channel: () => ({ on() { return this; }, subscribe() { return this; } }),
-      removeChannel: () => {},
-      auth: { getSession: async () => ({ data: { session: { access_token: "sa-jwt" } } }) },
-    },
-  };
+  const chain = () => new Proxy({}, { get: () => (...a) => { supaCalls.push(a); return chain(); } });
+  return { supabase: { from: () => { supaCalls.push("from"); return chain(); }, auth: {}, channel: () => ({ on() { return this; }, subscribe() { return this; } }), removeChannel: () => {} } };
 });
+
+// The console bridge sends the Firebase ID token; stub it.
+vi.mock("@/lib/auth.js", () => ({ loadSession: async () => {}, createOwner: async () => {}, sendSetupEmail: async () => {}, adminBridgeToken: async () => "fb-token" }));
 
 import { Store } from "@/lib/store.jsx";
 import { submitTicket, listTickets, setTicketStatus, deleteTicket, postTicketMessage } from "@/lib/api.js";
 
-// the apex bridge (/api/neon-admin) — record what the console asks Neon for
 let bridge = [];
 beforeEach(() => {
   neonCalls.length = 0; supaCalls.length = 0; bridge = [];
@@ -77,40 +64,32 @@ describe("ticket routing — Neon client (owner on their own site)", () => {
   });
 });
 
-describe("ticket routing — superadmin console (apex, Supabase JWT)", () => {
+describe("ticket routing — superadmin console (apex, Firebase bridge)", () => {
   beforeEach(() => {
     Store.set({ clientId: null, neonMode: false, loading: false });
     Store.setAuth({ session: {}, role: "superadmin", clientId: null, email: "su@x" });
   });
 
-  it("merges BOTH stores, newest first", async () => {
+  it("lists every ticket via the bridge, all tagged _src=neon", async () => {
     const rows = await listTickets();
     expect(bridge).toContain("list_tickets");
-    expect(rows.map((r) => r._src).sort()).toEqual(["neon", "supabase"]);
-    expect(new Date(rows[0].created_at) >= new Date(rows[1].created_at)).toBe(true);
+    expect(rows.every((r) => r._src === "neon")).toBe(true);
+    expect(supaCalls.length).toBe(0);
   });
 
-  it("routes a NEON ticket's status change through the bridge (not Supabase)", async () => {
+  it("routes a status change through the bridge (not Supabase)", async () => {
     await setTicketStatus("n9", "resolved", { _src: "neon" });
     expect(bridge).toContain("set_ticket_status");
     expect(supaCalls.length).toBe(0);
   });
 
-  it("routes a SUPABASE ticket's status change to Supabase (not the bridge)", async () => {
-    await setTicketStatus("s1", "resolved", { _src: "supabase" });
-    expect(supaCalls.some((c) => c.kind === "update" && c.table === "support_tickets")).toBe(true);
-    expect(bridge).not.toContain("set_ticket_status");
-  });
-
-  it("deletes each ticket in its own store", async () => {
+  it("deletes through the bridge", async () => {
     await deleteTicket("n9", { _src: "neon" });
     expect(bridge).toContain("delete_ticket");
     expect(supaCalls.length).toBe(0);
-    await deleteTicket("s1", { _src: "supabase" });
-    expect(supaCalls.some((c) => c.kind === "delete")).toBe(true);
   });
 
-  it("superadmin reply to a Neon ticket goes through the bridge", async () => {
+  it("superadmin reply goes through the bridge", async () => {
     await postTicketMessage("n9", "on it", null, { _src: "neon" });
     expect(bridge).toContain("post_ticket_message");
     expect(supaCalls.length).toBe(0);

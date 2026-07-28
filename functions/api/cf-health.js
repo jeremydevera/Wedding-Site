@@ -7,33 +7,34 @@
 // ~once per 5 min no matter how many superadmins refresh.
 
 import { shapeHealth, countBuildsThisMonth } from "./_cf-health-shape.js";
+import { neon } from "@neondatabase/serverless";
 
 const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json" } });
 
-// Verify the bearer token belongs to a superadmin (mirrors media.js — kept inline
-// so the Function stays self-contained). 401 no/bad token, 403 not superadmin,
-// 502 lookup failed.
-async function requireSuperadmin(SUPABASE_URL, SUPABASE_ANON_KEY, token) {
-  if (!token) return { ok: false, status: 401 };
-  let uid;
+const FIREBASE_API_KEY = "AIzaSyC4zUcZH06Te0CQLwn9r3VdAeb3Rcf4K0k";
+async function firebaseUid(apiKey, token) {
   try {
-    const who = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
+    const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ idToken: token }),
     });
-    if (!who.ok) return { ok: false, status: 401 };
-    const user = await who.json();
-    uid = user && user.id;
-  } catch { return { ok: false, status: 502 }; }
+    if (!r.ok) return null;
+    const d = await r.json();
+    return (d && d.users && d.users[0] && d.users[0].localId) || null;
+  } catch { return null; }
+}
+
+// Verify the bearer token belongs to a superadmin (Firebase ID token → Neon
+// profiles). 401 no/bad token, 403 not superadmin, 502 lookup failed.
+async function requireSuperadmin(env, token) {
+  if (!token) return { ok: false, status: 401 };
+  if (!env || !env.NEON_DATABASE_URL) return { ok: false, status: 500 };
+  const uid = await firebaseUid(env.FIREBASE_API_KEY || FIREBASE_API_KEY, token);
   if (!uid) return { ok: false, status: 401 };
   try {
-    const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${uid}&select=role`, {
-      headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
-    });
-    if (!pr.ok) return { ok: false, status: 502 };
-    const rows = await pr.json();
-    const role = Array.isArray(rows) && rows[0] && rows[0].role;
-    if (role !== "superadmin") return { ok: false, status: 403 };
+    const sql = neon(env.NEON_DATABASE_URL);
+    const rows = await sql`select role from profiles where id = ${uid} and role = 'superadmin' limit 1`;
+    if (!rows || !rows[0]) return { ok: false, status: 403 };
   } catch { return { ok: false, status: 502 }; }
   return { ok: true, uid };
 }
@@ -74,12 +75,9 @@ function buildQuery({ acct, zone, sinceDT, sinceDate, ydayDate, todayDate }) {
 export async function onRequestGet(context) {
   const { request, env } = context;
 
-  const SUPABASE_URL = env.SUPABASE_URL || "https://xprynknppsehuzqqdvue.supabase.co";
-  const SUPABASE_ANON_KEY = env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhwcnlua25wcHNlaHV6cXFkdnVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwODg1OTUsImV4cCI6MjA5NzY2NDU5NX0._S3xdNXBm6d4SI8MO0MNoZ3bT8uspEd8lrdVm29Efgo";
-
   // Gate FIRST — a non-superadmin never reaches Cloudflare or the cache.
   const token = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
-  const chk = await requireSuperadmin(SUPABASE_URL, SUPABASE_ANON_KEY, token);
+  const chk = await requireSuperadmin(env, token);
   if (!chk.ok) return json({ error: chk.status === 403 ? "forbidden" : chk.status === 502 ? "auth lookup failed" : "unauthorized" }, chk.status);
 
   const CF_TOKEN = env.CF_ANALYTICS_TOKEN;
@@ -163,53 +161,20 @@ export async function onRequestGet(context) {
     try { return (await tryUrl("?per_page=100")) ?? (await tryUrl("")); } catch { return null; }
   };
 
-  // Supabase DB size — superadmin-only RPC (0025), called with the CALLER's JWT
-  // so the DB re-verifies the role itself. NULL/failure -> null (tile shows "—").
-  const fetchDbSize = async () => {
-    try {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/db_size_bytes`, {
-        method: "POST",
-        headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}`, "content-type": "application/json" },
-        body: "{}",
-      });
-      if (!r.ok) return null;
-      const v = await r.json();
-      return Number.isFinite(+v) ? +v : null;
-    } catch { return null; }
-  };
+  // Supabase retired — the Supabase DB-size + plan tiles no longer apply.
+  const fetchDbSize = async () => null;
+  const fetchSupaPlan = async () => null;
 
-  // Supabase plan -> included DB-size ceiling. The plan lives behind the
-  // Management API (api.supabase.com), which needs a Personal Access Token —
-  // the anon key / caller JWT can't reach it. No PAT set -> null -> the caller
-  // falls back to CF_LIMIT_SUPA_DB_MB / 500, so this stays inert until wired.
-  // enterprise / custom-disk plans aren't in the map -> null -> env/500 too.
-  const SUPA_PLAN_MB = { free: 500, pro: 8192, team: 8192 };
-  const fetchSupaPlan = async () => {
-    const pat = env.SUPABASE_MGMT_TOKEN;
-    if (!pat) return null;
-    try {
-      const r = await fetch(`https://api.supabase.com/v1/organizations/${SUPA_ORG_ID}`, {
-        headers: { authorization: `Bearer ${pat}` },
-      });
-      if (!r.ok) return null;
-      const o = await r.json();
-      const plan = typeof o?.plan === "string" ? o.plan : null;
-      return plan ? { plan, limitMb: SUPA_PLAN_MB[plan] || null } : null;
-    } catch { return null; }
-  };
-
-  // Neon storage — new registrations live on Neon (5 shards). No Neon API key
-  // needed: read the shard registry from app_config, then ask each shard's Data
-  // API for pg_database_size via the public db_size_bytes() RPC (anon token).
+  // Neon storage — all data lives on Neon (5 shards). Read the shard registry
+  // from Neon app_config, then ask each shard's Data API for pg_database_size via
+  // the public db_size_bytes() RPC (anon token).
   // Free tier = 512 MB storage per project; total capacity = 512 MB × shards.
   const NEON_LIMIT_MB = +(env.CF_LIMIT_NEON_DB_MB || 512);
   const fetchNeonUsage = async () => {
     try {
-      const cr = await fetch(`${SUPABASE_URL}/rest/v1/app_config?key=eq.neon_shards&select=value`, {
-        headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${SUPABASE_ANON_KEY}` },
-      });
-      if (!cr.ok) return null;
-      const rows = await cr.json();
+      if (!env.NEON_DATABASE_URL) return null;
+      const sql = neon(env.NEON_DATABASE_URL);
+      const rows = await sql`select value from app_config where key = 'neon_shards' limit 1`;
       const shards = rows?.[0]?.value?.shards || {};
       const ids = Object.keys(shards);
       if (!ids.length) return null;
@@ -232,7 +197,7 @@ export async function onRequestGet(context) {
     } catch { return null; }
   };
 
-  let data, buildsMonth, dbBytes, domainCount, supaPlan, neon;
+  let data, buildsMonth, dbBytes, domainCount, supaPlan, neonUsage;
   try {
     const [resp, builds, db, doms, plan, neonU] = await Promise.all([
       fetch("https://api.cloudflare.com/client/v4/graphql", {
@@ -246,7 +211,7 @@ export async function onRequestGet(context) {
       fetchSupaPlan(),
       fetchNeonUsage(),
     ]);
-    buildsMonth = builds; dbBytes = db; domainCount = doms; supaPlan = plan; neon = neonU;
+    buildsMonth = builds; dbBytes = db; domainCount = doms; supaPlan = plan; neonUsage = neonU;
     const jr = await resp.json();
     if (!resp.ok || (jr.errors && jr.errors.length) || !jr.data) {
       return json({ configured: true, error: "upstream" }); // soft — do not cache, do not leak details
@@ -269,8 +234,8 @@ export async function onRequestGet(context) {
   const dbLimitMb = supaPlan?.limitMb || LIMIT_SUPA_DB_MB;
   payload.supa = { dbBytes, dbLimitBytes: dbLimitMb * 1024 * 1024, plan: supaPlan?.plan || null };
   // Neon (new registrations, sharded). null => registry unreadable or all shards down.
-  payload.neon = neon
-    ? { totalBytes: neon.totalBytes, shardCount: neon.count, limitBytesPerShard: neon.limitBytesPerShard, totalLimitBytes: neon.limitBytesPerShard * neon.count, shards: neon.shards }
+  payload.neon = neonUsage
+    ? { totalBytes: neonUsage.totalBytes, shardCount: neonUsage.count, limitBytesPerShard: neonUsage.limitBytesPerShard, totalLimitBytes: neonUsage.limitBytesPerShard * neonUsage.count, shards: neonUsage.shards }
     : null;
 
   const res = json(payload);

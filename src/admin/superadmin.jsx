@@ -2,6 +2,21 @@ import React from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabase.js";
 import { createOwner, updateOwnerEmail, deleteOwner, adminBridgeToken } from "@/lib/auth.js";
+import { Store } from "@/lib/store.jsx";
+
+// Console → Neon bridge (module-level, so SuperOverview + helpers can call it).
+// Carries the console's Firebase ID token; the bridge verifies a Neon superadmin.
+async function saBridge(action, params = {}) {
+  const token = await adminBridgeToken();
+  const res = await fetch("/api/neon-admin", {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+    body: JSON.stringify({ action, ...params }),
+  });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(j.error || `neon-admin ${res.status}`);
+  return j;
+}
 import { THEMES } from "@/themes";
 import { themesForEvent } from "@/config/eventTypes.js";
 import { FEATURE_ROWS, FEATURE_LEVELS, FEATURE_DEFAULTS, moduleLabel, DISABLED_MODULES, DEFAULT_CLIENT_MODULES } from "@/lib/roles.js";
@@ -123,13 +138,10 @@ export function SuperOverview() {
   const [recent, setRecent] = useState([]);
   useEffect(() => {
     (async () => {
-      const cnt = async (t) => { const { count } = await supabase.from(t).select("*", { count: "exact", head: true }); return count || 0; };
-      const { data } = await supabase.from("clients").select("id,subdomain,event_type,is_active,owner_email,content,created_at").order("created_at", { ascending: false });
-      const list = data || [];
-      const bt = {}; list.forEach((c) => { bt[c.event_type] = (bt[c.event_type] || 0) + 1; });
-      const [rsvps, guestbook, quiz] = await Promise.all([cnt("rsvps"), cnt("guestbook"), cnt("quiz_answers")]);
-      setByType(bt); setRecent(list.slice(0, 6));
-      setM({ clients: list.length, active: list.filter((c) => c.is_active).length, logins: list.filter((c) => c.owner_email).length, rsvps, guestbook, quiz });
+      const { stats, byType: bt, recent: rc } = await saBridge("overview_stats");
+      const bthash = {}; (bt || []).forEach((r) => { bthash[r.event_type] = r.n; });
+      setByType(bthash); setRecent(rc || []);
+      setM({ clients: stats.clients, active: stats.active, logins: stats.logins, rsvps: stats.rsvps, guestbook: stats.guestbook, quiz: stats.quiz });
     })().catch((e) => console.warn("[superadmin] overview load failed:", e?.message));
   }, []);
 
@@ -391,19 +403,25 @@ export function ClientsAdmin() {
   // The signed-in superadmin is not a "client" — hide their own account from
   // every list (Supabase clients, Neon clients, Neon signups) so it never shows.
   async function myEmail() {
-    const { data: { session } } = await supabase.auth.getSession();
-    return (session?.user?.email || "").toLowerCase();
+    return (Store.get().auth?.email || "").toLowerCase();
   }
 
   async function load() {
     const me = await myEmail();
-    const { data } = await supabase.from("clients").select("*").order("created_at", { ascending: false });
-    setClients((data || []).filter((c) => (c.owner_email || "").toLowerCase() !== me));
-    setSel(new Set()); // rows changed — stale checks would be dangerous on delete
-    try { setRequests(await listSiteRequests()); } catch (_) { /* non-superadmin or table missing */ }
-    // Notes live in a superadmin-only table (never exposed to anon/owners).
-    const { data: nd } = await supabase.from("client_notes").select("client_id,note");
-    setNotes(Object.fromEntries((nd || []).map((r) => [r.client_id, r.note || ""])));
+    // Clients come from Neon via the bridge (list_clients). The signed-in
+    // superadmin's own account is hidden from the list.
+    try {
+      const { rows } = await saBridge("list_clients");
+      // Tag __neon so the shared edit/delete handlers route through the bridge.
+      setClients((rows || []).filter((c) => (c.owner_email || "").toLowerCase() !== me).map((c) => ({ ...c, __neon: true })));
+    } catch (_) { setClients([]); }
+    setSel(new Set());
+    try { setRequests(await listSiteRequests()); } catch (_) { /* non-superadmin or empty */ }
+    // Superadmin private per-client notes (migrated to Neon).
+    try {
+      const { rows } = await saBridge("list_client_notes");
+      setNotes(Object.fromEntries((rows || []).map((r) => [r.client_id, r.note || ""])));
+    } catch (_) { setNotes({}); }
   }
   const [neonReqs, setNeonReqs] = useState([]);
   const [neonClients, setNeonClients] = useState([]);
@@ -422,9 +440,9 @@ export function ClientsAdmin() {
   async function loadNeon() {
     try {
       const me = await myEmail();
-      const [rq, cl, su] = await Promise.all([neonAdmin("list_requests"), neonAdmin("list_clients"), neonAdmin("list_signups").catch(() => ({ rows: [] }))]);
+      const [rq, su] = await Promise.all([neonAdmin("list_requests"), neonAdmin("list_signups").catch(() => ({ rows: [] }))]);
       setNeonReqs(rq.rows || []);
-      setNeonClients((cl.rows || []).filter((c) => (c.owner_email || "").toLowerCase() !== me));
+      setNeonClients([]); // clients now render in the main tabs (loaded via load())
       setNeonSignups((su.rows || []).filter((u) => (u.email || "").toLowerCase() !== me));
     } catch (e) { console.warn("[neon-admin] load failed:", e.message); }
   }
@@ -456,9 +474,7 @@ export function ClientsAdmin() {
 
   // Save (or clear) the private note for a client. Empty note removes the row.
   async function saveNote(clientId, note) {
-    const text = (note || "").trim();
-    if (text) await supabase.from("client_notes").upsert({ client_id: clientId, note: text, updated_at: new Date().toISOString() });
-    else await supabase.from("client_notes").delete().eq("client_id", clientId);
+    await saBridge("set_client_note", { client_id: clientId, note: (note || "").trim() });
   }
 
   // Enable/disable a client's site. is_active=false makes the public "read active
@@ -467,12 +483,11 @@ export function ClientsAdmin() {
   // once they've confirmed the client donated). Writes content.hideDonateAd.
   async function toggleDonateAd(c) {
     await runBusy("Updating…", async () => {
-      const hidden = !(c.content && c.content.hideDonateAd === true);
-      const content = { ...(c.content || {}), hideDonateAd: hidden };
-      const { error } = await supabase.from("clients").update({ content }).eq("id", c.id);
-      if (error) { toast("Update failed: " + error.message, "err"); return; }
-      toast(hidden ? "Donate popup turned OFF for this client." : "Donate popup turned ON.", "success");
-      await load();
+      try {
+        const { hidden } = await neonAdmin("toggle_donate", { id: c.id });
+        toast(hidden ? "Donate popup turned OFF for this client." : "Donate popup turned ON.", "success");
+        await load();
+      } catch (e) { toast("Update failed: " + (e?.message || "error"), "err"); }
     });
   }
   // 🔴 OWNER RULE — docs/DEV-RULES.md R4 (stated many times, do NOT regress):
@@ -493,10 +508,11 @@ export function ClientsAdmin() {
   const STATUS_OPTS = [["not_paid", "Not Paid"], ["paid", "Paid"], ["demo", "Demo"]];
   async function setClientStatus(c, status) {
     await runBusy("Updating…", async () => {
-      const { error } = await supabase.from("clients").update({ status }).eq("id", c.id);
-      if (error) { toast("Status update failed: " + error.message, "err"); return; }
-      toast(`${c.subdomain} → ${(STATUS_OPTS.find(([v]) => v === status) || [])[1] || status}`, "success");
-      await load();
+      try {
+        await neonAdmin("set_status", { id: c.id, status });
+        toast(`${c.subdomain} → ${(STATUS_OPTS.find(([v]) => v === status) || [])[1] || status}`, "success");
+        await load();
+      } catch (e) { toast("Status update failed: " + (e?.message || "error"), "err"); }
     });
   }
   // Refined billing-status chip: a small, low-weight tinted select (was 13px/600
@@ -539,10 +555,11 @@ export function ClientsAdmin() {
       if (!ok) return;
     }
     await runBusy(next ? "Enabling…" : "Disabling…", async () => {
-      const { error } = await supabase.from("clients").update({ is_active: next }).eq("id", c.id);
-      if (error) return toast("Update failed: " + error.message);
-      toast(next ? "Access enabled — site is live" : "Access disabled — site is offline");
-      await load();
+      try {
+        await neonAdmin("set_active", { id: c.id, active: next });
+        toast(next ? "Access enabled — site is live" : "Access disabled — site is offline");
+        await load();
+      } catch (e) { toast("Update failed: " + (e?.message || "error"), "err"); }
     });
   }
 
@@ -559,16 +576,16 @@ export function ClientsAdmin() {
     const sub = form.subdomain.trim().toLowerCase();
     if (!isValidSubdomain(sub)) return toast("Invalid subdomain. Use lowercase letters, numbers, and hyphens — and not a reserved name (www, app, admin, demo…).");
     setBusyLabel("Creating client…"); setBusy(true);
-    const { data: created, error } = await supabase.from("clients")
-      .insert({ subdomain: sub, event_type: form.event_type, template_key: form.template_key }).select().single();
-    if (error) { setBusy(false); setBusyLabel(""); return toast("Create failed: " + error.message); }
+    let created;
+    try {
+      created = await neonAdmin("create_client", { subdomain: sub, event_type: form.event_type, template_key: form.template_key, owner_email: form.ownerEmail.trim() || null });
+    } catch (e) { setBusy(false); setBusyLabel(""); return toast("Create failed: " + (e?.message || "error")); }
     if (form.note.trim()) { try { await saveNote(created.id, form.note); } catch (_) { /* note is best-effort */ } }
     if (form.ownerEmail.trim()) {
       // No password typed -> the platform starter password (same as approvals).
       const pw = form.ownerPassword || "Password123+";
       try {
         await createOwner({ email: form.ownerEmail.trim(), password: pw, client_id: created.id });
-        await supabase.from("clients").update({ owner_email: form.ownerEmail.trim() }).eq("id", created.id);
         toast("Client + owner login created");
       } catch (e2) { toast("Client created — owner login pending:"); edgeOrToast(e2); }
     } else { toast("Client created"); }
@@ -579,24 +596,21 @@ export function ClientsAdmin() {
 
   async function assignTheme(id, template_key) {
     await runBusy("Saving…", async () => {
-      const { error } = await supabase.from("clients").update({ template_key }).eq("id", id);
-      if (error) return toast("Update failed");
-      toast("Theme assigned"); await load();
+      try { await neonAdmin("set_template", { id, template_key }); toast("Theme assigned"); await load(); }
+      catch (e) { toast("Update failed: " + (e?.message || "error")); }
     });
   }
   async function changeType(c, event_type) {
     await runBusy("Saving…", async () => {
-      const { error } = await supabase.from("clients").update({ event_type, template_key: themesForEvent(event_type)[0] }).eq("id", c.id);
-      if (error) return toast("Update failed");
-      toast("Type updated"); await load();
+      try { await neonAdmin("set_event_type", { id: c.id, event_type, template_key: themesForEvent(event_type)[0] }); toast("Type updated"); await load(); }
+      catch (e) { toast("Update failed: " + (e?.message || "error")); }
     });
   }
   async function toggleModule(c, key, on) {
     await runBusy("Saving…", async () => {
       const modules = { ...(c.content?.modules || {}), [key]: on };
-      const { error } = await supabase.from("clients").update({ content: { ...(c.content || {}), modules } }).eq("id", c.id);
-      if (error) return toast("Update failed");
-      await load();
+      try { await neonAdmin("update_client_access", { id: c.id, content: { modules } }); await load(); }
+      catch (e) { toast("Update failed: " + (e?.message || "error")); }
     });
   }
 
@@ -732,12 +746,10 @@ export function ClientsAdmin() {
   // the auth user cascades its profile. Then delete the client (cascades its
   // RSVPs/guestbook/quiz). A noop is fine for clients that never had an owner.
   async function deleteClientCore(c) {
-    let ownerWarn = false;
-    try { await deleteOwner({ email: c.owner_email || undefined, client_id: c.id }); }
-    catch (e2) { ownerWarn = true; }
-    const { error } = await supabase.from("clients").delete().eq("id", c.id);
-    if (error) throw error;
-    return { ownerWarn };
+    // The bridge purges the owner's Firebase login + the client + its data
+    // (RSVPs/guestbook/quiz) in one call.
+    const res = await neonAdmin("delete_client", { id: c.id });
+    return { ownerWarn: res && res.firebase_purged === false };
   }
   async function deleteClient(c) {
     const ok = await confirmDialog({

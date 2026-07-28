@@ -3,7 +3,7 @@
 // and renders router-vs-limit usage, Functions/R2 splits, a 7-day trend, zone
 // cache-hit / 5xx / status codes. No CF token ever touches the browser.
 import React from "react";
-import { supabase } from "@/lib/supabase.js";
+import { adminBridgeToken } from "@/lib/auth.js";
 import { Button, Icon } from "@/ui/components.jsx";
 const { useState, useEffect, useCallback, Suspense } = React;
 
@@ -80,8 +80,7 @@ export function CloudflareHealth() {
   const load = useCallback(async (force) => {
     setLoading(true); setError(null);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
+      const token = await adminBridgeToken();
       const res = await fetch(`/api/cf-health${force ? "?refresh=1" : ""}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });

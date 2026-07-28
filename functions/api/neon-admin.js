@@ -38,19 +38,8 @@ async function firebaseSuperadmin(env, token) {
 async function requireSuperadmin(env, request) {
   const token = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
   if (!token) return null;
-  // Route by issuer: a Firebase console session vs a legacy Supabase session.
-  const iss = jwtPayload(token)?.iss || "";
-  if (iss.includes("securetoken.google.com")) return await firebaseSuperadmin(env, token).catch(() => null);
-  // Legacy/fallback: Supabase superadmin JWT (kept during the additive cutover).
-  const SUPABASE_URL = env.SUPABASE_URL || "https://xprynknppsehuzqqdvue.supabase.co";
-  const ANON = env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhwcnlua25wcHNlaHV6cXFkdnVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwODg1OTUsImV4cCI6MjA5NzY2NDU5NX0._S3xdNXBm6d4SI8MO0MNoZ3bT8uspEd8lrdVm29Efgo";
-  const who = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: { apikey: ANON, authorization: `Bearer ${token}` } });
-  if (!who.ok) return null;
-  const uid = (await who.json())?.id;
-  if (!uid) return null;
-  const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${uid}&select=role`, { headers: { apikey: ANON, authorization: `Bearer ${token}` } });
-  const rows = pr.ok ? await pr.json() : [];
-  return rows?.[0]?.role === "superadmin" ? uid : null;
+  // Firebase console session → validate + require a Neon superadmin profile.
+  return await firebaseSuperadmin(env, token).catch(() => null);
 }
 
 // Best-effort delete of a Firebase Auth user so a removed client's owner LOGIN
@@ -60,9 +49,14 @@ async function requireSuperadmin(env, request) {
 // calls accounts:delete. No-op (never throws) if the key is absent or the uid
 // isn't a Firebase uid (legacy Neon-Auth owners).
 const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-async function firebaseDeleteUser(env, uid) {
+const FB_WEB_KEY = "AIzaSyC4zUcZH06Te0CQLwn9r3VdAeb3Rcf4K0k"; // public web API key (signUp/oobCode)
+
+// Mint a Google OAuth access token from the platform service-account key
+// (env.FIREBASE_SA_KEY = base64 of the SA JSON; role = firebaseauth.admin).
+// Returns { token, projectId } or null if the key is absent/invalid.
+async function firebaseAdminToken(env) {
   try {
-    if (!env.FIREBASE_SA_KEY || !uid) return { purged: false, reason: "no-key-or-uid" };
+    if (!env.FIREBASE_SA_KEY) return null;
     const sa = JSON.parse(atob(env.FIREBASE_SA_KEY));
     const now = Math.floor(Date.now() / 1000);
     const enc = (o) => b64url(new TextEncoder().encode(JSON.stringify(o)));
@@ -74,12 +68,26 @@ async function firebaseDeleteUser(env, uid) {
     const sig = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, new TextEncoder().encode(signingInput));
     const jwt = signingInput + "." + b64url(sig);
     const tr = await fetch("https://oauth2.googleapis.com/token", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: jwt }) });
-    if (!tr.ok) return { purged: false, reason: "token-" + tr.status };
+    if (!tr.ok) return null;
     const { access_token } = await tr.json();
-    const pid = sa.project_id || "wedding-dc35d";
-    const dr = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${pid}/accounts:delete`, { method: "POST", headers: { authorization: "Bearer " + access_token, "content-type": "application/json" }, body: JSON.stringify({ localId: uid }) });
+    return { token: access_token, projectId: sa.project_id || FB_PROJECT };
+  } catch (e) { return null; }
+}
+async function firebaseDeleteUser(env, uid) {
+  try {
+    if (!uid) return { purged: false, reason: "no-uid" };
+    const admin = await firebaseAdminToken(env);
+    if (!admin) return { purged: false, reason: "no-key" };
+    const dr = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${admin.projectId}/accounts:delete`, { method: "POST", headers: { authorization: "Bearer " + admin.token, "content-type": "application/json" }, body: JSON.stringify({ localId: uid }) });
     return { purged: dr.ok, reason: dr.ok ? "ok" : "delete-" + dr.status };
   } catch (e) { return { purged: false, reason: String((e && e.message) || e).slice(0, 80) }; }
+}
+// Resolve a Firebase uid by email (admin lookup). null if not found.
+async function firebaseUidByEmail(admin, email) {
+  const r = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${admin.projectId}/accounts:lookup`, { method: "POST", headers: { authorization: "Bearer " + admin.token, "content-type": "application/json" }, body: JSON.stringify({ email: [email] }) });
+  if (!r.ok) return null;
+  const j = await r.json();
+  return j.users && j.users[0] ? j.users[0].localId : null;
 }
 
 export async function onRequestPost({ request, env }) {
@@ -92,7 +100,17 @@ export async function onRequestPost({ request, env }) {
       case "list_requests":
         return json({ rows: await sql`select id, created_at, status, email, partner_a, partner_b, subdomain, template_key, requested_by from site_requests where status = 'pending' order by created_at desc` });
       case "list_clients":
-        return json({ rows: await sql`select id, subdomain, event_type, is_active, owner_email, status, created_at, (content->>'hideDonateAd')::boolean as hide_donate from clients order by created_at desc` });
+        return json({ rows: await sql`select id, subdomain, event_type, template_key, is_active, owner_email, status, created_at, content from clients order by created_at desc` });
+      case "create_client": {
+        const sub = String(body.subdomain || "").trim().toLowerCase();
+        if (!/^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])?$/.test(sub)) return json({ error: "invalid subdomain" }, 400);
+        const [{ subdomain_free: free }] = await sql`select public.subdomain_free(${sub}) as subdomain_free`;
+        if (!free) return json({ error: "subdomain already taken" }, 409);
+        const [row] = await sql`insert into clients (subdomain, event_type, template_key, owner_email, status, content)
+          values (${sub}, ${body.event_type || "wedding"}, ${body.template_key || "classic"}, ${body.owner_email || null}, 'not_paid', ${JSON.stringify(body.content || {})}::jsonb)
+          returning id`;
+        return json({ ok: true, id: row.id });
+      }
       case "approve_request": {
         // Single SECURITY DEFINER fn = one transaction + the same content
         // enrichment register_site uses (names, hashtag, modules, accessV2).
@@ -104,8 +122,40 @@ export async function onRequestPost({ request, env }) {
       case "reject_request":
         await sql`update site_requests set status = 'rejected' where id = ${body.id}`;
         return json({ ok: true });
+      // Console Requests/Approved/Rejected tabs (all statuses, incl. content).
+      case "list_all_requests":
+        return json({ rows: await sql`select id, created_at, status, email, partner_a, partner_b, subdomain, template_key, content from site_requests order by created_at desc` });
+      case "set_request_status":
+        if (!body.id || !body.status) return json({ error: "id and status required" }, 400);
+        await sql`update site_requests set status = ${body.status} where id = ${body.id}`;
+        return json({ ok: true });
+      case "update_request": {
+        if (!body.id) return json({ error: "id required" }, 400);
+        const p = body.patch || {};
+        await sql`update site_requests set
+          email = coalesce(${p.email ?? null}, email),
+          partner_a = coalesce(${p.partner_a ?? null}, partner_a),
+          partner_b = coalesce(${p.partner_b ?? null}, partner_b),
+          subdomain = coalesce(${p.subdomain ?? null}, subdomain),
+          template_key = coalesce(${p.template_key ?? null}, template_key),
+          content = coalesce(${p.content ? JSON.stringify(p.content) : null}::jsonb, content)
+          where id = ${body.id}`;
+        return json({ ok: true });
+      }
+      case "delete_request":
+        if (!body.id) return json({ error: "id required" }, 400);
+        await sql`delete from site_requests where id = ${body.id}`;
+        return json({ ok: true });
       case "set_status":
         await sql`update clients set status = ${body.status} where id = ${body.id}`;
+        return json({ ok: true });
+      case "set_template":
+        if (!body.id || !body.template_key) return json({ error: "id and template_key required" }, 400);
+        await sql`update clients set template_key = ${body.template_key} where id = ${body.id}`;
+        return json({ ok: true });
+      case "set_event_type":
+        if (!body.id || !body.event_type) return json({ error: "id and event_type required" }, 400);
+        await sql`update clients set event_type = ${body.event_type}, template_key = coalesce(${body.template_key || null}, template_key) where id = ${body.id}`;
         return json({ ok: true });
       case "set_active":
         await sql`update clients set is_active = ${body.active === true} where id = ${body.id}`;
@@ -143,6 +193,61 @@ export async function onRequestPost({ request, env }) {
         const fb = await firebaseDeleteUser(env, ownerUid);
         const del = await sql`delete from clients where id = ${body.id} returning subdomain`;
         return json({ ok: true, deleted: del[0]?.subdomain || null, owner_uid: ownerUid, firebase_purged: fb.purged });
+      }
+      // ── Superadmin owner-lifecycle (Firebase Admin) ──────────────────────
+      case "create_owner": {
+        // Create the owner login (or reset an existing owner's password) and link
+        // a Neon 'owner' profile to the client. Uses the platform SA key.
+        const email = String(body.email || "").trim().toLowerCase();
+        const password = String(body.password || "");
+        if (!email || !password) return json({ error: "email and password required" }, 400);
+        const admin = await firebaseAdminToken(env);
+        if (!admin) return json({ error: "owner management isn't configured (no Firebase key)" }, 500);
+        let uid = await firebaseUidByEmail(admin, email);
+        if (uid) {
+          const ur = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${admin.projectId}/accounts:update`, { method: "POST", headers: { authorization: "Bearer " + admin.token, "content-type": "application/json" }, body: JSON.stringify({ localId: uid, password }) });
+          if (!ur.ok) return json({ error: "couldn't set the password" }, 502);
+        } else {
+          const sr = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${env.FIREBASE_WEB_API_KEY || FB_WEB_KEY}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, password, returnSecureToken: false }) });
+          const sj = await sr.json();
+          if (!sj.localId) return json({ error: sj.error?.message || "couldn't create the owner login" }, 502);
+          uid = sj.localId;
+        }
+        if (body.client_id) {
+          await sql`insert into profiles (id, role, client_id) values (${uid}, 'owner', ${body.client_id})
+            on conflict (id) do update set role = 'owner', client_id = ${body.client_id}`;
+          await sql`update clients set owner_email = ${email} where id = ${body.client_id}`.catch(() => {});
+        }
+        return json({ ok: true, uid });
+      }
+      case "update_owner_email": {
+        const oldEmail = String(body.old_email || "").trim().toLowerCase();
+        const newEmail = String(body.new_email || "").trim().toLowerCase();
+        if (!oldEmail || !newEmail) return json({ error: "old_email and new_email required" }, 400);
+        const admin = await firebaseAdminToken(env);
+        if (!admin) return json({ error: "owner management isn't configured (no Firebase key)" }, 500);
+        const uid = await firebaseUidByEmail(admin, oldEmail);
+        if (!uid) return json({ error: "no account for that email" }, 404);
+        const ur = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${admin.projectId}/accounts:update`, { method: "POST", headers: { authorization: "Bearer " + admin.token, "content-type": "application/json" }, body: JSON.stringify({ localId: uid, email: newEmail }) });
+        if (!ur.ok) return json({ error: "couldn't update the email" }, 502);
+        await sql`update clients set owner_email = ${newEmail} where owner_email = ${oldEmail}`.catch(() => {});
+        return json({ ok: true, uid });
+      }
+      case "delete_owner_account": {
+        let uid = body.user_id || null;
+        if (!uid && body.client_id) { const [own] = await sql`select id from profiles where client_id = ${body.client_id} and role = 'owner'`; uid = own?.id || null; }
+        if (!uid && body.email) { const admin = await firebaseAdminToken(env); if (admin) uid = await firebaseUidByEmail(admin, String(body.email).trim().toLowerCase()); }
+        if (!uid) return json({ error: "couldn't resolve the owner" }, 404);
+        const fb = await firebaseDeleteUser(env, uid);
+        await sql`delete from profiles where id = ${uid}`.catch(() => {});
+        return json({ ok: true, uid, firebase_purged: fb.purged });
+      }
+      case "send_setup_email": {
+        const email = String(body.email || "").trim().toLowerCase();
+        if (!email) return json({ error: "email required" }, 400);
+        const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${env.FIREBASE_WEB_API_KEY || FB_WEB_KEY}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ requestType: "PASSWORD_RESET", email }) });
+        if (!r.ok) { const e = await r.json().catch(() => ({})); return json({ error: e.error?.message || "couldn't send the email" }, 502); }
+        return json({ ok: true });
       }
       // ── Support tickets (Neon clients) ────────────────────────────────────
       // The superadmin console runs on the apex with a SUPABASE session, so it
@@ -217,14 +322,10 @@ export async function onRequestPost({ request, env }) {
         // Supabase lookup catches names already used by an existing Supabase
         // client (different database — subdomain_free can't see those).
         if (sub !== cur.subdomain) {
+          // subdomain_free covers reserved names + Neon clients + pending requests
+          // (all clients live in Neon now — no separate Supabase check needed).
           const [{ subdomain_free: free }] = await sql`select public.subdomain_free(${sub}) as subdomain_free`;
           if (!free) return json({ error: "subdomain already taken" }, 409);
-          const SUPABASE_URL = env.SUPABASE_URL || "https://xprynknppsehuzqqdvue.supabase.co";
-          const ANON = env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhwcnlua25wcHNlaHV6cXFkdnVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwODg1OTUsImV4cCI6MjA5NzY2NDU5NX0._S3xdNXBm6d4SI8MO0MNoZ3bT8uspEd8lrdVm29Efgo";
-          const token = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
-          const supa = await fetch(`${SUPABASE_URL}/rest/v1/clients?select=id&subdomain=eq.${encodeURIComponent(sub)}&limit=1`, { headers: { apikey: ANON, authorization: `Bearer ${token}` } });
-          const taken = supa.ok ? (await supa.json()) : [];
-          if (Array.isArray(taken) && taken.length) return json({ error: "subdomain already taken" }, 409);
         }
         const merged = { ...(cur.content || {}), ...(body.content || {}) };
         await sql`update clients set subdomain = ${sub},
@@ -271,6 +372,31 @@ export async function onRequestPost({ request, env }) {
       case "set_config":
         await sql`insert into app_config (key, value) values (${body.key}, ${JSON.stringify(body.value)}::jsonb)
           on conflict (key) do update set value = excluded.value, updated_at = now()`;
+        return json({ ok: true });
+      // Console overview (SuperOverview): platform-wide counts + recent clients.
+      case "overview_stats": {
+        const [c] = await sql`select
+          (select count(*) from clients)::int as clients,
+          (select count(*) from clients where is_active)::int as active,
+          (select count(*) from clients where owner_email is not null and owner_email <> '')::int as logins,
+          (select count(*) from rsvps)::int as rsvps,
+          (select count(*) from guestbook)::int as guestbook,
+          (select count(*) from quiz_answers)::int as quiz`;
+        const byType = await sql`select event_type, count(*)::int as n from clients group by event_type`;
+        const recent = await sql`select id, subdomain, event_type, is_active, owner_email, created_at from clients order by created_at desc limit 6`;
+        return json({ ok: true, stats: c, byType, recent });
+      }
+      // Superadmin private per-client notes (migrated off Supabase).
+      case "list_client_notes":
+        return json({ rows: await sql`select client_id, note from client_notes` });
+      case "set_client_note":
+        if (!body.client_id) return json({ error: "client_id required" }, 400);
+        if (body.note && String(body.note).trim()) {
+          await sql`insert into client_notes (client_id, note, updated_at) values (${body.client_id}, ${body.note}, now())
+            on conflict (client_id) do update set note = excluded.note, updated_at = now()`;
+        } else {
+          await sql`delete from client_notes where client_id = ${body.client_id}`;
+        }
         return json({ ok: true });
       // One-time per shard: link the (already signed-up) Neon Auth account for
       // `email` to a superadmin profile row, so the platform owner can sign in

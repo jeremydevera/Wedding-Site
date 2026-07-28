@@ -45,46 +45,20 @@ async function firebaseUid(apiKey, token) {
 // clients). Returns { ok, status } on failure (fail CLOSED), or { ok:true, uid,
 // role, clientId } — clientId is null for anyone not bound to a client. Mirror
 // of functions/api/media.js resolveCaller — change both together.
-async function resolveCaller(env, SUPABASE_URL, SUPABASE_ANON_KEY, token) {
+async function resolveCaller(env, token) {
   if (!token) return { ok: false, status: 401 };
-  // 1. Supabase: confirm the user. A non-Supabase token makes /auth/v1/user
-  //    return !ok (→ try Firebase); a network error throws (→ 502, transient).
-  //    Once a Supabase user is confirmed, their profile is AUTHORITATIVE — fail
-  //    CLOSED on a lookup error, never fall through to Firebase.
-  let supaUid = null;
+  if (!env || !env.NEON_DATABASE_URL) return { ok: false, status: 500 };
+  // Firebase ID token → verify with Google, then read role + client_id from the
+  // Neon profiles table. Fail CLOSED on any gap. Mirror of media.js resolveCaller.
+  const uid = await firebaseUid(env.FIREBASE_API_KEY || FIREBASE_API_KEY, token);
+  if (!uid) return { ok: false, status: 401 };
   try {
-    const who = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
-    });
-    if (who.ok) { const user = await who.json(); supaUid = (user && user.id) || null; }
+    const sql = neon(env.NEON_DATABASE_URL);
+    const rows = await sql`select role, client_id from profiles where id = ${uid}`;
+    const row = rows && rows[0];
+    if (!row) return { ok: false, status: 403 };
+    return { ok: true, uid, role: row.role, clientId: row.client_id || null };
   } catch { return { ok: false, status: 502 }; }
-  if (supaUid) {
-    try {
-      const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${supaUid}&select=role,client_id`, {
-        headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
-      });
-      if (!pr.ok) return { ok: false, status: 502 };
-      const rows = await pr.json();
-      const row = Array.isArray(rows) && rows[0];
-      if (!row) return { ok: false, status: 403 };
-      return { ok: true, uid: supaUid, role: row.role, clientId: row.client_id || null };
-    } catch { return { ok: false, status: 502 }; }
-  }
-  // 2. Firebase ID token — Neon clients. Verify with Google, then read role +
-  //    client_id from the Neon profiles table. Fail CLOSED on any gap.
-  if (env && env.NEON_DATABASE_URL) {
-    const uid = await firebaseUid(env.FIREBASE_API_KEY || FIREBASE_API_KEY, token);
-    if (uid) {
-      try {
-        const sql = neon(env.NEON_DATABASE_URL);
-        const rows = await sql`select role, client_id from profiles where id = ${uid}`;
-        const row = rows && rows[0];
-        if (!row) return { ok: false, status: 403 };
-        return { ok: true, uid, role: row.role, clientId: row.client_id || null };
-      } catch { return { ok: false, status: 502 }; }
-    }
-  }
-  return { ok: false, status: 401 };
 }
 
 // SSRF allowlist for the server-side sourceUrl fetch. Only hosts we deliberately
@@ -127,15 +101,11 @@ export async function onRequestPost(context) {
   if (!env.MEDIA) return json({ error: "storage not configured" }, 503);
 
   // Public anon values (already shipped in the client bundle) — fall back to
-  // these so the Function's auth check works without runtime env vars set.
-  const SUPABASE_URL = env.SUPABASE_URL || "https://xprynknppsehuzqqdvue.supabase.co";
-  const SUPABASE_ANON_KEY = env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhwcnlua25wcHNlaHV6cXFkdnVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwODg1OTUsImV4cCI6MjA5NzY2NDU5NX0._S3xdNXBm6d4SI8MO0MNoZ3bT8uspEd8lrdVm29Efgo";
-
-  // 1. Require a valid Supabase session AND resolve the caller's role + owned
+  // 1. Require a valid Firebase session AND resolve the caller's role + owned
   //    client so we can enforce tenant ownership below. Fail CLOSED on any
   //    unexpected state (no token / bad token / role lookup error).
   const token = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
-  const who = await resolveCaller(env, SUPABASE_URL, SUPABASE_ANON_KEY, token);
+  const who = await resolveCaller(env, token);
   if (!who.ok) {
     return json(
       { error: who.status === 403 ? "forbidden" : who.status === 502 ? "auth check failed" : "unauthorized" },

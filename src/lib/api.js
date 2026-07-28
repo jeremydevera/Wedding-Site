@@ -20,70 +20,30 @@ export async function loadClientData() {
     Store.hydrate({ clientId: null, notFound: false }); // no client context on the hub
     return;
   }
-  // EXPERIMENTAL Neon backend — SANDBOX ONLY, behind the superadmin platform
-  // toggle (app_config `use_neon_db`, read from Supabase = control plane). When
-  // on, the sandbox guest site loads + writes via the Neon Data API; every
-  // failure falls back to the normal Supabase path so sandbox can never brick.
-  // Real clients / demo never enter this branch. (Plan: docs/superpowers/plans/)
-  if (subdomain === "sandbox") {
-    try {
-      // Flag + shard registry in parallel (both live in Supabase app_config).
-      // The registry lets future shards (s2…) go live via config, no redeploy.
-      const [flag, shardCfg, fbFlag] = await Promise.all([
-        getAppConfig(NEON_FLAG_KEY), getAppConfig(NEON_SHARDS_KEY).catch(() => null), getAppConfig(FB_AUTH_FLAG_KEY).catch(() => null),
-      ]);
-      if (flag?.enabled === true) {
-        setFbAuthMode(fbFlag?.enabled === true);
-        setNeonRegistry(shardCfg);
-        setActiveShard(resolveShardId(subdomain));
-        const rows = await neonSelect("clients", `select=${NEON_CLIENT_COLS}&subdomain=eq.${encodeURIComponent(subdomain)}&is_active=eq.true&limit=1`);
-        const client = rows && rows[0];
-        if (client) {
-          Store.hydrate({ ...clientToState(client), guestbook: [], neonMode: true });
-          await loadSession();
-          return;
-        }
-        console.warn("[neon] flag on but sandbox client missing on Neon — using Supabase");
-      }
-    } catch (e) {
-      console.warn("[neon] sandbox Neon path failed — using Supabase:", e?.message);
-    }
-  }
-  const { data: client, error } = await supabase
-    .from("clients").select("*").eq("subdomain", subdomain).eq("is_active", true).single();
-  if (error || !client) {
-    // Supabase miss — Neon-registered sites (flag ON) resolve here. Existing
-    // clients ALWAYS resolve above; this branch cannot affect them.
-    let nc = null;
-    try {
-      const [flag, shardCfg, fbFlag] = await Promise.all([
-        getAppConfig(NEON_FLAG_KEY), getAppConfig(NEON_SHARDS_KEY).catch(() => null), getAppConfig(FB_AUTH_FLAG_KEY).catch(() => null),
-      ]);
-      if (flag?.enabled === true) {
-        setFbAuthMode(fbFlag?.enabled === true);
-        setNeonRegistry(shardCfg);
-        setActiveShard(resolveShardId(subdomain));
-        const rows = await neonSelect("clients", `select=${NEON_CLIENT_COLS}&subdomain=eq.${encodeURIComponent(subdomain)}&is_active=eq.true&limit=1`);
-        nc = (rows && rows[0]) || null;
-      }
-    } catch (e2) { console.warn("[neon] fallback lookup failed:", e2?.message); }
-    if (nc) {
-      Store.hydrate({ ...clientToState(nc), guestbook: [], neonMode: true });
-      await loadSession();
-      return;
-    }
-    console.warn("[api] client not found for subdomain:", subdomain, error?.message);
-    await loadSession(); // always resolve auth so admin doesn't hang on the loading gate
-    // No active client for this subdomain (deleted / never existed / deactivated).
-    // Flag it so the app shows an "unavailable" page instead of seed content.
-    Store.hydrate({ clientId: null, notFound: true });
+  // Neon + Firebase is the platform's ONLY backend now (Supabase retired). Every
+  // client resolves from Neon; the shard registry (future s2…) is read from Neon
+  // app_config with a builtin s1 fallback, so a registry miss still serves s1.
+  setFbAuthMode(true);
+  const shardCfg = await getAppConfig(NEON_SHARDS_KEY).catch(() => null);
+  if (shardCfg) setNeonRegistry(shardCfg);
+  setActiveShard(resolveShardId(subdomain));
+  let client = null;
+  try {
+    const rows = await neonSelect("clients", `select=${NEON_CLIENT_COLS}&subdomain=eq.${encodeURIComponent(subdomain)}&is_active=eq.true&limit=1`);
+    client = (rows && rows[0]) || null;
+  } catch (e) { console.warn("[neon] client lookup failed:", e?.message); }
+  if (client) {
+    // The public guestbook lazy-loads its own pages (infinite scroll), so boot
+    // no longer waits on fetching every message.
+    Store.hydrate({ ...clientToState(client), guestbook: [], neonMode: true });
+    await loadSession();
     return;
   }
-  const state = clientToState(client);
-  // The public guestbook lazy-loads its own pages on the Guestbook page
-  // (infinite scroll), so boot no longer waits on fetching every message.
-  Store.hydrate({ ...state, guestbook: [] });
-  await loadSession();
+  console.warn("[api] client not found for subdomain:", subdomain);
+  await loadSession(); // always resolve auth so admin doesn't hang on the loading gate
+  // No active client for this subdomain (deleted / never existed / deactivated).
+  // Flag it so the app shows an "unavailable" page instead of seed content.
+  Store.hydrate({ clientId: null, notFound: true });
 }
 
 // True when the loaded site is being served from Neon (sandbox + flag).
@@ -383,26 +343,16 @@ export async function saveClientData() {
 // the auth-gated Functions then reject with 401 ("unauthorized"). Refresh here so
 // uploads/emails always send a live token.
 async function freshToken() {
-  // valid(s, buffer) = has a token that won't expire within `buffer` ms.
-  const valid = (s, buffer) => !!(s && s.access_token && (!s.expires_at || s.expires_at * 1000 - Date.now() > buffer));
-  let { data: { session } } = await supabase.auth.getSession();
-  // Refresh when missing or expiring within 60s. Keep the old session if the
-  // refresh call fails (transient) but the old token still has time.
-  if (!valid(session, 60000)) {
-    try { const { data: r } = await supabase.auth.refreshSession(); if (r && r.session) session = r.session; } catch (_) {}
-  }
-  if (valid(session, 0)) return session.access_token;
-  // No Supabase session → this is a Neon client, who authenticates via Firebase.
-  // Send their fresh Firebase ID token; /api/upload verifies it with Google and
-  // resolves the Neon tenant. Dynamic import avoids a load-time cycle with
-  // firebase.js. Fall through to the clear error only if there's no token at all.
+  // Firebase is the only auth now. Send the caller's fresh Firebase ID token;
+  // the auth-gated Functions verify it with Google and resolve the Neon tenant.
+  // Dynamic import avoids a load-time cycle with firebase.js.
   try {
     const { firebaseUserToken } = await import("@/lib/firebase.js");
     const fb = await firebaseUserToken();
     if (fb) return fb;
-  } catch (_) { /* no Firebase session either */ }
-  // Never send an expired/absent token — the auth-gated Functions would reject it
-  // as "unauthorized". Throw a clear, actionable message so the caller re-logs in.
+  } catch (_) { /* no Firebase session */ }
+  // Never send an absent token — the auth-gated Functions would reject it as
+  // "unauthorized". Throw a clear, actionable message so the caller re-logs in.
   throw new Error("Your session expired — please log out and log back in, then try again.");
 }
 
@@ -428,14 +378,20 @@ export async function uploadToR2(file, opts, clientId) {
 // superadmin can manage the dev's QR images once for every client.
 export async function getAppConfig(key) {
   try {
-    const { data, error } = await supabase.from("app_config").select("value").eq("key", key).maybeSingle();
-    if (error) return null;
-    return data ? data.value : null;
+    const rows = await neonSelect("app_config", `select=value&key=eq.${encodeURIComponent(key)}&limit=1`);
+    return rows && rows[0] ? rows[0].value : null;
   } catch (_) { return null; }
 }
 export async function setAppConfig(key, value) {
-  const { error } = await supabase.from("app_config").upsert({ key, value, updated_at: new Date().toISOString() });
-  if (error) throw error;
+  // Superadmin write via the Neon bridge (verifies the console's Firebase token).
+  const token = await adminBridgeToken();
+  const res = await fetch("/api/neon-admin", {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+    body: JSON.stringify({ action: "set_config", key, value }),
+  });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(j.error || `set_config ${res.status}`);
   return true;
 }
 
@@ -600,26 +556,17 @@ export async function selfSignup({ email, password, partnerA, partnerB, weddingD
 }
 
 // --- Prospect intake (/apply wizard + superadmin Requests inbox) -------------
+// Subdomain availability is checked against Neon (reserved_subdomains + clients +
+// pending site_requests are all covered by the subdomain_free RPC).
 export async function checkRequestSubdomainFree(subdomain) {
-  const { data, error } = await supabase.functions.invoke("site-request", {
-    body: { action: "check_subdomain", subdomain },
-  });
-  if (error) throw error;
-  return !!(data && data.available);
+  try { return (await neonRpc("subdomain_free", { p_sub: subdomain })) === true; }
+  catch { return false; }
 }
 
-export async function submitSiteRequest({ email, partnerA, partnerB, eventType, subdomain, templateKey, content }) {
-  const { data, error } = await supabase.functions.invoke("site-request", {
-    // eventType is additive — the edge fn defaults missing/unknown values to "wedding".
-    body: { email, partnerA, partnerB, eventType, subdomain, templateKey, content },
-  });
-  if (error) {
-    let msg = "Could not submit your request.";
-    try { const j = await error.context.json(); if (j && j.error) msg = j.error; } catch (_) {}
-    throw new Error(msg);
-  }
-  if (data && data.error) throw new Error(data.error);
-  return data; // { ok, id }
+// The raw /apply intake was a Supabase edge function. Self-registration now runs
+// on Neon at celebrately.us/register (Register.jsx → register_site).
+export async function submitSiteRequest() {
+  throw new Error("Please register your site at celebrately.us/register.");
 }
 
 // --- Support tickets (owner sticky widget + superadmin console) --------------
@@ -667,15 +614,9 @@ export async function listTickets() {
     const rows = await neonAuthedSelect("support_tickets", "select=*&order=created_at.desc");
     return (rows || []).map((t) => ({ ...t, _src: TICKET_SRC_NEON }));
   }
-  const { data, error } = await supabase.from("support_tickets").select("*").order("created_at", { ascending: false });
-  if (error) throw error;
-  const supa = (data || []).map((t) => ({ ...t, _src: "supabase" }));
-  if (!isApexSuperadmin()) return supa;
-  // Neon tickets are additive — a bridge failure must not hide Supabase ones.
-  let neonRows = [];
-  try { neonRows = (await neonAdminRpc("list_tickets")).rows || []; }
-  catch (e) { console.warn("[api] neon tickets load failed:", e.message); }
-  return [...supa, ...neonRows.map((t) => ({ ...t, _src: TICKET_SRC_NEON }))]
+  // Apex superadmin (no client loaded) → every ticket via the Neon bridge.
+  const rows = (await neonAdminRpc("list_tickets")).rows || [];
+  return rows.map((t) => ({ ...t, _src: TICKET_SRC_NEON }))
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 }
 
@@ -754,32 +695,17 @@ function pollEvery(onChange, ms = TICKET_POLL_MS) {
   return () => clearInterval(id);
 }
 
-let _msgChanSeq = 0;
-export function subscribeTicketMessagesRealtime(ticketId, onChange, ticket) {
-  // Owner on Neon, or the superadmin viewing a Neon ticket → poll this thread.
-  if (onNeon() || onNeonTicket(ticket)) return pollEvery(onChange, 8000);
-  let t = null;
-  const ping = () => { clearTimeout(t); t = setTimeout(onChange, 250); };
-  const ch = supabase
-    .channel(`tk-msgs-${ticketId}-${++_msgChanSeq}`)
-    .on("postgres_changes", { event: "INSERT", schema: "public", table: "support_ticket_messages", filter: `ticket_id=eq.${ticketId}` }, ping)
-    .subscribe();
-  return () => { clearTimeout(t); supabase.removeChannel(ch); };
+export function subscribeTicketMessagesRealtime(ticketId, onChange) {
+  // All tickets live on Neon (Data API has no realtime channel) → poll.
+  return pollEvery(onChange, 8000);
 }
 
 // Superadmin bell: recent CLIENT replies (superadmin's own replies aren't
 // notifications). RLS returns all rows only for the superadmin.
 export async function listRecentClientReplies(limit = 20) {
-  const { data, error } = await supabase.from("support_ticket_messages")
-    .select("*").eq("sender_role", "owner").order("created_at", { ascending: false }).limit(limit);
-  if (error) throw error;
-  const supa = data || [];
-  if (!isApexSuperadmin()) return supa;
-  let neonRows = [];
-  try { neonRows = (await neonAdminRpc("list_recent_client_replies", { limit })).rows || []; }
-  catch (e) { console.warn("[api] neon client replies failed:", e.message); }
-  return [...supa, ...neonRows]
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, limit);
+  // Apex superadmin bell → recent owner replies across all Neon tickets (bridge).
+  const rows = (await neonAdminRpc("list_recent_client_replies", { limit })).rows || [];
+  return rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, limit);
 }
 
 // Owner bell + Support tab badge: recent SUPERADMIN replies on the caller's OWN
@@ -799,79 +725,40 @@ export async function listRecentSupportReplies(limit = 20) {
   return data || [];
 }
 
-// Realtime for ALL ticket messages (superadmin bell) — unique topic per call.
+// ALL ticket messages (superadmin bell) — Neon has no realtime channel → poll.
 export function subscribeAllTicketMessagesRealtime(onChange) {
-  if (onNeon()) return pollEvery(onChange);
-  let t = null;
-  const ping = () => { clearTimeout(t); t = setTimeout(onChange, 400); };
-  const ch = supabase
-    .channel(`sa-tk-msgs-${++_msgChanSeq}`)
-    .on("postgres_changes", { event: "INSERT", schema: "public", table: "support_ticket_messages" }, ping)
-    .subscribe();
-  // Superadmin console also watches Neon tickets, which can't push — poll too.
-  const offPoll = isApexSuperadmin() ? pollEvery(onChange) : null;
-  return () => { clearTimeout(t); supabase.removeChannel(ch); if (offPoll) offPoll(); };
+  return pollEvery(onChange);
 }
 
-// Realtime for the console bell — same debounce pattern as site requests.
-// DEFECT-2026-07-09-B: the channel topic MUST be unique per subscriber.
-// supabase-js caches channels by topic; with a fixed "sa-support" name the
-// SECOND subscriber (bell + Clients console both subscribe) got the already-
-// subscribed channel back and `.on(...)` threw "cannot add postgres_changes
-// callbacks after subscribe()" — a render-time crash = white console.
-// Guarded by src/lib/__tests__/ticketsRealtime.test.js.
-let _tixChanSeq = 0;
+// Console bell — Neon tickets have no realtime channel → poll.
 export function subscribeTicketsRealtime(onChange) {
-  if (onNeon()) return pollEvery(onChange);
-  let t = null;
-  const ping = () => { clearTimeout(t); t = setTimeout(onChange, 400); };
-  const ch = supabase
-    .channel(`sa-support-${++_tixChanSeq}`)
-    .on("postgres_changes", { event: "*", schema: "public", table: "support_tickets" }, ping)
-    .subscribe();
-  const offPoll = isApexSuperadmin() ? pollEvery(onChange) : null;
-  return () => { clearTimeout(t); supabase.removeChannel(ch); if (offPoll) offPoll(); };
+  return pollEvery(onChange);
 }
 
-// Superadmin: list + resolve intake requests (RLS-gated to superadmin).
+// Superadmin: list + resolve intake requests (Neon bridge, all statuses).
 export async function listSiteRequests() {
-  const { data, error } = await supabase.from("site_requests").select("*").order("created_at", { ascending: false });
-  if (error) throw error;
-  return data || [];
+  const rows = (await neonAdminRpc("list_all_requests")).rows || [];
+  return rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 }
 
 export async function setSiteRequestStatus(id, status) {
-  const { error } = await supabase.from("site_requests").update({ status }).eq("id", id);
-  if (error) throw error;
+  await neonAdminRpc("set_request_status", { id, status });
 }
 
 // Superadmin: fix up a request before approving (typo'd names/subdomain/email).
 export async function updateSiteRequest(id, patch) {
-  const { error } = await supabase.from("site_requests").update(patch).eq("id", id);
-  if (error) throw error;
+  await neonAdminRpc("update_request", { id, patch });
 }
 
 // Superadmin: permanently remove a request row (typed-confirmation in the UI).
 // Deleting a request never touches a client site created from it.
 export async function deleteSiteRequest(id) {
-  const { error } = await supabase.from("site_requests").delete().eq("id", id);
-  if (error) throw error;
+  await neonAdminRpc("delete_request", { id });
 }
 
-// Realtime for the console bell: new /apply submissions push over websocket
-// (publication 0020; RLS delivers only to superadmin). Debounced like the
-// owner-side feed; returns an unsubscribe fn for the effect cleanup.
-let _reqChanSeq = 0;
+// Console bell for new registrations — Neon has no realtime channel → poll.
 export function subscribeSiteRequestsRealtime(onChange) {
-  let t = null;
-  const ping = () => { clearTimeout(t); t = setTimeout(onChange, 400); };
-  const ch = supabase
-    // unique topic per subscriber — fixed topics crash the second subscriber
-    // (Bug 0009 / DEFECT-2026-07-09-B class)
-    .channel(`sa-site-requests-${++_reqChanSeq}`)
-    .on("postgres_changes", { event: "*", schema: "public", table: "site_requests" }, ping)
-    .subscribe((status, err) => { console.info("[api] sa realtime:", status, err ? String(err) : ""); });
-  return () => { clearTimeout(t); supabase.removeChannel(ch); };
+  return pollEvery(onChange);
 }
 
 // Superadmin approve: create the client site from a request's payload, then
@@ -935,52 +822,11 @@ export async function approveSiteRequest(reqRow) {
     decorStyle: "petals",
     onboarded: true, // they already provided setup via the wizard
   };
-  // A prior approval may have created the client but failed to flip the status;
-  // reuse that row instead of colliding on the unique subdomain.
-  const { data: existing } = await supabase.from("clients")
-    .select("id").eq("subdomain", reqRow.subdomain).maybeSingle();
-  let created = existing || null;
-  if (!created) {
-    const { data, error } = await supabase.from("clients")
-      .insert({ subdomain: reqRow.subdomain, event_type: eventType, template_key: reqRow.template_key || "classic", owner_email: reqRow.email, content })
-      .select("id").single();
-    if (error) {
-      // Unique-subdomain violation (Postgres 23505) = the client already exists
-      // from an earlier partial approval; recover its id and proceed.
-      if (error.code === "23505") {
-        const { data: dup, error: lookupErr } = await supabase.from("clients")
-          .select("id").eq("subdomain", reqRow.subdomain).single();
-        if (lookupErr) throw error; // couldn't recover — surface the original insert error
-        created = dup;
-      } else {
-        throw error;
-      }
-    } else {
-      created = data;
-    }
-  }
-  // Auto-provision the owner login with the platform's starter password so a
-  // fresh site is immediately sign-in-able (owner request). Skipped when the
-  // client already has a login (idempotent re-approve). Failure does NOT block
-  // the approval — the caller surfaces it so the superadmin sets it manually.
-  let loginError = "";
-  try {
-    const { data: fresh } = await supabase.from("clients").select("owner_email").eq("id", created.id).maybeSingle();
-    if (!fresh || !fresh.owner_email) {
-      await createOwner({ email: reqRow.email, password: "Password123+", client_id: created.id });
-    }
-  } catch (e) {
-    loginError = e?.message || "owner login could not be created";
-  }
-  // Email the client a "set your password" link + their site link (same message
-  // auto-approve sends). Non-fatal: a send failure does NOT block approval — the
-  // superadmin can resend, and the Password123+ login above still works.
-  let emailError = "";
-  try {
-    await sendSetupEmail({ email: reqRow.email, subdomain: reqRow.subdomain, name: reqRow.partner_a });
-  } catch (e) {
-    emailError = e?.message || "setup email could not be sent";
-  }
-  await setSiteRequestStatus(reqRow.id, "approved");
-  return { ...created, loginError, emailError };
+  // Create the client, link the (self-registered Firebase) owner, and mark the
+  // request approved via the Neon bridge — approve_site_request (SECURITY
+  // DEFINER) does the same content enrichment register_site uses, in one
+  // idempotent transaction. The owner already set their own password at signup,
+  // so there's no createOwner / setup-email step here.
+  const appr = await neonAdminRpc("approve_request", { id: reqRow.id });
+  return { id: null, subdomain: appr.subdomain || reqRow.subdomain, loginError: "", emailError: "" };
 }

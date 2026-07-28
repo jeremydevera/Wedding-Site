@@ -23,26 +23,15 @@ function fileNameFromKey(key) {
 // Verify the bearer token belongs to a superadmin. Returns { ok, status } —
 // ok:true when the caller is a superadmin; otherwise ok:false with an HTTP status
 // (401 no/invalid token, 403 not superadmin, 502 role lookup failed).
-async function requireSuperadmin(SUPABASE_URL, SUPABASE_ANON_KEY, token) {
+async function requireSuperadmin(env, token) {
   if (!token) return { ok: false, status: 401 };
-  let uid;
-  try {
-    const who = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
-    });
-    if (!who.ok) return { ok: false, status: 401 };
-    const user = await who.json();
-    uid = user && user.id;
-  } catch { return { ok: false, status: 502 }; }
+  if (!env || !env.NEON_DATABASE_URL) return { ok: false, status: 500 };
+  const uid = await firebaseUid(env.FIREBASE_API_KEY || FIREBASE_API_KEY, token);
   if (!uid) return { ok: false, status: 401 };
   try {
-    const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${uid}&select=role`, {
-      headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
-    });
-    if (!pr.ok) return { ok: false, status: 502 };
-    const rows = await pr.json();
-    const role = Array.isArray(rows) && rows[0] && rows[0].role;
-    if (role !== "superadmin") return { ok: false, status: 403 };
+    const sql = neon(env.NEON_DATABASE_URL);
+    const rows = await sql`select role from profiles where id = ${uid} and role = 'superadmin' limit 1`;
+    if (!rows || !rows[0]) return { ok: false, status: 403 };
   } catch { return { ok: false, status: 502 }; }
   return { ok: true, uid };
 }
@@ -68,44 +57,19 @@ async function firebaseUid(apiKey, token) {
   } catch { return null; }
 }
 
-async function resolveCaller(env, SUPABASE_URL, SUPABASE_ANON_KEY, token) {
+async function resolveCaller(env, token) {
   if (!token) return { ok: false, status: 401 };
-  // 1. Supabase: confirm the user; a non-Supabase token → !ok → try Firebase; a
-  //    network error → 502. A confirmed Supabase user's profile is authoritative
-  //    (fail CLOSED on lookup error, never fall through to Firebase).
-  let supaUid = null;
+  if (!env || !env.NEON_DATABASE_URL) return { ok: false, status: 500 };
+  // Firebase ID token → verify with Google, then role + client_id from Neon.
+  const uid = await firebaseUid(env.FIREBASE_API_KEY || FIREBASE_API_KEY, token);
+  if (!uid) return { ok: false, status: 401 };
   try {
-    const who = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
-    });
-    if (who.ok) { const user = await who.json(); supaUid = (user && user.id) || null; }
+    const sql = neon(env.NEON_DATABASE_URL);
+    const rows = await sql`select role, client_id from profiles where id = ${uid}`;
+    const row = rows && rows[0];
+    if (!row) return { ok: false, status: 403 };
+    return { ok: true, uid, role: row.role, clientId: row.client_id || null };
   } catch { return { ok: false, status: 502 }; }
-  if (supaUid) {
-    try {
-      const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${supaUid}&select=role,client_id`, {
-        headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
-      });
-      if (!pr.ok) return { ok: false, status: 502 };
-      const rows = await pr.json();
-      const row = Array.isArray(rows) && rows[0];
-      if (!row) return { ok: false, status: 403 };
-      return { ok: true, uid: supaUid, role: row.role, clientId: row.client_id || null };
-    } catch { return { ok: false, status: 502 }; }
-  }
-  // 2. Firebase ID token (Neon clients) → role + client_id from Neon profiles.
-  if (env && env.NEON_DATABASE_URL) {
-    const uid = await firebaseUid(env.FIREBASE_API_KEY || FIREBASE_API_KEY, token);
-    if (uid) {
-      try {
-        const sql = neon(env.NEON_DATABASE_URL);
-        const rows = await sql`select role, client_id from profiles where id = ${uid}`;
-        const row = rows && rows[0];
-        if (!row) return { ok: false, status: 403 };
-        return { ok: true, uid, role: row.role, clientId: row.client_id || null };
-      } catch { return { ok: false, status: 502 }; }
-    }
-  }
-  return { ok: false, status: 401 };
 }
 
 // Fetch EVERY client's stringified content. Returns the same shape as
@@ -115,12 +79,9 @@ async function resolveCaller(env, SUPABASE_URL, SUPABASE_ANON_KEY, token) {
 // owner-prefix client — otherwise deleting a file still referenced by a
 // different tenant would orphan that reference. Throws on a failed lookup so
 // callers fail CLOSED (treat a lookup error as "can't prove it's free").
-async function fetchAllClientsContent(SUPABASE_URL, SUPABASE_ANON_KEY, token) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/clients?select=id,subdomain,content`, {
-    headers: { apikey: SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error("clients lookup failed");
-  const rows = await res.json();
+async function fetchAllClientsContent(env) {
+  const sql = neon(env.NEON_DATABASE_URL);
+  const rows = await sql`select id, subdomain, content from clients`;
   const m = new Map();
   for (const r of (Array.isArray(rows) ? rows : [])) {
     m.set(r.id, { subdomain: r.subdomain, content: JSON.stringify(r.content || {}) });
@@ -143,9 +104,6 @@ export async function onRequestGet(context) {
   const { request, env } = context;
   if (!env.MEDIA) return json({ error: "storage not configured" }, 503);
 
-  const SUPABASE_URL = env.SUPABASE_URL || "https://xprynknppsehuzqqdvue.supabase.co";
-  const SUPABASE_ANON_KEY = env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhwcnlua25wcHNlaHV6cXFkdnVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwODg1OTUsImV4cCI6MjA5NzY2NDU5NX0._S3xdNXBm6d4SI8MO0MNoZ3bT8uspEd8lrdVm29Efgo";
-
   const token = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
   if (!token) return json({ error: "unauthorized" }, 401);
 
@@ -160,10 +118,10 @@ export async function onRequestGet(context) {
   if (usage) {
     // Usage annotation reveals which client references each file, so it is
     // superadmin-only (owners using the MediaPicker never pass usage=1).
-    const chk = await requireSuperadmin(SUPABASE_URL, SUPABASE_ANON_KEY, token);
+    const chk = await requireSuperadmin(env, token);
     if (!chk.ok) return json({ error: chk.status === 403 ? "forbidden" : "unauthorized" }, chk.status);
   } else {
-    const who = await resolveCaller(env, SUPABASE_URL, SUPABASE_ANON_KEY, token);
+    const who = await resolveCaller(env, token);
     if (!who.ok) return json({ error: who.status === 403 ? "forbidden" : "unauthorized" }, who.status);
     if (who.role !== "superadmin") {
       // Non-superadmin must be an owner bound to a client; scope to that prefix.
@@ -201,7 +159,7 @@ export async function onRequestGet(context) {
     // owner-prefix client, so scan every client's content (superadmin-only path).
     let all;
     try {
-      all = await fetchAllClientsContent(SUPABASE_URL, SUPABASE_ANON_KEY, token);
+      all = await fetchAllClientsContent(env);
     } catch (e) {
       return json({ error: "usage lookup failed", detail: String((e && e.message) || e) }, 502);
     }
@@ -222,14 +180,11 @@ export async function onRequestDelete(context) {
   const { request, env } = context;
   if (!env.MEDIA) return json({ error: "storage not configured" }, 503);
 
-  const SUPABASE_URL = env.SUPABASE_URL || "https://xprynknppsehuzqqdvue.supabase.co";
-  const SUPABASE_ANON_KEY = env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhwcnlua25wcHNlaHV6cXFkdnVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwODg1OTUsImV4cCI6MjA5NzY2NDU5NX0._S3xdNXBm6d4SI8MO0MNoZ3bT8uspEd8lrdVm29Efgo";
-
   const token = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
 
   // Delete is destructive and platform-wide (any client's key), so gate it to
   // superadmin — unlike GET/upload, "any valid session" is not enough here.
-  const chk = await requireSuperadmin(SUPABASE_URL, SUPABASE_ANON_KEY, token);
+  const chk = await requireSuperadmin(env, token);
   if (!chk.ok) {
     return json(
       { error: chk.status === 403 ? "forbidden" : chk.status === 502 ? "role check failed" : "unauthorized" },
@@ -248,7 +203,7 @@ export async function onRequestDelete(context) {
   // and orphan it. Scan every client and fail CLOSED on a lookup error.
   let usedBy = null;
   try {
-    const all = await fetchAllClientsContent(SUPABASE_URL, SUPABASE_ANON_KEY, token);
+    const all = await fetchAllClientsContent(env);
     const subs = usersOfKey(all, key);
     if (subs.length) {
       // Prefer the owner-prefix client's subdomain when it is among the referrers.

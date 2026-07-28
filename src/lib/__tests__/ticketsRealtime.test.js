@@ -1,36 +1,39 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 
-// Regression (Bug 0009 / DEFECT-2026-07-09-B): two live subscribers (bell +
-// Clients console) with the SAME channel topic crash supabase-js ("cannot add
-// postgres_changes callbacks after subscribe()") and white-screen the console.
-// Each subscribeTicketsRealtime call must open a channel with a UNIQUE topic.
-const topics = [];
-vi.mock("@/lib/supabase.js", () => ({
-  supabase: {
-    channel: (name) => { topics.push(name); return { on() { return this; }, subscribe() { return this; } }; },
-    removeChannel: () => {},
-  },
-}));
+// All tickets + site requests now live on Neon (the Data API has no realtime
+// channel), so every subscriber POLLS and returns an unsubscribe fn. These guard
+// that each call returns an independent cleanup function (coexist + stop clean)
+// and that it actually polls the callback.
+import {
+  subscribeTicketsRealtime,
+  subscribeSiteRequestsRealtime,
+  subscribeTicketMessagesRealtime,
+  subscribeAllTicketMessagesRealtime,
+} from "@/lib/api.js";
 
-import { subscribeTicketsRealtime, subscribeSiteRequestsRealtime, subscribeTicketMessagesRealtime, subscribeAllTicketMessagesRealtime } from "@/lib/api.js";
+describe("realtime subscriptions (poll-based, post-Supabase)", () => {
+  afterEach(() => vi.useRealTimers());
 
-describe("subscribeTicketsRealtime", () => {
-  it("uses a unique channel topic per subscription (bell + console can coexist)", () => {
-    const off1 = subscribeTicketsRealtime(() => {});
-    const off2 = subscribeTicketsRealtime(() => {});
-    expect(topics.length).toBe(2);
-    expect(topics[0]).not.toBe(topics[1]);
-    off1(); off2();
+  it("each subscriber returns an independent unsubscribe function", () => {
+    const offs = [
+      subscribeTicketsRealtime(() => {}),
+      subscribeSiteRequestsRealtime(() => {}),
+      subscribeTicketMessagesRealtime("t1", () => {}),
+      subscribeAllTicketMessagesRealtime(() => {}),
+    ];
+    for (const off of offs) expect(typeof off).toBe("function");
+    offs.forEach((o) => o()); // cleanup never throws
   });
 
-  it("EVERY realtime subscriber uses unique topics (Bug 0009 class, incl. site requests + messages)", () => {
-    topics.length = 0;
-    const offs = [
-      subscribeSiteRequestsRealtime(() => {}), subscribeSiteRequestsRealtime(() => {}),
-      subscribeTicketMessagesRealtime("t1", () => {}), subscribeTicketMessagesRealtime("t1", () => {}),
-      subscribeAllTicketMessagesRealtime(() => {}), subscribeAllTicketMessagesRealtime(() => {}),
-    ];
-    expect(new Set(topics).size).toBe(topics.length); // all distinct
-    offs.forEach((o) => o());
+  it("polls the callback on an interval and stops after unsubscribe", () => {
+    vi.useFakeTimers();
+    const cb = vi.fn();
+    const off = subscribeTicketsRealtime(cb);
+    vi.advanceTimersByTime(20000);
+    expect(cb).toHaveBeenCalled();
+    const calls = cb.mock.calls.length;
+    off();
+    vi.advanceTimersByTime(40000);
+    expect(cb.mock.calls.length).toBe(calls); // no more polls after cleanup
   });
 });
