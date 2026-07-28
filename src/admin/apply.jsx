@@ -304,6 +304,9 @@ export function ApplyWizard({ initial = null, onSave, onCancel, submitOverride =
       // in that case (nothing to validate). Only the manual /apply + SA editor
       // paths (no preset) still ask for and validate an email.
       if (!presetEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email.trim())) return "Please enter a valid email.";
+      // Mobile number is required (owner request 2026-07-30) — at least 7 digits
+      // so we can actually reach them about the site.
+      if ((f.phone || "").replace(/\D/g, "").length < 7) return "Please enter your mobile number.";
       if (!f.subdomain.trim()) return "Please choose a site address.";
       if (subState === "checking") return "Checking availability…";
       if (subState === "taken") return "That site address is already taken — try another.";
@@ -356,7 +359,7 @@ export function ApplyWizard({ initial = null, onSave, onCancel, submitOverride =
             registrants already signed up, so f.email is their login email
             (presetEmail) — hide the field to avoid asking twice. */}
         {!presetEmail && <Field label="Your email" id="a-email" hint="We'll reach you here once your site is approved."><Input id="a-email" type="email" value={f.email} onChange={set("email")} placeholder="you@example.com" /></Field>}
-        <Field label="Mobile number" id="a-phone" hint="So we can reach you about your site."><Input id="a-phone" type="tel" value={f.phone} onChange={set("phone")} placeholder="(555) 123-4567" /></Field>
+        <Field label="Mobile number" required id="a-phone" hint="So we can reach you about your site."><Input id="a-phone" type="tel" inputMode="tel" value={f.phone} onChange={set("phone")} placeholder="09xx xxx xxxx" /></Field>
         <Field label="Event date" id="a-date" hint="Optional — skip it if you haven't picked a date yet.">
           <EasyDateInput value={f.weddingDate} onChange={set("weddingDate")} />
         </Field>
