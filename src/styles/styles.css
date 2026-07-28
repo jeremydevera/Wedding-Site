@@ -3114,7 +3114,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* Mobile: keep the schedule row on ONE line (Time / What's happening / Location /
    delete). A 2-col grid wrapped 4 items into 3 rows — Location + trash fell below.
    minmax(0,1fr) lets the two inputs shrink instead of overflowing. */
-@media (max-width: 560px) { .apply-sched { grid-template-columns: 68px minmax(0, 1fr) minmax(0, 1fr) auto; gap: 6px; } .apply-ent__person { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .apply-sched { grid-template-columns: 68px minmax(0, 1fr) minmax(0, 1fr) auto; gap: 6px; } .apply-ent__person { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; } }
 
 /* apply wizard: each step's fields live inside an admin-style panel section */
 .apply-page { background: linear-gradient(180deg, var(--surface-2) 0%, var(--bg) 480px); }
