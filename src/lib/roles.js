@@ -118,14 +118,29 @@ export function moduleEnabled(modules, key) {
 }
 
 // ── Feature Permissions v2 (spec: docs/superpowers/specs/2026-07-11-feature-permissions-v2-design.md)
-// One level per module per client: none | view | edit.
-//   none  → not on the guest site, no owner tab
-//   view  → live on the guest site, NO owner tab (superadmin does the CRUD)
-//   edit  → owner gets the tab (full CRUD + "Home section" panel)
+// One level per module per client: none | view | edit | locked.
+//   none   → not on the guest site, no owner tab
+//   view   → live on the guest site, NO owner tab (superadmin does the CRUD)
+//   edit   → owner gets the tab (full CRUD + "Home section" panel)
+//   locked → upsell: NOT on the guest site, but the owner SEES the tab with a
+//            padlock; the page renders blurred behind an unlock card that files
+//            a purchase ticket. (Owner request 2026-07-29.)
 // RSVP is core → always "edit". Home always renders → floor "view".
 // Only clients with settings.accessV2 use the new map; everyone else derives
 // the SAME answer from the legacy modules+ownerEdit model (zero behavior change).
-export const FEATURE_LEVELS = ["none", "view", "edit"];
+export const FEATURE_LEVELS = ["none", "view", "edit", "locked"];
+// What the owner is missing while a feature is locked — shown on the unlock card.
+export const LOCKED_COPY = {
+  home: "Your landing page — couple, event details, and the invitation.",
+  story: "Tell your love story — upload pictures and milestones, from the first date to the proposal.",
+  details: "Info cards, FAQ, and the attire guide so guests know everything.",
+  schedule: "Your wedding-day timeline, beautifully laid out for guests.",
+  venue: "Pin your venues on a map — guests get one-tap directions.",
+  guestbook: "A wall of wishes your guests can sign.",
+  quiz: "A fun “how well do you know the couple” quiz for your guests.",
+  entourage: "Introduce your wedding party — groups and names.",
+  music: "A music player on your home page with your own playlist.",
+};
 export const FEATURE_DEFAULTS = {
   home: "edit", story: "none", details: "edit", schedule: "edit",
   venue: "edit", guestbook: "edit", quiz: "edit", entourage: "edit", music: "none",
@@ -162,7 +177,9 @@ export function featureLevel(settings, key) {
   if (!g) return "edit";
   return (s.ownerEdit || {})[g] === true ? "edit" : "view";
 }
-export function featureVisible(settings, key) { return featureLevel(settings, key) !== "none"; }
+// Guest-site visibility: a LOCKED feature is not purchased yet, so the public
+// site treats it exactly like "none" — the padlocked tab is owner-admin only.
+export function featureVisible(settings, key) { const l = featureLevel(settings, key); return l !== "none" && l !== "locked"; }
 
 // Admin tabs that correspond to a toggleable module (others — dashboard/qr — always show).
 const TAB_MODULE = { rsvps: "rsvp", guestbook: "guestbook", quiz: "quiz", schedule: "schedule", details: "details", story: "story" };

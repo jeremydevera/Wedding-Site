@@ -17,7 +17,7 @@ import { headsOf } from "@/lib/rsvp.js";
 import { cropTransform, mediaUrl } from "@/lib/media.js";
 import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
-import { featureLevel, visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel, moduleEnabled, OWNER_EDIT_HOME, OWNER_EDIT_TABS, FEATURE_ROWS, FEATURE_LEVELS, FEATURE_DEFAULTS } from "@/lib/roles.js";
+import { featureLevel, visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel, moduleEnabled, OWNER_EDIT_HOME, OWNER_EDIT_TABS, FEATURE_ROWS, FEATURE_LEVELS, FEATURE_DEFAULTS, LOCKED_COPY } from "@/lib/roles.js";
 import { MAP_STYLES, mapStyleKey, mapStyleFilter } from "@/lib/mapStyles.js";
 import { ClientsAdmin, R2LibraryAdmin, SuperOverview, SupportAdmin } from "@/admin/superadmin.jsx";
 import { CloudflareHealth } from "@/admin/CloudflareHealth.jsx";
@@ -2594,7 +2594,7 @@ export function SettingsAdmin() {
 
           <div style={{ marginTop: 26, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
             <div style={{ fontWeight: 600, color: "var(--ink)", textTransform: "uppercase", letterSpacing: ".04em" }}>Features &amp; permissions</div>
-            <p style={{ margin: "4px 0 12px", color: "var(--muted)", fontSize: 13 }}>None = not on their site · View = on the site, you manage the content · Edit = they get the admin tab. Click <strong>Save changes</strong> to apply.</p>
+            <p style={{ margin: "4px 0 12px", color: "var(--muted)", fontSize: 13 }}>None = not on their site · View = on the site, you manage the content · Edit = they get the admin tab · Locked = upsell — they see a padlocked tab + blurred page with a “file a ticket to unlock” card. Click <strong>Save changes</strong> to apply.</p>
             <table className="tbl" style={{ width: "100%" }}>
               <tbody>
                 {FEATURE_ROWS.map((r) => {
@@ -2604,10 +2604,10 @@ export function SettingsAdmin() {
                       <td><strong>{r.label}</strong><div style={{ color: "var(--muted)", fontSize: 12 }}>{r.desc}</div></td>
                       <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
                         <div className="seg">
-                          {["none", "view", "edit"].filter((l) => !(r.noNone && l === "none")).map((l) => (
+                          {["none", "view", "edit", "locked"].filter((l) => !(r.noNone && l === "none")).map((l) => (
                             <button key={l} type="button" className={lvl === l ? "on" : ""}
                               onClick={() => Store.updateSettings({ features: { ...(f.features || {}), [r.k]: l } })}>
-                              {l === "none" ? "None" : l === "view" ? "View" : "Edit"}
+                              {l === "none" ? "None" : l === "view" ? "View" : l === "edit" ? "Edit" : "Locked"}
                             </button>
                           ))}
                         </div>
@@ -4187,6 +4187,36 @@ export function MusicAdmin({ headExtra = null }) {
   );
 }
 
+// A feature set to "locked": the owner sees the tab (padlocked) and a blurred,
+// non-interactive preview of the real page behind an unlock card. "File a
+// ticket" opens the shared TicketForm prefilled — the purchase conversation
+// lands in Support like any other ticket. Superadmin always sees the real page.
+export function LockedFeature({ featureKey, children }) {
+  const [ticket, setTicket] = useState(false);
+  const label = (FEATURE_ROWS.find((r) => r.k === featureKey) || {}).label || moduleLabel(featureKey);
+  const desc = LOCKED_COPY[featureKey] || "This feature isn't part of your plan yet.";
+  return (
+    <div className="locked">
+      <div className="locked__page" aria-hidden="true">{children}</div>
+      <div className="locked__overlay">
+        <div className="locked__card">
+          <div className="locked__icon">{Icon.lock({ style: { width: 26, height: 26 } })}</div>
+          <h3 className="locked__title">{label} is locked</h3>
+          <p className="locked__desc">{desc}</p>
+          <Button variant="primary" onClick={() => setTicket(true)}>{Icon.lock({ style: { width: 15, height: 15 } })} To unlock this, file a ticket</Button>
+          <p className="locked__hint">We'll reply with the details to purchase and switch it on.</p>
+        </div>
+      </div>
+      <Modal open={ticket} onClose={() => setTicket(false)} label={"Unlock " + label}>
+        <SectionHead eyebrow="Unlock a feature" title={"Unlock " + label} />
+        <TicketForm
+          initial={{ subject: `Unlock ${label}`, category: "Billing", message: `Hi! I'd like to purchase and unlock the ${label} feature for my website. Please send me the details.` }}
+          onDone={() => setTicket(false)} onCancel={() => setTicket(false)} />
+      </Modal>
+    </div>
+  );
+}
+
 // --- Admin shell ------------------------------------------------------------
 export const ADMIN_TABS = [
   { key: "dashboard", label: "Dashboard", icon: "grid" },
@@ -4625,17 +4655,23 @@ export function AdminApp() {
     const lvl = (k) => featureLevel(settings, k);
     // Build from the FULL tab list — the legacy grant/module filtering above
     // doesn't apply to v2 clients (levels are the only authority).
+    // "locked" keeps the tab visible to the OWNER (padlocked upsell page);
+    // the superadmin always sees the real tab.
     tabs = ADMIN_TABS.filter((t) => {
       const fk = V2_TAB_FEATURE[t.key];
       // Settings is ALWAYS owner-visible now (Moderation / Account). "Show Settings
       // to Client" only gates the Theme + Tab names folders inside it (see STABS).
       if (!fk) return true;                       // dashboard, rsvps, settings…
-      return auth.role === "superadmin" ? true : lvl(fk) === "edit";
+      return auth.role === "superadmin" ? true : lvl(fk) === "edit" || lvl(fk) === "locked";
+    }).map((t) => {
+      const fk = V2_TAB_FEATURE[t.key];
+      return fk && auth.role !== "superadmin" && lvl(fk) === "locked" ? { ...t, locked: true } : t;
     });
     const promoted = [
       { key: "music", label: "Music playlist", icon: "play" },
       { key: "entourage", label: "Entourage", icon: "user" },
-    ].filter((t) => auth.role === "superadmin" || lvl(t.key) === "edit");
+    ].filter((t) => auth.role === "superadmin" || lvl(t.key) === "edit" || lvl(t.key) === "locked")
+      .map((t) => (auth.role !== "superadmin" && lvl(t.key) === "locked" ? { ...t, locked: true } : t));
     const si = tabs.findIndex((t) => t.key === "settings");
     tabs = si === -1 ? [...tabs, ...promoted] : [...tabs.slice(0, si), ...promoted, ...tabs.slice(si)];
   }
@@ -4657,6 +4693,13 @@ export function AdminApp() {
   }
   const activeTab = tabs.some((t) => t.key === tab) ? tab : (tabs[0]?.key || "dashboard");
   const title = (tabs.find((t) => t.key === activeTab) || { label: "Admin" }).label;
+  // Locked upsell wrapper: for an OWNER on a v2 client with the feature at
+  // "locked", render the real page blurred behind the unlock card. Everyone
+  // else (superadmin, edit level, legacy clients) gets the page untouched.
+  const withLock = (featureKey, node) =>
+    settings.accessV2 === true && clientId && auth.role !== "superadmin" && featureLevel(settings, featureKey) === "locked"
+      ? <LockedFeature featureKey={featureKey}>{node}</LockedFeature>
+      : node;
   const onPlatformTab = activeTab === "overview" || activeTab === "clients" || (activeTab === "support" && !clientId);
 
   // Arrange is superadmin-only (matches the SA-only "Enable arrange" toggle) — a
@@ -4701,6 +4744,7 @@ export function AdminApp() {
           {tabs.map((t) => (
             <button key={t.key} className={"admin__navlink" + (activeTab === t.key ? " admin__navlink--active" : "")} onClick={() => { setTab(t.key); setMenuOpen(false); }}>
               {Icon[t.icon]({})} {t.label}
+              {t.locked && <span className="admin__navlock" title="Locked — file a ticket to unlock">{Icon.lock({})}</span>}
               {t.badge > 0 && <span className="admin__navbadge">{t.badge > 9 ? "9+" : t.badge}</span>}
             </button>
           ))}
@@ -4735,20 +4779,20 @@ export function AdminApp() {
           {auth.role === "owner" && clientId && settings.onboarded === false && <SetupWizard />}
           <AdminSaveCtx.Provider value={{ saving, dirty, save: saveChanges, run: runSaving }}>
           {activeTab === "dashboard" && <AdminDashboard goTab={setTab} />}
-          {activeTab === "home" && <HomeAdmin />}
+          {activeTab === "home" && withLock("home", <HomeAdmin />)}
           {/* One RSVPs tab that adapts: strict = the guest-list view, open = the
               classic replies table. */}
           {activeTab === "rsvps" && (settings.strictRsvp ? <GuestsAdmin /> : <RsvpsAdmin />)}
           {activeTab === "media" && <MediaAdmin />}
-          {activeTab === "guestbook" && <GuestbookAdmin />}
-          {activeTab === "schedule" && (settings.accessV2 === true ? <ScheduleTabV2 /> : <ScheduleAdmin />)}
-          {activeTab === "quiz" && <QuizAdmin />}
-          {activeTab === "details" && (settings.accessV2 === true ? <DetailsTabV2 /> : <DetailsAdmin />)}
-          {activeTab === "story" && <StoryAdmin />}
-          {activeTab === "venue" && (settings.accessV2 === true ? <VenueTabV2 /> : <VenueAdmin />)}
+          {activeTab === "guestbook" && withLock("guestbook", <GuestbookAdmin />)}
+          {activeTab === "schedule" && (settings.accessV2 === true ? withLock("schedule", <ScheduleTabV2 />) : <ScheduleAdmin />)}
+          {activeTab === "quiz" && withLock("quiz", <QuizAdmin />)}
+          {activeTab === "details" && (settings.accessV2 === true ? withLock("details", <DetailsTabV2 />) : <DetailsAdmin />)}
+          {activeTab === "story" && withLock("story", <StoryAdmin />)}
+          {activeTab === "venue" && (settings.accessV2 === true ? withLock("venue", <VenueTabV2 />) : <VenueAdmin />)}
           {/* accessV2 promoted tabs (HomeSectionPanel lands with them in T5) */}
-          {settings.accessV2 === true && activeTab === "music" && <MusicTabV2 />}
-          {settings.accessV2 === true && activeTab === "entourage" && <EntourageTabV2 />}
+          {settings.accessV2 === true && activeTab === "music" && withLock("music", <MusicTabV2 />)}
+          {settings.accessV2 === true && activeTab === "entourage" && withLock("entourage", <EntourageTabV2 />)}
           {activeTab === "qr" && <QrAdmin />}
           {activeTab === "settings" && <SettingsAdmin />}
           {activeTab === "overview" && <SuperOverview />}

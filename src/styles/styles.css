@@ -910,6 +910,19 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 .notif__text { flex: 1; min-width: 0; font-size: 13px; }
 .admin__sitechip { display: inline-block; margin-left: 12px; font-family: var(--font-body); font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--accent-ink); background: var(--accent-soft); border: 1px solid var(--line); border-radius: 100px; padding: 3px 11px; vertical-align: middle; }
 
+/* Locked feature (accessV2 "locked" level): the real admin page renders blurred
+   and inert behind a centered unlock card; the sidebar tab carries a padlock. */
+.locked { position: relative; }
+.locked__page { filter: blur(7px) saturate(.85); opacity: .55; pointer-events: none; user-select: none; min-height: 360px; max-height: 78vh; overflow: hidden; }
+.locked__overlay { position: absolute; inset: 0; display: grid; place-items: center; z-index: 5; padding: 18px; }
+.locked__card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 28px 26px 22px; max-width: 440px; text-align: center; box-shadow: 0 22px 48px -20px rgba(0,0,0,.4); }
+.locked__icon { width: 54px; height: 54px; margin: 0 auto 12px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
+.locked__title { margin: 0 0 6px; font-size: 20px; color: var(--ink); }
+.locked__desc { margin: 0 0 16px; color: var(--muted); font-size: 14px; line-height: 1.55; }
+.locked__hint { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
+.admin__navlock { margin-left: auto; display: inline-flex; color: var(--muted); flex: none; }
+.admin__navlock svg { width: 13px; height: 13px; }
+
 /* Sign-in — split layout (form left, animated panel right), follows OS light/dark */
 .signin {
   /* overflow-x hidden (not auto): .signin is a fixed full-screen scroll box, so

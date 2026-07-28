@@ -61,7 +61,7 @@ function AccessFields({ v, set, omit = [], passwordEnabled = true }) {
       <div className="form-row">
         <div className="form-row__head">
           <div className="form-row__label">Features &amp; permissions</div>
-          <div className="form-row__desc">None = not on their site · View = on the site, you manage the content · Edit = they get the admin tab.</div>
+          <div className="form-row__desc">None = not on their site · View = on the site, you manage the content · Edit = they get the admin tab · Locked = upsell — they see a padlocked tab + blurred page with a “file a ticket to unlock” card.</div>
         </div>
         <div className="form-row__fields">
           <table className="tbl" style={{ width: "100%" }}>
@@ -71,9 +71,9 @@ function AccessFields({ v, set, omit = [], passwordEnabled = true }) {
                   <td><strong>{r.label}</strong><div style={{ color: "var(--muted)", fontSize: 12 }}>{r.desc}</div></td>
                   <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
                     <div className="seg">
-                      {["none", "view", "edit"].filter((l) => !(r.noNone && l === "none")).map((l) => (
+                      {["none", "view", "edit", "locked"].filter((l) => !(r.noNone && l === "none")).map((l) => (
                         <button key={l} type="button" className={v2Level(r.k) === l ? "on" : ""} onClick={() => v2SetLevel(r.k, l)}>
-                          {l === "none" ? "None" : l === "view" ? "View" : "Edit"}
+                          {l === "none" ? "None" : l === "view" ? "View" : l === "edit" ? "Edit" : "Locked"}
                         </button>
                       ))}
                     </div>

@@ -28,6 +28,14 @@ describe("featureLevel — accessV2 model", () => {
     expect(fl(s({ gallery: "edit" }), "gallery")).toBe("none");
   });
 
+  it("locked reads through as a level but hides the feature from the GUEST site", () => {
+    expect(fl(s({ story: "locked" }), "story")).toBe("locked");
+    expect(featureVisible(s({ story: "locked" }), "story")).toBe(false);   // public = off
+    expect(featureVisible(s({ story: "view" }), "story")).toBe(true);
+    expect(featureVisible(s({ story: "edit" }), "story")).toBe(true);
+    expect(featureVisible(s({ story: "none" }), "story")).toBe(false);
+  });
+
   it("ignores junk values in the map (falls back to default)", () => {
     expect(fl(s({ details: "banana" }), "details")).toBe("edit");
   });
