@@ -1,7 +1,7 @@
 // functions/api/neon-admin.js
-// Superadmin console ↔ Neon bridge. The console authenticates with SUPABASE
-// (superadmin JWT — verified below, same pattern as cf-health); Neon rows are
-// read/written via the NEON_DATABASE_URL secret. POST {action, ...params}.
+// Superadmin console ↔ Neon bridge. The console authenticates with a FIREBASE ID
+// token (verified below → Neon superadmin profile); Neon rows are read/written
+// via the NEON_DATABASE_URL secret. POST {action, ...params}.
 import { neon } from "@neondatabase/serverless";
 
 const json = (o, s = 200) => new Response(JSON.stringify(o), { status: s, headers: { "content-type": "application/json" } });

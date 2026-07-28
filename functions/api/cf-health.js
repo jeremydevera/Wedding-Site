@@ -85,7 +85,6 @@ export async function onRequestGet(context) {
 
   const acct = env.CF_ACCOUNT_ID || "4acf69efbeed54838dc0d5f004769933";
   const zone = env.CF_ZONE_ID || "3de2f4733d9e76517db51bf1a44314a2";
-  const SUPA_ORG_ID = env.SUPABASE_ORG_ID || "hmjytmqurgudfkpczvtg";
 
   // Plan limits — CF exposes no "your plan's quota" API, so these are
   // dashboard-adjustable Pages vars with the current plans as defaults

@@ -7,7 +7,6 @@ import { hasPlayedQuiz, markQuizPlayed, clearQuizPlayed } from "@/lib/quiz-attem
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { sectionLabel } from "@/lib/roles.js";
 import { Button, Field, Icon, Input, Modal, Pager, SectionHead, Textarea, toast, useServerPaged } from "@/ui/components.jsx";
-import { supabase } from "@/lib/supabase.js";
 import { neonSelectPaged } from "@/lib/neon.js";
 import { rowToGuestbook } from "@/lib/mappers.js";
 import { PageHero } from "@/pages/PublicPages.jsx";
@@ -42,19 +41,11 @@ export function GuestbookPage() {
   const fetchPage = useCallback(async (from, to) => {
     const clientId = Store.get().clientId;
     if (!clientId) return { rows: [], count: 0 };
-    if (Store.get().neonMode === true) { // sandbox-on-Neon: same page via the Data API
-      const { rows, count } = await neonSelectPaged("guestbook",
-        `select=*&client_id=eq.${clientId}&status=eq.approved&order=created_at.desc,id.desc`, from, to);
-      return { rows: rows.map(rowToGuestbook), count };
-    }
-    const { data, count, error } = await supabase
-      .from("guestbook").select("*", { count: "exact" }).eq("client_id", clientId).eq("status", "approved")
-      // id tiebreaker → a total, stable order so pages never overlap
-      // (rows sharing a created_at would otherwise repeat across pages).
-      .order("created_at", { ascending: false }).order("id", { ascending: false })
-      .range(from, to);
-    if (error) { console.warn("[guestbook] load failed:", error.message); throw error; }
-    return { rows: (data || []).map(rowToGuestbook), count: count || 0 };
+    // One page of approved messages via the Neon Data API. id tiebreaker → a
+    // total, stable order so pages never overlap.
+    const { rows, count } = await neonSelectPaged("guestbook",
+      `select=*&client_id=eq.${clientId}&status=eq.approved&order=created_at.desc,id.desc`, from, to);
+    return { rows: rows.map(rowToGuestbook), count };
   }, []);
   const gb = useServerPaged(fetchPage, 30);
   const set = (k) => (e) => { setForm((f) => ({ ...f, [k]: e.target.value })); setErrors((er) => ({ ...er, [k]: undefined })); };

@@ -62,12 +62,9 @@ async function resolveCaller(env, token) {
 }
 
 // SSRF allowlist for the server-side sourceUrl fetch. Only hosts we deliberately
-// pull migration media from are permitted; everything else is denied (fail
-// CLOSED). Covers the Supabase project + its storage subdomain and the media
-// domain. Matches an exact host or a direct subdomain of an allowed suffix.
+// pull media from are permitted; everything else is denied (fail CLOSED).
+// Matches an exact host or a direct subdomain of an allowed suffix.
 const SOURCE_HOST_SUFFIXES = [
-  "xprynknppsehuzqqdvue.supabase.co", // Supabase project (auth/storage)
-  "supabase.co",                      // *.supabase.co storage/render hosts
   "media.celebrately.us",             // our own media domain
 ];
 function sourceHostAllowed(hostname) {

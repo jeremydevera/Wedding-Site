@@ -1,7 +1,6 @@
 import React from "react";
 import { createPortal } from "react-dom";
-import { supabase } from "@/lib/supabase.js";
-import { createOwner, updateOwnerEmail, deleteOwner, adminBridgeToken } from "@/lib/auth.js";
+import { createOwner, adminBridgeToken } from "@/lib/auth.js";
 import { Store } from "@/lib/store.jsx";
 
 // Console → Neon bridge (module-level, so SuperOverview + helpers can call it).
@@ -657,28 +656,13 @@ export function ClientsAdmin() {
     if (!editing) return;
     if (!isValidSubdomain(p.subdomain)) throw new Error("Invalid subdomain — lowercase letters, numbers, hyphens; not a reserved name.");
     const id = editing.id;
-    const isNeon = editing.__neon === true;
     await runBusy("Saving…", async () => {
       const content = { ...(editing.content || {}), partnerA: p.partnerA, partnerB: p.partnerB, ...p.content };
       const email = (p.email || "").trim();
-      if (isNeon) {
-        // Neon: identity + merged content go through the bridge in one write;
-        // owner_email is a plain column here (no Supabase Auth account to rename).
-        try { await neonAdmin("update_client_identity", { id, subdomain: p.subdomain, template_key: p.templateKey, owner_email: email || (editing.owner_email || null), content }); }
-        catch (e2) { toast(e2.message === "subdomain already taken" ? "That subdomain is taken." : "Save failed: " + e2.message, "err"); return; }
-        toast("Client updated", "success");
-        await loadNeon();
-        setEditing(null);
-        return;
-      }
-      const { error } = await supabase.from("clients").update({ subdomain: p.subdomain, template_key: p.templateKey, content }).eq("id", id);
-      if (error) { toast("Save failed: " + error.message, "err"); return; }
-      try {
-        if (email && email !== (editing.owner_email || "")) {
-          if (editing.owner_email) await updateOwnerEmail({ old_email: editing.owner_email, new_email: email });
-          await supabase.from("clients").update({ owner_email: email }).eq("id", id);
-        }
-      } catch (e2) { edgeOrToast(e2); }
+      // Identity + merged content go through the bridge in one write; owner_email
+      // is a plain column here (Firebase owners have no Supabase Auth account).
+      try { await neonAdmin("update_client_identity", { id, subdomain: p.subdomain, template_key: p.templateKey, owner_email: email || (editing.owner_email || null), content }); }
+      catch (e2) { toast(e2.message === "subdomain already taken" ? "That subdomain is taken." : "Save failed: " + e2.message, "err"); return; }
       toast("Client updated", "success");
       await load();
       setEditing(null);
@@ -690,7 +674,6 @@ export function ClientsAdmin() {
   async function saveClientAccess() {
     if (busy || !editing) return;
     const id = editing.id;
-    const isNeon = editing.__neon === true;
     await runBusy("Saving…", async () => {
       const content = {
         ...(editing.content || {}),
@@ -703,23 +686,12 @@ export function ClientsAdmin() {
         accessV2: true, // v2 is the only model now
         features: editForm.features || null,
       };
-      if (isNeon) {
-        // Neon: content + status via the bridge. Owner PASSWORD reset is skipped
-        // — Neon owners authenticate with Firebase (Google / their own email
-        // reset), there's no Supabase Auth password for the console to set.
-        try { await neonAdmin("update_client_access", { id, content, status: editForm.status || "not_paid" }); }
-        catch (e2) { toast("Save failed: " + e2.message, "err"); return; }
-        setEditing((c) => (c ? { ...c, content } : c));
-        await loadNeon();
-        if (editForm.ownerPassword) toast("Settings saved. (Password reset isn't available for Google/Firebase owners.)", "success");
-        else toast("Access settings saved", "success");
-        return;
-      }
-      const { error } = await supabase.from("clients").update({ content, status: editForm.status || "not_paid" }).eq("id", id);
-      if (error) { toast("Save failed: " + error.message, "err"); return; }
+      // Content + status via the bridge, plus the private note.
+      try { await neonAdmin("update_client_access", { id, content, status: editForm.status || "not_paid" }); }
+      catch (e2) { toast("Save failed: " + e2.message, "err"); return; }
       try { await saveNote(id, editForm.note); } catch (_) { /* note is best-effort */ }
-      // Password reset is authoritative: NEVER report success if it failed, or
-      // the owner is silently locked to their old password (the exact bug hit).
+      // Optional owner password reset (Firebase Admin via the bridge's create_owner).
+      // Authoritative: NEVER report success if it failed.
       const pw = editForm.ownerPassword;
       let pwErr = "";
       if (pw) {
@@ -729,10 +701,9 @@ export function ClientsAdmin() {
           catch (e2) { pwErr = e2?.message || "password change failed"; }
         }
       }
-      setEditing((c) => (c ? { ...c, content } : c)); // keep local row fresh for a later Design save
+      setEditing((c) => (c ? { ...c, content } : c));
       await load();
       if (pwErr) {
-        // keep the typed password so they can retry after fixing the cause
         toast("Settings saved, but the password was NOT changed: " + pwErr, "err");
       } else {
         setEditForm((f) => ({ ...f, ownerPassword: "" }));

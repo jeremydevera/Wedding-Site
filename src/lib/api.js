@@ -1,4 +1,3 @@
-import { supabase } from "@/lib/supabase.js";
 import { neonSelect, neonInsert, neonRpc, neonAuthedSelect, neonAuthedInsert, neonAuthedUpdate, neonAuthedDelete, NEON_FLAG_KEY, NEON_SHARDS_KEY, FB_AUTH_FLAG_KEY, setFbAuthMode, setNeonRegistry, resolveShardId, setActiveShard } from "@/lib/neon.js";
 import { Store } from "@/lib/store.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
@@ -51,14 +50,8 @@ const onNeon = () => Store.get().neonMode === true;
 
 export async function postRsvp(form) {
   const clientId = Store.get().clientId;
-  if (onNeon()) {
-    await neonInsert("rsvps", rsvpToRow(form, clientId));
-    Store.addRSVP(form);
-    return;
-  }
-  const { error } = await supabase.from("rsvps").insert(rsvpToRow(form, clientId));
-  if (error) throw error;
-  Store.addRSVP(form); // local echo (admin view this session)
+  await neonInsert("rsvps", rsvpToRow(form, clientId));
+  Store.addRSVP(form);
 }
 
 // Has someone already RSVP'd under this exact name for the current client?
@@ -69,13 +62,8 @@ export async function rsvpNameTaken(first, middle, last) {
   const clientId = Store.get().clientId;
   if (!clientId || !(first || "").trim() || !(last || "").trim()) return false;
   const args = { p_client_id: clientId, p_first: first || "", p_middle: middle || "", p_last: last || "" };
-  if (onNeon()) {
-    try { return !!(await neonRpc("rsvp_name_taken", args)); }
-    catch (e) { console.warn("[api] neon rsvp_name_taken failed:", e.message); return false; } // fail open, same as below
-  }
-  const { data, error } = await supabase.rpc("rsvp_name_taken", args);
-  if (error) { console.warn("[api] rsvp_name_taken failed:", error.message); return false; }
-  return !!data;
+  try { return !!(await neonRpc("rsvp_name_taken", args)); }
+  catch (e) { console.warn("[api] rsvp_name_taken failed:", e.message); return false; } // fail open
 }
 
 // Update-or-insert an RSVP by fuzzy name match via the rsvp_upsert RPC. Used by
@@ -83,19 +71,7 @@ export async function rsvpNameTaken(first, middle, last) {
 // rsvps table directly under RLS). `form` is the same shape passed to postRsvp.
 export async function upsertRsvp(form) {
   const clientId = Store.get().clientId;
-  if (onNeon()) {
-    await neonRpc("rsvp_upsert", {
-      p_client_id: clientId,
-      p_first: form.firstName || "", p_middle: form.middleName || "", p_last: form.lastName || "",
-      p_full_name: form.fullName || "", p_email: form.email || "", p_phone: form.phone || "",
-      p_status: form.status, p_count: form.count || 0,
-      p_plus_one: form.plusOne || "", p_diet: form.diet || "None", p_diet_notes: form.dietNotes || "",
-      p_song: form.song || "", p_notes: form.notes || "",
-      p_companions: Array.isArray(form.companions) ? form.companions : [],
-    });
-    return;
-  }
-  const { error } = await supabase.rpc("rsvp_upsert", {
+  await neonRpc("rsvp_upsert", {
     p_client_id: clientId,
     p_first: form.firstName || "", p_middle: form.middleName || "", p_last: form.lastName || "",
     p_full_name: form.fullName || "", p_email: form.email || "", p_phone: form.phone || "",
@@ -104,7 +80,6 @@ export async function upsertRsvp(form) {
     p_song: form.song || "", p_notes: form.notes || "",
     p_companions: Array.isArray(form.companions) ? form.companions : [],
   });
-  if (error) throw error;
 }
 
 // Strict RSVP: look up the invited guest's seat allocation by name via the
@@ -118,17 +93,7 @@ export async function guestAllocation(first, middle, last) {
   const clientId = Store.get().clientId;
   if (!clientId || !(first || "").trim() || !(last || "").trim()) return { status: "not_found", allocation: null };
   const args = { p_client_id: clientId, p_first: first || "", p_middle: middle || "", p_last: last || "" };
-  if (onNeon()) {
-    const d = (await neonRpc("rsvp_guest_allocation", args)) || {};
-    return {
-      status: d.status || "not_found",
-      allocation: d.allocation == null ? null : Number(d.allocation),
-      guestStatus: d.guest_status || null,
-    };
-  }
-  const { data, error } = await supabase.rpc("rsvp_guest_allocation", args);
-  if (error) throw error;
-  const d = data || {};
+  const d = (await neonRpc("rsvp_guest_allocation", args)) || {};
   return {
     status: d.status || "not_found",
     allocation: d.allocation == null ? null : Number(d.allocation),
@@ -137,15 +102,11 @@ export async function guestAllocation(first, middle, last) {
 }
 // Admin edit of a reply's status (owner-update RLS, 0016).
 export async function updateRsvpStatusDb(id, status) {
-  if (onNeon()) { await neonAuthedUpdate("rsvps", `id=eq.${id}`, { status }); return; }
-  const { error } = await supabase.from("rsvps").update({ status }).eq("id", id);
-  if (error) { console.warn("[api] rsvp status update failed:", error.message); throw error; }
+  await neonAuthedUpdate("rsvps", `id=eq.${id}`, { status });
 }
 // Admin edit of a reply's dietary preference (owner-update RLS, 0016).
 export async function updateRsvpDietDb(id, diet, dietNotes) {
-  if (onNeon()) { await neonAuthedUpdate("rsvps", `id=eq.${id}`, { diet: diet || "None", diet_notes: dietNotes || "" }); return; }
-  const { error } = await supabase.from("rsvps").update({ diet: diet || "None", diet_notes: dietNotes || "" }).eq("id", id);
-  if (error) { console.warn("[api] rsvp diet update failed:", error.message); throw error; }
+  await neonAuthedUpdate("rsvps", `id=eq.${id}`, { diet: diet || "None", diet_notes: dietNotes || "" });
 }
 
 export async function postGuestbook(entry) {
@@ -157,12 +118,7 @@ export async function postGuestbook(entry) {
   // insert errors even though the insert succeeded. Mirror the trigger instead.
   const auto = Store.get().settings?.autoApproveGuestbook === true;
   const status = auto ? "approved" : "pending";
-  if (onNeon()) {
-    await neonInsert("guestbook", guestbookToRow(entry, clientId, status));
-  } else {
-    const { error } = await supabase.from("guestbook").insert(guestbookToRow(entry, clientId, status));
-    if (error) throw error;
-  }
+  await neonInsert("guestbook", guestbookToRow(entry, clientId, status));
   if (status === "approved") {
     const id = (globalThis.crypto && crypto.randomUUID) ? crypto.randomUUID() : `tmp_${Date.now()}`;
     Store.addGuestbook({ ...entry, id, status: "visible" });
@@ -172,14 +128,8 @@ export async function postGuestbook(entry) {
 
 export async function postQuiz(sub) {
   const clientId = Store.get().clientId;
-  if (onNeon()) {
-    await neonInsert("quiz_answers", quizToRow(sub, clientId));
-    Store.addQuizSub(sub);
-    return;
-  }
-  const { error } = await supabase.from("quiz_answers").insert(quizToRow(sub, clientId));
-  if (error) throw error;
-  Store.addQuizSub(sub); // local echo
+  await neonInsert("quiz_answers", quizToRow(sub, clientId));
+  Store.addQuizSub(sub);
 }
 
 // Admin: load the active client's submissions from the DB into the store.
@@ -187,41 +137,19 @@ export async function postQuiz(sub) {
 export async function loadAdminData() {
   const clientId = Store.get().clientId;
   if (!clientId) return;
-  if (onNeon()) {
-    // Owner JWT → RLS scopes each read to this client. Any query that errors
-    // keeps the previously-loaded rows (same as the Supabase path below).
-    const q = (t, ord) => neonAuthedSelect(t, `select=*&client_id=eq.${clientId}&order=${ord}`).catch((e) => { console.warn(`[api] neon ${t} load failed:`, e.message); return null; });
-    const [rs, gb, qz, gu] = await Promise.all([
-      q("rsvps", "created_at.desc"), q("guestbook", "created_at.desc"),
-      q("quiz_answers", "created_at.desc"), q("guests", "created_at.asc"),
-    ]);
-    const prev = Store.get();
-    Store.setSubmissions({
-      rsvps: rs ? rs.map(rowToRsvp) : (prev.rsvps || []),
-      guestbook: gb ? gb.map(rowToGuestbook) : (prev.guestbook || []),
-      quizSubs: qz ? qz.map(rowToQuizSub) : (prev.quizSubs || []),
-      guests: gu ? gu.map(rowToGuest) : (prev.guests || []),
-    });
-    return;
-  }
+  // Owner JWT → RLS scopes each read to this client. Any query that errors keeps
+  // the previously-loaded rows (don't wipe on a transient failure).
+  const q = (t, ord) => neonAuthedSelect(t, `select=*&client_id=eq.${clientId}&order=${ord}`).catch((e) => { console.warn(`[api] neon ${t} load failed:`, e.message); return null; });
   const [rs, gb, qz, gu] = await Promise.all([
-    supabase.from("rsvps").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
-    supabase.from("guestbook").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
-    supabase.from("quiz_answers").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
-    supabase.from("guests").select("*").eq("client_id", clientId).order("created_at", { ascending: true }),
+    q("rsvps", "created_at.desc"), q("guestbook", "created_at.desc"),
+    q("quiz_answers", "created_at.desc"), q("guests", "created_at.asc"),
   ]);
-  if (rs.error) console.warn("[api] rsvps load failed:", rs.error.message);
-  if (gb.error) console.warn("[api] guestbook load failed:", gb.error.message);
-  if (qz.error) console.warn("[api] quiz load failed:", qz.error.message);
-  if (gu.error) console.warn("[api] guests load failed:", gu.error.message);
-  // Preserve existing store data for any query that errored — don't wipe
-  // previously-loaded rows with an empty array on a transient failure.
   const prev = Store.get();
   Store.setSubmissions({
-    rsvps: rs.error ? (prev.rsvps || []) : (rs.data || []).map(rowToRsvp),
-    guestbook: gb.error ? (prev.guestbook || []) : (gb.data || []).map(rowToGuestbook),
-    quizSubs: qz.error ? (prev.quizSubs || []) : (qz.data || []).map(rowToQuizSub),
-    guests: gu.error ? (prev.guests || []) : (gu.data || []).map(rowToGuest),
+    rsvps: rs ? rs.map(rowToRsvp) : (prev.rsvps || []),
+    guestbook: gb ? gb.map(rowToGuestbook) : (prev.guestbook || []),
+    quizSubs: qz ? qz.map(rowToQuizSub) : (prev.quizSubs || []),
+    guests: gu ? gu.map(rowToGuest) : (prev.guests || []),
   });
 }
 
@@ -235,102 +163,57 @@ export async function loadAdminData() {
 export function subscribeAdminRealtime() {
   const clientId = Store.get().clientId;
   if (!clientId) return () => {};
-  // Neon has no realtime channel — poll instead (45s, hidden tabs skipped) plus
-  // an immediate catch-up when the tab becomes visible again. Keeps the bell,
-  // tiles and RSVP list near-live without a websocket. Avoid opening a stale
-  // Supabase channel for a Neon client.
-  if (onNeon()) {
-    const tick = () => { if (document.visibilityState === "visible") loadAdminData().catch(() => {}); };
-    const iv = setInterval(tick, 45_000);
-    document.addEventListener("visibilitychange", tick);
-    return () => { clearInterval(iv); document.removeEventListener("visibilitychange", tick); };
-  }
-  let t = null;
-  const refetch = () => {
-    clearTimeout(t);
-    t = setTimeout(() => { loadAdminData().catch((e) => console.warn("[api] realtime refetch failed:", e?.message)); }, 400);
-  };
-  const filter = `client_id=eq.${clientId}`;
-  const ch = supabase
-    .channel(`admin-feed-${clientId}`)
-    .on("postgres_changes", { event: "INSERT", schema: "public", table: "rsvps", filter }, refetch)
-    .on("postgres_changes", { event: "INSERT", schema: "public", table: "guestbook", filter }, refetch)
-    .on("postgres_changes", { event: "INSERT", schema: "public", table: "quiz_answers", filter }, refetch)
-    // Status surfaced for diagnosis (SUBSCRIBED / CHANNEL_ERROR / TIMED_OUT…);
-    // supabase-js auto-rejoins with backoff, and the visibility catch-up below
-    // re-syncs anything missed while the socket was down.
-    .subscribe((status, err) => {
-      console.info("[api] realtime:", status, err ? String(err) : "");
-    });
-  // Catch-up: refetch when the tab becomes visible again — covers events missed
-  // while the laptop slept or the websocket was reconnecting.
-  const onVisible = () => { if (document.visibilityState === "visible") refetch(); };
-  document.addEventListener("visibilitychange", onVisible);
-  return () => {
-    document.removeEventListener("visibilitychange", onVisible);
-    clearTimeout(t);
-    supabase.removeChannel(ch);
-  };
+  // Neon has no realtime channel — poll (45s, hidden tabs skipped) plus an
+  // immediate catch-up when the tab becomes visible again. Keeps the bell, tiles
+  // and RSVP list near-live without a websocket.
+  const tick = () => { if (document.visibilityState === "visible") loadAdminData().catch(() => {}); };
+  const iv = setInterval(tick, 45_000);
+  document.addEventListener("visibilitychange", tick);
+  return () => { clearInterval(iv); document.removeEventListener("visibilitychange", tick); };
 }
 
 // Admin moderation — write-through to the DB (caller updates the store optimistically).
 const GB_DB_STATUS = { visible: "approved", hidden: "hidden", pending: "pending" };
 export async function setGuestbookStatusDb(id, storeStatus) {
   const st = GB_DB_STATUS[storeStatus] || "pending";
-  if (onNeon()) { await neonAuthedUpdate("guestbook", `id=eq.${id}`, { status: st }); return; }
-  const { error } = await supabase.from("guestbook").update({ status: st }).eq("id", id);
-  if (error) { console.warn("[api] guestbook status update failed:", error.message); throw error; }
+  await neonAuthedUpdate("guestbook", `id=eq.${id}`, { status: st });
 }
 export async function deleteGuestbookDb(id) {
-  if (onNeon()) { await neonAuthedDelete("guestbook", `id=eq.${id}`); return; }
-  const { error } = await supabase.from("guestbook").delete().eq("id", id);
-  if (error) { console.warn("[api] guestbook delete failed:", error.message); throw error; }
+  await neonAuthedDelete("guestbook", `id=eq.${id}`);
 }
 export async function deleteRsvpDb(id) {
-  if (onNeon()) { await neonAuthedDelete("rsvps", `id=eq.${id}`); return; }
-  const { error } = await supabase.from("rsvps").delete().eq("id", id);
-  if (error) { console.warn("[api] rsvp delete failed:", error.message); throw error; }
+  await neonAuthedDelete("rsvps", `id=eq.${id}`);
 }
-// Admin edit of a reply's companion list (owner update policy, 0016). Keeps the
-// legacy plus_one string and the head count in step with the array.
+// Admin edit of a reply's companion list. Keeps the legacy plus_one string and
+// the head count in step with the array.
 export async function updateRsvpCompanionsDb(id, companions) {
   const list = (companions || []).map((s) => (s || "").trim()).filter(Boolean);
   const patch = { companions: list, plus_one: list.join(", "), count: list.length + 1 };
-  if (onNeon()) { await neonAuthedUpdate("rsvps", `id=eq.${id}`, patch); return { companions: list, plusOne: patch.plus_one, count: patch.count }; }
-  const { error } = await supabase.from("rsvps").update(patch).eq("id", id);
-  if (error) { console.warn("[api] rsvp companions update failed:", error.message); throw error; }
+  await neonAuthedUpdate("rsvps", `id=eq.${id}`, patch);
   return { companions: list, plusOne: patch.plus_one, count: patch.count };
 }
 
 // Owner/superadmin guest-list CRUD (RLS scopes writes to the owner's client).
 export async function addGuestDb(guest) {
   const clientId = Store.get().clientId;
-  if (onNeon()) { const rows = await neonAuthedInsert("guests", guestToRow(guest, clientId)); return rowToGuest(Array.isArray(rows) ? rows[0] : rows); }
-  const { data, error } = await supabase.from("guests").insert(guestToRow(guest, clientId)).select().single();
-  if (error) { console.warn("[api] guest insert failed:", error.message); throw error; }
-  return rowToGuest(data);
+  const rows = await neonAuthedInsert("guests", guestToRow(guest, clientId));
+  return rowToGuest(Array.isArray(rows) ? rows[0] : rows);
 }
 export async function updateGuestDb(id, guest) {
   const clientId = Store.get().clientId;
-  if (onNeon()) { await neonAuthedUpdate("guests", `id=eq.${id}`, guestToRow(guest, clientId)); return; }
-  const { error } = await supabase.from("guests").update(guestToRow(guest, clientId)).eq("id", id);
-  if (error) { console.warn("[api] guest update failed:", error.message); throw error; }
+  await neonAuthedUpdate("guests", `id=eq.${id}`, guestToRow(guest, clientId));
 }
 export async function deleteGuestDb(id) {
-  if (onNeon()) { await neonAuthedDelete("guests", `id=eq.${id}`); return; }
-  const { error } = await supabase.from("guests").delete().eq("id", id);
-  if (error) { console.warn("[api] guest delete failed:", error.message); throw error; }
+  await neonAuthedDelete("guests", `id=eq.${id}`);
 }
 
 // Persist the current client's settings + content (theme, names, schedule, story,
-// modules, …) back to Supabase. RLS lets the superadmin save any client and an
-// owner save their own.
+// modules, …) back to Neon. RLS lets the superadmin save any client and an owner
+// save their own.
 export async function saveClientData() {
   const clientId = Store.get().clientId;
   if (!clientId) throw new Error("No client loaded");
-  if (onNeon()) { await neonAuthedUpdate("clients", `id=eq.${clientId}`, stateToClientRow(Store.get())); return; }
-  const { error } = await supabase.from("clients").update(stateToClientRow(Store.get())).eq("id", clientId);
-  if (error) { console.warn("[api] save failed:", error.message); throw error; }
+  await neonAuthedUpdate("clients", `id=eq.${clientId}`, stateToClientRow(Store.get()));
 }
 
 // Upload any media file to Cloudflare R2 via the auth-gated /api/upload Pages
@@ -531,29 +414,6 @@ export async function migrateClientMediaToR2(onProgress) {
   return { migrated, failed };
 }
 
-// --- Self-serve registration (apex /register page) ---------------------------
-// Both call the public self-signup Edge Function (no session required).
-export async function checkSubdomainFree(subdomain) {
-  const { data, error } = await supabase.functions.invoke("self-signup", {
-    body: { action: "check_subdomain", subdomain },
-  });
-  if (error) throw error;
-  return !!(data && data.available);
-}
-
-export async function selfSignup({ email, password, partnerA, partnerB, weddingDate, subdomain }) {
-  const { data, error } = await supabase.functions.invoke("self-signup", {
-    body: { email, password, partnerA, partnerB, weddingDate, subdomain },
-  });
-  // functions.invoke surfaces non-2xx as FunctionsHttpError with the payload in context
-  if (error) {
-    let msg = "Could not create your site.";
-    try { const j = await error.context.json(); if (j && j.error) msg = j.error; } catch (_) {}
-    throw new Error(msg);
-  }
-  if (data && data.error) throw new Error(data.error);
-  return data; // { ok, subdomain, clientId }
-}
 
 // --- Prospect intake (/apply wizard + superadmin Requests inbox) -------------
 // Subdomain availability is checked against Neon (reserved_subdomains + clients +
@@ -591,8 +451,6 @@ async function neonAdminRpc(action, params = {}) {
 }
 // Superadmin on the apex console (no client loaded) — the only caller that must
 // merge BOTH stores. An owner is always scoped to their own client's backend.
-const isApexSuperadmin = () => Store.get().auth?.role === "superadmin" && !Store.get().clientId;
-const onNeonTicket = (t) => t && t._src === TICKET_SRC_NEON;
 
 export async function submitTicket(form, tab) {
   const st = Store.get();
@@ -602,9 +460,7 @@ export async function submitTicket(form, tab) {
     subdomain: resolveSubdomain() || "", tab: tab || "",
   };
   const row = ticketToRow(form, st.clientId, ctx);
-  if (onNeon()) { await neonAuthedInsert("support_tickets", row); return; }
-  const { error } = await supabase.from("support_tickets").insert(row);
-  if (error) throw error;
+  await neonAuthedInsert("support_tickets", row);
 }
 
 // Owner: their own tickets (RLS-scoped). Superadmin console: every ticket from
@@ -620,40 +476,30 @@ export async function listTickets() {
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 }
 
-// Superadmin: flip status; stamp resolved_at on resolve, clear it on reopen.
-export async function setTicketStatus(id, status, ticket) {
-  if (onNeonTicket(ticket)) { await neonAdminRpc("set_ticket_status", { id, status }); return; }
-  const { error } = await supabase.from("support_tickets")
-    .update({ status, resolved_at: status === "resolved" ? new Date().toISOString() : null, updated_at: new Date().toISOString() }).eq("id", id);
-  if (error) throw error;
+// Superadmin: flip status (bridge stamps resolved_at on resolve, clears on reopen).
+export async function setTicketStatus(id, status) {
+  await neonAdminRpc("set_ticket_status", { id, status });
 }
 
-// Superadmin: permanently remove a ticket (RLS delete policy is superadmin-only).
-export async function deleteTicket(id, ticket) {
-  if (onNeonTicket(ticket)) { await neonAdminRpc("delete_ticket", { id }); return; }
-  const { error } = await supabase.from("support_tickets").delete().eq("id", id);
-  if (error) throw error;
+// Superadmin: permanently remove a ticket.
+export async function deleteTicket(id) {
+  await neonAdminRpc("delete_ticket", { id });
 }
 
 // Superadmin: save the internal reply note (or any partial patch).
-export async function updateTicket(id, patch, ticket) {
-  if (onNeonTicket(ticket)) { await neonAdminRpc("update_ticket", { id, patch }); return; }
-  const { error } = await supabase.from("support_tickets").update(patch).eq("id", id);
-  if (error) throw error;
+export async function updateTicket(id, patch) {
+  await neonAdminRpc("update_ticket", { id, patch });
 }
 
 // --- Support ticket thread (owner ⇄ superadmin replies) ---------------------
 // Messages on a ticket, oldest-first. RLS returns only rows the caller may see
 // (own-client owner, or any for superadmin).
-export async function listTicketMessages(ticketId, ticket) {
+export async function listTicketMessages(ticketId) {
+  // Owner on their own Neon site → RLS-scoped read; apex superadmin → bridge.
   if (onNeon()) {
     return await neonAuthedSelect("support_ticket_messages", `select=*&ticket_id=eq.${ticketId}&order=created_at.asc`) || [];
   }
-  if (onNeonTicket(ticket)) return (await neonAdminRpc("list_ticket_messages", { ticket_id: ticketId })).rows || [];
-  const { data, error } = await supabase.from("support_ticket_messages")
-    .select("*").eq("ticket_id", ticketId).order("created_at", { ascending: true });
-  if (error) throw error;
-  return data || [];
+  return (await neonAdminRpc("list_ticket_messages", { ticket_id: ticketId })).rows || [];
 }
 
 // Append a reply to a ticket. senderRole ('owner'|'superadmin') is pinned to the
@@ -669,12 +515,7 @@ export async function postTicketMessage(ticketId, body, attachmentUrl, ticket) {
   // Owner on their Neon site posts directly (RLS pins them to their own ticket);
   // the apex superadmin replies to a Neon ticket through the bridge.
   if (onNeon()) { await neonAuthedInsert("support_ticket_messages", row); return; }
-  if (onNeonTicket(ticket)) {
-    await neonAdminRpc("post_ticket_message", { ticket_id: ticketId, body: row.body, sender_name: senderName, attachment_url: row.attachment_url });
-    return;
-  }
-  const { error } = await supabase.from("support_ticket_messages").insert(row);
-  if (error) throw error;
+  await neonAdminRpc("post_ticket_message", { ticket_id: ticketId, body: row.body, sender_name: senderName, attachment_url: row.attachment_url });
 }
 
 // Upload one support screenshot to R2 and return its bare key (render with
@@ -715,14 +556,8 @@ export async function listRecentClientReplies(limit = 20) {
 // replied" notification independently of the ticket's status — a reply that
 // doesn't flip status to waiting_reply still notifies.
 export async function listRecentSupportReplies(limit = 20) {
-  if (onNeon()) {
-    return await neonAuthedSelect("support_ticket_messages",
-      `select=*&sender_role=eq.superadmin&order=created_at.desc&limit=${limit}`) || [];
-  }
-  const { data, error } = await supabase.from("support_ticket_messages")
-    .select("*").eq("sender_role", "superadmin").order("created_at", { ascending: false }).limit(limit);
-  if (error) throw error;
-  return data || [];
+  return await neonAuthedSelect("support_ticket_messages",
+    `select=*&sender_role=eq.superadmin&order=created_at.desc&limit=${limit}`) || [];
 }
 
 // ALL ticket messages (superadmin bell) — Neon has no realtime channel → poll.
