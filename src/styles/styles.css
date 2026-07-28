@@ -3111,7 +3111,10 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .apply-review__row { display: flex; justify-content: space-between; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
 .apply-review__row:last-of-type { border-bottom: none; }
 .apply-review__row span { color: var(--muted); }
-@media (max-width: 560px) { .apply-sched { grid-template-columns: 1fr 1fr; } .apply-ent__person { grid-template-columns: 1fr 1fr; } }
+/* Mobile: keep the schedule row on ONE line (Time / What's happening / Location /
+   delete). A 2-col grid wrapped 4 items into 3 rows — Location + trash fell below.
+   minmax(0,1fr) lets the two inputs shrink instead of overflowing. */
+@media (max-width: 560px) { .apply-sched { grid-template-columns: 68px minmax(0, 1fr) minmax(0, 1fr) auto; gap: 6px; } .apply-ent__person { grid-template-columns: 1fr 1fr; } }
 
 /* apply wizard: each step's fields live inside an admin-style panel section */
 .apply-page { background: linear-gradient(180deg, var(--surface-2) 0%, var(--bg) 480px); }
