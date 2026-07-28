@@ -141,7 +141,6 @@ export function CloudflareHealth() {
             { label: "Pages builds", used: data.builds?.month, limit: data.builds?.limit || 500, fmt: nf, suffix: "this month", note: data.builds?.month == null ? "token needs Pages: Read" : null },
             { label: "Custom domains", used: data.domains?.count, limit: data.domains?.limit || 100, fmt: nf, suffix: "attached", note: data.domains?.count == null ? "token needs Pages: Read" : null },
             { label: "R2 storage", detail: `${nf(data.r2?.objects)} objects`, used: data.r2?.storageBytes, limit: data.r2?.limitBytes || R2_FREE_BYTES, fmt: fmtBytes, suffix: "free tier" },
-            { label: "Supabase database", used: data.supa?.dbBytes, limit: data.supa?.dbLimitBytes || 524288000, fmt: fmtBytes, suffix: data.supa?.plan ? `${data.supa.plan} plan` : "free tier", note: data.supa?.dbBytes == null ? "unavailable" : null },
             { label: "Neon database", detail: data.neon?.shardCount ? `across ${data.neon.shardCount} shards` : undefined, used: data.neon?.totalBytes, limit: data.neon?.totalLimitBytes || 536870912, fmt: fmtBytes, suffix: "free tier", note: data.neon == null ? "no shards configured" : (data.neon?.totalBytes == null ? "unavailable" : null), breakdown: (data.neon?.shards || []).map((s) => ({ name: s.id, bytes: s.bytes, limit: data.neon.limitBytesPerShard })) },
           ]} />
         </Suspense>

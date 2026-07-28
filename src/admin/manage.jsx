@@ -2244,28 +2244,23 @@ function ClientPasswordReset() {
 
 // Self-service password change for the LOGGED-IN owner (Settings → Account when
 // the superadmin has exposed Settings to the client). Uses the caller's OWN
-// Supabase session via auth.updateUser — no superadmin, no admin-create-owner
-// edge function (which 403s any non-superadmin). Email is read-only: an owner
+// Firebase account via firebaseUpdatePassword — email is read-only: an owner
 // changes only their own password, never the account they sign in as.
 function SelfPasswordReset() {
   const { auth } = useStore();
   const email = auth?.email || auth?.session?.user?.email || "";
-  const neon = Store.get().neonMode === true;
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [busy, setBusy] = useState(false);
-  // For Neon owners (Firebase auth) find HOW they signed in. A Google account
-  // has no password in our system — the credential lives with Google — so we
-  // hide the change form and point them at their Google account instead of
-  // showing a box that can't work. null while loading; "supabase" for legacy
-  // Supabase-session owners (provider concept doesn't apply, keep the form).
-  const [provider, setProvider] = useState(neon ? "loading" : "supabase");
+  // Find HOW the owner signed in. A Google account has no password in our system
+  // (the credential lives with Google) — hide the change form and point them at
+  // their Google account instead of a box that can't work. null while loading.
+  const [provider, setProvider] = useState("loading");
   useEffect(() => {
-    if (!neon) return;
     let alive = true;
     firebaseSignInProvider().then((p) => { if (alive) setProvider(p || "password"); }).catch(() => { if (alive) setProvider("password"); });
     return () => { alive = false; };
-  }, [neon]);
+  }, []);
 
   async function change() {
     if (pw.length < 6) return toast("Use a password of at least 6 characters.", "err");
@@ -2425,12 +2420,7 @@ const PLATFORM_FLAGS = [
   {
     key: "auto_approve_requests",
     label: "AUTO APPROVE WEBSITE REQUEST",
-    desc: "When checked, a customer's request from /apply is approved automatically: their site is created and an email is sent with a link to set their own password plus their new website link — even while you're offline. When unchecked, requests wait in Clients → Requests for you to approve manually.",
-  },
-  {
-    key: "use_neon_db",
-    label: "USE NEON DATABASE",
-    desc: "EXPERIMENTAL — applies to the SANDBOX site only. When checked, sandbox.celebrately.us serves its content and guest submissions (RSVP, guestbook, quiz) from the Neon database instead of Supabase. All real client sites and demo always stay on Supabase. If Neon errors, sandbox automatically falls back to Supabase.",
+    desc: "When checked, a new registration is approved automatically: their site is created and an email is sent with a link to set their own password plus their new website link — even while you're offline. When unchecked, requests wait in Clients → Requests for you to approve manually.",
   },
 ];
 
@@ -4065,7 +4055,7 @@ export function TrackEditor({ open, track, onClose }) {
   );
 }
 
-// One-time helper: moves this client's legacy media (base64 images / Supabase
+// One-time helper: moves this client's legacy media (base64 images / remote
 // audio) into R2. Auto-hides once there's nothing left to move. Superadmin-only.
 export function R2MigratePanel() {
   const state = useStore();
@@ -4086,7 +4076,7 @@ export function R2MigratePanel() {
       <div className="panel__head"><div className="panel__title">Move existing media to R2</div></div>
       <div className="panel__body">
         <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 14px" }}>
-          This site still has media stored the old way (base64 images and/or Supabase audio). Move it into Cloudflare R2 — runs once and is safe to repeat.
+          This site still has media stored the old way (base64 images). Move it into Cloudflare R2 — runs once and is safe to repeat.
         </p>
         <Button variant="primary" size="sm" disabled={busy} onClick={run}>{busy ? `Moving… (${done})` : "Move media to R2"}</Button>
       </div>

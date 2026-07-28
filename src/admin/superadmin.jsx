@@ -400,7 +400,7 @@ export function ClientsAdmin() {
   const [sel, setSel] = useState(() => new Set());   // client ids checked for bulk delete
 
   // The signed-in superadmin is not a "client" — hide their own account from
-  // every list (Supabase clients, Neon clients, Neon signups) so it never shows.
+  // every list (clients + registered signups) so it never shows.
   async function myEmail() {
     return (Store.get().auth?.email || "").toLowerCase();
   }
@@ -563,10 +563,7 @@ export function ClientsAdmin() {
   }
 
   function edgeOrToast(e2) {
-    const msg = e2?.message || "error";
-    if (/failed to send|function not found|non-2xx|not found|fetch|edge/i.test(msg))
-      toast("Owner login needs the edge function deployed (admin-create-owner) — or do it in Supabase Auth.");
-    else toast("Failed: " + msg);
+    toast("Owner login couldn't be set: " + (e2?.message || "error"), "err");
   }
 
   async function createClient(e) {
@@ -615,7 +612,7 @@ export function ClientsAdmin() {
 
   // Neon client Edit: list_clients trims content, so fetch the full row via the
   // bridge first, tag it __neon so the save handlers route back through the
-  // bridge (a Neon client has no Supabase row to UPDATE).
+  // bridge (every edit goes through the Neon bridge).
   async function openEditNeon(c) {
     await runBusy("Loading…", async () => {
       try {
@@ -733,7 +730,7 @@ export function ClientsAdmin() {
     await runBusy("Deleting client…", async () => {
       try {
         const { ownerWarn } = await deleteClientCore(c);
-        toast(ownerWarn ? "Client deleted — owner login may remain; remove it in Supabase Auth." : "Client and owner login deleted");
+        toast(ownerWarn ? "Client deleted — the owner's Firebase login couldn't be fully purged." : "Client and owner login deleted");
       } catch (e) { return toast("Delete failed: " + e.message); }
       await load();
     });
@@ -741,13 +738,10 @@ export function ClientsAdmin() {
   // Bulk: checked rows -> one confirm listing the sites -> delete them all.
   const toggleSel = (id) => setSel((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   async function deleteSelected() {
-    // A selection can mix Supabase and Neon rows (both keyed by UUID). Route each
-    // to its own backend: Supabase via deleteClientCore, Neon via the bridge.
-    const supaTargets = clients.filter((c) => sel.has(c.id));
-    const neonTargets = neonClients.filter((c) => sel.has(c.id));
-    const total = supaTargets.length + neonTargets.length;
+    const targets = clients.filter((c) => sel.has(c.id));
+    const total = targets.length;
     if (!total) return;
-    const names = [...supaTargets, ...neonTargets].map((c) => c.subdomain).join(", ");
+    const names = targets.map((c) => c.subdomain).join(", ");
     const ok = await confirmDialog({
       title: `Delete ${total} client${total === 1 ? "" : "s"}?`,
       message: `Delete ${names} — including all their data (RSVPs, guestbook, quiz) and owner logins? This can't be undone.`,
@@ -757,22 +751,17 @@ export function ClientsAdmin() {
     if (!ok) return;
     setBusy(true);
     let fail = 0, warn = 0, done = 0;
-    for (const c of supaTargets) {
+    for (const c of targets) {
       setBusyLabel(`Deleting ${++done}/${total}…`);
       try { const { ownerWarn } = await deleteClientCore(c); if (ownerWarn) warn++; }
       catch (_) { fail++; }
     }
-    for (const c of neonTargets) {
-      setBusyLabel(`Deleting ${++done}/${total}…`);
-      try { await neonAdmin("delete_client", { id: c.id }); }
-      catch (_) { fail++; }
-    }
     setSel(new Set()); // clear selection so the stale "Delete selected (N)" button goes away
-    await Promise.all([load(), loadNeon()]);
+    await load();
     setBusy(false); setBusyLabel("");
     toast(
       fail ? `Deleted ${total - fail} — ${fail} failed` :
-      warn ? `Deleted ${total} — ${warn} owner login(s) may remain (Supabase Auth)` :
+      warn ? `Deleted ${total} — ${warn} owner Firebase login(s) couldn't be fully purged` :
       `Deleted ${total} client${total === 1 ? "" : "s"}`,
       fail ? "err" : "success",
     );

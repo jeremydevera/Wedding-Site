@@ -89,15 +89,11 @@ export async function onRequestGet(context) {
   // Plan limits — CF exposes no "your plan's quota" API, so these are
   // dashboard-adjustable Pages vars with the current plans as defaults
   // (Workers Paid 10M req/mo, Pages 500 builds/mo, R2 free 10 GB). Change a var
-  // after a plan upgrade; applies on the next deploy. The Supabase DB limit is
-  // the exception: when a SUPABASE_MGMT_TOKEN (PAT) secret is set it's read LIVE
-  // from the org's plan (fetchSupaPlan); CF_LIMIT_SUPA_DB_MB / 500 is only the
-  // fallback for when no PAT is configured.
+  // after a plan upgrade; applies on the next deploy.
   const envNum = (v, dflt) => (Number.isFinite(+v) && +v > 0 ? +v : dflt);
   const LIMIT_REQ_MONTH = envNum(env.CF_LIMIT_REQ_MONTH, 10_000_000);
   const LIMIT_BUILDS_MONTH = envNum(env.CF_LIMIT_BUILDS_MONTH, 500);
   const LIMIT_R2_GB = envNum(env.CF_LIMIT_R2_GB, 10);
-  const LIMIT_SUPA_DB_MB = envNum(env.CF_LIMIT_SUPA_DB_MB, 500);
   // Pages free plan: 100 custom domains per project (Pro 250, Business 500).
   const LIMIT_DOMAINS = envNum(env.CF_LIMIT_DOMAINS, 100);
 
@@ -160,10 +156,6 @@ export async function onRequestGet(context) {
     try { return (await tryUrl("?per_page=100")) ?? (await tryUrl("")); } catch { return null; }
   };
 
-  // Supabase retired — the Supabase DB-size + plan tiles no longer apply.
-  const fetchDbSize = async () => null;
-  const fetchSupaPlan = async () => null;
-
   // Neon storage — all data lives on Neon (5 shards). Read the shard registry
   // from Neon app_config, then ask each shard's Data API for pg_database_size via
   // the public db_size_bytes() RPC (anon token).
@@ -196,21 +188,19 @@ export async function onRequestGet(context) {
     } catch { return null; }
   };
 
-  let data, buildsMonth, dbBytes, domainCount, supaPlan, neonUsage;
+  let data, buildsMonth, domainCount, neonUsage;
   try {
-    const [resp, builds, db, doms, plan, neonU] = await Promise.all([
+    const [resp, builds, doms, neonU] = await Promise.all([
       fetch("https://api.cloudflare.com/client/v4/graphql", {
         method: "POST",
         headers: { authorization: `Bearer ${CF_TOKEN}`, "content-type": "application/json" },
         body: JSON.stringify({ query: buildQuery({ acct, zone, sinceDT, sinceDate, ydayDate, todayDate }) }),
       }),
       fetchBuildsMonth(),
-      fetchDbSize(),
       fetchDomainCount(),
-      fetchSupaPlan(),
       fetchNeonUsage(),
     ]);
-    buildsMonth = builds; dbBytes = db; domainCount = doms; supaPlan = plan; neonUsage = neonU;
+    buildsMonth = builds; domainCount = doms; neonUsage = neonU;
     const jr = await resp.json();
     if (!resp.ok || (jr.errors && jr.errors.length) || !jr.data) {
       return json({ configured: true, error: "upstream" }); // soft — do not cache, do not leak details
@@ -229,10 +219,7 @@ export async function onRequestGet(context) {
   payload.builds = { month: buildsMonth, limit: LIMIT_BUILDS_MONTH }; // null month => token lacks Pages:Read
   payload.domains = { count: domainCount, limit: LIMIT_DOMAINS }; // null count => token lacks Pages:Read
   payload.r2.limitBytes = LIMIT_R2_GB * 1024 ** 3;
-  // Live plan limit wins when a PAT let us read it; else the env var / 500.
-  const dbLimitMb = supaPlan?.limitMb || LIMIT_SUPA_DB_MB;
-  payload.supa = { dbBytes, dbLimitBytes: dbLimitMb * 1024 * 1024, plan: supaPlan?.plan || null };
-  // Neon (new registrations, sharded). null => registry unreadable or all shards down.
+  // Neon (sharded). null => registry unreadable or all shards down.
   payload.neon = neonUsage
     ? { totalBytes: neonUsage.totalBytes, shardCount: neonUsage.count, limitBytesPerShard: neonUsage.limitBytesPerShard, totalLimitBytes: neonUsage.limitBytesPerShard * neonUsage.count, shards: neonUsage.shards }
     : null;

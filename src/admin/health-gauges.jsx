@@ -1,5 +1,5 @@
 // Superadmin Health — limited-resource usage as full Chart.js rings ("design A"):
-// one full-circle donut per capped metric (Router / Builds / R2 / Supabase DB),
+// one full-circle donut per capped metric (Router / Builds / R2 / Neon DB),
 // colored used-arc over a grey track, % centered, real numbers under a dashed
 // rule. Same visual family as the RSVP donuts.
 // Lazy-loaded (like rsvp-charts.jsx) so Chart.js stays out of the main bundle.

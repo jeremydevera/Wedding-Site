@@ -434,7 +434,8 @@ export function App() {
   // Owner "set your password" landing (from the auto-approval email). Handled
   // before any client-load gating so it works on the new site's own subdomain
   // even while client data is still loading. The recovery token in the URL hash
-  // is exchanged by supabase-js; SetPassword then lets them choose a password.
+  // The legacy Supabase recovery flow is retired; SetPassword now points owners
+  // to the sign-in page's Firebase "Forgot password?" flow.
   if (/^\/set-password\/?$/.test(window.location.pathname)) {
     return (<><SetPassword /><ToastHost /><ConfirmHost /></>);
   }

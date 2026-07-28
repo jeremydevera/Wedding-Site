@@ -260,7 +260,7 @@ export function defaultState() {
     detailCards: SEED_DETAIL_CARDS,
     entourage: SEED_ENTOURAGE,
     attire: SEED_ATTIRE, // attire-guide groups: { id, name, image, palette:[hex] }
-    playlist: [], // music tracks: { id, url, title, artist } (audio in Supabase Storage)
+    playlist: [], // music tracks: { id, url, title, artist } (audio in R2)
     guestbook: SEED_GUESTBOOK,
     rsvps: SEED_RSVPS,
     guests: [], // owner-managed invited list (server-owned; loaded from DB in admin)
@@ -340,9 +340,9 @@ export const Store = {
   },
   setAuth(auth) {
     _state = { ..._state, auth: { ready: true, ...auth } };
-    emit(); // session is not persisted to localStorage; Supabase manages it
+    emit(); // session is not persisted to localStorage; Firebase manages it
   },
-  // Replace admin submission lists with rows loaded from Supabase (owner/superadmin
+  // Replace admin submission lists with rows loaded from Neon (owner/superadmin
   // admin views). Server-owned data — not persisted to localStorage.
   setSubmissions({ rsvps, guestbook, quizSubs, guests }) {
     _state = {
@@ -628,7 +628,7 @@ export const Store = {
     _state = { ..._state, attire: arr };
     persist(); emit();
   },
-  // ---- Music playlist (audio in Supabase Storage; rows hold url+title+artist+art) ----
+  // ---- Music playlist (audio in R2; rows hold url+title+artist+art) ----
   // `art` is an optional R2 cover-image key shown on the Retro Device player screen.
   addTrack(track) {
     _state = { ..._state, playlist: [...(_state.playlist || []), { id: uid(), url: track.url, title: track.title || "Untitled", artist: track.artist || "", art: track.art || "" }] };
