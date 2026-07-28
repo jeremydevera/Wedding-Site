@@ -10,7 +10,7 @@ import { SupportWidget, SupportPanel, TicketForm } from "@/admin/SupportWidget.j
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { signOut, createOwner, ownerHomeUrl, adminBridgeToken } from "@/lib/auth.js";
 import { firebaseSignInProvider, firebaseUpdatePassword } from "@/lib/firebase.js";
-import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb, updateRsvpDietDb, listSiteRequests, subscribeSiteRequestsRealtime, listTickets, subscribeTicketsRealtime , listRecentClientReplies, listRecentSupportReplies, subscribeAllTicketMessagesRealtime, getAppConfig, setAppConfig, getNotifState, setNotifState} from "@/lib/api.js";
+import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb, updateRsvpDietDb, listSiteRequests, subscribeSiteRequestsRealtime, listTickets, subscribeTicketsRealtime , listRecentClientReplies, listRecentSupportReplies, subscribeAllTicketMessagesRealtime, getAppConfig, setAppConfig, getNotifState, setNotifState, submitTicket} from "@/lib/api.js";
 import { DIET_OPTIONS } from "@/features/rsvp.jsx";
 import { reconcileGuests, guestFromRsvp, findDuplicateGuest } from "@/lib/guests.js";
 import { headsOf } from "@/lib/rsvp.js";
@@ -4188,11 +4188,10 @@ export function MusicAdmin({ headExtra = null }) {
 }
 
 // A feature set to "locked": the owner sees the tab (padlocked) and a blurred,
-// non-interactive preview of the real page behind an unlock card. "File a
-// ticket" opens the shared TicketForm prefilled — the purchase conversation
-// lands in Support like any other ticket. Superadmin always sees the real page.
-export function LockedFeature({ featureKey, children }) {
-  const [ticket, setTicket] = useState(false);
+// non-interactive preview of the real page behind an unlock card. "Purchase
+// Premium" routes to the Premium purchase page (Basic vs Premium comparison +
+// one-click checkout ticket). Superadmin always sees the real page.
+export function LockedFeature({ featureKey, goPurchase, children }) {
   const label = (FEATURE_ROWS.find((r) => r.k === featureKey) || {}).label || moduleLabel(featureKey);
   const desc = LOCKED_COPY[featureKey] || "This feature isn't part of your plan yet.";
   return (
@@ -4203,16 +4202,101 @@ export function LockedFeature({ featureKey, children }) {
           <div className="locked__icon">{Icon.lock({ style: { width: 26, height: 26 } })}</div>
           <h3 className="locked__title">{label} is locked</h3>
           <p className="locked__desc">{desc}</p>
-          <Button variant="primary" onClick={() => setTicket(true)}>{Icon.lock({ style: { width: 15, height: 15 } })} To unlock this, file a ticket</Button>
-          <p className="locked__hint">We'll reply with the details to purchase and switch it on.</p>
+          <Button variant="primary" onClick={goPurchase}>{Icon.lock({ style: { width: 15, height: 15 } })} Purchase Premium</Button>
+          <p className="locked__hint">This feature is part of the Premium plan — see what's included.</p>
         </div>
       </div>
-      <Modal open={ticket} onClose={() => setTicket(false)} label={"Unlock " + label}>
-        <SectionHead eyebrow="Unlock a feature" title={"Unlock " + label} />
-        <TicketForm
-          initial={{ subject: `Unlock ${label}`, category: "Billing", message: `Hi! I'd like to purchase and unlock the ${label} feature for my website. Please send me the details.` }}
-          onDone={() => setTicket(false)} onCancel={() => setTicket(false)} />
-      </Modal>
+    </div>
+  );
+}
+
+// Premium purchase page (reached from any locked feature's "Purchase Premium").
+// Static plan comparison — Basic mirrors the free registration defaults,
+// Premium unlocks the locked tier + removes the Donate popup. "Proceed to
+// checkout" files a Billing ticket automatically with the site's details; the
+// superadmin enables Premium and collects payment afterwards.
+const PLAN_ROWS = [
+  { label: "RSVP & guest list", basic: true, premium: true },
+  { label: "Home page & invitation", basic: true, premium: true },
+  { label: "Schedule", basic: true, premium: true },
+  { label: "Guestbook", basic: true, premium: true },
+  { label: "Entourage", basic: true, premium: true },
+  { label: "Our Story", basic: false, premium: true },
+  { label: "Details, FAQ & attire guide", basic: false, premium: true },
+  { label: "Venue & Map", basic: false, premium: true },
+  { label: "Couple quiz", basic: false, premium: true },
+  { label: "Music playlist", basic: false, premium: true },
+  { label: "Ads", basic: "Shows ads", premium: "No ads" },
+];
+export function PurchasePremiumPage() {
+  const { settings, clientId, guests, rsvps, auth } = useStore();
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  const siteName = [settings.partnerA, settings.partnerB].filter(Boolean).join(" & ") || settings.eventTitle || "—";
+  const subdomain = (resolveSubdomain() || (typeof window !== "undefined" ? window.location.hostname.split(".")[0] : "")) || "—";
+  async function checkout() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await submitTicket({
+        subject: "Purchase Premium",
+        category: "Billing",
+        urgency: "Normal",
+        message: [
+          "Hi! I'd like to purchase the Premium plan (₱1,500) for my website.",
+          "",
+          `Site: ${subdomain}.celebrately.us`,
+          `Name: ${siteName}`,
+          `Email: ${auth.email || settings.contactEmail || "—"}`,
+          `Guest list: ${(guests || []).length} · RSVP replies: ${(rsvps || []).length}`,
+        ].join("\n"),
+        attachmentUrl: null,
+      }, "purchase");
+      setDone(true);
+    } catch (e) {
+      toast(e.message || "Couldn't submit — please try again.", "err");
+    } finally { setBusy(false); }
+  }
+  if (done) return (
+    <div className="panel" style={{ maxWidth: 560, margin: "0 auto" }}>
+      <div className="panel__body" style={{ textAlign: "center", padding: "38px 26px" }}>
+        <div className="locked__icon" style={{ background: "#e7f6ec", color: "#16a34a" }}>{Icon.check({ style: { width: 26, height: 26 } })}</div>
+        <h3 className="locked__title" style={{ marginTop: 10 }}>Request submitted!</h3>
+        <p className="locked__desc" style={{ maxWidth: 400, margin: "0 auto 6px" }}>
+          We've received your Premium request. Your features will be <strong>enabled shortly</strong> — payment comes later, after everything is live. We'll message you in Support with the details.
+        </p>
+      </div>
+    </div>
+  );
+  return (
+    <div className="panel" style={{ maxWidth: 760, margin: "0 auto" }}>
+      <div className="panel__head"><div><div className="panel__title">Go Premium</div><div className="panel__sub">Unlock every feature for your celebration — one-time payment, pay after it's enabled.</div></div></div>
+      <div className="panel__body">
+        <div className="table-wrap">
+          <table className="tbl plans">
+            <thead>
+              <tr>
+                <th style={{ width: "44%" }}></th>
+                <th className="plans__basic">Basic<span className="plans__price">Free</span></th>
+                <th className="plans__premium">Premium<span className="plans__price">₱1,500</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {PLAN_ROWS.map((r) => (
+                <tr key={r.label}>
+                  <td><strong>{r.label}</strong></td>
+                  <td className="plans__basic">{typeof r.basic === "string" ? r.basic : r.basic ? <span className="plans__yes">{Icon.check({})}</span> : <span className="plans__no">✕</span>}</td>
+                  <td className="plans__premium">{typeof r.premium === "string" ? r.premium : r.premium ? <span className="plans__yes">{Icon.check({})}</span> : <span className="plans__no">✕</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ textAlign: "center", marginTop: 20 }}>
+          <Button variant="primary" size="lg" disabled={busy} onClick={checkout}>{busy ? "Submitting…" : "Proceed to checkout"}</Button>
+          <p className="locked__hint" style={{ marginTop: 10 }}>No payment now — we enable Premium first, then settle payment with you in Support.</p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -4686,6 +4770,11 @@ export function AdminApp() {
   if (clientId || auth.role === "superadmin") {
     tabs = [...tabs, { key: "donate", label: "Donate to Dev", icon: "heart" }];
   }
+  // Premium purchase page — reached from a locked feature's "Purchase Premium"
+  // button, never from the sidebar (hidden keeps activeTab from falling back).
+  if (clientId && auth.role !== "superadmin") {
+    tabs = [...tabs, { key: "purchase", label: "Go Premium", icon: "lock", hidden: true }];
+  }
   // Platform-wide superadmin console settings (auto-approve, etc.) — only on the
   // apex hub (no client), superadmin only.
   if (!clientId && auth.role === "superadmin") {
@@ -4698,7 +4787,7 @@ export function AdminApp() {
   // else (superadmin, edit level, legacy clients) gets the page untouched.
   const withLock = (featureKey, node) =>
     settings.accessV2 === true && clientId && auth.role !== "superadmin" && featureLevel(settings, featureKey) === "locked"
-      ? <LockedFeature featureKey={featureKey}>{node}</LockedFeature>
+      ? <LockedFeature featureKey={featureKey} goPurchase={() => setTab("purchase")}>{node}</LockedFeature>
       : node;
   const onPlatformTab = activeTab === "overview" || activeTab === "clients" || (activeTab === "support" && !clientId);
 
@@ -4741,7 +4830,7 @@ export function AdminApp() {
           )}
         </div>
         <nav className="admin__nav">
-          {tabs.map((t) => (
+          {tabs.filter((t) => !t.hidden).map((t) => (
             <button key={t.key} className={"admin__navlink" + (activeTab === t.key ? " admin__navlink--active" : "")} onClick={() => { setTab(t.key); setMenuOpen(false); }}>
               {Icon[t.icon]({})} {t.label}
               {t.locked && <span className="admin__navlock" title="Locked — file a ticket to unlock">{Icon.lock({})}</span>}
@@ -4793,6 +4882,7 @@ export function AdminApp() {
           {/* accessV2 promoted tabs (HomeSectionPanel lands with them in T5) */}
           {settings.accessV2 === true && activeTab === "music" && withLock("music", <MusicTabV2 />)}
           {settings.accessV2 === true && activeTab === "entourage" && withLock("entourage", <EntourageTabV2 />)}
+          {activeTab === "purchase" && clientId && <PurchasePremiumPage />}
           {activeTab === "qr" && <QrAdmin />}
           {activeTab === "settings" && <SettingsAdmin />}
           {activeTab === "overview" && <SuperOverview />}

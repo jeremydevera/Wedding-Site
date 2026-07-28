@@ -923,6 +923,17 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 .admin__navlock { margin-left: auto; display: inline-flex; color: var(--muted); flex: none; }
 .admin__navlock svg { width: 13px; height: 13px; }
 
+/* Premium purchase page — Basic vs Premium plan comparison */
+.plans th, .plans td { text-align: center; }
+.plans th:first-child, .plans td:first-child { text-align: left; }
+.plans th { font-size: 15px; }
+.plans__price { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); margin-top: 2px; text-transform: none; letter-spacing: 0; }
+.plans th.plans__premium .plans__price { color: var(--accent, #1E5BD6); }
+.plans .plans__premium { background: color-mix(in oklab, var(--accent, #1E5BD6) 6%, transparent); }
+.plans__yes { color: #16a34a; display: inline-flex; }
+.plans__yes svg { width: 17px; height: 17px; }
+.plans__no { color: var(--muted); font-size: 14px; }
+
 /* Sign-in — split layout (form left, animated panel right), follows OS light/dark */
 .signin {
   /* overflow-x hidden (not auto): .signin is a fixed full-screen scroll box, so
