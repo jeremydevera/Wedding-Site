@@ -146,10 +146,12 @@ export function RSVPPage() {
 
   // Show validation errors AND bring the first offending field into view —
   // on a long mobile form the message is otherwise off-screen.
-  const FIELD_IDS = { firstName: "r-first", lastName: "r-last", middleName: "r-middle", email: "r-email", count: "r-count", dietNotes: "r-dietnote", notes: "r-notes" };
+  const FIELD_IDS = { firstName: "r-first", lastName: "r-last", middleName: "r-middle", email: "r-email", phone: "r-phone", count: "r-count", dietNotes: "r-dietnote", notes: "r-notes" };
   function showErrors(er) {
     setErrors(er);
-    const first = ["firstName", "lastName", "middleName", "email", "count", "dietNotes", "notes"].find((k) => er[k]);
+    // Order matches the form top-to-bottom; phone was missing, so a required
+    // contact number never got scrolled to / focused on "Send RSVP".
+    const first = ["firstName", "middleName", "lastName", "email", "phone", "count", "dietNotes", "notes"].find((k) => er[k]);
     const el = first && document.getElementById(FIELD_IDS[first]);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
