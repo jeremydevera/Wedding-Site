@@ -7,7 +7,7 @@ import React from "react";
 import { Chart as ChartJS, DoughnutController, ArcElement } from "chart.js";
 import { InfoPop, InfoDot, useInfoHover } from "@/admin/health-info.jsx";
 
-const { useRef, useEffect, useState } = React;
+const { useRef, useEffect } = React;
 
 ChartJS.register(DoughnutController, ArcElement);
 
@@ -47,10 +47,12 @@ function ringConfig(pct, has) {
   };
 }
 
-// Hover popover: per-item breakdown (e.g. each Neon shard's size + % of its cap).
+// Per-item breakdown body (each Neon shard's size + % of its cap). Rendered
+// INSIDE the portalled InfoPop — as a plain absolute child it was clipped by
+// `.panel { overflow: hidden }` (and ran off the right edge on the last tile).
 function Breakdown({ rows, fmt }) {
   return (
-    <div role="tooltip" style={{ position: "absolute", left: "50%", bottom: "calc(100% + 8px)", transform: "translateX(-50%)", zIndex: 20, minWidth: 200, background: "#0f172a", color: "#e2e8f0", borderRadius: 10, padding: "10px 12px", boxShadow: "0 10px 30px rgba(15,23,42,.28)", textAlign: "left", fontWeight: 500, pointerEvents: "none" }}>
+    <>
       <div style={{ fontSize: 10.5, letterSpacing: ".08em", color: "#94a3b8", fontWeight: 700, marginBottom: 6 }}>PER SHARD</div>
       {rows.map((r) => {
         const rhas = r.bytes != null && r.limit > 0;
@@ -63,35 +65,31 @@ function Breakdown({ rows, fmt }) {
           </div>
         );
       })}
-      <div style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "6px solid #0f172a" }} />
-    </div>
+    </>
   );
 }
 
 function Ring({ label, used, limit, fmt, suffix, detail, note, breakdown, info }) {
   const ref = useRef(null);
-  const [hover, setHover] = useState(false);
   const has = used != null && limit > 0;
   const pct = has ? Math.round((used / limit) * 1000) / 10 : 0;
   const hasBreakdown = Array.isArray(breakdown) && breakdown.length > 0;
   const hasInfo = !!info && !hasBreakdown; // breakdown wins the popover slot
-  const infoHover = useInfoHover(hasInfo);
+  // ONE portalled popover for both flavours — a plain absolute child gets clipped
+  // by `.panel { overflow: hidden }`, and the last tile in the row overflows the
+  // right edge. The portal also clamps to the viewport and flips above/below.
   const interactive = hasBreakdown || hasInfo;
+  const pop = useInfoHover(interactive);
   useChart(ref, () => ringConfig(pct, has), [used, limit, has]);
-  // The info bubble is portalled + anchored (see health-info.jsx); the breakdown
-  // stays a plain absolute child since this tile doesn't clip.
-  const hoverBind = hasInfo ? infoHover.bind : (hasBreakdown ? {
-    onMouseEnter: () => setHover(true), onMouseLeave: () => setHover(false),
-    onClick: () => setHover((v) => !v), onFocus: () => setHover(true), onBlur: () => setHover(false),
-    tabIndex: 0,
-  } : {});
   return (
     <div
-      {...hoverBind}
+      {...pop.bind}
       style={{ position: "relative", background: "#fff", border: "1px solid #e4e8ef", borderRadius: 14, padding: "14px 14px 12px", textAlign: "center", minWidth: 0, cursor: interactive ? "help" : "default" }}
     >
-      {hasBreakdown && hover && <Breakdown rows={breakdown} fmt={fmt} />}
-      {hasInfo && infoHover.open && <InfoPop anchor={infoHover.anchor}>{info}</InfoPop>}
+      {hasBreakdown && pop.open && (
+        <InfoPop anchor={pop.anchor} tone="dark" width={230}><Breakdown rows={breakdown} fmt={fmt} /></InfoPop>
+      )}
+      {hasInfo && pop.open && <InfoPop anchor={pop.anchor}>{info}</InfoPop>}
       <div style={{ fontSize: 13, fontWeight: 600, color: "#334155", marginBottom: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
         {label}
         {detail && <span style={{ color: "#94a3b8", fontWeight: 500 }}> · {detail}</span>}

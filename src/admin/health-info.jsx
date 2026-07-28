@@ -18,10 +18,10 @@ const GAP = 10;         // space between tile and bubble
 
 // Where should the bubble sit for this anchor? Prefers above; flips below when
 // there isn't room. Clamped so it never runs off either edge.
-function placeFor(el) {
+function placeFor(el, width) {
   const r = el.getBoundingClientRect();
   const vw = window.innerWidth, vh = window.innerHeight;
-  const w = Math.min(BUBBLE_W, vw - 20);
+  const w = Math.min(width || BUBBLE_W, vw - 20);
   let left = r.left + r.width / 2 - w / 2;
   left = Math.max(10, Math.min(left, vw - w - 10));
   const below = r.bottom + GAP;
@@ -34,9 +34,11 @@ function placeFor(el) {
 // Long-form explainer shown on hover of its tile (the domain-cap / Firebase notes
 // that used to sit as always-open blocks). Light card, so the prose it's handed
 // (strong/code/em in --ink) reads exactly as it did inline.
-export function InfoPop({ anchor, children }) {
-  const [pos, setPos] = useState(() => (anchor ? placeFor(anchor) : null));
-  const sync = useCallback(() => { if (anchor) setPos(placeFor(anchor)); }, [anchor]);
+// `tone`: "light" for prose explainers, "dark" for the compact per-shard readout.
+// `width`: override for short content (the breakdown doesn't need the full 360).
+export function InfoPop({ anchor, children, tone = "light", width }) {
+  const [pos, setPos] = useState(() => (anchor ? placeFor(anchor, width) : null));
+  const sync = useCallback(() => { if (anchor) setPos(placeFor(anchor, width)); }, [anchor, width]);
   useEffect(() => {
     sync();
     window.addEventListener("scroll", sync, true);
@@ -44,15 +46,21 @@ export function InfoPop({ anchor, children }) {
     return () => { window.removeEventListener("scroll", sync, true); window.removeEventListener("resize", sync); };
   }, [sync]);
   if (!anchor || !pos || typeof document === "undefined") return null;
+  const dark = tone === "dark";
+  const edge = dark ? "#0f172a" : "var(--line, #e4e1d8)";
   const arrow = pos.flip
-    ? { bottom: "100%", borderBottom: "7px solid var(--line, #e4e1d8)", borderTop: 0 }
-    : { top: "100%", borderTop: "7px solid var(--line, #e4e1d8)", borderBottom: 0 };
+    ? { bottom: "100%", borderBottom: `7px solid ${edge}`, borderTop: 0 }
+    : { top: "100%", borderTop: `7px solid ${edge}`, borderBottom: 0 };
   return createPortal(
     <div role="tooltip" style={{
       position: "fixed", left: pos.left, top: pos.top, bottom: pos.bottom, width: pos.w,
-      zIndex: 9999, background: "var(--panel, #fff)", border: "1px solid var(--line, #e4e1d8)",
-      borderRadius: 12, padding: "11px 14px", boxShadow: "0 14px 38px rgba(15,23,42,.22)",
-      textAlign: "left", fontWeight: 400, fontSize: 12.5, lineHeight: 1.55, color: "var(--muted)",
+      zIndex: 9999,
+      background: dark ? "#0f172a" : "var(--panel, #fff)",
+      border: dark ? "none" : "1px solid var(--line, #e4e1d8)",
+      borderRadius: dark ? 10 : 12, padding: dark ? "10px 12px" : "11px 14px",
+      boxShadow: dark ? "0 10px 30px rgba(15,23,42,.28)" : "0 14px 38px rgba(15,23,42,.22)",
+      textAlign: "left", fontWeight: dark ? 500 : 400, fontSize: 12.5, lineHeight: 1.55,
+      color: dark ? "#e2e8f0" : "var(--muted)",
       pointerEvents: "none", whiteSpace: "normal",
     }}>
       {children}
