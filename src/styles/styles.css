@@ -3274,6 +3274,11 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .apply-mfp__main select:focus,
 .apply-mfp__main textarea:focus { border-color: var(--mfp-purple); outline: none; box-shadow: none; }
 .apply-mfp__main ::placeholder { color: var(--mfp-cool); font-weight: 500; }
+/* Venue LocationPicker has a left search icon + right clear button. The generic
+   ".apply-mfp__main input" padding above (0,1,1) outweighs ".lp__search" (0,1,0)
+   and slides the placeholder under the icon (mobile overlap). Restore the icon
+   clearance with a 2-class selector that wins on specificity. */
+.apply-mfp__main .lp__search { padding-left: 38px; padding-right: 38px; }
 
 /* site-address suffix aligned to MFP */
 .apply-mfp__main .reg-sub input { border-top-right-radius: 0; border-bottom-right-radius: 0; }
