@@ -58,9 +58,20 @@ export function GuestbookPage() {
     if (!form.message.trim()) er.message = "Please write a short message.";
     if (form.message.length > 1000) er.message = "Please keep it under 1000 characters.";
     if (Object.keys(er).length) { setErrors(er); return; }
+    // Anti-spam cooldown: one message per minute per device (the DB trigger
+    // enforces the same rule server-side — this just fails friendly and fast).
+    const cdKey = "gb_last_post_" + (Store.get().clientId || "x");
+    try {
+      const last = Number(localStorage.getItem(cdKey) || 0);
+      if (Date.now() - last < 60000) {
+        setErrors({ message: "You just posted — please wait a minute before sending another message." });
+        return;
+      }
+    } catch (_) { /* private mode: server still enforces */ }
     setSubmitting(true);
     try {
       const { status } = await postGuestbook({ name: form.name, relationship: form.relationship, message: form.message });
+      try { localStorage.setItem(cdKey, String(Date.now())); } catch (_) {}
       // If it's live immediately (auto-approve on), jump to page 1 and refetch so
       // the new message shows at the top when they come back to the wall.
       if (status === "approved") { gb.setPage(1); gb.reload(); }
@@ -69,7 +80,12 @@ export function GuestbookPage() {
       setOpen(false);
       scrollToTop({ top: 0, behavior: "smooth" });
     } catch (err) {
-      setErrors({ message: "Could not post right now. Please try again." });
+      // The guestbook_rate_limit DB trigger raises "rate_limited: …" — show its
+      // friendly half instead of the generic failure.
+      const msg = String(err && err.message || "");
+      setErrors({ message: /rate_limited/i.test(msg)
+        ? "Easy there! Please wait a minute between messages."
+        : "Could not post right now. Please try again." });
     } finally {
       setSubmitting(false);
     }

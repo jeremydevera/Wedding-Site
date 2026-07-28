@@ -1,4 +1,4 @@
-import { neonSelect, neonInsert, neonRpc, neonAuthedSelect, neonAuthedInsert, neonAuthedUpdate, neonAuthedDelete, NEON_FLAG_KEY, NEON_SHARDS_KEY, FB_AUTH_FLAG_KEY, setFbAuthMode, setNeonRegistry, resolveShardId, setActiveShard } from "@/lib/neon.js";
+import { neonSelect, neonInsert, neonRpc, authedRpc, neonAuthedSelect, neonAuthedInsert, neonAuthedUpdate, neonAuthedDelete, NEON_FLAG_KEY, NEON_SHARDS_KEY, FB_AUTH_FLAG_KEY, setFbAuthMode, setNeonRegistry, resolveShardId, setActiveShard } from "@/lib/neon.js";
 import { Store } from "@/lib/store.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { clientToState, stateToClientRow, rowToGuestbook, rowToRsvp, rowToQuizSub, rsvpToRow, guestbookToRow, quizToRow, guestToRow, rowToGuest, ticketToRow } from "@/lib/mappers.js";
@@ -130,6 +130,17 @@ export async function postQuiz(sub) {
   const clientId = Store.get().clientId;
   await neonInsert("quiz_answers", quizToRow(sub, clientId));
   Store.addQuizSub(sub);
+}
+
+// Cross-device notification read-state (notif_state table, keyed by the
+// signed-in user's uid via SECURITY DEFINER RPCs — no direct table grants).
+// Shape: { [scope]: { seen, cleared } } where scope = clientId or "sa".
+// Both fail soft: the bell falls back to its localStorage cache.
+export async function getNotifState() {
+  try { return (await authedRpc("get_notif_state")) || {}; } catch (_) { return {}; }
+}
+export async function setNotifState(state) {
+  try { await authedRpc("set_notif_state", { p_state: state || {} }); } catch (_) { /* offline: local cache still applies */ }
 }
 
 // Admin: load the active client's submissions from the DB into the store.

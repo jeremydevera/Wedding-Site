@@ -105,7 +105,11 @@ export function RSVPPage() {
     if (!strict) return;
     setForm((f) => {
       const c = parseInt(f.count, 10) || 0;
-      if (alloc != null && c < 1) return { ...f, count: 1 };
+      // Once the name verifies, default to the FULL party (owner request):
+      // 2 allotted seats → picker preset to 1 plus-one (with their name slot
+      // ready), 3 seats → 2. The guest can still lower it; the untouched
+      // default is c <= 1, so an explicit smaller pick is never overridden.
+      if (alloc != null && c <= 1) return { ...f, count: Math.max(1, alloc) };
       return c > maxCount ? { ...f, count: maxCount } : f;
     });
   }, [strict, maxCount, alloc]);

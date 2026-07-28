@@ -10,7 +10,7 @@ import { SupportWidget, SupportPanel, TicketForm } from "@/admin/SupportWidget.j
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { signOut, createOwner, ownerHomeUrl, adminBridgeToken } from "@/lib/auth.js";
 import { firebaseSignInProvider, firebaseUpdatePassword } from "@/lib/firebase.js";
-import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb, updateRsvpDietDb, listSiteRequests, subscribeSiteRequestsRealtime, listTickets, subscribeTicketsRealtime , listRecentClientReplies, listRecentSupportReplies, subscribeAllTicketMessagesRealtime, getAppConfig, setAppConfig} from "@/lib/api.js";
+import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb, updateRsvpDietDb, listSiteRequests, subscribeSiteRequestsRealtime, listTickets, subscribeTicketsRealtime , listRecentClientReplies, listRecentSupportReplies, subscribeAllTicketMessagesRealtime, getAppConfig, setAppConfig, getNotifState, setNotifState} from "@/lib/api.js";
 import { DIET_OPTIONS } from "@/features/rsvp.jsx";
 import { reconcileGuests, guestFromRsvp, findDuplicateGuest } from "@/lib/guests.js";
 import { headsOf } from "@/lib/rsvp.js";
@@ -396,7 +396,7 @@ function GuestForm({ initial, companions, rsvpDiet, onSave, onCancel }) {
       {f.id ? (
         <>
           <div className="field-row field-row--2">
-            <Field label="Allotted seats" id="g-alloc"><Input id="g-alloc" type="number" min={1} value={f.allocation} onChange={set("allocation")} /></Field>
+            <Field label="Allotted seats (guest + their additional persons)" id="g-alloc"><Input id="g-alloc" type="number" min={1} value={f.allocation} onChange={set("allocation")} /></Field>
             <Field label="Status" id="g-status">
               <Select id="g-status" value={f.status || "attending"} onChange={set("status")}>
                 {[["attending", "Attending"], ["maybe", "Maybe"], ["not_attending", "Declined"], ["none", "No reply"]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
@@ -408,7 +408,7 @@ function GuestForm({ initial, companions, rsvpDiet, onSave, onCancel }) {
       ) : (
         <>
           <div className="field-row field-row--2">
-            <Field label="Allotted seats" id="g-alloc"><Input id="g-alloc" type="number" min={1} value={f.allocation} onChange={set("allocation")} /></Field>
+            <Field label="Allotted seats (guest + their additional persons)" id="g-alloc"><Input id="g-alloc" type="number" min={1} value={f.allocation} onChange={set("allocation")} /></Field>
             <Field label="Email" hint="Optional" id="g-email"><Input id="g-email" type="email" value={f.email || ""} onChange={set("email")} /></Field>
           </div>
           <div style={{ display: "flex", gap: 10 }}>
@@ -1390,8 +1390,8 @@ function DonateAdModal({ open, onClose, onGo }) {
           This platform is built &amp; run by a solo developer. If it helped make your celebration special, a small tip keeps it going. Thank you! ❤️
         </p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+          {/* Single CTA (owner request) — the modal's × / backdrop still dismiss it. */}
           <Button variant="primary" onClick={onGo}>{Icon.heart({})} Donate to Dev</Button>
-          <Button variant="ghost" onClick={onClose}>Maybe later</Button>
         </div>
       </div>
     </Modal>
@@ -2179,7 +2179,7 @@ function ThemePreviewFrame({ theme, decorStyle, decorOn, envColor, envColorCusto
       </div>
       <div ref={wrapRef} style={{ width: "100%" }}>
         <div style={{ width: Math.round(baseW * scale), height: Math.round(baseH * scale), margin: "0 auto", overflow: "hidden", borderRadius: 12, border: "1px solid var(--line, #e5e7eb)", boxShadow: "0 8px 28px -14px rgba(0,0,0,.35)", background: "#fff" }}>
-          <iframe ref={ref} title="Live theme preview" src="/?preview=1" loading="lazy" onLoad={post}
+          <iframe ref={ref} title="Live theme preview" src={previewSrc()} loading="lazy" onLoad={post}
             style={{ width: baseW, height: baseH, border: 0, transform: `scale(${scale})`, transformOrigin: "top left", pointerEvents: "none" }} />
         </div>
       </div>
@@ -3093,7 +3093,10 @@ function ClosesAtInput({ value, onChange }) {
   };
   return (
     <div style={{ position: "relative" }}>
-      <Input id="s-rsvpd" readOnly value={fmt(value)} placeholder="Leave blank to keep the form open"
+      {/* Short placeholder — the long "Leave blank to keep the form open" was
+          clipped inside the input on narrow phones; the hint below the field
+          carries the full explanation. */}
+      <Input id="s-rsvpd" readOnly value={fmt(value)} placeholder="Optional — tap to set"
         onClick={openPicker} style={{ cursor: "pointer", paddingRight: value ? 66 : 42 }} />
       <button type="button" onClick={openPicker} aria-label="Pick a close date"
         style={{ position: "absolute", top: "50%", right: 8, transform: "translateY(-50%)", display: "grid", placeItems: "center", width: 30, height: 30, background: "none", border: "none", color: "var(--muted)", cursor: "pointer" }}>
@@ -3210,7 +3213,7 @@ function SectionPreviewFrame({ scrollTo, sampleTag = false }) {
                 compositor layer — without them Chrome blanks it to white while
                 the modal scrolls (repaints only after the scroll settles). */}
             <div style={{ width: Math.round(baseW * scale), height: Math.round(baseH * scale), overflow: "hidden", background: "#fff", transform: "translateZ(0)" }}>
-              <iframe ref={ref} title="Section preview" src="/?preview=1" loading="lazy" onLoad={post}
+              <iframe ref={ref} title="Section preview" src={previewSrc()} loading="lazy" onLoad={post}
                 style={{ width: baseW, height: baseH, border: 0, transform: `scale(${scale}) translateZ(0)`, transformOrigin: "top left", pointerEvents: "none", willChange: "transform", backfaceVisibility: "hidden" }} />
             </div>
           </DeviceFrame>
@@ -3912,7 +3915,8 @@ export function AttireGroupEditor({ open, group, onClose }) {
         <Textarea id="at-desc" value={f.desc} onChange={(e) => setF((p) => ({ ...p, desc: e.target.value }))} placeholder="e.g. Black suit, earthy tones" style={{ minHeight: 70 }} />
       </Field>
       <Field label="Example picture" hint="A reference outfit or inspiration image (optional)." id="at-img">
-        <ImageUploadField purpose="attire" value={f.image} ratio="3 / 4" onChange={(v) => setF((p) => ({ ...p, image: v }))} />
+        {/* Square (owner request) — the public attire card is 1:1 too. */}
+        <ImageUploadField purpose="attire" value={f.image} ratio="1 / 1" onChange={(v) => setF((p) => ({ ...p, image: v }))} />
       </Field>
       <Field label="Colour palette" hint="Add the outfit colours — click a swatch to pick a colour.">
         <div className="pal-edit">
@@ -3956,7 +3960,7 @@ export function AttireAdmin({ headRight, headExtra = null, extraTop = null }) {
             {groups.map((g, i) => (
               <tr key={g.id}>
                 <td style={{ color: "var(--muted)" }}>{i + 1}</td>
-                <td>{g.image ? <img src={mediaUrl(g.image)} alt="" style={{ width: 40, height: 52, objectFit: "cover", borderRadius: 6, display: "block" }} /> : <span style={{ color: "var(--muted)" }}>—</span>}</td>
+                <td>{g.image ? <img src={mediaUrl(g.image)} alt="" style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 6, display: "block" }} /> : <span style={{ color: "var(--muted)" }}>—</span>}</td>
                 <td><strong>{g.name}</strong>{g.desc ? <div style={{ color: "var(--ink-soft)", fontSize: 12, marginTop: 2, maxWidth: 280 }}>{g.desc}</div> : null}</td>
                 <td><div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>{(g.palette || []).map((c, j) => <span key={j} style={{ width: 18, height: 18, borderRadius: "50%", background: c, border: "1px solid var(--line)", display: "inline-block" }} title={c} />)}</div></td>
                 <td>
@@ -4199,6 +4203,17 @@ export const ADMIN_TABS = [
   { key: "settings", label: "Settings", icon: "gear" },
 ];
 
+// Preview iframes must keep the SAME client as the admin around them. When the
+// admin is opened with a ?client= override (apex console, owner via www), a bare
+// "/?preview=1" iframe loses that override and resolves to the apex — the "Show
+// to Home" simulator rendered the wrong app entirely (fix: blank/console preview).
+export function previewSrc() {
+  try {
+    const c = new URLSearchParams(window.location.search).get("client");
+    return "/?preview=1" + (c ? "&client=" + encodeURIComponent(c) : "");
+  } catch (_) { return "/?preview=1"; }
+}
+
 // Admin notification bell — flags new RSVPs, quiz plays, and guestbook messages
 // since the operator last opened it. "Seen" is a timestamp kept in localStorage
 // per client; opening the panel marks everything up to now as seen.
@@ -4215,6 +4230,30 @@ function initialsOf(name) {
   if (!parts.length) return "?";
   return ((parts[0][0] || "") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
 }
+// Cross-device read state (owner request: opening the bell on one phone must
+// clear the badge on every other device). localStorage stays the instant local
+// cache; the DB copy (get/set_notif_state, keyed by the signed-in user) wins
+// whenever it's NEWER. Returns a push(seen, cleared) that persists both.
+function useSyncedNotif(scope, key, clearKey, setSeen, setClearedAt) {
+  const full = useRef({});
+  useEffect(() => {
+    let dead = false;
+    getNotifState().then((st) => {
+      if (dead || !st || typeof st !== "object") return;
+      full.current = st;
+      const s = st[scope] || {};
+      const sv = Number(s.seen || 0), cv = Number(s.cleared || 0);
+      if (sv) setSeen((p) => { const v = Math.max(p, sv); try { localStorage.setItem(key, String(v)); } catch (_) {} return v; });
+      if (cv) setClearedAt((p) => { const v = Math.max(p, cv); try { localStorage.setItem(clearKey, String(v)); } catch (_) {} return v; });
+    }).catch(() => {});
+    return () => { dead = true; };
+  }, [scope, key, clearKey]); // setState fns are stable
+  return (seen, cleared) => {
+    full.current = { ...full.current, [scope]: { seen, cleared } };
+    setNotifState(full.current); // fire-and-forget
+  };
+}
+
 function NotificationBell({ goTab, supportReplies = [] }) {
   const { rsvps, guestbook, quizSubs, clientId, settings } = useStore();
   const [open, setOpen] = useState(false);
@@ -4225,6 +4264,7 @@ function NotificationBell({ goTab, supportReplies = [] }) {
   // anything that arrives afterwards shows up as usual.
   const clearKey = "evermore_notif_cleared_" + (clientId || "x");
   const [clearedAt, setClearedAt] = useState(() => { try { return Number(localStorage.getItem(clearKey) || 0); } catch (_) { return 0; } });
+  const pushNotif = useSyncedNotif(clientId || "x", key, clearKey, setSeen, setClearedAt);
 
   const gbOn = moduleEnabled(settings.modules, "guestbook");
   const quizOn = moduleEnabled(settings.modules, "quiz");
@@ -4246,6 +4286,7 @@ function NotificationBell({ goTab, supportReplies = [] }) {
     try { localStorage.setItem(clearKey, String(now)); localStorage.setItem(key, String(now)); } catch (_) {}
     setClearedAt(now);
     setSeen(now);
+    pushNotif(now, now); // cross-device
   };
 
   const unseen = items.filter((i) => i.at > seen).length;
@@ -4255,7 +4296,8 @@ function NotificationBell({ goTab, supportReplies = [] }) {
     const now = Date.now();
     try { localStorage.setItem(key, String(now)); } catch (_) {}
     setSeen(now);
-  }, [open, key]);
+    pushNotif(now, clearedAt); // cross-device
+  }, [open, key]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="notif">
@@ -4309,6 +4351,7 @@ function SuperNotificationBell({ goTab }) {
   const clearKey = "evermore_notif_cleared_sa";
   const [seen, setSeen] = useState(() => { try { return Number(localStorage.getItem(key) || 0); } catch (_) { return 0; } });
   const [clearedAt, setClearedAt] = useState(() => { try { return Number(localStorage.getItem(clearKey) || 0); } catch (_) { return 0; } });
+  const pushNotif = useSyncedNotif("sa", key, clearKey, setSeen, setClearedAt);
 
   useEffect(() => {
     let dead = false;
@@ -4339,6 +4382,7 @@ function SuperNotificationBell({ goTab }) {
     try { localStorage.setItem(clearKey, String(now)); localStorage.setItem(key, String(now)); } catch (_) {}
     setClearedAt(now);
     setSeen(now);
+    pushNotif(now, now); // cross-device
   };
   const unseen = items.filter((i) => i.at > seen).length;
   useEffect(() => {
@@ -4346,6 +4390,7 @@ function SuperNotificationBell({ goTab }) {
     const now = Date.now();
     try { localStorage.setItem(key, String(now)); } catch (_) {}
     setSeen(now);
+    pushNotif(now, clearedAt); // cross-device
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Land on the Clients tab with the Requests folder open (ClientsAdmin
