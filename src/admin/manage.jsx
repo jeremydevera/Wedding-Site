@@ -8,7 +8,7 @@ import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
 import { SupportWidget, SupportPanel, TicketForm } from "@/admin/SupportWidget.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
-import { signOut, createOwner, ownerHomeUrl } from "@/lib/auth.js";
+import { signOut, createOwner, ownerHomeUrl, adminBridgeToken } from "@/lib/auth.js";
 import { supabase } from "@/lib/supabase.js";
 import { firebaseSignInProvider, firebaseUpdatePassword } from "@/lib/firebase.js";
 import { loadAdminData, subscribeAdminRealtime, saveClientData, setGuestbookStatusDb, deleteGuestbookDb, deleteRsvpDb, uploadAudio, uploadToR2, migrateClientMediaToR2, hasLegacyMedia, sendEmail, addGuestDb, updateGuestDb, deleteGuestDb, updateRsvpCompanionsDb, updateRsvpStatusDb, updateRsvpDietDb, listSiteRequests, subscribeSiteRequestsRealtime, listTickets, subscribeTicketsRealtime , listRecentClientReplies, listRecentSupportReplies, subscribeAllTicketMessagesRealtime, getAppConfig, setAppConfig} from "@/lib/api.js";
@@ -2459,10 +2459,10 @@ export function PlatformSettings() {
       // keep it in sync. Best-effort: a failed mirror must be loud, not silent.
       if (flags.auto_approve_requests !== saved.auto_approve_requests) {
         try {
-          const { data: { session } } = await supabase.auth.getSession();
+          const token = await adminBridgeToken();
           const res = await fetch("/api/neon-admin", {
             method: "POST",
-            headers: { "content-type": "application/json", authorization: `Bearer ${session?.access_token || ""}` },
+            headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
             body: JSON.stringify({ action: "set_config", key: "auto_approve_requests", value: { enabled: flags.auto_approve_requests } }),
           });
           const j = await res.json().catch(() => ({}));

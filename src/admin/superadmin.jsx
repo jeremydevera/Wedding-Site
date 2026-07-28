@@ -1,7 +1,7 @@
 import React from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabase.js";
-import { createOwner, updateOwnerEmail, deleteOwner } from "@/lib/auth.js";
+import { createOwner, updateOwnerEmail, deleteOwner, adminBridgeToken } from "@/lib/auth.js";
 import { THEMES } from "@/themes";
 import { themesForEvent } from "@/config/eventTypes.js";
 import { FEATURE_ROWS, FEATURE_LEVELS, FEATURE_DEFAULTS, moduleLabel, DISABLED_MODULES, DEFAULT_CLIENT_MODULES } from "@/lib/roles.js";
@@ -409,10 +409,10 @@ export function ClientsAdmin() {
   const [neonClients, setNeonClients] = useState([]);
   const [neonSignups, setNeonSignups] = useState([]); // registered, wizard not finished
   async function neonAdmin(action, params = {}) {
-    const { data: { session } } = await supabase.auth.getSession();
+    const token = await adminBridgeToken();
     const res = await fetch("/api/neon-admin", {
       method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${session?.access_token || ""}` },
+      headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
       body: JSON.stringify({ action, ...params }),
     });
     const j = await res.json().catch(() => ({}));

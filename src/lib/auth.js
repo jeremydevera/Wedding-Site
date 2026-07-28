@@ -83,6 +83,19 @@ async function loadApexNeonCtx() {
   setActiveShard(resolveShardId(""));
 }
 
+// Token the apex superadmin console sends to the /api/neon-admin bridge. The
+// console now signs in with FIREBASE (Google / email+password), so prefer the
+// Firebase ID token; fall back to a legacy Supabase access token during the
+// additive cutover. The bridge routes by issuer and verifies either.
+export async function adminBridgeToken() {
+  try {
+    const { firebaseUserToken } = await import("@/lib/firebase.js");
+    const t = await firebaseUserToken();
+    if (t) return t;
+  } catch (e) { /* Firebase not signed in — try Supabase */ }
+  try { const { data: { session } } = await supabase.auth.getSession(); return session?.access_token || ""; } catch (e) { return ""; }
+}
+
 // ---- Neon admin auth (Better Auth via the first-party /api/auth proxy) --------
 // A neonMode client authenticates its OWNER against Neon Auth, not Supabase.
 // Ownership is proven server-side by my_registration_state() (state 'active' +
@@ -146,7 +159,14 @@ export async function loadSession() {
         if (s && s.user) {
           const prof = await neonAuthedSelect("profiles", `select=role&id=eq.${encodeURIComponent(s.user.id)}`).catch(() => null);
           const isSA = prof && prof[0] && prof[0].role === "superadmin";
-          if (!isSA) {
+          if (isSA) {
+            // Superadmin signed into Firebase (Google / email+password) → this IS
+            // the console session now. Bridge calls carry the Firebase ID token.
+            Store.setAuth({ session: s, role: "superadmin", clientId: null, email: s.user.email });
+            gateFlag();
+            return;
+          }
+          {
             const st = await regState();
             if (st?.state === "active" && st.subdomain) { window.location.assign(`https://${st.subdomain}.celebrately.us/admin`); return; }
             if (st?.state === "none") { window.location.assign("/register"); return; }
@@ -217,7 +237,13 @@ export async function signIn(email, password) {
         const suid = ns?.user?.id;
         if (suid) {
           const prof = await neonAuthedSelect("profiles", `select=role&id=eq.${encodeURIComponent(suid)}`).catch(() => null);
-          if (prof && prof[0] && prof[0].role === "superadmin") { await neonAuth.signOut().catch(() => {}); throw error; }
+          if (prof && prof[0] && prof[0].role === "superadmin") {
+            // Superadmin signed in with their FIREBASE password at the apex — this
+            // IS the console session now (was: bounce back to the Supabase login).
+            Store.setAuth({ session: ns, role: "superadmin", clientId: null, email: ns.user?.email || email });
+            gateFlag();
+            return { role: "superadmin", client_id: null };
+          }
         }
         const st = await regState();
         if (st?.state === "active" && st.subdomain) {
@@ -353,6 +379,11 @@ async function routeAfterGoogle(uid, gfrom) {
   const prof = uid ? await neonAuthedSelect("profiles", `select=role&id=eq.${encodeURIComponent(uid)}`).catch(() => null) : null;
   if (prof && prof[0] && prof[0].role === "superadmin") {
     if (gfrom) { window.location.assign(`https://${gfrom}.celebrately.us/admin`); return { role: "superadmin", client_id: null, redirecting: true }; }
+    // Superadmin signed in with Google on the apex → open the console right here
+    // (set the session so superadmin.jsx renders without a reload).
+    const s = await neonAuth.session().catch(() => null);
+    Store.setAuth({ session: s || { user: { id: uid } }, role: "superadmin", clientId: null, email: s?.user?.email || null });
+    gateFlag();
     return { role: "superadmin", client_id: null, note: "You're signed in with Google — open any client's admin to manage it." };
   }
   const st = await regState();

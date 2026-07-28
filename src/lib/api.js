@@ -3,7 +3,7 @@ import { neonSelect, neonInsert, neonRpc, neonAuthedSelect, neonAuthedInsert, ne
 import { Store } from "@/lib/store.jsx";
 import { resolveSubdomain } from "@/lib/tenant.js";
 import { clientToState, stateToClientRow, rowToGuestbook, rowToRsvp, rowToQuizSub, rsvpToRow, guestbookToRow, quizToRow, guestToRow, rowToGuest, ticketToRow } from "@/lib/mappers.js";
-import { loadSession, createOwner, sendSetupEmail } from "@/lib/auth.js";
+import { loadSession, createOwner, sendSetupEmail, adminBridgeToken } from "@/lib/auth.js";
 import { DEFAULT_CLIENT_MODULES } from "@/lib/roles.js";
 
 // Columns the ANONYMOUS role may read from clients (matches the Neon column
@@ -632,10 +632,10 @@ export async function submitSiteRequest({ email, partnerA, partnerB, eventType, 
 // bridge — the console holds a SUPABASE superadmin JWT, not a Neon one.
 const TICKET_SRC_NEON = "neon";
 async function neonAdminRpc(action, params = {}) {
-  const { data: { session } } = await supabase.auth.getSession();
+  const token = await adminBridgeToken();
   const res = await fetch("/api/neon-admin", {
     method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${session?.access_token || ""}` },
+    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
     body: JSON.stringify({ action, ...params }),
   });
   const j = await res.json().catch(() => ({}));

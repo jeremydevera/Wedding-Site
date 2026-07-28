@@ -6,11 +6,44 @@ import { neon } from "@neondatabase/serverless";
 
 const json = (o, s = 200) => new Response(JSON.stringify(o), { status: s, headers: { "content-type": "application/json" } });
 
+const FB_PROJECT = "wedding-dc35d";
+
+// Decode a JWT payload WITHOUT verifying — cheap enough for issuer routing and
+// claim pre-checks. Signature is verified separately (Google, for Firebase).
+function jwtPayload(token) {
+  try { return JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))); } catch (e) { return null; }
+}
+
+// Firebase-authenticated superadmin. The console now signs in with Firebase
+// (Google / email+password), not Supabase. Validate the ID token's claims,
+// confirm Google actually signed it (accounts:lookup rejects forged/expired
+// tokens — offloads RS256 verification), then require a NEON `profiles`
+// superadmin row for that uid. Returns the uid or null.
+async function firebaseSuperadmin(env, token) {
+  const p = jwtPayload(token);
+  if (!p || p.aud !== FB_PROJECT || p.iss !== `https://securetoken.google.com/${FB_PROJECT}`) return null;
+  if (!p.exp || p.exp * 1000 < Date.now()) return null;
+  const KEY = env.FIREBASE_WEB_API_KEY || "AIzaSyC4zUcZH06Te0CQLwn9r3VdAeb3Rcf4K0k";
+  const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${KEY}`, {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ idToken: token }),
+  });
+  if (!r.ok) return null;
+  const uid = (await r.json())?.users?.[0]?.localId;
+  if (!uid) return null;
+  const sql = neon(env.NEON_DATABASE_URL);
+  const rows = await sql`select 1 from profiles where id = ${uid} and role = 'superadmin' limit 1`;
+  return rows && rows[0] ? uid : null;
+}
+
 async function requireSuperadmin(env, request) {
-  const SUPABASE_URL = env.SUPABASE_URL || "https://xprynknppsehuzqqdvue.supabase.co";
-  const ANON = env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhwcnlua25wcHNlaHV6cXFkdnVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwODg1OTUsImV4cCI6MjA5NzY2NDU5NX0._S3xdNXBm6d4SI8MO0MNoZ3bT8uspEd8lrdVm29Efgo";
   const token = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
   if (!token) return null;
+  // Route by issuer: a Firebase console session vs a legacy Supabase session.
+  const iss = jwtPayload(token)?.iss || "";
+  if (iss.includes("securetoken.google.com")) return await firebaseSuperadmin(env, token).catch(() => null);
+  // Legacy/fallback: Supabase superadmin JWT (kept during the additive cutover).
+  const SUPABASE_URL = env.SUPABASE_URL || "https://xprynknppsehuzqqdvue.supabase.co";
+  const ANON = env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhwcnlua25wcHNlaHV6cXFkdnVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwODg1OTUsImV4cCI6MjA5NzY2NDU5NX0._S3xdNXBm6d4SI8MO0MNoZ3bT8uspEd8lrdVm29Efgo";
   const who = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: { apikey: ANON, authorization: `Bearer ${token}` } });
   if (!who.ok) return null;
   const uid = (await who.json())?.id;
