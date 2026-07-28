@@ -216,7 +216,7 @@ function TicketModal({ ticket, onClose, onRefresh }) {
     if (busy || !dirty) return;
     setBusy(true);
     try {
-      await setTicketStatus(ticket.id, status);
+      await setTicketStatus(ticket.id, status, ticket);
       setSaved(status);
       toast(status === "resolved" ? "Marked resolved" : status === "waiting_reply" ? "Client notified — waiting for their reply" : "Reopened", "success");
       onRefresh && onRefresh();
@@ -337,7 +337,7 @@ export function SupportAdmin() {
                       <Button variant="ghost" size="sm" style={{ marginRight: 14 }} onClick={() => setTicket(t)}>{Icon.eye({})} Open</Button>
                       <Button variant="ghost" size="sm" aria-label="Delete ticket" onClick={async () => {
                         if (!(await confirmDialog({ title: "Delete this ticket?", message: `Permanently remove "${t.subject}" and its replies. This can't be undone.`, confirmLabel: "Delete", danger: true }))) return;
-                        try { await deleteTicket(t.id); toast("Ticket deleted", "success"); load(); } catch (e) { toast(e.message || "Delete failed", "error"); }
+                        try { await deleteTicket(t.id, t); toast("Ticket deleted", "success"); load(); } catch (e) { toast(e.message || "Delete failed", "error"); }
                       }}>{Icon.trash({})}</Button>
                     </td>
                 </tr>

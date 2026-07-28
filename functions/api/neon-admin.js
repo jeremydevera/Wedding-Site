@@ -111,6 +111,58 @@ export async function onRequestPost({ request, env }) {
         const del = await sql`delete from clients where id = ${body.id} returning subdomain`;
         return json({ ok: true, deleted: del[0]?.subdomain || null, owner_uid: ownerUid, firebase_purged: fb.purged });
       }
+      // ── Support tickets (Neon clients) ────────────────────────────────────
+      // The superadmin console runs on the apex with a SUPABASE session, so it
+      // can't hit Neon's Data API as a Neon superadmin — these bridge actions
+      // give it the same ticket operations it has on Supabase. Owners talk to
+      // Neon directly (RLS-scoped) from their own subdomain; see api.js.
+      case "list_tickets": {
+        const rows = await sql`select t.*, c.subdomain from support_tickets t
+          left join clients c on c.id = t.client_id order by t.created_at desc limit 500`;
+        return json({ ok: true, rows });
+      }
+      case "set_ticket_status": {
+        if (!body.id || !body.status) return json({ error: "id and status required" }, 400);
+        await sql`update support_tickets set status = ${body.status},
+          resolved_at = ${body.status === "resolved" ? new Date().toISOString() : null},
+          updated_at = now() where id = ${body.id}`;
+        return json({ ok: true });
+      }
+      case "update_ticket": {
+        if (!body.id) return json({ error: "id required" }, 400);
+        // Only the fields the console edits; unknown keys are ignored on purpose.
+        await sql`update support_tickets set
+          admin_note = coalesce(${body.patch?.admin_note ?? null}, admin_note),
+          status = coalesce(${body.patch?.status ?? null}, status),
+          updated_at = now() where id = ${body.id}`;
+        return json({ ok: true });
+      }
+      case "delete_ticket": {
+        if (!body.id) return json({ error: "id required" }, 400);
+        await sql`delete from support_ticket_messages where ticket_id = ${body.id}`;
+        await sql`delete from support_tickets where id = ${body.id}`;
+        return json({ ok: true });
+      }
+      case "list_ticket_messages": {
+        if (!body.ticket_id) return json({ error: "ticket_id required" }, 400);
+        const rows = await sql`select * from support_ticket_messages
+          where ticket_id = ${body.ticket_id} order by created_at asc`;
+        return json({ ok: true, rows });
+      }
+      case "post_ticket_message": {
+        if (!body.ticket_id || !String(body.body || "").trim()) return json({ error: "ticket_id and body required" }, 400);
+        // Superadmin replies only — the owner posts directly via Neon RLS.
+        await sql`insert into support_ticket_messages (ticket_id, sender_role, sender_name, body, attachment_url)
+          values (${body.ticket_id}, 'superadmin', ${body.sender_name || "Support"}, ${String(body.body).trim()}, ${body.attachment_url || null})`;
+        return json({ ok: true });
+      }
+      case "list_recent_client_replies": {
+        const lim = Math.min(Number(body.limit) || 20, 100);
+        const rows = await sql`select m.*, t.subject from support_ticket_messages m
+          join support_tickets t on t.id = m.ticket_id
+          where m.sender_role = 'owner' order by m.created_at desc limit ${lim}`;
+        return json({ ok: true, rows });
+      }
       // Full row incl. content for the console Edit modal (list_clients trims it).
       case "get_client": {
         if (!body.id) return json({ error: "id required" }, 400);

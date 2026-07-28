@@ -65,13 +65,13 @@ export function TicketThread({ ticket, onChanged, onGone, leftAction, rightActio
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const endRef = useRef(null);
-  const load = () => listTicketMessages(ticket.id)
+  const load = () => listTicketMessages(ticket.id, ticket)
     .then((rows) => setMsgs(rows || []))
     .catch(() => {})
     .finally(() => setLoading(false));
   useEffect(() => { setLoading(true); load(); }, [ticket.id]); // eslint-disable-line react-hooks/exhaustive-deps
   // live replies: refresh the thread when the other side sends (Bug scan #1)
-  useEffect(() => subscribeTicketMessagesRealtime(ticket.id, load), [ticket.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => subscribeTicketMessagesRealtime(ticket.id, load, ticket), [ticket.id]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (endRef.current && endRef.current.scrollIntoView) endRef.current.scrollIntoView({ block: "nearest" }); }, [msgs.length]);
 
   async function send() {
@@ -80,7 +80,7 @@ export function TicketThread({ ticket, onChanged, onGone, leftAction, rightActio
     try {
       let attachmentUrl = null;
       if (file) attachmentUrl = await uploadSupportImage(file, ticket.client_id);
-      await postTicketMessage(ticket.id, reply, attachmentUrl);
+      await postTicketMessage(ticket.id, reply, attachmentUrl, ticket);
       setReply("");
       setFile(null);
       await load();

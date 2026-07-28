@@ -625,6 +625,28 @@ export async function submitSiteRequest({ email, partnerA, partnerB, eventType, 
 // --- Support tickets (owner sticky widget + superadmin console) --------------
 // Owner files a ticket from their admin; RLS scopes insert/select to their own
 // client. `tab` is the admin tab they were on (context for the superadmin).
+// Tickets live in BOTH stores during/after the Neon migration: Neon clients file
+// into Neon (RLS-scoped by their Firebase login), legacy Supabase clients into
+// Supabase. Rows carry `_src` so mutations route back to the store they came
+// from, and the superadmin console reads both. `neonAdminRpc` is the apex
+// bridge — the console holds a SUPABASE superadmin JWT, not a Neon one.
+const TICKET_SRC_NEON = "neon";
+async function neonAdminRpc(action, params = {}) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const res = await fetch("/api/neon-admin", {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${session?.access_token || ""}` },
+    body: JSON.stringify({ action, ...params }),
+  });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(j.error || `neon-admin ${res.status}`);
+  return j;
+}
+// Superadmin on the apex console (no client loaded) — the only caller that must
+// merge BOTH stores. An owner is always scoped to their own client's backend.
+const isApexSuperadmin = () => Store.get().auth?.role === "superadmin" && !Store.get().clientId;
+const onNeonTicket = (t) => t && t._src === TICKET_SRC_NEON;
+
 export async function submitTicket(form, tab) {
   const st = Store.get();
   const ctx = {
@@ -632,32 +654,49 @@ export async function submitTicket(form, tab) {
     partnerA: st.settings?.partnerA, partnerB: st.settings?.partnerB,
     subdomain: resolveSubdomain() || "", tab: tab || "",
   };
-  const { error } = await supabase.from("support_tickets").insert(ticketToRow(form, st.clientId, ctx));
+  const row = ticketToRow(form, st.clientId, ctx);
+  if (onNeon()) { await neonAuthedInsert("support_tickets", row); return; }
+  const { error } = await supabase.from("support_tickets").insert(row);
   if (error) throw error;
 }
 
-// Superadmin: list all tickets (RLS returns all for superadmin).
+// Owner: their own tickets (RLS-scoped). Superadmin console: every ticket from
+// BOTH stores, newest first, each tagged with `_src`.
 export async function listTickets() {
+  if (onNeon()) {
+    const rows = await neonAuthedSelect("support_tickets", "select=*&order=created_at.desc");
+    return (rows || []).map((t) => ({ ...t, _src: TICKET_SRC_NEON }));
+  }
   const { data, error } = await supabase.from("support_tickets").select("*").order("created_at", { ascending: false });
   if (error) throw error;
-  return data || [];
+  const supa = (data || []).map((t) => ({ ...t, _src: "supabase" }));
+  if (!isApexSuperadmin()) return supa;
+  // Neon tickets are additive — a bridge failure must not hide Supabase ones.
+  let neonRows = [];
+  try { neonRows = (await neonAdminRpc("list_tickets")).rows || []; }
+  catch (e) { console.warn("[api] neon tickets load failed:", e.message); }
+  return [...supa, ...neonRows.map((t) => ({ ...t, _src: TICKET_SRC_NEON }))]
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 }
 
 // Superadmin: flip status; stamp resolved_at on resolve, clear it on reopen.
-export async function setTicketStatus(id, status) {
+export async function setTicketStatus(id, status, ticket) {
+  if (onNeonTicket(ticket)) { await neonAdminRpc("set_ticket_status", { id, status }); return; }
   const { error } = await supabase.from("support_tickets")
     .update({ status, resolved_at: status === "resolved" ? new Date().toISOString() : null, updated_at: new Date().toISOString() }).eq("id", id);
   if (error) throw error;
 }
 
 // Superadmin: permanently remove a ticket (RLS delete policy is superadmin-only).
-export async function deleteTicket(id) {
+export async function deleteTicket(id, ticket) {
+  if (onNeonTicket(ticket)) { await neonAdminRpc("delete_ticket", { id }); return; }
   const { error } = await supabase.from("support_tickets").delete().eq("id", id);
   if (error) throw error;
 }
 
 // Superadmin: save the internal reply note (or any partial patch).
-export async function updateTicket(id, patch) {
+export async function updateTicket(id, patch, ticket) {
+  if (onNeonTicket(ticket)) { await neonAdminRpc("update_ticket", { id, patch }); return; }
   const { error } = await supabase.from("support_tickets").update(patch).eq("id", id);
   if (error) throw error;
 }
@@ -665,7 +704,11 @@ export async function updateTicket(id, patch) {
 // --- Support ticket thread (owner ⇄ superadmin replies) ---------------------
 // Messages on a ticket, oldest-first. RLS returns only rows the caller may see
 // (own-client owner, or any for superadmin).
-export async function listTicketMessages(ticketId) {
+export async function listTicketMessages(ticketId, ticket) {
+  if (onNeon()) {
+    return await neonAuthedSelect("support_ticket_messages", `select=*&ticket_id=eq.${ticketId}&order=created_at.asc`) || [];
+  }
+  if (onNeonTicket(ticket)) return (await neonAdminRpc("list_ticket_messages", { ticket_id: ticketId })).rows || [];
   const { data, error } = await supabase.from("support_ticket_messages")
     .select("*").eq("ticket_id", ticketId).order("created_at", { ascending: true });
   if (error) throw error;
@@ -675,14 +718,21 @@ export async function listTicketMessages(ticketId) {
 // Append a reply to a ticket. senderRole ('owner'|'superadmin') is pinned to the
 // caller's actual role (RLS also enforces this). An owner reply reopens the
 // ticket via the support_reopen_after_owner_msg trigger.
-export async function postTicketMessage(ticketId, body, attachmentUrl) {
+export async function postTicketMessage(ticketId, body, attachmentUrl, ticket) {
   const st = Store.get();
   const role = st.auth?.role === "superadmin" ? "superadmin" : "owner";
   const senderName = role === "superadmin"
     ? "Support"
     : ([st.settings?.partnerA, st.settings?.partnerB].filter(Boolean).join(" & ") || st.auth?.email || "Client");
-  const { error } = await supabase.from("support_ticket_messages")
-    .insert({ ticket_id: ticketId, sender_role: role, sender_name: senderName, body: (body || "").trim(), attachment_url: attachmentUrl || null });
+  const row = { ticket_id: ticketId, sender_role: role, sender_name: senderName, body: (body || "").trim(), attachment_url: attachmentUrl || null };
+  // Owner on their Neon site posts directly (RLS pins them to their own ticket);
+  // the apex superadmin replies to a Neon ticket through the bridge.
+  if (onNeon()) { await neonAuthedInsert("support_ticket_messages", row); return; }
+  if (onNeonTicket(ticket)) {
+    await neonAdminRpc("post_ticket_message", { ticket_id: ticketId, body: row.body, sender_name: senderName, attachment_url: row.attachment_url });
+    return;
+  }
+  const { error } = await supabase.from("support_ticket_messages").insert(row);
   if (error) throw error;
 }
 
@@ -696,8 +746,18 @@ export async function uploadSupportImage(file, clientId) {
 
 // Live thread updates: push new replies for ONE ticket (both the superadmin
 // modal and the owner viewer subscribe while open). Unique topic per call.
+// Neon's Data API (PostgREST) has NO realtime channel, so anything touching Neon
+// tickets falls back to polling. Supabase-only views keep the instant push.
+const TICKET_POLL_MS = 15000;
+function pollEvery(onChange, ms = TICKET_POLL_MS) {
+  const id = setInterval(onChange, ms);
+  return () => clearInterval(id);
+}
+
 let _msgChanSeq = 0;
-export function subscribeTicketMessagesRealtime(ticketId, onChange) {
+export function subscribeTicketMessagesRealtime(ticketId, onChange, ticket) {
+  // Owner on Neon, or the superadmin viewing a Neon ticket → poll this thread.
+  if (onNeon() || onNeonTicket(ticket)) return pollEvery(onChange, 8000);
   let t = null;
   const ping = () => { clearTimeout(t); t = setTimeout(onChange, 250); };
   const ch = supabase
@@ -713,7 +773,13 @@ export async function listRecentClientReplies(limit = 20) {
   const { data, error } = await supabase.from("support_ticket_messages")
     .select("*").eq("sender_role", "owner").order("created_at", { ascending: false }).limit(limit);
   if (error) throw error;
-  return data || [];
+  const supa = data || [];
+  if (!isApexSuperadmin()) return supa;
+  let neonRows = [];
+  try { neonRows = (await neonAdminRpc("list_recent_client_replies", { limit })).rows || []; }
+  catch (e) { console.warn("[api] neon client replies failed:", e.message); }
+  return [...supa, ...neonRows]
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, limit);
 }
 
 // Owner bell + Support tab badge: recent SUPERADMIN replies on the caller's OWN
@@ -723,6 +789,10 @@ export async function listRecentClientReplies(limit = 20) {
 // replied" notification independently of the ticket's status — a reply that
 // doesn't flip status to waiting_reply still notifies.
 export async function listRecentSupportReplies(limit = 20) {
+  if (onNeon()) {
+    return await neonAuthedSelect("support_ticket_messages",
+      `select=*&sender_role=eq.superadmin&order=created_at.desc&limit=${limit}`) || [];
+  }
   const { data, error } = await supabase.from("support_ticket_messages")
     .select("*").eq("sender_role", "superadmin").order("created_at", { ascending: false }).limit(limit);
   if (error) throw error;
@@ -731,13 +801,16 @@ export async function listRecentSupportReplies(limit = 20) {
 
 // Realtime for ALL ticket messages (superadmin bell) — unique topic per call.
 export function subscribeAllTicketMessagesRealtime(onChange) {
+  if (onNeon()) return pollEvery(onChange);
   let t = null;
   const ping = () => { clearTimeout(t); t = setTimeout(onChange, 400); };
   const ch = supabase
     .channel(`sa-tk-msgs-${++_msgChanSeq}`)
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "support_ticket_messages" }, ping)
     .subscribe();
-  return () => { clearTimeout(t); supabase.removeChannel(ch); };
+  // Superadmin console also watches Neon tickets, which can't push — poll too.
+  const offPoll = isApexSuperadmin() ? pollEvery(onChange) : null;
+  return () => { clearTimeout(t); supabase.removeChannel(ch); if (offPoll) offPoll(); };
 }
 
 // Realtime for the console bell — same debounce pattern as site requests.
@@ -749,13 +822,15 @@ export function subscribeAllTicketMessagesRealtime(onChange) {
 // Guarded by src/lib/__tests__/ticketsRealtime.test.js.
 let _tixChanSeq = 0;
 export function subscribeTicketsRealtime(onChange) {
+  if (onNeon()) return pollEvery(onChange);
   let t = null;
   const ping = () => { clearTimeout(t); t = setTimeout(onChange, 400); };
   const ch = supabase
     .channel(`sa-support-${++_tixChanSeq}`)
     .on("postgres_changes", { event: "*", schema: "public", table: "support_tickets" }, ping)
     .subscribe();
-  return () => { clearTimeout(t); supabase.removeChannel(ch); };
+  const offPoll = isApexSuperadmin() ? pollEvery(onChange) : null;
+  return () => { clearTimeout(t); supabase.removeChannel(ch); if (offPoll) offPoll(); };
 }
 
 // Superadmin: list + resolve intake requests (RLS-gated to superadmin).
