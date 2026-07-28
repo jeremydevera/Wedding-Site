@@ -20,4 +20,15 @@ describe("SupportWidget", () => {
     expect(document.body.textContent).toContain("How can we help?");
     expect(document.body.textContent).toContain("Send ticket");
   });
+
+  it("hides the launcher while the modal is open and restores it on close", () => {
+    const { container, getByText } = render(<SupportWidget tab="home" />);
+    fireEvent.click(getByText("Need help?"));
+    // launcher gone while the ticket modal is open…
+    expect(container.querySelector(".support-launcher")).toBeNull();
+    // …and back after Cancel closes the modal
+    fireEvent.click(getByText("Cancel"));
+    expect(container.querySelector(".support-launcher")).not.toBeNull();
+    expect(container.textContent).toContain("Need help?");
+  });
 });

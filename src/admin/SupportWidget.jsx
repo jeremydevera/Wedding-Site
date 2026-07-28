@@ -232,13 +232,17 @@ export function SupportWidget({ tab }) {
 
   return (
     <>
-      <div className="support-launcher">
-        <button type="button" className="support-launcher__main" onClick={() => setOpen(true)} aria-label="Need help? Contact support">
-          <AgentAvatar size={34} />
-          <span className="support-launcher__label">Need help?</span>
-        </button>
-        <button type="button" className="support-launcher__x" onClick={dismiss} aria-label="Hide support">{Icon.close({})}</button>
-      </div>
+      {/* Launcher hides while the ticket modal is open (it floated above the
+          overlay and crowded the form on mobile); it comes back on close. */}
+      {!open && (
+        <div className="support-launcher">
+          <button type="button" className="support-launcher__main" onClick={() => setOpen(true)} aria-label="Need help? Contact support">
+            <AgentAvatar size={34} />
+            <span className="support-launcher__label">Need help?</span>
+          </button>
+          <button type="button" className="support-launcher__x" onClick={dismiss} aria-label="Hide support">{Icon.close({})}</button>
+        </div>
+      )}
 
       <Modal open={open} onClose={() => setOpen(false)} label="Contact support">
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
