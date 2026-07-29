@@ -927,6 +927,37 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 .admin__navlock { margin-left: auto; display: inline-flex; color: var(--muted); flex: none; }
 .admin__navlock svg { width: 13px; height: 13px; }
 
+/* Locked feature WITH screenshots — the pitch replaces the blurred page: lock
+   header, auto-playing carousel (owner's module + the guest-facing page), CTA. */
+.lockpitch { max-width: 820px; margin: 0 auto; padding: 6px 0 10px; }
+.lockpitch__head { text-align: center; margin-bottom: 18px; }
+.lockpitch__title { margin: 0 0 6px; font-size: 21px; color: var(--ink); }
+.lockpitch__desc { margin: 0 auto; max-width: 520px; color: var(--muted); font-size: 14.5px; line-height: 1.55; }
+.lockpitch__cta { text-align: center; margin-top: 20px; }
+
+.lcar { position: relative; }
+/* fixed 16/10 frame — both slides are captured at 1280x800, so nothing crops */
+.lcar__frame { position: relative; aspect-ratio: 16 / 10; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface-2); box-shadow: 0 26px 54px -26px rgba(0,0,0,.45); }
+.lcar__slide { position: absolute; inset: 0; margin: 0; opacity: 0; transition: opacity .6s ease; pointer-events: none; }
+.lcar__slide--on { opacity: 1; }
+.lcar__slide img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+/* small badge over the shot ("in your dashboard" / "what your guests see") */
+.lcar__tag { position: absolute; top: 10px; left: 10px; font-weight: 800; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
+  color: #fff; background: rgba(12,14,20,.82); border-radius: 100px; padding: 5px 11px; backdrop-filter: saturate(160%) blur(2px); }
+/* caption BELOW the frame, never over the screenshot (a phone frame is small) */
+.lcar__cap { margin: 12px auto 0; max-width: 560px; text-align: center; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+.lcar__dots { display: flex; justify-content: center; gap: 8px; margin-top: 12px; }
+.lcar__dot { width: 8px; height: 8px; padding: 0; border: none; border-radius: 50%; background: var(--line); cursor: pointer; transition: background .25s ease, transform .25s ease; }
+.lcar__dot--on { background: var(--accent); transform: scale(1.35); }
+@media (max-width: 560px) {
+  .lcar__cap { font-size: 12.5px; }
+  .lcar__tag { font-size: 9.5px; padding: 4px 9px; top: 8px; left: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lcar__slide { transition: none; }
+  .lcar__dot { transition: none; }
+}
+
 /* Premium purchase page — pricing-page layout: centered hero, plan cards with
    pill CTAs, then a grouped "Compare all features" table. */
 .pricing { max-width: 880px; margin: 0 auto; }

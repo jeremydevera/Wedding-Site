@@ -32,6 +32,11 @@ const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 // Save button can live INSIDE the section card being edited (Supabase pattern).
 const AdminSaveCtx = React.createContext({ saving: false, dirty: false, save: () => {}, run: (fn) => fn() });
 
+// "Email" buttons on the Guests / RSVPs / Guestbook toolbars are HIDDEN (owner
+// asked for export-only toolbars). The modals + sendEmail wiring are left in
+// place, so flipping this to true brings all three back at once.
+const SHOW_EMAIL_EXPORT = false;
+
 // Up/down reorder arrows for admin list rows. `onMove(dir)` applies the move
 // (dir -1 = up, +1 = down); disabled at the ends.
 // Signed-in owner standing on a site that isn't hers → resolve her subdomain
@@ -688,7 +693,7 @@ export function GuestsAdmin() {
         <div className="panel__head">
           <div className="panel__title">{onUnmatched ? "RSVPs for approval" : "Guests"} <span style={{ color: "var(--muted)", fontSize: 15 }}>({onUnmatched ? unmatched.length : filtered.length})</span></div>
           <div className="admin-toolbar"><div className="admin-toolbar__end">
-            {neonMode && <Button variant="ghost" className="admin-toolbar__action" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>{Icon.mail({})} Email</Button>}
+            {SHOW_EMAIL_EXPORT && neonMode && <Button variant="ghost" className="admin-toolbar__action" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>{Icon.mail({})} Email</Button>}
             <Button variant="ghost" className="admin-toolbar__action" onClick={exportGuestsCsv}>{Icon.download({})} Export</Button>
             <Button variant="primary" className="admin-toolbar__action" onClick={() => setEditing({ ...blank })}>Add guest</Button>
             <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
@@ -882,7 +887,7 @@ export function RsvpsAdmin() {
           <div className="admin-toolbar">
             {/* Email results + Export CSV grouped to the right, directly left of search. */}
             <div className="admin-toolbar__end">
-              {neonMode && <Button variant="ghost" className="admin-toolbar__action" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>{Icon.mail({})} Email</Button>}
+              {SHOW_EMAIL_EXPORT && neonMode && <Button variant="ghost" className="admin-toolbar__action" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>{Icon.mail({})} Email</Button>}
               <Button variant="primary" className="admin-toolbar__action" onClick={exportCsv}>{Icon.download({})} Export</Button>
               <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
             </div>
@@ -1109,7 +1114,7 @@ export function GuestbookAdmin() {
         <div className="admin-toolbar">
           {/* Email + Export directly left of search (right group). */}
           <div className="admin-toolbar__end">
-            {neonMode && <Button variant="ghost" className="admin-toolbar__action" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>{Icon.mail({})} Email</Button>}
+            {SHOW_EMAIL_EXPORT && neonMode && <Button variant="ghost" className="admin-toolbar__action" onClick={() => { setEmailTo(""); setEmailOpen(true); }}>{Icon.mail({})} Email</Button>}
             <Button variant="primary" className="admin-toolbar__action" onClick={exportCsv}>{Icon.download({})} Export</Button>
             <div className="search-box">{Icon.search({})}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" /></div>
           </div>
@@ -4187,13 +4192,81 @@ export function MusicAdmin({ headExtra = null }) {
   );
 }
 
-// A feature set to "locked": the owner sees the tab (padlocked) and a blurred,
-// non-interactive preview of the real page behind an unlock card. "Purchase
+// Real screenshots shown INSTEAD of a blurred page for locked features, so the
+// owner sees exactly what they'd get: the module in their own dashboard, then
+// the guest-facing page. To give another feature the same treatment, drop two
+// jpgs in public/assets/locked/ and add a key here.
+const LOCKED_SHOTS = {
+  story: [
+    { src: "/assets/locked/story-admin.jpg", tag: "In your dashboard", cap: "Add each milestone — a photo, the year, and a line about the moment." },
+    { src: "/assets/locked/story-public.jpg", tag: "What your guests see", cap: "Your story reads as a timeline on your website, in your theme." },
+  ],
+};
+
+// Auto-playing screenshot carousel for the locked-feature pitch. Crossfade, dots
+// to jump, pauses on hover/focus; honours prefers-reduced-motion (no autoplay,
+// no transition — the dots still work).
+export function LockedCarousel({ shots, label }) {
+  const [i, setI] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const n = shots.length;
+  useEffect(() => {
+    if (paused || n < 2) return;
+    const still = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (still) return;
+    const t = setTimeout(() => setI((v) => (v + 1) % n), 4500);
+    return () => clearTimeout(t);
+  }, [i, paused, n]);
+  const hold = () => setPaused(true);
+  const release = () => setPaused(false);
+  return (
+    <div className="lcar" onMouseEnter={hold} onMouseLeave={release} onFocus={hold} onBlur={release}>
+      <div className="lcar__frame">
+        {shots.map((s, k) => (
+          <div key={s.src} className={"lcar__slide" + (k === i ? " lcar__slide--on" : "")} aria-hidden={k !== i}>
+            <img src={s.src} alt={`${label} — ${s.tag}`} loading={k === 0 ? "eager" : "lazy"} draggable="false" />
+            <span className="lcar__tag">{s.tag}</span>
+          </div>
+        ))}
+      </div>
+      {/* caption sits BELOW the frame — on a phone an overlay would cover half the shot */}
+      <p className="lcar__cap">{shots[i].cap}</p>
+      {n > 1 && (
+        <div className="lcar__dots" role="tablist" aria-label={`${label} preview`}>
+          {shots.map((s, k) => (
+            <button key={s.src} type="button" role="tab" aria-selected={k === i} aria-label={s.tag}
+              className={"lcar__dot" + (k === i ? " lcar__dot--on" : "")} onClick={() => setI(k)} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// A feature set to "locked": the owner sees the tab (padlocked) and, instead of
+// the real page, a pitch for it. Features with screenshots (LOCKED_SHOTS) get an
+// auto-playing carousel of the actual module + public page; everything else
+// falls back to the blurred, inert real page behind an unlock card. "Purchase
 // Premium" routes to the Premium purchase page (Basic vs Premium comparison +
 // one-click checkout ticket). Superadmin always sees the real page.
 export function LockedFeature({ featureKey, goPurchase, children }) {
   const label = (FEATURE_ROWS.find((r) => r.k === featureKey) || {}).label || moduleLabel(featureKey);
   const desc = LOCKED_COPY[featureKey] || "This feature isn't part of your plan yet.";
+  const shots = LOCKED_SHOTS[featureKey];
+  if (shots && shots.length) return (
+    <div className="lockpitch">
+      <div className="lockpitch__head">
+        <div className="locked__icon">{Icon.lock({ style: { width: 26, height: 26 } })}</div>
+        <h3 className="lockpitch__title">{label} is locked</h3>
+        <p className="lockpitch__desc">{desc}</p>
+      </div>
+      <LockedCarousel shots={shots} label={label} />
+      <div className="lockpitch__cta">
+        <Button variant="primary" onClick={goPurchase}>{Icon.lock({ style: { width: 15, height: 15 } })} Purchase Premium</Button>
+        <p className="locked__hint">This feature is part of the Premium plan — see what's included.</p>
+      </div>
+    </div>
+  );
   return (
     <div className="locked">
       <div className="locked__page" aria-hidden="true">{children}</div>
