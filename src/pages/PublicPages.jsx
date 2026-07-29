@@ -7,7 +7,7 @@ import { mapStyleFilter } from "@/lib/mapStyles.js";
 import { featureVisible, moduleEnabled, sectionLabel } from "@/lib/roles.js";
 import { PREVIEW_SAMPLES } from "@/lib/samples.js";
 import { egTintGradientFor, envColorFilterFor, isEnvelopeTheme } from "@/themes";
-import { Button, Countdown, FloatingDecor, Icon, Placeholder, SectionHead, mapCoordStr, mapDirUrl, mapEmbedUrl, mapResolveQuery } from "@/ui/components.jsx";
+import { Button, Countdown, FloatingDecor, Icon, Placeholder, RailNav, SectionHead, mapCoordStr, mapDirUrl, mapEmbedUrl, mapResolveQuery } from "@/ui/components.jsx";
 import { VinylPlayer } from "@/features/music.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
@@ -1029,24 +1029,8 @@ function useRailNav(n) {
   return { ref, active, overflow, toItem };
 }
 
-// Frosted nav pill (chevrons + dot indicators) shown only when a rail overflows.
-function RailNav({ n, active, toItem, itemNoun = "item" }) {
-  return (
-    <div className="tl-nav">
-      <button type="button" className="tl-nav__arrow" onClick={() => toItem(active - 1)} disabled={active === 0} aria-label="Previous">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
-      </button>
-      <div className="tl-nav__dots">
-        {Array.from({ length: n }, (_, i) => (
-          <button key={i} type="button" className={"tl-nav__dot" + (i === active ? " is-active" : "")} onClick={() => toItem(i)} aria-label={`Go to ${itemNoun} ${i + 1}`} aria-current={i === active} />
-        ))}
-      </div>
-      <button type="button" className="tl-nav__arrow" onClick={() => toItem(active + 1)} disabled={active === n - 1} aria-label="Next">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
-      </button>
-    </div>
-  );
-}
+// The frosted nav pill (chevrons + dots) now lives in components.jsx as RailNav
+// — the admin's locked-feature preview pages with the same control.
 
 // Home Details, horizontal layout: same carousel mechanics as the horizontal
 // timeline (scroll rail + frosted chevron/dot pill). On desktop the row becomes

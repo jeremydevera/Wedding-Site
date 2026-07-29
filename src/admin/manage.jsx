@@ -2,7 +2,7 @@ import React from "react";
 import { go } from "@/lib/nav.js";
 import { Store, useStore, uid } from "@/lib/store.jsx";
 import { EG_TINTS, ENV_COLORS, ENV_SEAL_MASK, ENV_SEAL_POS, THEMES, THEME_FONTS, egTintGradientFor, envColorFilterFor, isPremiumTheme, isEnvelopeTheme } from "@/themes";
-import { Button, CropModal, DecorPreview, FallingFx, Field, Icon, Input, Modal, Monogram, Pager, Placeholder, SectionHead, Select, Textarea, confirmDialog, mapEmbedUrl, mapSearchUrl, toast, usePaged } from "@/ui/components.jsx";
+import { Button, CropModal, DecorPreview, FallingFx, Field, Icon, Input, Modal, Monogram, Pager, Placeholder, RailNav, SectionHead, Select, Textarea, confirmDialog, mapEmbedUrl, mapSearchUrl, toast, usePaged } from "@/ui/components.jsx";
 import { FX_LIST } from "@/lib/falling-fx.js";
 import { Home } from "@/pages/PublicPages.jsx";
 import { AdminDashboard, AdminLogin, Logo, QRCanvas, downloadCSV, downloadQR, fmtDate } from "@/admin/core.jsx";
@@ -4198,47 +4198,62 @@ export function MusicAdmin({ headExtra = null }) {
 // jpgs in public/assets/locked/ and add a key here.
 const LOCKED_SHOTS = {
   story: [
-    { src: "/assets/locked/story-admin.jpg", tag: "In your dashboard", cap: "Add each milestone — a photo, the year, and a line about the moment." },
-    { src: "/assets/locked/story-public.jpg", tag: "What your guests see", cap: "Your story reads as a timeline on your website, in your theme." },
+    { src: "/assets/locked/story-admin.jpg", alt: "the Our Story editor in your dashboard" },
+    { src: "/assets/locked/story-public.jpg", alt: "the Our Story page your guests read" },
   ],
 };
 
-// Auto-playing screenshot carousel for the locked-feature pitch. Crossfade, dots
-// to jump, pauses on hover/focus; honours prefers-reduced-motion (no autoplay,
-// no transition — the dots still work).
+// Screenshot carousel for the locked-feature pitch, built exactly like the
+// public schedule's horizontal timeline: a snap-scroll rail paged by the frosted
+// chevron/dot pill (RailNav), so it swipes on a phone and drags on a trackpad.
+// Advances itself every 5s; pauses on hover/focus and under prefers-reduced-motion.
 export function LockedCarousel({ shots, label }) {
-  const [i, setI] = useState(0);
+  const rail = useRef(null);
+  const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
   const n = shots.length;
+  // scroll PROGRESS → active dot: dot i maps to scroll fraction i/(n-1), the
+  // same mapping useRailNav uses on the public site.
+  useEffect(() => {
+    const el = rail.current;
+    if (!el) return;
+    const update = () => {
+      const max = el.scrollWidth - el.clientWidth;
+      const frac = max > 4 ? el.scrollLeft / max : 0;
+      const idx = n > 1 ? Math.max(0, Math.min(n - 1, Math.round(frac * (n - 1)))) : 0;
+      setActive((p) => (p === idx ? p : idx));
+    };
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => { el.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
+  }, [n]);
+  const toItem = useCallback((i) => {
+    const el = rail.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    const j = Math.max(0, Math.min(n - 1, i));
+    el.scrollTo({ left: n > 1 ? (j / (n - 1)) * max : 0, behavior: "smooth" });
+  }, [n]);
   useEffect(() => {
     if (paused || n < 2) return;
     const still = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (still) return;
-    const t = setTimeout(() => setI((v) => (v + 1) % n), 4500);
+    const t = setTimeout(() => toItem((active + 1) % n), 5000);
     return () => clearTimeout(t);
-  }, [i, paused, n]);
+  }, [active, paused, n, toItem]);
   const hold = () => setPaused(true);
   const release = () => setPaused(false);
   return (
-    <div className="lcar" onMouseEnter={hold} onMouseLeave={release} onFocus={hold} onBlur={release}>
-      <div className="lcar__frame">
+    <div className="lcar" onMouseEnter={hold} onMouseLeave={release} onFocus={hold} onBlur={release} onTouchStart={hold}>
+      <div className="lcar__rail" ref={rail}>
         {shots.map((s, k) => (
-          <div key={s.src} className={"lcar__slide" + (k === i ? " lcar__slide--on" : "")} aria-hidden={k !== i}>
-            <img src={s.src} alt={`${label} — ${s.tag}`} loading={k === 0 ? "eager" : "lazy"} draggable="false" />
-            <span className="lcar__tag">{s.tag}</span>
+          <div key={s.src} className="lcar__slide">
+            <img src={s.src} alt={`${label} — ${s.alt}`} loading={k === 0 ? "eager" : "lazy"} draggable="false" />
           </div>
         ))}
       </div>
-      {/* caption sits BELOW the frame — on a phone an overlay would cover half the shot */}
-      <p className="lcar__cap">{shots[i].cap}</p>
-      {n > 1 && (
-        <div className="lcar__dots" role="tablist" aria-label={`${label} preview`}>
-          {shots.map((s, k) => (
-            <button key={s.src} type="button" role="tab" aria-selected={k === i} aria-label={s.tag}
-              className={"lcar__dot" + (k === i ? " lcar__dot--on" : "")} onClick={() => setI(k)} />
-          ))}
-        </div>
-      )}
+      {n > 1 && <RailNav n={n} active={active} toItem={toItem} itemNoun="preview" />}
     </div>
   );
 }
@@ -4256,14 +4271,13 @@ export function LockedFeature({ featureKey, goPurchase, children }) {
   if (shots && shots.length) return (
     <div className="lockpitch">
       <div className="lockpitch__head">
-        <div className="locked__icon">{Icon.lock({ style: { width: 26, height: 26 } })}</div>
+        <span className="lockpitch__lock">{Icon.lock({ style: { width: 18, height: 18 } })}</span>
         <h3 className="lockpitch__title">{label} is locked</h3>
         <p className="lockpitch__desc">{desc}</p>
       </div>
       <LockedCarousel shots={shots} label={label} />
       <div className="lockpitch__cta">
         <Button variant="primary" onClick={goPurchase}>{Icon.lock({ style: { width: 15, height: 15 } })} Purchase Premium</Button>
-        <p className="locked__hint">This feature is part of the Premium plan — see what's included.</p>
       </div>
     </div>
   );

@@ -797,3 +797,24 @@ export function DecorPreview({ style }) {
   );
 }
 
+
+// Frosted rail nav (chevrons + dot indicators) — the control under the public
+// schedule's horizontal timeline and the home Details carousel. Shared so the
+// admin's locked-feature preview can page with the exact same widget.
+export function RailNav({ n, active, toItem, itemNoun = "item" }) {
+  return (
+    <div className="tl-nav">
+      <button type="button" className="tl-nav__arrow" onClick={() => toItem(active - 1)} disabled={active === 0} aria-label="Previous">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+      </button>
+      <div className="tl-nav__dots">
+        {Array.from({ length: n }, (_, i) => (
+          <button key={i} type="button" className={"tl-nav__dot" + (i === active ? " is-active" : "")} onClick={() => toItem(i)} aria-label={`Go to ${itemNoun} ${i + 1}`} aria-current={i === active} />
+        ))}
+      </div>
+      <button type="button" className="tl-nav__arrow" onClick={() => toItem(active + 1)} disabled={active === n - 1} aria-label="Next">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+      </button>
+    </div>
+  );
+}
