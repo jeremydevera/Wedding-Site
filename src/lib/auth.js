@@ -71,8 +71,16 @@ async function loadNeonSession() {
     // run as 'anon' (permission denied) — retry once on ERROR only. A clean
     // empty result is a legit non-superadmin, no retry (keeps owner sign-in fast).
     const readProf = () => neonAuthedSelect("profiles", `select=role&id=eq.${encodeURIComponent(s.user.id)}`).then((rows) => ({ ok: true, rows })).catch(() => ({ ok: false, rows: null }));
+    // One retry wasn't always enough for the warm-up flake (owner hit
+    // "doesn't have access" signing in as SUPERADMIN on a slow connection) —
+    // back off up to ~3s total. A clean empty result (ok, no row) exits early;
+    // only ERRORS keep retrying.
     let pr = await readProf();
-    if (!pr.ok) { await new Promise((r) => setTimeout(r, 600)); pr = await readProf(); }
+    for (const wait of [600, 900, 1400]) {
+      if (pr.ok) break;
+      await new Promise((r) => setTimeout(r, wait));
+      pr = await readProf();
+    }
     const prof = pr.rows;
     if (prof && prof[0] && prof[0].role === "superadmin") {
       Store.setAuth({ session: s, role: "superadmin", clientId: Store.get().clientId, email: s.user.email });
@@ -127,7 +135,11 @@ export async function signIn(email, password) {
   if (Store.get().neonMode) {
     // Client site: authenticate the OWNER (or superadmin) against Firebase.
     await neonAuth.signIn(email, password);       // throws a friendly error on bad creds
-    const p = await loadNeonSession();
+    let p = await loadNeonSession();
+    // Second chance: on a cold/slow session loadNeonSession can miss the
+    // superadmin profile even after its internal backoff — never bounce the
+    // platform admin with "no access" over a warm-up hiccup.
+    if (!p) { await new Promise((r) => setTimeout(r, 800)); p = await loadNeonSession(); }
     if (p) return p;
     // Signed in fine but this isn't her site — send her HOME.
     const st = await regState();
@@ -207,7 +219,10 @@ export async function signInGoogle() {
       if (isUnauthorizedDomain(e) && hostIsClientSubdomain()) return hopToApex();
       throw e;
     }
-    const p = await loadNeonSession();
+    let p = await loadNeonSession();
+    // Same warm-up second chance as the password path — don't tell the
+    // superadmin their Google account "doesn't have access" over a slow start.
+    if (!p) { await new Promise((r) => setTimeout(r, 800)); p = await loadNeonSession(); }
     if (!p) {
       const st = await regState();
       if (st?.state === "active" && st.subdomain && st.subdomain !== resolveSubdomain()) {

@@ -158,9 +158,11 @@ export const neonAuth = {
     if (fbMode) { try { const r = await firebaseSignInEmail(email, password); return { token: r.idToken, user: { id: r.uid, email: r.email } }; } catch (e) { throw fbErr(e); } }
     return authFetch("/sign-in/email", { method: "POST", body: { email, password } });
   },
-  // Google — Firebase mode only (Neon Auth's OAuth is the Safari-broken path).
+  // Google — Firebase only. Firebase is the platform's ONLY identity now, so a
+  // context that reaches here with fbMode still off (stale tab, boot race) just
+  // flips it on and proceeds — never "isn't available yet" (owner hit that).
   signInGoogle: async () => {
-    if (!fbMode) throw new Error("Google sign-in isn't available yet.");
+    if (!fbMode) setFbAuthMode(true);
     try { const r = await signInWithGoogle(); return { token: r.idToken, user: { id: r.user.uid, email: r.user.email } }; } catch (e) { throw fbErr(e); }
   },
   signOut: () => {
