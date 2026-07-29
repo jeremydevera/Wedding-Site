@@ -390,7 +390,7 @@ export function AdminLogin({ onAuthed }) {
             <p className="signin__reg">Don't have an account? <button type="button" className="signin__reglink" onClick={goRegister}>Register</button></p>
             {/* Apex only (gateEligible) — a client's own site login shouldn't
                 point guests at the demo of a DIFFERENT wedding. */}
-            {gateEligible && <p className="signin__reg">Just curious? <button type="button" className="signin__reglink" onClick={goDemo}>See a live demo</button></p>}
+            {gateEligible && <p className="signin__reg"><button type="button" className="signin__reglink" onClick={goDemo}>See a live demo</button></p>}
           </form>
           )}
         </div>
