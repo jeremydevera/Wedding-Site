@@ -4505,6 +4505,17 @@ function initialsOf(name) {
 // clear the badge on every other device). localStorage stays the instant local
 // cache; the DB copy (get/set_notif_state, keyed by the signed-in user) wins
 // whenever it's NEWER. Returns a push(seen, cleared) that persists both.
+// Notification read-marker keys. The uid segment is what keeps two accounts
+// sharing one browser (superadmin visiting a client's admin, then the owner
+// logging in) from reading each other's "already seen" stamps.
+function notifUid(auth) {
+  const s = auth && auth.session;
+  return (s && s.user && (s.user.id || s.user.uid)) || null;
+}
+function notifKey(kind, uid, clientId) {
+  return `evermore_notif_${kind}_${uid || "anon"}_${clientId || "x"}`;
+}
+
 function useSyncedNotif(scope, key, clearKey, setSeen, setClearedAt) {
   const full = useRef({});
   useEffect(() => {
@@ -4526,15 +4537,30 @@ function useSyncedNotif(scope, key, clearKey, setSeen, setClearedAt) {
 }
 
 function NotificationBell({ goTab, supportReplies = [] }) {
-  const { rsvps, guestbook, quizSubs, clientId, settings } = useStore();
+  const { rsvps, guestbook, quizSubs, clientId, settings, auth } = useStore();
   const [open, setOpen] = useState(false);
-  const key = "evermore_notif_seen_" + (clientId || "x");
-  const [seen, setSeen] = useState(() => { try { return Number(localStorage.getItem(key) || 0); } catch (_) { return 0; } });
+  // 🔴 Read markers MUST be namespaced by USER as well as client. localStorage is
+  // per browser, not per account: keyed on clientId alone, a superadmin who
+  // opened the bell on a client's site left "everything read" behind, and the
+  // owner logging in on that same browser inherited it — her red badge vanished
+  // on both the bell and the Support tab (owner report, 2026-07-29). uid unknown
+  // (auth still loading) → treat as 0/unread rather than read someone else's.
+  const uid = notifUid(auth);
+  const key = notifKey("seen", uid, clientId);
+  const [seen, setSeen] = useState(0);
   // "Clear" empties the box without touching any data: entries at/before the
   // cleared timestamp are hidden from the list (per client, persisted), and
   // anything that arrives afterwards shows up as usual.
-  const clearKey = "evermore_notif_cleared_" + (clientId || "x");
-  const [clearedAt, setClearedAt] = useState(() => { try { return Number(localStorage.getItem(clearKey) || 0); } catch (_) { return 0; } });
+  const clearKey = notifKey("cleared", uid, clientId);
+  const [clearedAt, setClearedAt] = useState(0);
+  // re-read whenever the signed-in user (and therefore the key) changes
+  useEffect(() => {
+    if (!uid) { setSeen(0); setClearedAt(0); return; }
+    try {
+      setSeen(Number(localStorage.getItem(key) || 0));
+      setClearedAt(Number(localStorage.getItem(clearKey) || 0));
+    } catch (_) { setSeen(0); setClearedAt(0); }
+  }, [key, clearKey, uid]);
   const pushNotif = useSyncedNotif(clientId || "x", key, clearKey, setSeen, setClearedAt);
 
   const gbOn = moduleEnabled(settings.modules, "guestbook");
@@ -4802,8 +4828,15 @@ export function AdminApp() {
   })), [supportReplies, clientTickets]);
   // Support tab badge = superadmin replies the owner hasn't opened the tab to
   // read yet. Cleared (stamped) when they view the Support tab, below.
-  const supportSeenKey = "evermore_support_seen_" + (clientId || "x");
-  const [supportSeen, setSupportSeen] = useState(() => { try { return Number(localStorage.getItem(supportSeenKey) || 0); } catch (_) { return 0; } });
+  // Keyed by USER + client: on clientId alone, a superadmin who opened Support
+  // on a client's site left the badge cleared for the owner in that same browser.
+  const supportUid = notifUid(auth);
+  const supportSeenKey = "evermore_support_seen_" + (supportUid || "anon") + "_" + (clientId || "x");
+  const [supportSeen, setSupportSeen] = useState(0);
+  useEffect(() => {
+    if (!supportUid) { setSupportSeen(0); return; }
+    try { setSupportSeen(Number(localStorage.getItem(supportSeenKey) || 0)); } catch (_) { setSupportSeen(0); }
+  }, [supportSeenKey, supportUid]);
   const supportWaiting = supportReplies.filter((m) => (m.created_at ? Date.parse(m.created_at) : 0) > supportSeen).length;
   useEffect(() => {
     if (tab !== "support" || !clientId) return;
