@@ -157,11 +157,27 @@ export async function loadAdminData() {
   // 2026-07-29). Each read now retries twice before giving up, and a genuine
   // failure is recorded in Store.dataError so the UI can say so instead of
   // showing an empty list as the truth.
+  // 🔴 A read can also come back 200 with an EMPTY ARRAY when the row is really
+  // there — observed live on 2026-07-30: seconds after a write, the Data API
+  // answered `[]` for a client with 72 guest rows, and the admin dutifully drew
+  // the "all your guests are gone" screen again. So "suspiciously empty" is
+  // treated like a failure: if this client has had rows in `t` before (marker
+  // below) and the read returns none, retry, and if it stays empty keep whatever
+  // we already had and flag it rather than rendering the empty state as truth.
+  const hadKey = (t) => `evermore_had_rows_${t}_${clientId}`;
+  const hadBefore = (t) => { try { return localStorage.getItem(hadKey(t)) === "1"; } catch (_) { return false; } };
+  const markHad = (t) => { try { localStorage.setItem(hadKey(t), "1"); } catch (_) { /* ignore */ } };
   const q = async (t, ord) => {
     const path = `select=*&client_id=eq.${clientId}&order=${ord}`;
     for (const wait of [0, 700, 1600]) {
       if (wait) await new Promise((r) => setTimeout(r, wait));
-      try { return await neonAuthedSelect(t, path); } catch (e) { console.warn(`[api] neon ${t} load failed:`, e.message); }
+      try {
+        const rows = await neonAuthedSelect(t, path);
+        if (Array.isArray(rows) && rows.length) { markHad(t); return rows; }
+        // empty: trust it only if this client has never had rows in this table
+        if (!hadBefore(t)) return rows;
+        console.warn(`[api] neon ${t} returned 0 rows but this site has had rows — retrying`);
+      } catch (e) { console.warn(`[api] neon ${t} load failed:`, e.message); }
     }
     return null;
   };
