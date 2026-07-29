@@ -2644,10 +2644,30 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .eg-cue__txt { padding-left: .22em; }
 .eg-cue svg { animation: egCueBob 1.8s ease-in-out infinite; }
 .eg-cue:focus-visible { outline: 2px solid #f3ecdb; outline-offset: 4px; }
-/* env2 desktop: the opened envelope's contents sit lower than Olive's, so the
-   shared cue offset lands almost on the artwork. Push the "View the details"
-   cue down for more breathing room (owner: cue almost touches the envelope). */
-[data-theme="envelope2"] .eg-cue { top: calc(50% + min(320px, 28.1vw, 29.5vh) + 104px); }
+/* env2 DESKTOP: the scene is centered in the 130vh open hero, so it rests 0.65 ×
+   viewport down — on a laptop that ran the envelope's bottom AND the whole cue
+   past the fold (owner screenshot, 1466×725: burgundy body cropped, no cue).
+   Fix: scale the scene to the viewport HEIGHT and centre it in the band under
+   the pinned header, deriving the lift and the cue from that one width.
+   The ratios are measured off the artwork and hold at every size (W = .eg-open):
+     card top = centre − 0.4297W   envelope bottom = centre + 0.343W
+     bouquet tail bottom = centre + 0.419W
+   90vh keeps the 1140px cap in force above ~1267px tall (so big screens are
+   unchanged in size, only lifted) and still leaves ~35px margins at 725px tall. */
+@media (min-width: 861px) {
+  [data-theme="envelope2"] {
+    --eg2-w: min(1140px, 100vw, 90vh);
+    /* lowest thing on screen: the bouquet tail, or the cue below the envelope */
+    --eg2-below: max(calc(0.419 * var(--eg2-w)), calc(0.343 * var(--eg2-w) + 80px));
+    /* lift that leaves EQUAL margins above the card and below that lowest thing:
+       the hero centre is 0.65vh under the 71px header, the band is 100vh − 71px */
+    --eg2-lift: calc(15vh + 35.5px + (var(--eg2-below) - 0.4297 * var(--eg2-w)) / 2);
+  }
+  [data-theme="envelope2"] .eg-open { width: var(--eg2-w); transform: translateY(calc(-1 * var(--eg2-lift))); }
+  /* cue sits 34px under the envelope's bottom edge (owner: it used to almost
+     touch the artwork) and rides the same lift, so the two can't drift apart. */
+  [data-theme="envelope2"] .eg-cue { top: calc(50% + 0.343 * var(--eg2-w) + 34px - var(--eg2-lift)); }
+}
 @media (max-width: 860px) {
   /* env2 mobile: lift the opened envelope + its contents up the viewport; keep
      the cue tracking it (preserve the base translateX(2%)). The lift lives in ONE
