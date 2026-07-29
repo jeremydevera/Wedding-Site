@@ -21,7 +21,12 @@ function ourOrigin(request) {
   const src = request.headers.get("Origin") || request.headers.get("Referer") || "";
   try {
     const h = new URL(src).hostname;
-    return h === "celebrately.us" || h.endsWith(".celebrately.us") || h.endsWith(".pages.dev");
+    // 🔒 Only OUR hosts. A bare ".pages.dev" suffix would trust every Cloudflare
+    // Pages site on the internet — a hostile page there could POST its own
+    // refresh token here (JSON-shaped text/plain form dodges the CORS preflight)
+    // and silently log visitors into the attacker's account (session fixation).
+    return h === "celebrately.us" || h.endsWith(".celebrately.us")
+      || h === "wedding-site-8nh.pages.dev" || h.endsWith(".wedding-site-8nh.pages.dev");
   } catch { return false; }
 }
 

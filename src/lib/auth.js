@@ -260,6 +260,11 @@ export async function signInGoogle() {
 // accounts go to /register.
 async function routeAfterGoogle(uid, gfrom) {
   await loadApexNeonCtx();
+  // 🔒 gfrom comes from the URL — accept ONLY a bare subdomain label before
+  // interpolating it into a redirect. "evil.com/x" would otherwise send a
+  // freshly signed-in superadmin to https://evil.com/x.celebrately.us/… —
+  // i.e. evil.com (open redirect on a trusted-looking login flow).
+  if (gfrom && !/^[a-z0-9-]{1,63}$/i.test(gfrom)) gfrom = null;
   const prof = await readProfileRole(uid);
   if (prof && prof[0] && prof[0].role === "superadmin") {
     if (gfrom) { window.location.assign(`https://${gfrom}.celebrately.us/admin`); return { role: "superadmin", client_id: null, redirecting: true }; }
