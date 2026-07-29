@@ -127,7 +127,7 @@ function LoginPhone({ shot }) {
 // The split-shell LEFT panel — brand + tagline + promo scene. ONE component
 // shared by the main login AND /register (login-design-single-source): change
 // it here and both pages move together.
-export function SigninAside({ footer = null, demoLink = null }) {
+export function SigninAside({ footer = null }) {
   return (
     <aside className="signin__aside signin__aside--promo">
       <div className="signin__asidetop">
@@ -138,11 +138,6 @@ export function SigninAside({ footer = null, demoLink = null }) {
         <p className="signin__tagline">Celebrate life's biggest moments, beautifully.</p>
       </div>
       <LoginPromoScene />
-      {/* Desktop-only: a quiet "see the demo" link over the animation's bottom
-          scrim (CSS shows it ≥821px — the mobile/landscape welcome hero already
-          has its own demo CTA, so this must not double up there). Only passed
-          by the apex login; /register renders SigninAside with no demoLink. */}
-      {demoLink && <div className="signin__demolink">{demoLink}</div>}
       {/* Mobile-only welcome CTAs (apex login). Hidden on desktop + on /register
           via CSS; only rendered when AdminLogin passes them. */}
       {footer}
@@ -326,18 +321,12 @@ export function AdminLogin({ onAuthed }) {
       <button type="button" className="lgw-btn lgw-btn--text" onClick={goDemo}>See the demo</button>
     </div>
   ) : null;
-  // Same gate as welcomeFooter (apex root, not a client site, not the Google-
-  // redirect hop) — CSS shows this only on desktop widths so it never doubles
-  // up with welcomeFooter's own "See the demo" on the mobile/landscape hero.
-  const demoLink = gateEligible ? (
-    <button type="button" className="signin__demobtn" onClick={goDemo}>See a live demo {Icon.arrow({ style: { width: 14, height: 14 } })}</button>
-  ) : null;
   return (
     <div className={"signin signin--split signin--login" + (gateEligible && !showForm ? " signin--welcome" : "")}>
       {/* LEFT — the shared SigninAside (also used by /register). ONE design
           everywhere: a redesign there applies to every login and the sign-up.
           On apex mobile it doubles as the welcome hero (footer CTAs + animation). */}
-      <SigninAside footer={welcomeFooter} demoLink={demoLink} />
+      <SigninAside footer={welcomeFooter} />
 
       {/* RIGHT — form */}
       <div className="signin__pane">
@@ -399,6 +388,9 @@ export function AdminLogin({ onAuthed }) {
             </div>
 
             <p className="signin__reg">Don't have an account? <button type="button" className="signin__reglink" onClick={goRegister}>Register</button></p>
+            {/* Apex only (gateEligible) — a client's own site login shouldn't
+                point guests at the demo of a DIFFERENT wedding. */}
+            {gateEligible && <p className="signin__reg">Just curious? <button type="button" className="signin__reglink" onClick={goDemo}>See a live demo</button></p>}
           </form>
           )}
         </div>
