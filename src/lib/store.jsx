@@ -264,6 +264,9 @@ export function defaultState() {
     guestbook: SEED_GUESTBOOK,
     rsvps: SEED_RSVPS,
     guests: [], // owner-managed invited list (server-owned; loaded from DB in admin)
+    // which admin reads FAILED on the last load (see loadAdminData) — an empty
+    // list because a fetch broke must never be shown as an empty list of fact.
+    dataError: {},
     media: SEED_MEDIA, // {id, type:'photo'|'video', category, dataUrl, src, name, message, status, size, ratio, createdAt}
     quizSubs: [], // {id, name, score, total, answers, createdAt}
     clientId: null,
@@ -344,13 +347,16 @@ export const Store = {
   },
   // Replace admin submission lists with rows loaded from Neon (owner/superadmin
   // admin views). Server-owned data — not persisted to localStorage.
-  setSubmissions({ rsvps, guestbook, quizSubs, guests }) {
+  // `dataError` flags reads that genuinely FAILED (vs. returned nothing), so a
+  // view can say "couldn't load" instead of presenting an empty list as fact.
+  setSubmissions({ rsvps, guestbook, quizSubs, guests, dataError }) {
     _state = {
       ..._state,
       ...(rsvps !== undefined ? { rsvps } : {}),
       ...(guestbook !== undefined ? { guestbook } : {}),
       ...(quizSubs !== undefined ? { quizSubs } : {}),
       ...(guests !== undefined ? { guests } : {}),
+      ...(dataError !== undefined ? { dataError } : {}),
     };
     emit();
   },

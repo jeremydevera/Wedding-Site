@@ -148,9 +148,23 @@ export async function setNotifState(state) {
 export async function loadAdminData() {
   const clientId = Store.get().clientId;
   if (!clientId) return;
-  // Owner JWT → RLS scopes each read to this client. Any query that errors keeps
-  // the previously-loaded rows (don't wipe on a transient failure).
-  const q = (t, ord) => neonAuthedSelect(t, `select=*&client_id=eq.${clientId}&order=${ord}`).catch((e) => { console.warn(`[api] neon ${t} load failed:`, e.message); return null; });
+  // Owner JWT → RLS scopes each read to this client. A query that errors keeps
+  // the previously-loaded rows — but on a COLD load there are none, so a failed
+  // read used to render as "you have no data". For the guest list that was
+  // indistinguishable from catastrophe: with guests=[] every reply is unmatched,
+  // so the owner's whole list moved into "For Approval" and the "No reply"
+  // folder emptied — reported as "my guests were deleted" (real client report,
+  // 2026-07-29). Each read now retries twice before giving up, and a genuine
+  // failure is recorded in Store.dataError so the UI can say so instead of
+  // showing an empty list as the truth.
+  const q = async (t, ord) => {
+    const path = `select=*&client_id=eq.${clientId}&order=${ord}`;
+    for (const wait of [0, 700, 1600]) {
+      if (wait) await new Promise((r) => setTimeout(r, wait));
+      try { return await neonAuthedSelect(t, path); } catch (e) { console.warn(`[api] neon ${t} load failed:`, e.message); }
+    }
+    return null;
+  };
   const [rs, gb, qz, gu] = await Promise.all([
     q("rsvps", "created_at.desc"), q("guestbook", "created_at.desc"),
     q("quiz_answers", "created_at.desc"), q("guests", "created_at.asc"),
@@ -161,6 +175,7 @@ export async function loadAdminData() {
     guestbook: gb ? gb.map(rowToGuestbook) : (prev.guestbook || []),
     quizSubs: qz ? qz.map(rowToQuizSub) : (prev.quizSubs || []),
     guests: gu ? gu.map(rowToGuest) : (prev.guests || []),
+    dataError: { rsvps: !rs, guestbook: !gb, quizSubs: !qz, guests: !gu },
   });
 }
 

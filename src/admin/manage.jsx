@@ -463,8 +463,9 @@ function GuestForm({ initial, companions, rsvpDiet, onSave, onCancel }) {
 // Guests tab — invited-list CRUD + reconciliation against RSVPs (who replied,
 // headcount). Shown only when settings.strictRsvp is on (gated in AdminApp).
 export function GuestsAdmin() {
-  const { guests, rsvps, settings, neonMode } = useStore();
+  const { guests, rsvps, settings, neonMode, dataError } = useStore();
   const { run } = React.useContext(AdminSaveCtx);
+  const [retrying, setRetrying] = useState(false);
   const [filter, setFilter] = useState("attending");
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState(null);
@@ -669,10 +670,24 @@ export function GuestsAdmin() {
 
   // "Add to list": create a guest entry straight from an unmatched RSVP. Once
   // inserted, reconcileGuests recomputes and the row leaves the Unmatched tab.
+  // Runs the SAME duplicate guard as the Add-guest form — without it, adopting a
+  // reply whose guest already exists silently doubles the list (one real client
+  // ended up with 27 duplicate guests this way, 2026-07-29).
   async function adoptRsvp(r) {
+    const cand = guestFromRsvp(r);
+    if (findDuplicateGuest(guests, cand, null)) {
+      await confirmDialog({
+        title: "Already on the list",
+        message: `${cand.firstName} ${cand.lastName} is already on your guest list, so their reply is already counted. Adding them again would duplicate the entry.`,
+        confirmLabel: "OK",
+        okOnly: true,
+        noIcon: true,
+      });
+      return;
+    }
     try {
       await run(async () => {
-        const row = await addGuestDb(guestFromRsvp(r));
+        const row = await addGuestDb(cand);
         Store.addGuest(row);
       });
       toast("Added to the guest list", "success");
@@ -680,6 +695,29 @@ export function GuestsAdmin() {
       toast("Couldn't add: " + (e && e.message || "error"), "err");
     }
   }
+
+  // The guest list failed to load (network / API hiccup). NEVER fall through to
+  // the normal view: with guests=[] every reply reads as unmatched, so the owner
+  // would see their whole list gone and all replies sitting in "For Approval" —
+  // exactly what one client reported as "my guests were deleted" (2026-07-29).
+  // Say what happened, reassure, offer a retry.
+  if (dataError && dataError.guests) return (
+    <div className="panel">
+      <div className="panel__body" style={{ textAlign: "center", padding: "8vh 20px" }}>
+        <div className="locked__icon" style={{ background: "#fdecec", color: "#c0392b", fontSize: 24, fontWeight: 800 }} aria-hidden="true">!</div>
+        <h3 style={{ margin: "12px 0 6px", fontSize: 20 }}>Couldn't load your guest list</h3>
+        <p style={{ margin: "0 auto 18px", maxWidth: 430, color: "var(--muted)", fontSize: 14, lineHeight: 1.6 }}>
+          Nothing has been deleted — your guests and their replies are safe. This device just couldn't fetch the list.
+          Please try again; if it keeps failing, contact support before changing anything.
+        </p>
+        <Button variant="primary" disabled={retrying} onClick={async () => {
+          setRetrying(true);
+          try { await loadAdminData(); } catch (e) { /* dataError stays set */ }
+          setRetrying(false);
+        }}>{retrying ? "Loading…" : "Try again"}</Button>
+      </div>
+    </div>
+  );
 
   return (
     <div>
