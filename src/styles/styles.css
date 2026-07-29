@@ -172,6 +172,10 @@ body.env-sealed main { padding-top: 0; }
    pinned try-bar + inline nav selects. Works at every width and even over the
    sealed envelope cover (nav is hidden there). z-index sits above content but
    below modals. */
+/* Sealed envelope cover (Olive/Velvet): keep the first view clean — the demo
+   Register FAB appears only AFTER the envelope is opened (owner request).
+   PublicPages toggles body.env-sealed while the cover is up. */
+body.env-sealed .theme-fab { display: none; }
 .theme-fab {
   position: fixed; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom));
   z-index: 55; display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
@@ -2646,9 +2650,16 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 [data-theme="envelope2"] .eg-cue { top: calc(50% + min(320px, 28.1vw, 29.5vh) + 104px); }
 @media (max-width: 860px) {
   /* env2 mobile: lift the opened envelope + its contents up the viewport; keep
-     the cue tracking it (preserve the base translateX(2%)). */
-  [data-theme="envelope2"] .eg-open { transform: translate(2%, calc(-3% - 8vh)); }
-  [data-theme="envelope2"] .eg-cue { top: calc(50% + min(320px, 28.1vw, 29.5vh) + 40px - 8vh); }
+     the cue tracking it (preserve the base translateX(2%)). The lift lives in ONE
+     var so the artwork and the cue can never drift apart.
+     Why it needs to be this big: `.eg-hero.is-open` is 130vh and `.eg-stage`
+     CENTERS the scene in it, so the envelope's natural resting place is ~65vh
+     down — a third of it below the fold on a phone. 18vh puts the visible art
+     (card top through the bouquet's tail) centered in the band under the pinned
+     header instead of hugging the bottom edge. */
+  [data-theme="envelope2"] { --eg2-lift: 18vh; }
+  [data-theme="envelope2"] .eg-open { transform: translate(2%, calc(-3% - var(--eg2-lift))); }
+  [data-theme="envelope2"] .eg-cue { top: calc(50% + min(320px, 28.1vw, 29.5vh) + 40px - var(--eg2-lift)); }
 }
 @keyframes egCueBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(7px); } }
 @keyframes invHeartPop {
