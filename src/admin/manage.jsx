@@ -4290,7 +4290,6 @@ export function LockedFeature({ featureKey, goPurchase, children }) {
           <h3 className="locked__title">{label} is locked</h3>
           <p className="locked__desc">{desc}</p>
           <Button variant="primary" onClick={goPurchase}>{Icon.lock({ style: { width: 15, height: 15 } })} Purchase Premium</Button>
-          <p className="locked__hint">This feature is part of the Premium plan — see what's included.</p>
         </div>
       </div>
     </div>
