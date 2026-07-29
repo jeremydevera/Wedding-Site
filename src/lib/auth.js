@@ -35,6 +35,24 @@ export async function ownerHomeUrl(clientId) {
   } catch (e) { return null; }
 }
 
+// Profile-role read with warm-up backoff. The FIRST authed read right after a
+// Firebase sign-in can run as 'anon' (permission denied) while the JWT session
+// warms up — a single try misroutes the SUPERADMIN ("doesn't have access" /
+// bounced to the login form). Retry ONLY on error (a clean empty result is a
+// real non-superadmin) for up to ~3s. Shared by every login/boot path.
+async function readProfileRole(uid) {
+  if (!uid) return null;
+  const read = () => neonAuthedSelect("profiles", `select=role&id=eq.${encodeURIComponent(uid)}`)
+    .then((rows) => ({ ok: true, rows })).catch(() => ({ ok: false, rows: null }));
+  let pr = await read();
+  for (const wait of [600, 900, 1400]) {
+    if (pr.ok) break;
+    await new Promise((r) => setTimeout(r, wait));
+    pr = await read();
+  }
+  return pr.rows;
+}
+
 // Apex/console runs on shard s1 with Firebase as the only auth.
 async function loadApexNeonCtx() {
   // Firebase is the platform's ONLY auth now, and the apex/console run on shard
@@ -70,18 +88,7 @@ async function loadNeonSession() {
     // Same warm-up flake as regState(): the first authed read after sign-in can
     // run as 'anon' (permission denied) — retry once on ERROR only. A clean
     // empty result is a legit non-superadmin, no retry (keeps owner sign-in fast).
-    const readProf = () => neonAuthedSelect("profiles", `select=role&id=eq.${encodeURIComponent(s.user.id)}`).then((rows) => ({ ok: true, rows })).catch(() => ({ ok: false, rows: null }));
-    // One retry wasn't always enough for the warm-up flake (owner hit
-    // "doesn't have access" signing in as SUPERADMIN on a slow connection) —
-    // back off up to ~3s total. A clean empty result (ok, no row) exits early;
-    // only ERRORS keep retrying.
-    let pr = await readProf();
-    for (const wait of [600, 900, 1400]) {
-      if (pr.ok) break;
-      await new Promise((r) => setTimeout(r, wait));
-      pr = await readProf();
-    }
-    const prof = pr.rows;
+    const prof = await readProfileRole(s.user.id);
     if (prof && prof[0] && prof[0].role === "superadmin") {
       Store.setAuth({ session: s, role: "superadmin", clientId: Store.get().clientId, email: s.user.email });
       gateFlag();
@@ -115,7 +122,7 @@ export async function loadSession() {
       await loadApexNeonCtx();
       const s = await neonAuth.session();
       if (s && s.user) {
-        const prof = await neonAuthedSelect("profiles", `select=role&id=eq.${encodeURIComponent(s.user.id)}`).catch(() => null);
+        const prof = await readProfileRole(s.user.id);
         if (prof && prof[0] && prof[0].role === "superadmin") {
           Store.setAuth({ session: s, role: "superadmin", clientId: null, email: s.user.email });
           gateFlag();
@@ -154,7 +161,7 @@ export async function signIn(email, password) {
   await loadApexNeonCtx();
   const ns = await neonAuth.signIn(email, password);
   const uid = ns?.user?.id;
-  const prof = uid ? await neonAuthedSelect("profiles", `select=role&id=eq.${encodeURIComponent(uid)}`).catch(() => null) : null;
+  const prof = await readProfileRole(uid);
   if (prof && prof[0] && prof[0].role === "superadmin") {
     Store.setAuth({ session: ns, role: "superadmin", clientId: null, email: ns.user?.email || email });
     gateFlag();
@@ -253,7 +260,7 @@ export async function signInGoogle() {
 // accounts go to /register.
 async function routeAfterGoogle(uid, gfrom) {
   await loadApexNeonCtx();
-  const prof = uid ? await neonAuthedSelect("profiles", `select=role&id=eq.${encodeURIComponent(uid)}`).catch(() => null) : null;
+  const prof = await readProfileRole(uid);
   if (prof && prof[0] && prof[0].role === "superadmin") {
     if (gfrom) { window.location.assign(`https://${gfrom}.celebrately.us/admin`); return { role: "superadmin", client_id: null, redirecting: true }; }
     // Superadmin signed in with Google on the apex → open the console right here
