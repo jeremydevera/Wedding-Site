@@ -4215,18 +4215,26 @@ export function LockedFeature({ featureKey, goPurchase, children }) {
 // Premium unlocks the locked tier + removes the Donate popup. "Proceed to
 // checkout" files a Billing ticket automatically with the site's details; the
 // superadmin enables Premium and collects payment afterwards.
-const PLAN_ROWS = [
-  { label: "RSVP & guest list", basic: true, premium: true },
-  { label: "Home page & invitation", basic: true, premium: true },
-  { label: "Schedule", basic: true, premium: true },
-  { label: "Guestbook", basic: true, premium: true },
-  { label: "Entourage", basic: true, premium: true },
-  { label: "Our Story", basic: false, premium: true },
-  { label: "Details, FAQ & attire guide", basic: false, premium: true },
-  { label: "Venue & Map", basic: false, premium: true },
-  { label: "Couple quiz", basic: false, premium: true },
-  { label: "Music playlist", basic: false, premium: true },
-  { label: "Ads", basic: "Shows ads", premium: "No ads" },
+// Grouped like a classic pricing comparison ("Core" vs "Premium" sections in
+// the compare table). Section rows render as full-width group headers.
+const PLAN_GROUPS = [
+  { title: "Core features", rows: [
+    { label: "RSVP & guest list", basic: true, premium: true },
+    { label: "Home page & invitation", basic: true, premium: true },
+    { label: "Schedule", basic: true, premium: true },
+    { label: "Guestbook", basic: true, premium: true },
+    { label: "Entourage", basic: true, premium: true },
+  ] },
+  { title: "Premium features", rows: [
+    { label: "Our Story", basic: false, premium: true },
+    { label: "Details, FAQ & attire guide", basic: false, premium: true },
+    { label: "Venue & Map", basic: false, premium: true },
+    { label: "Couple quiz", basic: false, premium: true },
+    { label: "Music playlist", basic: false, premium: true },
+  ] },
+  { title: "Experience", rows: [
+    { label: "Ads", basic: "Shows ads", premium: "No ads" },
+  ] },
 ];
 export function PurchasePremiumPage() {
   const { settings, clientId, guests, rsvps, auth } = useStore();
@@ -4268,35 +4276,60 @@ export function PurchasePremiumPage() {
       </div>
     </div>
   );
+  const cell = (v) => (typeof v === "string" ? <span className="pricing__note">{v}</span> : v ? <span className="pricing__yes">{Icon.check({})}</span> : <span className="pricing__no">✕</span>);
   return (
-    <div className="panel" style={{ maxWidth: 760, margin: "0 auto" }}>
-      <div className="panel__head"><div><div className="panel__title">Go Premium</div><div className="panel__sub">Unlock every feature for your celebration — one-time payment, pay after it's enabled.</div></div></div>
-      <div className="panel__body">
+    <div className="pricing">
+      {/* hero — big centered title + subline (pricing-page pattern) */}
+      <div className="pricing__hero">
+        <h1 className="pricing__title">Simple, honest pricing</h1>
+        <p className="pricing__sub">One upgrade, one-time payment — everything your celebration needs.</p>
+      </div>
+
+      {/* plan cards — name, who it's for, price + billing note, pill CTA */}
+      <div className="pricing__cards">
+        <div className="price-card">
+          <div className="price-card__name">Basic</div>
+          <p className="price-card__aud">For getting your invitation and RSVPs online.</p>
+          <div className="price-card__price">₱0</div>
+          <div className="price-card__per">free forever</div>
+          <button type="button" className="price-card__cta" disabled>Your current plan</button>
+        </div>
+        <div className="price-card price-card--hot">
+          <span className="price-card__badge">Recommended</span>
+          <div className="price-card__name">Premium</div>
+          <p className="price-card__aud">For the full experience — every feature unlocked, no ads.</p>
+          <div className="price-card__price">₱1,500</div>
+          <div className="price-card__per">one-time · pay after it's enabled</div>
+          <button type="button" className="price-card__cta price-card__cta--primary" disabled={busy} onClick={checkout}>{busy ? "Submitting…" : "Proceed to checkout"}</button>
+        </div>
+      </div>
+
+      {/* compare table — grouped rows, plan columns, checkmarks */}
+      <div className="pricing__compare">
+        <div className="pricing__comparehead">Compare all features</div>
         <div className="table-wrap">
-          <table className="tbl plans">
+          <table className="tbl pricing__tbl">
             <thead>
-              <tr>
-                <th style={{ width: "44%" }}></th>
-                <th className="plans__basic">Basic<span className="plans__price">Free</span></th>
-                <th className="plans__premium">Premium<span className="plans__price">₱1,500</span></th>
-              </tr>
+              <tr><th></th><th>Basic</th><th className="pricing__hotcol">Premium</th></tr>
             </thead>
             <tbody>
-              {PLAN_ROWS.map((r) => (
-                <tr key={r.label}>
-                  <td><strong>{r.label}</strong></td>
-                  <td className="plans__basic">{typeof r.basic === "string" ? r.basic : r.basic ? <span className="plans__yes">{Icon.check({})}</span> : <span className="plans__no">✕</span>}</td>
-                  <td className="plans__premium">{typeof r.premium === "string" ? r.premium : r.premium ? <span className="plans__yes">{Icon.check({})}</span> : <span className="plans__no">✕</span>}</td>
-                </tr>
+              {PLAN_GROUPS.map((g) => (
+                <React.Fragment key={g.title}>
+                  <tr className="pricing__group"><td colSpan={3}>{g.title}</td></tr>
+                  {g.rows.map((r) => (
+                    <tr key={r.label}>
+                      <td>{r.label}</td>
+                      <td>{cell(r.basic)}</td>
+                      <td className="pricing__hotcol">{cell(r.premium)}</td>
+                    </tr>
+                  ))}
+                </React.Fragment>
               ))}
             </tbody>
           </table>
         </div>
-        <div style={{ textAlign: "center", marginTop: 20 }}>
-          <Button variant="primary" size="lg" disabled={busy} onClick={checkout}>{busy ? "Submitting…" : "Proceed to checkout"}</Button>
-          <p className="locked__hint" style={{ marginTop: 10 }}>No payment now — we enable Premium first, then settle payment with you in Support.</p>
-        </div>
       </div>
+      <p className="locked__hint" style={{ textAlign: "center", marginTop: 14 }}>No payment now — we enable Premium first, then settle payment with you in Support.</p>
     </div>
   );
 }

@@ -923,16 +923,38 @@ input[type="datetime-local"].input::-webkit-datetime-edit { padding: 0; }
 .admin__navlock { margin-left: auto; display: inline-flex; color: var(--muted); flex: none; }
 .admin__navlock svg { width: 13px; height: 13px; }
 
-/* Premium purchase page — Basic vs Premium plan comparison */
-.plans th, .plans td { text-align: center; }
-.plans th:first-child, .plans td:first-child { text-align: left; }
-.plans th { font-size: 15px; }
-.plans__price { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); margin-top: 2px; text-transform: none; letter-spacing: 0; }
-.plans th.plans__premium .plans__price { color: var(--accent, #1E5BD6); }
-.plans .plans__premium { background: color-mix(in oklab, var(--accent, #1E5BD6) 6%, transparent); }
-.plans__yes { color: #16a34a; display: inline-flex; }
-.plans__yes svg { width: 17px; height: 17px; }
-.plans__no { color: var(--muted); font-size: 14px; }
+/* Premium purchase page — pricing-page layout: centered hero, plan cards with
+   pill CTAs, then a grouped "Compare all features" table. */
+.pricing { max-width: 880px; margin: 0 auto; }
+.pricing__hero { text-align: center; padding: 26px 12px 30px; }
+.pricing__title { margin: 0 0 10px; font-family: var(--font-body); font-weight: 800; letter-spacing: -.02em; font-size: clamp(30px, 4.6vw, 44px); color: var(--ink); }
+.pricing__sub { margin: 0 auto; max-width: 520px; color: var(--muted); font-size: 15px; line-height: 1.55; }
+
+.pricing__cards { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 18px; }
+@media (min-width: 640px) { .pricing__cards { grid-template-columns: 1fr 1fr; } }
+.price-card { position: relative; background: var(--surface); border: 1px dashed var(--line); border-radius: 14px; padding: 22px 22px 20px; display: flex; flex-direction: column; }
+.price-card--hot { border: 2px solid var(--accent, #1E5BD6); box-shadow: 0 14px 34px -18px color-mix(in oklab, var(--accent, #1E5BD6) 55%, transparent); }
+.price-card__badge { position: absolute; top: -11px; left: 20px; background: var(--accent, #1E5BD6); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 3px 12px; border-radius: 999px; }
+.price-card__name { font-size: 20px; font-weight: 800; color: var(--ink); }
+.price-card__aud { margin: 4px 0 14px; color: var(--muted); font-size: 13.5px; line-height: 1.5; min-height: 40px; }
+.price-card__price { font-size: 34px; font-weight: 800; letter-spacing: -.02em; color: var(--ink); line-height: 1; }
+.price-card__per { color: var(--muted); font-size: 13px; margin: 6px 0 16px; }
+.price-card__cta { margin-top: auto; width: 100%; height: 44px; border-radius: 999px; font: inherit; font-weight: 700; font-size: 14.5px; cursor: pointer; background: var(--surface); border: 1px solid var(--line); color: var(--ink); transition: background .15s, border-color .15s; }
+.price-card__cta:disabled { color: var(--muted); cursor: default; }
+.price-card__cta--primary { background: var(--accent, #1E5BD6); border-color: var(--accent, #1E5BD6); color: #fff; }
+.price-card__cta--primary:hover:not(:disabled) { filter: brightness(1.08); }
+.price-card__cta--primary:disabled { color: #fff; opacity: .7; }
+
+.pricing__compare { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.pricing__comparehead { padding: 14px 18px; font-weight: 700; color: var(--ink); border-bottom: 1px solid var(--line); }
+.pricing__tbl th, .pricing__tbl td { text-align: center; }
+.pricing__tbl th:first-child, .pricing__tbl td:first-child { text-align: left; }
+.pricing__tbl .pricing__hotcol { background: color-mix(in oklab, var(--accent, #1E5BD6) 6%, transparent); }
+.pricing__group td { background: var(--surface-2, #f6f6f4); font-weight: 700; font-size: 13px; letter-spacing: .02em; color: var(--ink); }
+.pricing__yes { color: #16a34a; display: inline-flex; }
+.pricing__yes svg { width: 17px; height: 17px; }
+.pricing__no { color: var(--muted); font-size: 14px; }
+.pricing__note { font-size: 13px; color: var(--ink-soft); }
 
 /* Sign-in — split layout (form left, animated panel right), follows OS light/dark */
 .signin {
