@@ -49,8 +49,11 @@ function readCookie(request) {
   return m ? decodeURIComponent(m[1]) : null;
 }
 
-const json = (obj, extra = {}) =>
-  new Response(JSON.stringify(obj), { headers: { "Content-Type": "application/json", "Cache-Control": "no-store", ...extra } });
+// `extra` spread ONLY into headers — so a caller passing { status: 403 } used to
+// set a bogus "status" HEADER and still answer HTTP 200 (rejections looked like
+// successes to any monitor). Take status as its own argument.
+const json = (obj, { status = 200, ...headers } = {}) =>
+  new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store", ...headers } });
 
 export async function onRequest({ request }) {
   if (!ourOrigin(request)) return json({ error: "forbidden" }, { status: 403 });
