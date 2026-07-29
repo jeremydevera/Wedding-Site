@@ -388,9 +388,11 @@ export function AdminLogin({ onAuthed }) {
             </div>
 
             <p className="signin__reg">Don't have an account? <button type="button" className="signin__reglink" onClick={goRegister}>Register</button></p>
-            {/* Apex only (gateEligible) — a client's own site login shouldn't
-                point guests at the demo of a DIFFERENT wedding. */}
-            {gateEligible && <p className="signin__reg"><button type="button" className="signin__reglink" onClick={goDemo}>See a live demo</button></p>}
+            {/* Apex + desktop only (CSS): a client's own site login shouldn't
+                point guests at the demo of a DIFFERENT wedding, and on mobile
+                the welcome hero (before tapping "Log in") already has its own
+                "See the demo" button — showing it again here would double up. */}
+            {gateEligible && <p className="signin__reg signin__demorow"><button type="button" className="signin__reglink" onClick={goDemo}>See a live demo</button></p>}
           </form>
           )}
         </div>
