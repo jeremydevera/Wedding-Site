@@ -460,6 +460,16 @@ function GuestForm({ initial, companions, rsvpDiet, onSave, onCancel }) {
   );
 }
 
+// Companions display for a matched reply: named companions, else the legacy
+// plus_one string, else "N unnamed" (a headcount with no names given), else
+// none. Shared by the Guests table's Companions column and the View modal.
+function companionsText(rsvp) {
+  const comps = rsvp && Array.isArray(rsvp.companions) ? rsvp.companions.filter((s) => (s || "").trim()) : [];
+  if (comps.length) return comps.join(", ");
+  if (rsvp && rsvp.plusOne) return rsvp.plusOne;
+  return rsvp && Number(rsvp.count) > 1 ? `${Number(rsvp.count) - 1} unnamed` : "—";
+}
+
 // Guests tab — invited-list CRUD + reconciliation against RSVPs (who replied,
 // headcount). Shown only when settings.strictRsvp is on (gated in AdminApp).
 export function GuestsAdmin() {
@@ -469,6 +479,7 @@ export function GuestsAdmin() {
   const [filter, setFilter] = useState("attending");
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState(null);
+  const [viewing, setViewing] = useState(null);
   const [emailOpen, setEmailOpen] = useState(false);
   const [emailTo, setEmailTo] = useState("");
   const [emailSending, setEmailSending] = useState(false);
@@ -791,6 +802,7 @@ export function GuestsAdmin() {
                         ? <span title={x.rsvp.notes} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.rsvp.notes}</span>
                         : <span style={{ color: "var(--muted)" }}>—</span>}</td>
                       <td><div className="row-actions">
+                        <button className="icon-btn" onClick={() => setViewing(g)} aria-label="View" title="View guest">{Icon.eye({})}</button>
                         {/* Seed the Status dropdown from the matched REPLY, not the
                             stale guest-row status, so saving an unrelated field can't
                             silently overwrite a real reply (e.g. flip Declined→Attending). */}
@@ -817,6 +829,42 @@ export function GuestsAdmin() {
             <GuestForm initial={editing} companions={comps}
               rsvpDiet={r ? { diet: r.diet || "None", dietNotes: r.dietNotes || "" } : null}
               onSave={saveGuest} onCancel={() => setEditing(null)} />
+          );
+        })()}
+      </Modal>
+
+      {/* Read-only — the guest's info plus their matched reply, if any. Mirrors
+          RsvpsAdmin's "RSVP detail" modal so both read the same way. */}
+      <Modal open={!!viewing} onClose={() => setViewing(null)} label="Guest detail">
+        {viewing && (() => {
+          const g = viewing;
+          const x = byId.get(g.id) || { status: "none", rsvp: null };
+          const r = x.rsvp;
+          const name = `${g.firstName} ${g.lastName}`.trim() + (g.middleName ? ` (${g.middleName})` : "");
+          const over = r && headsOf(r) > Number(g.allocation);
+          return (
+            <div>
+              <SectionHead eyebrow="Guest" title={name} />
+              <dl style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "12px 20px", margin: 0 }}>
+                {[
+                  ["Status", x.status === "none" ? "No reply yet" : STAT_LABEL[x.status]],
+                  ["Allotted seats", g.allocation],
+                  ["Phone", (r && r.phone) || "—"],
+                  ["Email", (r && r.email) || g.email || "—"],
+                  ["Companions", companionsText(r) + (over ? "  (over their allotted seats)" : "")],
+                  ["Dietary", r && r.diet && r.diet !== "None" ? r.diet + (r.dietNotes ? ` (${r.dietNotes})` : "") : "—"],
+                  ["Song request", (r && r.song) || "—"],
+                  ["Note", g.notes || "—"],
+                  ["Note from guest", (r && r.notes) || "—"],
+                  ["Submitted", r ? fmtDate(r.createdAt) : "—"],
+                ].map(([k, v]) => (
+                  <React.Fragment key={k}>
+                    <dt style={{ fontSize: 12, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted)", fontWeight: 600 }}>{k}</dt>
+                    <dd style={{ margin: 0, color: over && k === "Companions" ? "var(--danger, #a33)" : "var(--ink)" }}>{v}</dd>
+                  </React.Fragment>
+                ))}
+              </dl>
+            </div>
           );
         })()}
       </Modal>
