@@ -90,10 +90,17 @@ function Ring({ label, used, limit, fmt, suffix, detail, note, breakdown, info }
         <InfoPop anchor={pop.anchor} tone="dark" width={230}><Breakdown rows={breakdown} fmt={fmt} /></InfoPop>
       )}
       {hasInfo && pop.open && <InfoPop anchor={pop.anchor}>{info}</InfoPop>}
-      <div style={{ fontSize: 13, fontWeight: 600, color: "#334155", marginBottom: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-        {label}
-        {detail && <span style={{ color: "#94a3b8", fontWeight: 500 }}> · {detail}</span>}
-        {hasInfo && <InfoDot />}
+      {/* Two-line head: label, then the detail on its OWN line (owner request —
+          inline "· detail" ellipsized at tile width, e.g. "13.3k today · Paid
+          plan" clipped). Empty detail keeps the line so the rings stay aligned. */}
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "#334155", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {label}
+          {hasInfo && <InfoDot />}
+        </div>
+        <div style={{ fontSize: 11.5, color: "#94a3b8", fontWeight: 500, marginTop: 2, minHeight: 15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {detail || " "}
+        </div>
       </div>
       <div style={{ position: "relative", height: 118 }}>
         <canvas ref={ref} aria-label={`${label} usage`} role="img" />
