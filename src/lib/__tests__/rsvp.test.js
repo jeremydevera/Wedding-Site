@@ -100,6 +100,14 @@ describe("rsvpStats", () => {
     const s = rsvpStats(rows);
     expect(s.dietNames).toEqual({ Vegetarian: ["Ana Cruz", "Cara Santos"] });
   });
+  it("names the guests behind each status, including non-attending", () => {
+    const s = rsvpStats(rows);
+    expect(s.statusNames).toEqual({
+      attending: ["Ana Cruz", "Ben Reyes", "Cara Santos"],
+      maybe: ["Dio Reyes"],
+      declined: ["Eve Torres"],
+    });
+  });
   it("falls back to first+last, then 'Someone', when fullName is missing", () => {
     const s = rsvpStats([
       { status: "attending", diet: "Vegan", firstName: "Amy", lastName: "Diaz" },

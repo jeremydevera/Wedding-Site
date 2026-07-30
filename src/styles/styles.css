@@ -3195,6 +3195,35 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   font-style: italic;
 }
 
+/* Custom (non-canvas) donut tooltip — see externalTooltip in rsvp-charts.jsx.
+   A plain Chart.js tooltip draws INTO the chart's own canvas pixels, so a slice
+   with 20+ guest names would silently clip past the ~240px-tall chart; this is
+   a real DOM node instead, so a long list scrolls (max-height + overflow)
+   rather than vanishing. Positioned by JS; only opacity/left/top/transform are
+   set inline per hover. */
+.rsvp-tip {
+  position: absolute;
+  z-index: 20;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .1s ease;
+  left: 0; top: 0;
+  min-width: 120px;
+  max-width: 260px;
+  max-height: 260px;
+  overflow-y: auto;
+  background: rgba(15, 23, 42, 0.94);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.5;
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 16px 32px -14px rgba(0, 0, 0, 0.55);
+}
+.rsvp-tip__head { font-weight: 700; white-space: nowrap; }
+.rsvp-tip__list { list-style: none; margin: 6px 0 0; padding: 6px 0 0; border-top: 1px solid rgba(255,255,255,.14); display: flex; flex-direction: column; gap: 4px; }
+.rsvp-tip__list li { color: rgba(255, 255, 255, 0.85); }
+
 @media (max-width: 680px) {
   .rsvp-charts__row { grid-template-columns: 1fr; }
 }

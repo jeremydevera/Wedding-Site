@@ -10,15 +10,6 @@ ChartJS.register(DoughnutController, ArcElement, Tooltip, Legend);
 const STATUS_COLORS = ["#2E5BFF", "#8C54FF", "#4D9FEC"]; // attending / maybe / declined (royal / purple / sky, like the reference)
 const DIET_COLORS = ["#2E5BFF", "#8C54FF", "#4D9FEC", "#10B981", "#F59E0B", "#EC4899", "#64748B", "#FD7E14"];
 
-const TIP = {
-  backgroundColor: "rgba(15, 23, 42, 0.92)",
-  titleColor: "#fff",
-  bodyColor: "rgba(255,255,255,0.85)",
-  padding: { x: 12, y: 8 },
-  cornerRadius: 8,
-  displayColors: false,
-};
-
 // Mount a Chart.js instance on a ref'd canvas; destroy on unmount/deps change.
 function useChart(ref, getConfig, deps) {
   const inst = useRef(null);
@@ -26,18 +17,74 @@ function useChart(ref, getConfig, deps) {
     if (!ref.current) return;
     if (inst.current) { inst.current.destroy(); inst.current = null; }
     inst.current = new ChartJS(ref.current, getConfig());
-    return () => { if (inst.current) { inst.current.destroy(); inst.current = null; } };
+    return () => {
+      if (inst.current) { inst.current.destroy(); inst.current = null; }
+      // externalTooltip appends a sibling div Chart.js doesn't know about, so
+      // its own destroy() won't hide it — a re-render while mid-hover would
+      // otherwise leave a stale tooltip on screen until the next hover event.
+      const stray = ref.current && ref.current.parentNode && ref.current.parentNode.querySelector(".rsvp-tip");
+      if (stray) stray.style.opacity = "0";
+    };
   }, deps); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
-// Tooltip lines beyond this many guest names collapse to "+N more" — a slice
-// with a long tail of e.g. "Vegetarian" replies shouldn't grow a giant tooltip.
-const TIP_NAMES_MAX = 6;
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// Tooltip body for one slice: "Label: N" plus every guest behind it — ALL of
+// them (owner request: hovering must show everyone in the slice, not a capped
+// preview). Pure + exported so the "does it list all N names, safely escaped"
+// risk is unit-tested without a browser. The DOM host that positions this HTML
+// lives in externalTooltip below; a plain Chart.js canvas tooltip can't do this
+// because its content is drawn onto the canvas itself — a list of 20+ names is
+// taller than the chart, and canvas pixels outside the element are simply not
+// there (the excess would be invisible, not scrollable).
+export function buildTooltipHtml(label, value, names) {
+  const head = `<div class="rsvp-tip__head">${escapeHtml(label)}: <strong>${value}</strong></div>`;
+  if (!names || !names.length) return head;
+  const items = names.map((n) => `<li>${escapeHtml(n)}</li>`).join("");
+  return `${head}<ul class="rsvp-tip__list">${items}</ul>`;
+}
+
+// Chart.js "external" tooltip: instead of Chart.js drawing on the canvas, it
+// calls us with the current tooltip model and we position a real DOM node
+// (scrollable — see .rsvp-tip in styles.css) over `.rsvp-donut-wrap` (already
+// position:relative). `names` is optional and parallel to labels/values.
+function externalTooltip(labels, values, names) {
+  return (context) => {
+    const { chart, tooltip } = context;
+    const host = chart.canvas.parentNode;
+    let el = host.querySelector(".rsvp-tip");
+    if (!el) {
+      el = document.createElement("div");
+      el.className = "rsvp-tip";
+      host.appendChild(el);
+    }
+    const dp = tooltip && tooltip.dataPoints;
+    if (!tooltip || tooltip.opacity === 0 || !dp || !dp.length) {
+      el.style.opacity = "0";
+      return;
+    }
+    const idx = dp[0].dataIndex;
+    el.innerHTML = buildTooltipHtml(labels[idx], values[idx], names ? names[idx] : null);
+    el.style.opacity = "1";
+    // Horizontal: center on the slice, clamped so the box stays inside the
+    // canvas. Vertical: sit above the cursor by default; flip below when a
+    // tall name list wouldn't fit above it.
+    const half = el.offsetWidth / 2;
+    const left = Math.max(half, Math.min(chart.width - half, tooltip.caretX));
+    const fitsAbove = tooltip.caretY - el.offsetHeight - 10 > 0;
+    el.style.left = `${left}px`;
+    el.style.top = `${tooltip.caretY}px`;
+    el.style.transform = fitsAbove ? "translate(-50%, calc(-100% - 10px))" : "translate(-50%, 10px)";
+  };
+}
 
 // Adminator-style doughnut: big hole, white gaps + rounded slice ends, and the
 // legend as labelled dots on the right side of the chart. `names` (optional,
-// parallel to labels/values) lists the guests behind each slice — passed by
-// the dietary-needs chart so hovering a slice shows who's in it.
+// parallel to labels/values) lists the guests behind each slice, shown in full
+// on hover via externalTooltip.
 export function donutConfig(labels, values, colors, names) {
   return {
     type: "doughnut",
@@ -61,20 +108,7 @@ export function donutConfig(labels, values, colors, names) {
       layout: { padding: 6 }, // room for hoverOffset so slices don't clip
       plugins: {
         legend: { display: false }, // HTML legend beside the chart (aligned counts)
-        tooltip: {
-          ...TIP,
-          callbacks: {
-            label: (c) => ` ${c.label}: ${c.parsed}`,
-            afterLabel: !names ? undefined : (c) => {
-              const list = names[c.dataIndex] || [];
-              if (!list.length) return undefined;
-              const shown = list.slice(0, TIP_NAMES_MAX).map((n) => `• ${n}`);
-              const rest = list.length - shown.length;
-              if (rest > 0) shown.push(`+${rest} more`);
-              return shown;
-            },
-          },
-        },
+        tooltip: { enabled: false, external: externalTooltip(labels, values, names) },
       },
       animation: { duration: 900, easing: "easeInOutQuart" },
     },
@@ -125,7 +159,8 @@ export function RsvpCharts({ rsvps }) {
     ["Attending", "Maybe", "Declined"],
     [stats.attendingParties, stats.maybe, stats.declined],
     STATUS_COLORS,
-  ), [stats.attendingParties, stats.maybe, stats.declined]);
+    [stats.statusNames.attending, stats.statusNames.maybe, stats.statusNames.declined],
+  ), [stats.attendingParties, stats.maybe, stats.declined, stats.statusNames]);
 
   useChart(dietRef, () => donutConfig(
     dietEntries.map(([k]) => k),

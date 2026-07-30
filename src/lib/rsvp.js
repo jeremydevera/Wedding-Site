@@ -51,18 +51,28 @@ export function headsOf(rsvp) {
 
 // Caterer-facing tallies from the RSVP list. attendingHeads sums headsOf across
 // attending parties; diets counts each non-"None" diet among attending parties.
+function rsvpDisplayName(r) {
+  return r.fullName || [r.firstName, r.lastName].filter(Boolean).join(" ") || "Someone";
+}
+
 export function rsvpStats(rsvps) {
   const list = rsvps || [];
   const attending = list.filter((r) => r.status === "attending");
   const diets = {};
-  // dietNames mirrors `diets`' keys (same guests, same "None" exclusion) so the
-  // dietary-needs chart can name who's behind each slice on hover.
+  // dietNames mirrors `diets`' keys (same guests, same "None" exclusion); statusNames
+  // groups every reply by its status. Both let the dashboard's donut charts name
+  // who's behind a slice, on hover and on click.
   const dietNames = {};
   for (const r of attending) {
     if (r.diet && r.diet !== "None") {
       diets[r.diet] = (diets[r.diet] || 0) + 1;
-      (dietNames[r.diet] = dietNames[r.diet] || []).push(r.fullName || [r.firstName, r.lastName].filter(Boolean).join(" ") || "Someone");
+      (dietNames[r.diet] = dietNames[r.diet] || []).push(rsvpDisplayName(r));
     }
+  }
+  const statusNames = { attending: [], maybe: [], declined: [] };
+  for (const r of list) {
+    const key = r.status === "not_attending" ? "declined" : r.status;
+    if (statusNames[key]) statusNames[key].push(rsvpDisplayName(r));
   }
   return {
     total: list.length,
@@ -72,5 +82,6 @@ export function rsvpStats(rsvps) {
     declined: list.filter((r) => r.status === "not_attending").length,
     diets,
     dietNames,
+    statusNames,
   };
 }
