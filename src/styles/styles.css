@@ -2009,10 +2009,20 @@ a.client-domain--link:hover { text-decoration: underline; }
 /* Phone: tiles stack one per row, full width (like the reference) */
 @media (max-width: 640px) {
   .stat-grid { grid-template-columns: 1fr; }
-  /* phones: donut stacks above the legend so nothing runs off-screen */
+  /* phones: donut stacks above the legend so nothing runs off-screen.
+     🔴 !important is load-bearing here: the unconditional (desktop) rules for
+     these same selectors are declared LATER in this file (.rsvp-donut-wrap /
+     .rsvp-chart-legend, further down) — same specificity + later source order
+     means they'd otherwise win even when this media query matches, silently
+     no-opping this whole block on phones. Confirmed live: without !important
+     the donut-wrap measured 240px tall here (the desktop value) at a true
+     390px viewport, and the legend stayed capped at max-width:46% (the
+     desktop side-by-side share), which is why "Seafood allergy" clipped with
+     an ellipsis — on the stacked mobile layout there's no donut beside it
+     competing for width, so 46% of the card was just an unnecessary clamp. */
   .rsvp-chart-body { flex-direction: column; align-items: stretch; gap: 12px; }
-  .rsvp-donut-wrap { height: 200px; min-height: 200px; max-height: 200px; }
-  .rsvp-chart-legend { min-width: 0; max-width: none; margin-right: 0; }
+  .rsvp-donut-wrap { height: 200px !important; min-height: 200px !important; max-height: 200px !important; }
+  .rsvp-chart-legend { min-width: 0 !important; max-width: none !important; width: 100% !important; margin-right: 0 !important; }
 }
 
 /* Desktop: the shell is a passthrough wrapper — nav stays position:fixed (base
@@ -3213,6 +3223,15 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    with 20+ guest names would silently clip past the ~240px-tall chart; this is
    a real DOM node instead. Positioned by JS; only opacity/left/top/transform
    are set inline per hover.
+   🔴 position:fixed + appended straight to <body> (not a chart-card child) is
+   load-bearing, not a style choice: owner-reported screenshot showed it
+   rendering BEHIND the "Recent RSVPs" table further down the dashboard.
+   .rsvp-donut-wrap's position:relative never isolates its own stacking
+   context (no z-index of its own), so a z-index set on a node living inside
+   it is compared against whatever ancestor DOES establish one — not
+   necessarily its visual neighbors — and a plain z-index bump could not
+   reliably fix that. Living directly under <body> sidesteps the question
+   entirely: nothing in the ordinary page can out-stack it.
    🔴 pointer-events:none is intentional (moving the cursor onto the tooltip
    must NOT make Chart.js think it left the canvas — that flips opacity back
    to 0 mid-hover) — but that also means an internal scrollbar can't actually
@@ -3221,11 +3240,12 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    to reach the rest. So max-height is now generous (vh-based) — tall enough
    for realistic guest counts to render with NO internal scrolling needed at
    all; overflow-y:auto only guards a truly pathological list, and for that
-   rare case the PAGE itself can still scroll (this sits in normal flow inside
-   .admin__body), which is unaffected by pointer-events. */
+   rare case the PAGE itself can still scroll (position:fixed tracks the
+   viewport, not the page, but the tooltip only ever appears while the canvas
+   is being hovered — scrolling away hides it via the chart's own mouseout). */
 .rsvp-tip {
-  position: absolute;
-  z-index: 20;
+  position: fixed;
+  z-index: 1000;
   pointer-events: none;
   opacity: 0;
   transition: opacity .1s ease;

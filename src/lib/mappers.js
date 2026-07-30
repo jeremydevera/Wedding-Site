@@ -17,7 +17,7 @@ function venueCardsFrom(content) {
 // array; otherwise synthesize ONE venue from the legacy single map (venueName/
 // venueAddress/mapQuery in settings) + the flat venueCards, so existing clients
 // keep working unchanged. Normalizes ids on every venue and card.
-function venuesFrom(content, settings) {
+export function venuesFrom(content, settings) {
   const withIds = (cards, vi) => (Array.isArray(cards) ? cards : []).map((c, j) => ({
     id: c.id || `vc-${vi}-${j}`, t: c.t || "", d: c.d || "",
   }));

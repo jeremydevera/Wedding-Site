@@ -19,10 +19,10 @@ function useChart(ref, getConfig, deps) {
     inst.current = new ChartJS(ref.current, getConfig());
     return () => {
       if (inst.current) { inst.current.destroy(); inst.current = null; }
-      // externalTooltip appends a sibling div Chart.js doesn't know about, so
-      // its own destroy() won't hide it — a re-render while mid-hover would
-      // otherwise leave a stale tooltip on screen until the next hover event.
-      const stray = ref.current && ref.current.parentNode && ref.current.parentNode.querySelector(".rsvp-tip");
+      // externalTooltip appends its DOM node to document.body (see below) —
+      // Chart.js's own destroy() doesn't know about it, so a re-render while
+      // mid-hover would otherwise leave a stale tooltip on screen.
+      const stray = document.getElementById("rsvp-tip-global");
       if (stray) stray.style.opacity = "0";
     };
   }, deps); // eslint-disable-line react-hooks/exhaustive-deps
@@ -47,20 +47,37 @@ export function buildTooltipHtml(label, value, names) {
   return `${head}<ul class="rsvp-tip__list">${items}</ul>`;
 }
 
+// One shared tooltip node, appended directly to <body> (NOT a canvas sibling).
+// 🔴 Positioning it inside .rsvp-donut-wrap (its old home) put it at the mercy
+// of every ancestor's stacking context: on a real phone it rendered BEHIND the
+// "Recent RSVPs" table further down the dashboard (owner-reported, screenshot).
+// z-index alone couldn't fix that — .rsvp-donut-wrap's position:relative has no
+// z-index of its own, so it never isolates a stacking context, meaning the tip's
+// z-index was being compared against unrelated elements many levels up, not
+// just its siblings. A body-level, position:fixed node sidesteps the whole
+// question: nothing on the page can out-stack it short of another equally
+// deliberate body-level overlay (there is none here). Only one can ever be
+// visible at a time (a mouse hovers one chart at a time), so one shared node
+// serving both charts is simpler than one each.
+function tooltipEl() {
+  let el = document.getElementById("rsvp-tip-global");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "rsvp-tip-global";
+    el.className = "rsvp-tip";
+    document.body.appendChild(el);
+  }
+  return el;
+}
+
 // Chart.js "external" tooltip: instead of Chart.js drawing on the canvas, it
-// calls us with the current tooltip model and we position a real DOM node
-// (scrollable — see .rsvp-tip in styles.css) over `.rsvp-donut-wrap` (already
-// position:relative). `names` is optional and parallel to labels/values.
+// calls us with the current tooltip model and we position the shared DOM node
+// (scrollable — see .rsvp-tip in styles.css) using fixed, viewport-relative
+// coordinates. `names` is optional and parallel to labels/values.
 function externalTooltip(labels, values, names) {
   return (context) => {
     const { chart, tooltip } = context;
-    const host = chart.canvas.parentNode;
-    let el = host.querySelector(".rsvp-tip");
-    if (!el) {
-      el = document.createElement("div");
-      el.className = "rsvp-tip";
-      host.appendChild(el);
-    }
+    const el = tooltipEl();
     const dp = tooltip && tooltip.dataPoints;
     if (!tooltip || tooltip.opacity === 0 || !dp || !dp.length) {
       el.style.opacity = "0";
@@ -69,14 +86,19 @@ function externalTooltip(labels, values, names) {
     const idx = dp[0].dataIndex;
     el.innerHTML = buildTooltipHtml(labels[idx], values[idx], names ? names[idx] : null);
     el.style.opacity = "1";
-    // Horizontal: center on the slice, clamped so the box stays inside the
-    // canvas. Vertical: sit above the cursor by default; flip below when a
-    // tall name list wouldn't fit above it.
+    // caretX/Y are canvas-local; add the canvas's own viewport position to get
+    // fixed-positioning (viewport-relative) coordinates, then clamp against the
+    // actual window — not just the canvas — so it can't run off either side of
+    // the screen on a narrow phone.
+    const rect = chart.canvas.getBoundingClientRect();
+    const x = rect.left + tooltip.caretX;
+    const y = rect.top + tooltip.caretY;
     const half = el.offsetWidth / 2;
-    const left = Math.max(half, Math.min(chart.width - half, tooltip.caretX));
-    const fitsAbove = tooltip.caretY - el.offsetHeight - 10 > 0;
+    const pad = 8;
+    const left = Math.max(half + pad, Math.min(window.innerWidth - half - pad, x));
+    const fitsAbove = y - el.offsetHeight - 10 > 0;
     el.style.left = `${left}px`;
-    el.style.top = `${tooltip.caretY}px`;
+    el.style.top = `${y}px`;
     el.style.transform = fitsAbove ? "translate(-50%, calc(-100% - 10px))" : "translate(-50%, 10px)";
   };
 }

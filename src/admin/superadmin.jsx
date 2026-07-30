@@ -22,6 +22,7 @@ import { FEATURE_ROWS, FEATURE_LEVELS, FEATURE_DEFAULTS, moduleLabel, DISABLED_M
 import { PLATFORM_DOMAIN, clientUrl, isValidSubdomain } from "@/config/site.js"; // platform config → src/config/site.js
 import { Button, confirmDialog, Field, Icon, Input, Modal, Pager, SectionHead, Select, Textarea, toast, usePaged } from "@/ui/components.jsx";
 import { listMedia, deleteFromR2, listSiteRequests, approveSiteRequest, setSiteRequestStatus, updateSiteRequest, deleteSiteRequest, listTickets, setTicketStatus, updateTicket, subscribeTicketsRealtime, deleteTicket } from "@/lib/api.js";
+import { venuesFrom } from "@/lib/mappers.js";
 import { ApplyWizard } from "@/admin/apply.jsx";
 import { TicketThread, TK_CHIP, tkAdminLabel } from "@/admin/SupportWidget.jsx";
 // fmtDate: DEFECT-2026-07-09-A — the Support view/TicketModal used fmtDate
@@ -494,6 +495,34 @@ export function ClientsAdmin() {
   // sub-tab (Clients / Requests / Approved / Rejected / Offline), not just the
   // main list. Request rows without a live client render "—" (nothing to store
   // the flag on until the site is created). Use these shared cells everywhere.
+  // Event address: the client's PRIMARY venue (first entry), reusing the exact
+  // resolution the owner's own admin uses (venuesFrom: prefers content.venues,
+  // falls back to the legacy flat venueName/venueAddress/mapQuery settings
+  // fields for older clients that predate the venues array) — not a
+  // simplified re-guess of that logic. A client can have more than one venue
+  // (ceremony + reception); the list column shows only the first, since this
+  // is a compact table, not the full Venue & Map editor.
+  const primaryVenue = (cl) => {
+    const content = (cl && cl.content) || {};
+    return venuesFrom(content, content)[0] || null; // settings fields live flattened on content, so one arg does both jobs
+  };
+  const eventAddressCell = (cl) => {
+    const v = primaryVenue(cl);
+    if (!v || (!v.name && !v.address)) return <span style={{ color: "var(--muted)" }}>—</span>;
+    return (
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 6, maxWidth: 210 }}>
+        <span style={{ color: "var(--muted)", flex: "none", marginTop: 2 }}>{Icon.pin({ style: { width: 13, height: 13 } })}</span>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={v.name || v.address}>
+            {v.name || v.address}
+          </div>
+          {v.name && v.address && (
+            <div style={{ fontSize: 12, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={v.address}>{v.address}</div>
+          )}
+        </div>
+      </div>
+    );
+  };
   const donateCell = (cl) => {
     if (!cl) return <span style={{ color: "var(--muted)" }}>—</span>;
     const off = cl.content && cl.content.hideDonateAd === true;
@@ -1018,7 +1047,7 @@ export function ClientsAdmin() {
                 <th style={{ width: 34 }}><input type="checkbox" aria-label="Select all offline"
                   checked={clients.filter((c) => !c.is_active).length > 0 && clients.filter((c) => !c.is_active).every((c) => sel.has(c.id))}
                   onChange={(e) => setSel((p) => { const n = new Set(p); clients.filter((c) => !c.is_active).forEach((c) => e.target.checked ? n.add(c.id) : n.delete(c.id)); return n; })} /></th>
-                <th>Client</th><th>Notes</th><th>Status</th><th>Donate ad</th><th></th></tr></thead>
+                <th>Client</th><th>Event address</th><th>Notes</th><th>Status</th><th>Donate ad</th><th></th></tr></thead>
               <tbody>
                 {clients.filter((c) => !c.is_active).map((c) => (
                   <tr key={c.id}>
@@ -1031,6 +1060,7 @@ export function ClientsAdmin() {
                         </div>
                       </div>
                     </td>
+                    <td>{eventAddressCell(c)}</td>
                     <td style={{ maxWidth: 220 }}>{notes[c.id]
                       ? <span title={notes[c.id]} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{notes[c.id]}</span>
                       : <span style={{ color: "var(--muted)" }}>—</span>}</td>
@@ -1047,7 +1077,7 @@ export function ClientsAdmin() {
                     </td>
                   </tr>
                 ))}
-                {clients.filter((c) => !c.is_active).length === 0 && <tr><td colSpan={6} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>All clients are online. 🎉</td></tr>}
+                {clients.filter((c) => !c.is_active).length === 0 && <tr><td colSpan={7} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>All clients are online. 🎉</td></tr>}
               </tbody>
             </table>
           </div>
@@ -1068,7 +1098,7 @@ export function ClientsAdmin() {
                   <th style={{ width: 34 }}><input type="checkbox" aria-label="Select all on this page"
                     checked={pg.pageItems.length > 0 && pg.pageItems.every((c) => sel.has(c.id))}
                     onChange={(e) => setSel((p) => { const n = new Set(p); pg.pageItems.forEach((c) => e.target.checked ? n.add(c.id) : n.delete(c.id)); return n; })} /></th>
-                  <th>Client</th><th>Email</th><th>Notes</th><th>Status</th><th>Donate ad</th><th></th></tr></thead>
+                  <th>Client</th><th>Event address</th><th>Notes</th><th>Status</th><th>Donate ad</th><th></th></tr></thead>
                 <tbody>
                   {pg.pageItems.map((c) => (
                     <tr key={c.id}>
@@ -1076,15 +1106,18 @@ export function ClientsAdmin() {
                       <td>
                         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                           <span className={"sa-dot" + (c.is_active ? "" : " sa-dot--off")} title={c.is_active ? "Active" : "Disabled"} />
-                          <div>
+                          <div style={{ minWidth: 0 }}>
                             {!c.is_active && <span className="tag tag--hidden" style={{ marginRight: 8 }}>Disabled</span>}
                             <a className="client-domain client-domain--link" href={c.custom_domain ? `https://${c.custom_domain}` : clientUrl(c.subdomain)} target="_blank" rel="noreferrer" title="Open live site in a new tab" onClick={(e) => e.stopPropagation()}>{c.custom_domain || `${c.subdomain}.${PLATFORM_DOMAIN}`}</a>
+                            <div style={{ marginTop: 2, maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={c.owner_email || ""}>
+                              {c.owner_email
+                                ? <span className="client-domain" style={{ fontSize: 12 }}>{c.owner_email}</span>
+                                : <span style={{ color: "var(--muted)", fontSize: 12 }}>no login</span>}
+                            </div>
                           </div>
                         </div>
                       </td>
-                      <td style={{ maxWidth: 200 }}>{c.owner_email
-                        ? <span className="client-domain" title={c.owner_email} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{c.owner_email}</span>
-                        : <span style={{ color: "var(--muted)", fontSize: 13 }}>no login</span>}</td>
+                      <td>{eventAddressCell(c)}</td>
                       <td style={{ maxWidth: 180 }}>{notes[c.id]
                         ? <span title={notes[c.id]} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{notes[c.id]}</span>
                         : <span style={{ color: "var(--muted)" }}>—</span>}</td>
@@ -1315,7 +1348,31 @@ export function ClientsAdmin() {
                 <div style={row}><span style={lab}>Owner login</span><span>{c.owner_email || <span style={{ color: "var(--muted)" }}>none yet</span>}</span></div>
                 <div style={row}><span style={lab}>Contact</span><span>{c.content?.phone || <span style={{ color: "var(--muted)" }}>—</span>}</span></div>
                 <div style={row}><span style={lab}>Wedding date</span><span>{c.content?.weddingDateLabel || c.content?.weddingDate || <span style={{ color: "var(--muted)" }}>—</span>}</span></div>
-                <div style={row}><span style={lab}>Venue</span><span>{[c.content?.venueName, c.content?.venueAddress].filter(Boolean).join(", ") || <span style={{ color: "var(--muted)" }}>—</span>}</span></div>
+                {/* content.venueName/venueAddress (the old fields read here) are legacy —
+                    nothing writes them since Venue & Map moved to the `venues` array; this
+                    row read "—" for every current client. venuesFrom is the SAME resolver
+                    the owner's own admin uses (prefers `venues`, falls back to those legacy
+                    flat fields for pre-migration clients), reused here rather than
+                    re-guessing it. A client can have more than one venue (ceremony +
+                    reception) — list all of them here; the list-table column shows only
+                    the first, since that's a compact row, not this modal. */}
+                {(() => {
+                  const venues = venuesFrom(c.content || {}, c.content || {});
+                  return (
+                    <div style={row}>
+                      <span style={lab}>Event address</span>
+                      {venues.length ? (
+                        <span>
+                          {venues.map((v, i) => (
+                            <div key={v.id || i} style={{ marginBottom: i < venues.length - 1 ? 6 : 0 }}>
+                              {[v.name, v.address].filter(Boolean).join(" — ") || <span style={{ color: "var(--muted)" }}>Unnamed location</span>}
+                            </div>
+                          ))}
+                        </span>
+                      ) : <span style={{ color: "var(--muted)" }}>—</span>}
+                    </div>
+                  );
+                })()}
                 <div style={row}><span style={lab}>Created</span><span>{c.created_at ? new Date(c.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "—"}</span></div>
                 <div style={row}><span style={lab}>Modules</span><span>{modsOn.length ? modsOn.join(", ") : "none"}</span></div>
                 {notes[c.id] && <div style={row}><span style={lab}>Note</span><span>{notes[c.id]}</span></div>}
