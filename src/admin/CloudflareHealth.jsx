@@ -193,6 +193,38 @@ export function CloudflareHealth() {
           ]} />
         </Suspense>
 
+        {/* Ops row: bill, latest deploy, host reachability — the "is everything
+            OK and what does it cost" strip (owner request). */}
+        <div className="sa-stats" style={{ marginBottom: 0 }}>
+          <Stat
+            label="Monthly bill"
+            value={data.bill ? `$${data.bill.monthlyUSD.toFixed(2)}` : "—"}
+            sub={data.bill
+              ? (data.bill.projectedUSD > data.bill.monthlyUSD
+                  ? `projected $${data.bill.projectedUSD.toFixed(2)} with overage`
+                  : (data.bill.items || []).map((i) => i.name).join(" + ") || "no paid subscriptions")
+              : "token needs Billing: Read"}
+            icon="calendar" accent="info"
+          />
+          <Stat
+            label="Last deploy"
+            value={data.deploy?.commit || "—"}
+            sub={data.deploy ? `${data.deploy.status || "?"} · ${ago(data.deploy.createdOn) || "just now"}` : "token needs Pages: Read"}
+            icon="upload" accent={data.deploy && data.deploy.status !== "success" ? "amber" : "success"}
+          />
+          <Stat
+            label="Hosts up"
+            value={data.hosts ? `${data.hosts.filter((h) => h.ok).length}/${data.hosts.length}` : "—"}
+            sub={data.hosts
+              ? (data.hosts.every((h) => h.ok)
+                  ? `all reachable · ${Math.max(...data.hosts.map((h) => h.ms))}ms slowest`
+                  : `DOWN: ${data.hosts.filter((h) => !h.ok).map((h) => h.host).join(", ")}`)
+              : "no data"}
+            icon="home" accent={data.hosts && !data.hosts.every((h) => h.ok) ? "amber" : "success"}
+          />
+          <Stat label="Router errors" value={nf(data.router?.errorsToday)} sub="worker errors today" icon="bell" accent={(data.router?.errorsToday || 0) > 0 ? "amber" : "success"} />
+        </div>
+
         {/* No-limit metrics stay KPI tiles (same design as the Overview tab).
             Firebase Auth gets a tile so its explainer has a home to hover. */}
         <div className="sa-stats" style={{ marginBottom: 0 }}>
@@ -200,8 +232,16 @@ export function CloudflareHealth() {
           <Stat label="R2 ops" value={nfc(data.r2?.opsToday)} sub="reads + writes today" icon="download" accent="amber" />
           <Stat label="Cache hit" value={`${data.zone?.cacheHitPct ?? 0}%`} sub={`${nfc(data.zone?.reqToday)} edge req today`} icon="check" accent="success" />
           <Stat label="5xx errors" value={nf(data.zone?.err5xx)} sub="server errors today" icon="bell" accent="amber" />
+          <Stat label="Bandwidth" value={fmtBytes(data.zone?.bytesToday)} sub={`${nfc(data.zone?.uniquesToday)} unique visitors today`} icon="grid" accent="info" />
           <Stat label="Firebase Auth" value="Free" sub="client logins" icon="user" accent="info" info={FIREBASE_INFO} />
         </div>
+
+        {/* Month-end pace line under the gauges' numbers. */}
+        {data.bill && (
+          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: -6 }}>
+            At this pace by month end: ~{nfc(data.bill.projectedRequests)} router requests · ~{nf(data.bill.projectedBuildMinutes)} build min · ${data.bill.projectedUSD.toFixed(2)} bill
+          </div>
+        )}
 
         {/* 7-day trend */}
         <div>

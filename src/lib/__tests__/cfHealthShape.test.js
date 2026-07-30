@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { shapeHealth, countBuildsThisMonth, buildUsageThisMonth, workersPlanFromSubs } from "../../../functions/api/_cf-health-shape.js";
+import { shapeHealth, countBuildsThisMonth, buildUsageThisMonth, workersPlanFromSubs, billFromSubs, projectMonthEnd, latestDeploymentInfo } from "../../../functions/api/_cf-health-shape.js";
 
 // Fixture mirrors the REAL Cloudflare GraphQL response shape (aliased fields),
 // captured live from the account during design. Values trimmed for clarity.
@@ -105,6 +105,34 @@ describe("shapeHealth", () => {
     expect(empty.zone.reqToday).toBe(0);
     expect(empty.r2.objects).toBe(0);
     expect(empty.series).toHaveLength(7);
+  });
+});
+
+describe("billFromSubs / projectMonthEnd / latestDeploymentInfo", () => {
+  it("sums priced subscriptions into a monthly bill (yearly prorated)", () => {
+    const b = billFromSubs([
+      { rate_plan: { id: "workers_paid", public_name: "Workers Paid" }, price: 5, frequency: "monthly" },
+      { rate_plan: { id: "free_thing" }, price: 0 },
+      { rate_plan: { public_name: "Some Yearly" }, price: 24, frequency: "yearly" },
+    ]);
+    expect(b.monthlyUSD).toBe(7); // 5 + 24/12
+    expect(b.items.map((i) => i.name)).toEqual(["Workers Paid", "Some Yearly"]);
+  });
+  it("returns null when subscriptions were unreadable, empty bill otherwise", () => {
+    expect(billFromSubs(null)).toBe(null);
+    expect(billFromSubs([])).toEqual({ monthlyUSD: 0, items: [] });
+  });
+  it("projects month-end usage linearly from days elapsed", () => {
+    expect(projectMonthEnd(300, "2026-07-10")).toBe(930);  // 300/10*31
+    expect(projectMonthEnd(413, "2026-07-31")).toBe(413);  // last day = as-is
+    expect(projectMonthEnd(50, "2026-07-01")).toBe(1550);  // day 1, no /0
+  });
+  it("extracts the newest deployment's commit/status/when", () => {
+    expect(latestDeploymentInfo([
+      { created_on: "2026-07-31T10:00:00Z", short_id: "abc1234", latest_stage: { name: "deploy", status: "success" }, deployment_trigger: { metadata: { commit_hash: "9306a4bdeadbeef" } } },
+      { created_on: "2026-07-30T10:00:00Z" },
+    ])).toEqual({ commit: "9306a4b", status: "success", stage: "deploy", createdOn: "2026-07-31T10:00:00Z" });
+    expect(latestDeploymentInfo([])).toBe(null);
   });
 });
 

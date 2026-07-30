@@ -6,7 +6,7 @@
 // /api/* via _routes.json. Result is edge-cached 5 min so CF's API is hit at most
 // ~once per 5 min no matter how many superadmins refresh.
 
-import { shapeHealth, buildUsageThisMonth, workersPlanFromSubs } from "./_cf-health-shape.js";
+import { shapeHealth, buildUsageThisMonth, workersPlanFromSubs, billFromSubs, projectMonthEnd, latestDeploymentInfo } from "./_cf-health-shape.js";
 import { neon } from "@neondatabase/serverless";
 
 const json = (obj, status = 200) =>
@@ -65,7 +65,7 @@ function buildQuery({ acct, zone, sinceDT, sinceDate, ydayDate, todayDate }) {
       }
       zones(filter:{zoneTag:"${zone}"}) {
         http: httpRequests1dGroups(limit:31, filter:{date_geq:"${sinceDate}"}) {
-          sum { requests cachedRequests responseStatusMap { edgeResponseStatus requests } } dimensions { date }
+          sum { requests cachedRequests bytes responseStatusMap { edgeResponseStatus requests } } uniq { uniques } dimensions { date }
         }
       }
     }
@@ -132,7 +132,7 @@ export async function onRequestGet(context) {
       const MAX_PAGES = 80, WAVE = 8;
       const pageUrl = (p) =>
         `https://api.cloudflare.com/client/v4/accounts/${acct}/pages/projects/wedding-site/deployments?per_page=25&page=${p}`;
-      let count = 0, ms = 0, done = false;
+      let count = 0, ms = 0, done = false, latest = null;
       for (let start = 1; start <= MAX_PAGES && !done; start += WAVE) {
         const pages = [];
         for (let p = start; p < start + WAVE && p <= MAX_PAGES; p++) pages.push(p);
@@ -145,12 +145,13 @@ export async function onRequestGet(context) {
           if (!jr) return null; // 403 until token gets Pages:Read — soft-fail
           const list = jr.result || [];
           if (!list.length) { done = true; break; }
+          if (!latest) latest = latestDeploymentInfo(list); // page 1 is newest-first
           const u = buildUsageThisMonth(list, monthStart);
           count += u.count; ms += u.ms;
           if ((list[list.length - 1]?.created_on || "") < monthStart) { done = true; break; }
         }
       }
-      return { count, minutes: Math.round(ms / 60000) };
+      return { count, minutes: Math.round(ms / 60000), latest };
     } catch { return null; }
   };
 
@@ -173,20 +174,36 @@ export async function onRequestGet(context) {
     try { return (await tryUrl("?per_page=100")) ?? (await tryUrl("")); } catch { return null; }
   };
 
-  // Workers plan (paid vs free) — decides which limit the router gauge uses.
-  // Read from the account subscriptions API; CF_PLAN_WORKERS=free|paid overrides
-  // (e.g. if the token can't get Billing: Read). null => unknown, UI shows a hint.
-  const fetchWorkersPlan = async () => {
-    if (env.CF_PLAN_WORKERS === "free" || env.CF_PLAN_WORKERS === "paid") return env.CF_PLAN_WORKERS;
+  // Account subscriptions — one call feeds BOTH the Workers plan detection (which
+  // limit the router gauge uses) and the recurring-bill tile. Requires Billing:
+  // Read on the token; null => unknown, UI shows hints. CF_PLAN_WORKERS=free|paid
+  // still overrides the plan (bill stays subscription-driven).
+  const fetchSubscriptions = async () => {
     try {
       const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${acct}/subscriptions`, {
         headers: { authorization: `Bearer ${CF_TOKEN}` },
       });
       if (!r.ok) return null; // 403 until the token gets Billing: Read — soft-fail
       const jr = await r.json();
-      return workersPlanFromSubs(jr.result || []);
+      return jr.result || [];
     } catch { return null; }
   };
+
+  // Reachability of every public host, checked from the edge. GET (some hosts
+  // reject HEAD), 5s timeout each, cached with the payload (5 min) so this adds
+  // at most 4 subrequests per cache refill. The router worker is the only path
+  // to the custom domains — this is the early-warning light if it breaks.
+  const HOSTS = ["celebrately.us", "www.celebrately.us", "demo.celebrately.us", "wedding-site-8nh.pages.dev"];
+  const fetchHostChecks = () =>
+    Promise.all(HOSTS.map(async (host) => {
+      const t0 = Date.now();
+      try {
+        const r = await fetch(`https://${host}/`, { redirect: "follow", signal: AbortSignal.timeout(5000) });
+        return { host, ok: r.status >= 200 && r.status < 400, status: r.status, ms: Date.now() - t0 };
+      } catch {
+        return { host, ok: false, status: 0, ms: Date.now() - t0 };
+      }
+    }));
 
   // Neon storage — all data lives on Neon (5 shards). Read the shard registry
   // from Neon app_config, then ask each shard's Data API for pg_database_size via
@@ -220,9 +237,9 @@ export async function onRequestGet(context) {
     } catch { return null; }
   };
 
-  let data, buildUsage, domainCount, neonUsage, workersPlan;
+  let data, buildUsage, domainCount, neonUsage, subs, hostChecks;
   try {
-    const [resp, builds, doms, neonU, plan] = await Promise.all([
+    const [resp, builds, doms, neonU, subsR, hosts] = await Promise.all([
       fetch("https://api.cloudflare.com/client/v4/graphql", {
         method: "POST",
         headers: { authorization: `Bearer ${CF_TOKEN}`, "content-type": "application/json" },
@@ -231,9 +248,10 @@ export async function onRequestGet(context) {
       fetchBuildUsage(),
       fetchDomainCount(),
       fetchNeonUsage(),
-      fetchWorkersPlan(),
+      fetchSubscriptions(),
+      fetchHostChecks(),
     ]);
-    buildUsage = builds; domainCount = doms; neonUsage = neonU; workersPlan = plan;
+    buildUsage = builds; domainCount = doms; neonUsage = neonU; subs = subsR; hostChecks = hosts;
     const jr = await resp.json();
     if (!resp.ok || (jr.errors && jr.errors.length) || !jr.data) {
       return json({ configured: true, error: "upstream" }); // soft — do not cache, do not leak details
@@ -249,6 +267,8 @@ export async function onRequestGet(context) {
     limitMonth: LIMIT_REQ_MONTH,
     updatedAt: now.toISOString(),
   });
+  const planOverride = env.CF_PLAN_WORKERS === "free" || env.CF_PLAN_WORKERS === "paid" ? env.CF_PLAN_WORKERS : null;
+  const workersPlan = planOverride || workersPlanFromSubs(subs);
   payload.workersPlan = workersPlan ?? null; // "paid" | "free" | null (token lacks Billing:Read)
   payload.limitDay = LIMIT_REQ_DAY;
   // Builds tile — metered in minutes (plan-aware limit). `month`/`limit` stay
@@ -261,6 +281,26 @@ export async function onRequestGet(context) {
     minutes: buildUsage ? buildUsage.minutes : null,
     limitMinutes: LIMIT_BUILD_MIN > 0 ? LIMIT_BUILD_MIN : (workersPlan === "paid" ? 6000 : 3000),
   };
+  // Latest deployment (commit, stage status, when) — from the same page-1 fetch.
+  payload.deploy = buildUsage ? buildUsage.latest : null;
+  // Recurring bill + a linear month-end projection of the usage-based parts
+  // (Workers Paid overage: $0.30/M requests past 10M, $0.005/min past the
+  // included build minutes). Free plan has hard caps instead of overage.
+  const bill = billFromSubs(subs);
+  if (bill) {
+    const projReq = projectMonthEnd(payload.router.month, todayDate);
+    const projMin = buildUsage ? projectMonthEnd(buildUsage.minutes, todayDate) : 0;
+    let overage = 0;
+    if (workersPlan === "paid") {
+      overage += Math.max(0, projReq - LIMIT_REQ_MONTH) * (0.30 / 1_000_000);
+      overage += Math.max(0, projMin - payload.builds.limitMinutes) * 0.005;
+    }
+    bill.projectedUSD = Math.round((bill.monthlyUSD + overage) * 100) / 100;
+    bill.projectedRequests = projReq;
+    bill.projectedBuildMinutes = projMin;
+  }
+  payload.bill = bill; // null => token lacks Billing:Read
+  payload.hosts = hostChecks || null;
   payload.domains = { count: domainCount, limit: LIMIT_DOMAINS }; // null count => token lacks Pages:Read
   payload.r2.limitBytes = LIMIT_R2_GB * 1024 ** 3;
   // Neon (sharded). null => registry unreadable or all shards down.

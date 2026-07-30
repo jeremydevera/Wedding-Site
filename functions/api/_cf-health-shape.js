@@ -57,6 +57,45 @@ export function countBuildsThisMonth(deployments, monthStart) {
   return n;
 }
 
+// Recurring monthly bill from the account-subscriptions list: every priced
+// subscription (e.g. Workers Paid $5/mo). null input = unreadable (no Billing:
+// Read) so the UI can show a hint instead of "$0".
+export function billFromSubs(subs) {
+  if (!Array.isArray(subs)) return null;
+  const items = subs
+    .filter((s) => num(s?.price) > 0)
+    .map((s) => ({
+      name: s?.rate_plan?.public_name || s?.product?.name || s?.rate_plan?.id || "subscription",
+      priceUSD: num(s?.price),
+      frequency: s?.frequency || "monthly",
+    }));
+  const monthlyUSD = items.reduce((t, i) => t + (i.frequency === "yearly" ? i.priceUSD / 12 : i.priceUSD), 0);
+  return { monthlyUSD: Math.round(monthlyUSD * 100) / 100, items };
+}
+
+// Linear month-end projection: usage so far ÷ days elapsed × days in month.
+// today is "YYYY-MM-DD" (UTC). Day 1 returns used×daysInMonth, never divides by 0.
+export function projectMonthEnd(used, today) {
+  const d = new Date(`${today}T00:00:00Z`);
+  if (!Number.isFinite(d.getTime())) return num(used);
+  const elapsed = Math.max(1, d.getUTCDate());
+  const total = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+  return Math.round((num(used) / elapsed) * total);
+}
+
+// Newest deployment from the (newest-first) Pages deployments list: short
+// commit, latest stage status, and when it was created.
+export function latestDeploymentInfo(deployments) {
+  const d = (deployments || [])[0];
+  if (!d) return null;
+  return {
+    commit: (d?.deployment_trigger?.metadata?.commit_hash || d?.short_id || "").slice(0, 7) || null,
+    status: d?.latest_stage?.status || null, // "success" | "failure" | "active" | ...
+    stage: d?.latest_stage?.name || null,
+    createdOn: d?.created_on || null,
+  };
+}
+
 // Build usage for the month: deployment count + build-stage runtime in ms.
 // Cloudflare meters build MINUTES (3,000/mo free, 6,000/mo with Workers Paid),
 // not the legacy 500-build count — proven when 900+ July builds all ran.
@@ -100,6 +139,7 @@ export function shapeHealth(result, opts = {}) {
   const router = {
     today: sumBy(routerRows, reqOf, onDate(today)),
     month: sumBy(routerRows, reqOf, fromDate(monthStart)),
+    errorsToday: sumBy(routerRows, (r) => r?.sum?.errors, onDate(today)),
   };
   const functions = {
     today: sumBy(pages, reqOf, onDate(today)),
@@ -130,6 +170,8 @@ export function shapeHealth(result, opts = {}) {
     cacheHitPct: reqToday > 0 ? round1((cachedToday / reqToday) * 100) : 0,
     err5xx: sumBy(statusMap, (s) => s.requests, (s) => num(s.edgeResponseStatus) >= 500),
     status,
+    bytesToday: num(zoneRow?.sum?.bytes),
+    uniquesToday: num(zoneRow?.uniq?.uniques),
   };
 
   const series = dateSeries(today, days).map((d) => ({
