@@ -55,8 +55,14 @@ export function rsvpStats(rsvps) {
   const list = rsvps || [];
   const attending = list.filter((r) => r.status === "attending");
   const diets = {};
+  // dietNames mirrors `diets`' keys (same guests, same "None" exclusion) so the
+  // dietary-needs chart can name who's behind each slice on hover.
+  const dietNames = {};
   for (const r of attending) {
-    if (r.diet && r.diet !== "None") diets[r.diet] = (diets[r.diet] || 0) + 1;
+    if (r.diet && r.diet !== "None") {
+      diets[r.diet] = (diets[r.diet] || 0) + 1;
+      (dietNames[r.diet] = dietNames[r.diet] || []).push(r.fullName || [r.firstName, r.lastName].filter(Boolean).join(" ") || "Someone");
+    }
   }
   return {
     total: list.length,
@@ -65,5 +71,6 @@ export function rsvpStats(rsvps) {
     maybe: list.filter((r) => r.status === "maybe").length,
     declined: list.filter((r) => r.status === "not_attending").length,
     diets,
+    dietNames,
   };
 }

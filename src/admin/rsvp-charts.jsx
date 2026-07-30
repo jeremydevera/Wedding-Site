@@ -30,9 +30,15 @@ function useChart(ref, getConfig, deps) {
   }, deps); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
+// Tooltip lines beyond this many guest names collapse to "+N more" — a slice
+// with a long tail of e.g. "Vegetarian" replies shouldn't grow a giant tooltip.
+const TIP_NAMES_MAX = 6;
+
 // Adminator-style doughnut: big hole, white gaps + rounded slice ends, and the
-// legend as labelled dots on the right side of the chart.
-function donutConfig(labels, values, colors) {
+// legend as labelled dots on the right side of the chart. `names` (optional,
+// parallel to labels/values) lists the guests behind each slice — passed by
+// the dietary-needs chart so hovering a slice shows who's in it.
+export function donutConfig(labels, values, colors, names) {
   return {
     type: "doughnut",
     data: {
@@ -55,7 +61,20 @@ function donutConfig(labels, values, colors) {
       layout: { padding: 6 }, // room for hoverOffset so slices don't clip
       plugins: {
         legend: { display: false }, // HTML legend beside the chart (aligned counts)
-        tooltip: { ...TIP, callbacks: { label: (c) => ` ${c.label}: ${c.parsed}` } },
+        tooltip: {
+          ...TIP,
+          callbacks: {
+            label: (c) => ` ${c.label}: ${c.parsed}`,
+            afterLabel: !names ? undefined : (c) => {
+              const list = names[c.dataIndex] || [];
+              if (!list.length) return undefined;
+              const shown = list.slice(0, TIP_NAMES_MAX).map((n) => `• ${n}`);
+              const rest = list.length - shown.length;
+              if (rest > 0) shown.push(`+${rest} more`);
+              return shown;
+            },
+          },
+        },
       },
       animation: { duration: 900, easing: "easeInOutQuart" },
     },
@@ -112,7 +131,8 @@ export function RsvpCharts({ rsvps }) {
     dietEntries.map(([k]) => k),
     dietEntries.map(([, v]) => v),
     dietEntries.map((_, i) => DIET_COLORS[i % DIET_COLORS.length]),
-  ), [dietEntries]);
+    dietEntries.map(([k]) => stats.dietNames[k] || []),
+  ), [dietEntries, stats.dietNames]);
 
   if (!rsvps.length) return null;
 

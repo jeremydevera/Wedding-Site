@@ -78,11 +78,11 @@ describe("isValidOptionalEmail", () => {
 
 describe("rsvpStats", () => {
   const rows = [
-    { status: "attending", count: 2, diet: "Vegetarian" },
-    { status: "attending", count: 1, diet: "None" },
-    { status: "attending", count: 3, diet: "Vegetarian" },
-    { status: "maybe", count: 1, diet: "Vegan" },
-    { status: "not_attending", count: 0, diet: "None" },
+    { status: "attending", count: 2, diet: "Vegetarian", fullName: "Ana Cruz" },
+    { status: "attending", count: 1, diet: "None", fullName: "Ben Reyes" },
+    { status: "attending", count: 3, diet: "Vegetarian", fullName: "Cara Santos" },
+    { status: "maybe", count: 1, diet: "Vegan", fullName: "Dio Reyes" },
+    { status: "not_attending", count: 0, diet: "None", fullName: "Eve Torres" },
   ];
   it("counts parties, heads, maybe, declined", () => {
     const s = rsvpStats(rows);
@@ -96,8 +96,19 @@ describe("rsvpStats", () => {
     const s = rsvpStats(rows);
     expect(s.diets).toEqual({ Vegetarian: 2 });
   });
+  it("names the guests behind each diet tally, in the same order counted", () => {
+    const s = rsvpStats(rows);
+    expect(s.dietNames).toEqual({ Vegetarian: ["Ana Cruz", "Cara Santos"] });
+  });
+  it("falls back to first+last, then 'Someone', when fullName is missing", () => {
+    const s = rsvpStats([
+      { status: "attending", diet: "Vegan", firstName: "Amy", lastName: "Diaz" },
+      { status: "attending", diet: "Vegan" },
+    ]);
+    expect(s.dietNames.Vegan).toEqual(["Amy Diaz", "Someone"]);
+  });
   it("handles empty input", () => {
-    expect(rsvpStats([])).toMatchObject({ total: 0, attendingHeads: 0, diets: {} });
+    expect(rsvpStats([])).toMatchObject({ total: 0, attendingHeads: 0, diets: {}, dietNames: {} });
     expect(rsvpStats(undefined).total).toBe(0);
   });
 });
