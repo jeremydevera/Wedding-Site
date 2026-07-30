@@ -2675,6 +2675,11 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .eg-cue.is-shown { opacity: 1; pointer-events: auto; }
 .eg-cue:hover { color: #fff; }
 .eg-cue__txt { padding-left: .22em; }
+/* env2: no "View the details" wording — the bobbing chevron alone is the scroll
+   hint (owner request). Hiding the span is safe for screen readers: the button
+   itself carries aria-label="Scroll to the details". Dropping the line also frees
+   the vertical room the bigger envelope below needs. */
+[data-theme="envelope2"] .eg-cue__txt { display: none; }
 .eg-cue svg { animation: egCueBob 1.8s ease-in-out infinite; }
 .eg-cue:focus-visible { outline: 2px solid #f3ecdb; outline-offset: 4px; }
 /* env2 DESKTOP: the scene is centered in the 130vh open hero, so it rests 0.65 ×
@@ -2684,14 +2689,17 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    the pinned header, deriving the lift and the cue from that one width.
    The ratios are measured off the artwork and hold at every size (W = .eg-open):
      card top = centre − 0.4297W   envelope bottom = centre + 0.343W
-     bouquet tail bottom = centre + 0.419W
-   90vh keeps the 1140px cap in force above ~1267px tall (so big screens are
-   unchanged in size, only lifted) and still leaves ~35px margins at 725px tall. */
+     bouquet tail bottom = centre + 0.436W  (worst case — it floats ±0.017W)
+   Sized as big as the room allows (owner: "make envelope and its contents
+   bigger"): the whole scene is 0.86W tall, so 96vh/1360px is the most that still
+   clears the header and the fold — ~26px margins on a 725px-tall laptop, ~100px
+   on a 1440px-tall display. Losing the cue's text line (above) paid for part of
+   the increase; the chevron only needs 18px now, not 46px. */
 @media (min-width: 861px) {
   [data-theme="envelope2"] {
-    --eg2-w: min(1140px, 100vw, 90vh);
-    /* lowest thing on screen: the bouquet tail, or the cue below the envelope */
-    --eg2-below: max(calc(0.419 * var(--eg2-w)), calc(0.343 * var(--eg2-w) + 80px));
+    --eg2-w: min(1360px, 100vw, 96vh);
+    /* lowest thing on screen: the bouquet tail, or the chevron below the envelope */
+    --eg2-below: max(calc(0.436 * var(--eg2-w)), calc(0.343 * var(--eg2-w) + 52px));
     /* lift that leaves EQUAL margins above the card and below that lowest thing:
        the hero centre is 0.65vh under the 71px header, the band is 100vh − 71px */
     --eg2-lift: calc(15vh + 35.5px + (var(--eg2-below) - 0.4297 * var(--eg2-w)) / 2);
@@ -2711,7 +2719,12 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
      (card top through the bouquet's tail) centered in the band under the pinned
      header instead of hugging the bottom edge. */
   [data-theme="envelope2"] { --eg2-lift: 18vh; }
-  [data-theme="envelope2"] .eg-open { transform: translate(2%, calc(-3% - var(--eg2-lift))); }
+  /* Bigger on phones too (owner: "make envelope and its contents bigger") — the
+     scene only used ~330px of an 844px screen. Width is what limits it here, not
+     height: 112vw is the most that keeps the envelope, card and frame inside the
+     screen. The bouquet already spilled off the left edge by design, so only its
+     tail (and the paper flowers on the right) reach further out. */
+  [data-theme="envelope2"] .eg-open { width: min(1140px, 112vw, 105vh); transform: translate(2%, calc(-3% - var(--eg2-lift))); }
   [data-theme="envelope2"] .eg-cue { top: calc(50% + min(320px, 28.1vw, 29.5vh) + 40px - var(--eg2-lift)); }
 }
 @keyframes egCueBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(7px); } }
@@ -3198,9 +3211,18 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* Custom (non-canvas) donut tooltip — see externalTooltip in rsvp-charts.jsx.
    A plain Chart.js tooltip draws INTO the chart's own canvas pixels, so a slice
    with 20+ guest names would silently clip past the ~240px-tall chart; this is
-   a real DOM node instead, so a long list scrolls (max-height + overflow)
-   rather than vanishing. Positioned by JS; only opacity/left/top/transform are
-   set inline per hover. */
+   a real DOM node instead. Positioned by JS; only opacity/left/top/transform
+   are set inline per hover.
+   🔴 pointer-events:none is intentional (moving the cursor onto the tooltip
+   must NOT make Chart.js think it left the canvas — that flips opacity back
+   to 0 mid-hover) — but that also means an internal scrollbar can't actually
+   be scrolled (wheel/drag events can't hit a pointer-events:none element).
+   Owner-reported: a 22-name slice was clipped by the old 260px cap with no way
+   to reach the rest. So max-height is now generous (vh-based) — tall enough
+   for realistic guest counts to render with NO internal scrolling needed at
+   all; overflow-y:auto only guards a truly pathological list, and for that
+   rare case the PAGE itself can still scroll (this sits in normal flow inside
+   .admin__body), which is unaffected by pointer-events. */
 .rsvp-tip {
   position: absolute;
   z-index: 20;
@@ -3209,8 +3231,8 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   transition: opacity .1s ease;
   left: 0; top: 0;
   min-width: 120px;
-  max-width: 260px;
-  max-height: 260px;
+  max-width: 280px;
+  max-height: min(75vh, 620px);
   overflow-y: auto;
   background: rgba(15, 23, 42, 0.94);
   color: #fff;

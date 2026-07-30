@@ -470,6 +470,14 @@ function companionsText(rsvp) {
   return rsvp && Number(rsvp.count) > 1 ? `${Number(rsvp.count) - 1} unnamed` : "—";
 }
 
+// Dietary display for a reply: the diet plus any free-text note in parens, or
+// "—" when unset/"None". Shared by the Guests table's Dietary column, the For
+// Approval table, and the View modal.
+function dietText(rsvp) {
+  if (!rsvp || !rsvp.diet || rsvp.diet === "None") return "—";
+  return rsvp.diet + (rsvp.dietNotes ? ` (${rsvp.dietNotes})` : "");
+}
+
 // Guests tab — invited-list CRUD + reconciliation against RSVPs (who replied,
 // headcount). Shown only when settings.strictRsvp is on (gated in AdminApp).
 export function GuestsAdmin() {
@@ -508,6 +516,11 @@ export function GuestsAdmin() {
   };
   const onUnmatched = filter === "unmatched";
   const showComps = filter === "attending"; // Companions column on the Attending tab
+  // Dietary column (owner request): Attending, Maybe, and For Approval — where
+  // a diet answer is actually meaningful. Declined/No-reply guests have no
+  // catering need either way, so the column would just read "—" throughout;
+  // left out there rather than adding a column with nothing in it.
+  const showDiet = filter === "attending" || filter === "maybe";
   const filtered = bySearch.filter((g) => {
     if (filter === "all" || filter === "unmatched") return true;
     // "No reply" = effective status is none (auto-attending guests don't count).
@@ -751,30 +764,35 @@ export function GuestsAdmin() {
         <div className="panel__body--flush table-wrap">
           {onUnmatched ? (
             <table className="tbl">
-              <thead><tr><th>Name</th><th>Contact</th><th>Head count</th><th>Status</th><th></th></tr></thead>
+              <thead><tr><th>Name</th><th>Contact</th><th>Head count</th><th>Status</th><th>Dietary</th><th></th></tr></thead>
               <tbody>
-                {pg.pageItems.map((r) => (
-                  <tr key={r.id}>
-                    <td><strong>{r.fullName}</strong>{r.plusOne && <div style={{ fontSize: 13, color: "var(--muted)" }}>+ {r.plusOne}</div>}</td>
-                    <td>{r.phone || <span style={{ color: "var(--muted)" }}>—</span>}{r.email && <div style={{ fontSize: 13, color: "var(--muted)" }}>{r.email}</div>}</td>
-                    <td>{r.status === "attending" ? r.count : "—"}</td>
-                    <td><span className={"tag tag--" + r.status}>{(STAT_LABEL[r.status] || r.status || "").toString().replace("_", " ")}</span></td>
-                    <td style={{ whiteSpace: "nowrap" }}>
-                      <Button variant="primary" size="sm" onClick={() => adoptRsvp(r)}>Add to list</Button>
-                    </td>
-                  </tr>
-                ))}
-                {unmatched.length === 0 && <tr><td colSpan={5} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>Every RSVP matches an invited guest. 🎉</td></tr>}
+                {pg.pageItems.map((r) => {
+                  const diet = dietText(r);
+                  return (
+                    <tr key={r.id}>
+                      <td><strong>{r.fullName}</strong>{r.plusOne && <div style={{ fontSize: 13, color: "var(--muted)" }}>+ {r.plusOne}</div>}</td>
+                      <td>{r.phone || <span style={{ color: "var(--muted)" }}>—</span>}{r.email && <div style={{ fontSize: 13, color: "var(--muted)" }}>{r.email}</div>}</td>
+                      <td>{r.status === "attending" ? r.count : "—"}</td>
+                      <td><span className={"tag tag--" + r.status}>{(STAT_LABEL[r.status] || r.status || "").toString().replace("_", " ")}</span></td>
+                      <td>{diet === "—" ? <span style={{ color: "var(--muted)" }}>—</span> : diet}</td>
+                      <td style={{ whiteSpace: "nowrap" }}>
+                        <Button variant="primary" size="sm" onClick={() => adoptRsvp(r)}>Add to list</Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {unmatched.length === 0 && <tr><td colSpan={6} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>Every RSVP matches an invited guest. 🎉</td></tr>}
               </tbody>
             </table>
           ) : (
             <table className="tbl">
-              <thead><tr><th>Name</th><th>Contact</th><th>Allotted seats</th><th>Status</th>{showComps && <th className="col-comp">Companions</th>}<th>Notes</th><th></th></tr></thead>
+              <thead><tr><th>Name</th><th>Contact</th><th>Allotted seats</th><th>Status</th>{showComps && <th className="col-comp">Companions</th>}{showDiet && <th>Dietary</th>}<th>Notes</th><th></th></tr></thead>
               <tbody>
                 {pg.pageItems.map((g) => {
                   const x = byId.get(g.id) || { status: "none", rsvp: null };
                   const phone = (x.rsvp && x.rsvp.phone) || "";
                   const email = (x.rsvp && x.rsvp.email) || g.email || "";
+                  const diet = dietText(x.rsvp);
                   return (
                     <tr key={g.id}>
                       <td><strong>{g.firstName} {g.lastName}</strong>{g.middleName ? <span style={{ color: "var(--muted)" }}> ({g.middleName})</span> : null}</td>
@@ -798,6 +816,9 @@ export function GuestsAdmin() {
                           )}
                         </td>
                       )}
+                      {showDiet && (
+                        <td>{diet === "—" ? <span style={{ color: "var(--muted)" }}>—</span> : diet}</td>
+                      )}
                       <td style={{ maxWidth: 200 }}>{(x.rsvp && x.rsvp.notes)
                         ? <span title={x.rsvp.notes} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.rsvp.notes}</span>
                         : <span style={{ color: "var(--muted)" }}>—</span>}</td>
@@ -812,7 +833,7 @@ export function GuestsAdmin() {
                     </tr>
                   );
                 })}
-                {filtered.length === 0 && <tr><td colSpan={showComps ? 7 : 6} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No guests yet. Add your invited guests to track replies.</td></tr>}
+                {filtered.length === 0 && <tr><td colSpan={5 + (showComps ? 1 : 0) + (showDiet ? 1 : 0) + 2} style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>No guests yet. Add your invited guests to track replies.</td></tr>}
               </tbody>
             </table>
           )}
@@ -852,7 +873,7 @@ export function GuestsAdmin() {
                   ["Phone", (r && r.phone) || "—"],
                   ["Email", (r && r.email) || g.email || "—"],
                   ["Companions", companionsText(r) + (over ? "  (over their allotted seats)" : "")],
-                  ["Dietary", r && r.diet && r.diet !== "None" ? r.diet + (r.dietNotes ? ` (${r.dietNotes})` : "") : "—"],
+                  ["Dietary", dietText(r)],
                   ["Song request", (r && r.song) || "—"],
                   ["Note", g.notes || "—"],
                   ["Note from guest", (r && r.notes) || "—"],
