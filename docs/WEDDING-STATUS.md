@@ -11,12 +11,22 @@ Claude test run. Done items stay here as the permanent history.
 - **`[APPROVAL]`** in a title = Claude found this (testing / scheduled run); needs your review before work.
 
 ## Next IDs
-- Next Bug ID: **0015**
+- Next Bug ID: **0018**
 - Next Enhancement ID: **0014**
 
 ---
 
 ## Pending
+
+### Bug ID: 0015 — [APPROVAL] Legacy Supabase `clients` lookup returns 406 on every page
+- **Severity:** P2 · **Status:** Pending · **Added:** 2026-07-25 (QA crawl, superadmin/admin/client/public)
+- **Where:** Any page on `sandbox1.celebrately.us` and `celebrately.us` → browser DevTools → Console/Network
+- **Action:** Remove or gate the dead Supabase `clients` query — client data now loads from Neon/Firebase.
+- **Plan (ready-to-file issue):**
+  - **Steps:** Open any page (e.g. `sandbox1.celebrately.us/home`) → open DevTools → Network/Console.
+  - **Current:** `GET …supabase.co/rest/v1/clients?select=*&subdomain=eq.sandbox1&is_active=eq.true` returns **406** (`PGRST116` "The result contains 0 rows — cannot coerce to single object"). Console logs "Failed to load resource: 406" on every load, every visitor.
+  - **Expected:** No failed request. Client resolves from the current backend (Neon/Firebase); the legacy Supabase `clients.single()` call is removed or guarded behind the old code path.
+  - **Impact:** Cosmetic (site renders fine) but noisy + a wasted round-trip on every page for every user; migration leftover.
 
 ### Bug ID: 0014 — Cropped story VIDEO bleeds full-page on the public Our Story
 - **Severity:** P1 · **Status:** Done (2026-07-09) · **Added:** 2026-07-09 (reported by Jeremy on jeremyandirish; root-caused from the stored row)
@@ -89,6 +99,21 @@ Claude test run. Done items stay here as the permanent history.
 ---
 
 ## Done / History
+
+### Bug ID: 0017 — [CLAUDE MISTAKE] Advised deleting a Worker / canceling Workers Paid while `celebrately-router` carries ALL production traffic
+- **Severity:** P1 · **Status:** Done (2026-07-31) · **Added:** 2026-07-31 (reported by Jeremy)
+- **Where:** Cloudflare account — Workers & Pages → `celebrately-router` (routes `celebrately.us/*` + wildcard; the ONLY path serving the apex + every client subdomain; the Pages project has no custom domains attached)
+- **What happened:** Claude initially assessed `celebrately-router` as "provably not in the request path" and framed the Workers Paid $5/mo plan as safe to cancel; Jeremy unsubscribed based on that. Both premises were wrong: the worker is the sole route for all production hosts, and the Free tier's **100,000 requests/DAY hard cap** had already been exceeded twice that same week (Jul 24: 137,335 · Jul 25: 176,200) — on Free those days the site would have gone down mid-day.
+- **Root cause of the bad advice:** Claude conflated a local `wrangler` CLI logged into an unrelated account with the actual account context, and judged risk on the month total instead of per-day peaks. Jeremy's skeptical follow-ups + dashboard screenshots caught it before anything was deleted.
+- **Resolution:** `redrecon-site` (confirmed dead, the Durable Objects user) deleted; Workers Paid re-subscribed; router untouched. Health tab's Router gauge made plan-aware (`ff9fced`) so Free vs Paid tracks the limit that actually applies (100k/day vs 10M/mo).
+- **Lesson:** never advise deleting/downgrading infra without verifying the resource's live relationship to production (routes, traffic, per-day peaks) — docs and month-level averages both lie.
+
+### Bug ID: 0016 — [CLAUDE MISTAKE] Health tab "Pages builds" gauge pegged at a false 500/500
+- **Severity:** P2 · **Status:** Done (2026-07-31) · **Added:** 2026-07-31 (reported by Jeremy)
+- **Where:** Superadmin dashboard → Health → Pages builds gauge
+- **What happened:** The tile showed **500/500 builds used** and Claude presented that as proof the documented 500-builds/month Free cap had exhausted and was blocking deploys. Both wrong: the counter paged at most 20×25 deployments so it **could not count past 500** (instrument ceiling, not a measurement), and the cap never enforced at all — 900+ July builds all deployed. Cloudflare meters build **minutes** (3,000/mo free · 6,000/mo Workers Paid), not the legacy count. The one real deploy stall was a hung build on the 1-concurrent-build queue (20-min timeout), which self-cleared.
+- **Resolution:** Gauge rebuilt as **Build minutes** — sums each deployment's real `build` stage runtime across the whole month (wave-paginated, no 500 ceiling), plan-aware limit 3,000/6,000 min (`CF_LIMIT_BUILD_MIN` override), build count shown as the detail line. Legacy `builds.month/limit` payload fields kept for cached bundles.
+- **Lesson:** a gauge that saturates at its own scan limit is not evidence; verify quota "exhaustion" against the enforcement behavior (did the next push actually build?), not against a derived counter.
 
 ### Enhancement ID: 0013 — Crop for MP4 (video) media — envelope frame + track covers
 - **Severity:** P3 · **Status:** Done — commit `e5eaa32`, 2026-07-07 · **Added:** 2026-07-07 (requested by Jeremy)

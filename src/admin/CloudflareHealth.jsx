@@ -184,7 +184,9 @@ export function CloudflareHealth() {
         <Suspense fallback={<div style={{ color: "var(--muted)", fontSize: 13, padding: "18px 0" }}>Loading gauges…</div>}>
           <HealthGauges items={[
             routerGauge,
-            { label: "Pages builds", used: data.builds?.month, limit: data.builds?.limit || 500, fmt: nf, suffix: "this month", note: data.builds?.month == null ? "token needs Pages: Read" : null },
+            // Builds are metered in MINUTES (3,000/mo free · 6,000/mo Workers Paid),
+            // not the legacy 500-build count — that old gauge pegged at "500/500".
+            { label: "Build minutes", detail: data.builds?.count != null ? `${nf(data.builds.count)} builds` : undefined, used: data.builds?.minutes, limit: data.builds?.limitMinutes || 3000, fmt: nf, suffix: "min this month", note: data.builds?.minutes == null ? "token needs Pages: Read" : null },
             { label: "Custom domains", used: data.domains?.count, limit: data.domains?.limit || 100, fmt: nf, suffix: "attached", note: data.domains?.count == null ? "token needs Pages: Read" : null, info: domainsInfo(data.domains?.count == null) },
             { label: "R2 storage", detail: `${nf(data.r2?.objects)} objects`, used: data.r2?.storageBytes, limit: data.r2?.limitBytes || R2_FREE_BYTES, fmt: fmtBytes, suffix: "free tier" },
             { label: "Neon database", detail: data.neon?.shardCount ? `across ${data.neon.shardCount} shards` : undefined, used: data.neon?.totalBytes, limit: data.neon?.totalLimitBytes || 536870912, fmt: fmtBytes, suffix: "free tier", note: data.neon == null ? "no shards configured" : (data.neon?.totalBytes == null ? "unavailable" : null), breakdown: (data.neon?.shards || []).map((s) => ({ name: s.id, bytes: s.bytes, limit: data.neon.limitBytesPerShard })) },

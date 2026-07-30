@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { shapeHealth, countBuildsThisMonth, workersPlanFromSubs } from "../../../functions/api/_cf-health-shape.js";
+import { shapeHealth, countBuildsThisMonth, buildUsageThisMonth, workersPlanFromSubs } from "../../../functions/api/_cf-health-shape.js";
 
 // Fixture mirrors the REAL Cloudflare GraphQL response shape (aliased fields),
 // captured live from the account during design. Values trimmed for clarity.
@@ -152,5 +152,26 @@ describe("countBuildsThisMonth", () => {
   it("returns 0 for empty/missing lists", () => {
     expect(countBuildsThisMonth([], "2026-07-01")).toBe(0);
     expect(countBuildsThisMonth(undefined, "2026-07-01")).toBe(0);
+  });
+});
+
+describe("buildUsageThisMonth", () => {
+  const deps = [
+    { created_on: "2026-07-07T21:09:43Z", stages: [{ name: "queued" }, { name: "build", started_on: "2026-07-07T21:10:00Z", ended_on: "2026-07-07T21:12:30Z" }] }, // 150s
+    { created_on: "2026-07-05T09:00:00Z", stages: [{ name: "build", started_on: "2026-07-05T09:01:00Z", ended_on: "2026-07-05T09:02:00Z" }] }, // 60s
+    { created_on: "2026-07-02T00:00:00Z", stages: [] },                        // counts, contributes no time
+    { created_on: "2026-07-01T12:00:00Z", stages: [{ name: "build", started_on: "2026-07-01T12:01:00Z" }] }, // build never ended — no time
+    { created_on: "2026-06-30T23:59:59Z", stages: [{ name: "build", started_on: "2026-06-30T23:59:00Z", ended_on: "2026-07-01T00:05:00Z" }] }, // previous month — excluded
+  ];
+
+  it("counts the month's deployments and sums build-stage runtime", () => {
+    const u = buildUsageThisMonth(deps, "2026-07-01");
+    expect(u.count).toBe(4);
+    expect(u.ms).toBe(210000); // 150s + 60s
+  });
+
+  it("returns zeros for empty/missing lists", () => {
+    expect(buildUsageThisMonth([], "2026-07-01")).toEqual({ count: 0, ms: 0 });
+    expect(buildUsageThisMonth(undefined, "2026-07-01")).toEqual({ count: 0, ms: 0 });
   });
 });

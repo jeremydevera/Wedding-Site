@@ -6,7 +6,7 @@
 // /api/* via _routes.json. Result is edge-cached 5 min so CF's API is hit at most
 // ~once per 5 min no matter how many superadmins refresh.
 
-import { shapeHealth, countBuildsThisMonth, workersPlanFromSubs } from "./_cf-health-shape.js";
+import { shapeHealth, buildUsageThisMonth, workersPlanFromSubs } from "./_cf-health-shape.js";
 import { neon } from "@neondatabase/serverless";
 
 const json = (obj, status = 200) =>
@@ -95,7 +95,11 @@ export async function onRequestGet(context) {
   // Workers Free is capped per DAY (100k), not per month — the gauge switches to
   // today/limitDay when the detected plan is "free".
   const LIMIT_REQ_DAY = envNum(env.CF_LIMIT_REQ_DAY, 100_000);
-  const LIMIT_BUILDS_MONTH = envNum(env.CF_LIMIT_BUILDS_MONTH, 500);
+  const LIMIT_BUILDS_MONTH = envNum(env.CF_LIMIT_BUILDS_MONTH, 500); // legacy field only — older cached bundles still read it
+  // Builds are metered in MINUTES: 3,000/mo free, 6,000/mo with Workers Paid
+  // (the legacy 500-count never enforced — 900+ July builds all ran). 0 = auto
+  // by detected plan; a positive CF_LIMIT_BUILD_MIN pins it.
+  const LIMIT_BUILD_MIN = envNum(env.CF_LIMIT_BUILD_MIN, 0);
   const LIMIT_R2_GB = envNum(env.CF_LIMIT_R2_GB, 10);
   // Pages free plan: 100 custom domains per project (Pro 250, Business 500).
   const LIMIT_DOMAINS = envNum(env.CF_LIMIT_DOMAINS, 100);
@@ -117,26 +121,36 @@ export async function onRequestGet(context) {
   const sinceDT = `${sinceDate}T00:00:00Z`;
   const ydayDate = ymd(now, -1);
 
-  // Pages builds this month — newest-first pages; stop at the first deployment
-  // older than the month start (or a 20-page safety cap ≈ the 500/mo allowance).
-  // Requires "Cloudflare Pages: Read" on the analytics token; returns null (tile
-  // shows a hint) until that permission exists. Soft-fail by design.
-  const fetchBuildsMonth = async () => {
+  // Build usage this month — deployment count + real build minutes summed from
+  // each deployment's "build" stage. Newest-first pages, stop once paged past
+  // the month start. Fetched in waves of 8 because a busy month is 40+ pages of
+  // 25 — the old sequential 20-page ceiling is exactly what pegged the tile at
+  // a misleading "500/500". Requires "Cloudflare Pages: Read" on the analytics
+  // token; returns null (tile shows a hint) until that permission exists.
+  const fetchBuildUsage = async () => {
     try {
-      let count = 0;
-      for (let page = 1; page <= 20; page++) {
-        const r = await fetch(
-          `https://api.cloudflare.com/client/v4/accounts/${acct}/pages/projects/wedding-site/deployments?per_page=25&page=${page}`,
-          { headers: { authorization: `Bearer ${CF_TOKEN}` } },
-        );
-        if (!r.ok) return null; // 403 until token gets Pages:Read
-        const jr = await r.json();
-        const list = jr.result || [];
-        if (!list.length) break;
-        count += countBuildsThisMonth(list, monthStart);
-        if ((list[list.length - 1]?.created_on || "") < monthStart) break; // paged past the month
+      const MAX_PAGES = 80, WAVE = 8;
+      const pageUrl = (p) =>
+        `https://api.cloudflare.com/client/v4/accounts/${acct}/pages/projects/wedding-site/deployments?per_page=25&page=${p}`;
+      let count = 0, ms = 0, done = false;
+      for (let start = 1; start <= MAX_PAGES && !done; start += WAVE) {
+        const pages = [];
+        for (let p = start; p < start + WAVE && p <= MAX_PAGES; p++) pages.push(p);
+        const results = await Promise.all(pages.map((p) =>
+          fetch(pageUrl(p), { headers: { authorization: `Bearer ${CF_TOKEN}` } })
+            .then((r) => (r.ok ? r.json() : null))
+            .catch(() => null),
+        ));
+        for (const jr of results) {
+          if (!jr) return null; // 403 until token gets Pages:Read — soft-fail
+          const list = jr.result || [];
+          if (!list.length) { done = true; break; }
+          const u = buildUsageThisMonth(list, monthStart);
+          count += u.count; ms += u.ms;
+          if ((list[list.length - 1]?.created_on || "") < monthStart) { done = true; break; }
+        }
       }
-      return count;
+      return { count, minutes: Math.round(ms / 60000) };
     } catch { return null; }
   };
 
@@ -206,7 +220,7 @@ export async function onRequestGet(context) {
     } catch { return null; }
   };
 
-  let data, buildsMonth, domainCount, neonUsage, workersPlan;
+  let data, buildUsage, domainCount, neonUsage, workersPlan;
   try {
     const [resp, builds, doms, neonU, plan] = await Promise.all([
       fetch("https://api.cloudflare.com/client/v4/graphql", {
@@ -214,12 +228,12 @@ export async function onRequestGet(context) {
         headers: { authorization: `Bearer ${CF_TOKEN}`, "content-type": "application/json" },
         body: JSON.stringify({ query: buildQuery({ acct, zone, sinceDT, sinceDate, ydayDate, todayDate }) }),
       }),
-      fetchBuildsMonth(),
+      fetchBuildUsage(),
       fetchDomainCount(),
       fetchNeonUsage(),
       fetchWorkersPlan(),
     ]);
-    buildsMonth = builds; domainCount = doms; neonUsage = neonU; workersPlan = plan;
+    buildUsage = builds; domainCount = doms; neonUsage = neonU; workersPlan = plan;
     const jr = await resp.json();
     if (!resp.ok || (jr.errors && jr.errors.length) || !jr.data) {
       return json({ configured: true, error: "upstream" }); // soft — do not cache, do not leak details
@@ -237,7 +251,16 @@ export async function onRequestGet(context) {
   });
   payload.workersPlan = workersPlan ?? null; // "paid" | "free" | null (token lacks Billing:Read)
   payload.limitDay = LIMIT_REQ_DAY;
-  payload.builds = { month: buildsMonth, limit: LIMIT_BUILDS_MONTH }; // null month => token lacks Pages:Read
+  // Builds tile — metered in minutes (plan-aware limit). `month`/`limit` stay
+  // for older cached bundles that still render the legacy count gauge; new UI
+  // reads count/minutes/limitMinutes. null => token lacks Pages:Read.
+  payload.builds = {
+    month: buildUsage ? buildUsage.count : null,
+    limit: LIMIT_BUILDS_MONTH,
+    count: buildUsage ? buildUsage.count : null,
+    minutes: buildUsage ? buildUsage.minutes : null,
+    limitMinutes: LIMIT_BUILD_MIN > 0 ? LIMIT_BUILD_MIN : (workersPlan === "paid" ? 6000 : 3000),
+  };
   payload.domains = { count: domainCount, limit: LIMIT_DOMAINS }; // null count => token lacks Pages:Read
   payload.r2.limitBytes = LIMIT_R2_GB * 1024 ** 3;
   // Neon (sharded). null => registry unreadable or all shards down.

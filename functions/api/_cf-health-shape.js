@@ -57,6 +57,23 @@ export function countBuildsThisMonth(deployments, monthStart) {
   return n;
 }
 
+// Build usage for the month: deployment count + build-stage runtime in ms.
+// Cloudflare meters build MINUTES (3,000/mo free, 6,000/mo with Workers Paid),
+// not the legacy 500-build count — proven when 900+ July builds all ran.
+// Duration comes from each deployment's "build" stage timestamps; a deployment
+// with no readable build stage still counts but adds no time.
+export function buildUsageThisMonth(deployments, monthStart) {
+  let count = 0, ms = 0;
+  for (const d of deployments || []) {
+    if ((d?.created_on || "") < monthStart) continue;
+    count++;
+    const st = (d?.stages || []).find((s) => s?.name === "build");
+    const a = Date.parse(st?.started_on || ""), b = Date.parse(st?.ended_on || "");
+    if (Number.isFinite(a) && Number.isFinite(b) && b > a) ms += b - a;
+  }
+  return { count, ms };
+}
+
 export function shapeHealth(result, opts = {}) {
   const {
     today,
