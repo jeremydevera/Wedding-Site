@@ -34,6 +34,20 @@ function dateSeries(today, days) {
   return out;
 }
 
+// Workers plan from the account-subscriptions list (GET /accounts/{id}/subscriptions).
+// Free plan has no Workers subscription row, so an authorized-but-empty list means
+// "free". A null/undefined input means the endpoint couldn't be read (token lacks
+// Billing: Read) — return null so the UI can show a hint instead of guessing.
+export function workersPlanFromSubs(subs) {
+  if (!Array.isArray(subs)) return null;
+  const txt = (s) =>
+    `${s?.product?.name || ""} ${s?.rate_plan?.id || ""} ${s?.rate_plan?.public_name || ""}`.toLowerCase();
+  const ws = subs.filter((s) => txt(s).includes("worker"));
+  if (!ws.length) return "free";
+  const paid = ws.some((s) => num(s?.price) > 0 || /paid|standard|unbound|bundled/.test(txt(s)));
+  return paid ? "paid" : "free";
+}
+
 // Count Pages deployments created on/after the month start (YYYY-MM-01). Both
 // production and preview builds count toward the 500-builds/month allowance.
 // ISO created_on timestamps compare correctly against "YYYY-MM-01" lexicographically.

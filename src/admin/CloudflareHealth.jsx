@@ -169,6 +169,13 @@ export function CloudflareHealth() {
     );
   } else if (data) {
     const upstream = data.error === "upstream";
+    // Router gauge is plan-aware: Workers Free is capped per DAY (100k), Paid per
+    // month (10M) — the gauge tracks whichever limit actually applies. Unknown
+    // plan (token lacks Billing: Read) keeps the monthly view + shows a hint.
+    const planFree = data.workersPlan === "free";
+    const routerGauge = planFree
+      ? { label: "Router requests", detail: `Free plan · ${nfc(data.router?.month)} this month`, used: data.router?.today, limit: data.limitDay || 100_000, fmt: nf, suffix: "today · resets midnight UTC" }
+      : { label: "Router requests", detail: `${nfc(data.router?.today)} today${data.workersPlan === "paid" ? " · Paid plan" : ""}`, used: data.router?.month, limit: data.limitMonth, fmt: nf, suffix: "this month", note: data.workersPlan == null ? "plan unknown — token needs Billing: Read" : null };
     body = (
       <div className="panel__body" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
         {upstream && <div style={{ background: "#fdf3e7", border: "1px solid #eecfa1", borderRadius: 8, padding: "8px 12px", fontSize: 13 }}>Cloudflare returned an error — showing what we have. Try Refresh.</div>}
@@ -176,7 +183,7 @@ export function CloudflareHealth() {
         {/* Everything with a hard/free-tier limit renders as a gauge. */}
         <Suspense fallback={<div style={{ color: "var(--muted)", fontSize: 13, padding: "18px 0" }}>Loading gauges…</div>}>
           <HealthGauges items={[
-            { label: "Router requests", detail: `${nfc(data.router?.today)} today`, used: data.router?.month, limit: data.limitMonth, fmt: nf, suffix: "this month" },
+            routerGauge,
             { label: "Pages builds", used: data.builds?.month, limit: data.builds?.limit || 500, fmt: nf, suffix: "this month", note: data.builds?.month == null ? "token needs Pages: Read" : null },
             { label: "Custom domains", used: data.domains?.count, limit: data.domains?.limit || 100, fmt: nf, suffix: "attached", note: data.domains?.count == null ? "token needs Pages: Read" : null, info: domainsInfo(data.domains?.count == null) },
             { label: "R2 storage", detail: `${nf(data.r2?.objects)} objects`, used: data.r2?.storageBytes, limit: data.r2?.limitBytes || R2_FREE_BYTES, fmt: fmtBytes, suffix: "free tier" },

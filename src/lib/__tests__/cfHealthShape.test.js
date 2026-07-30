@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { shapeHealth, countBuildsThisMonth } from "../../../functions/api/_cf-health-shape.js";
+import { shapeHealth, countBuildsThisMonth, workersPlanFromSubs } from "../../../functions/api/_cf-health-shape.js";
 
 // Fixture mirrors the REAL Cloudflare GraphQL response shape (aliased fields),
 // captured live from the account during design. Values trimmed for clarity.
@@ -105,6 +105,36 @@ describe("shapeHealth", () => {
     expect(empty.zone.reqToday).toBe(0);
     expect(empty.r2.objects).toBe(0);
     expect(empty.series).toHaveLength(7);
+  });
+});
+
+describe("workersPlanFromSubs", () => {
+  it("detects Workers Paid from a subscription row", () => {
+    expect(workersPlanFromSubs([
+      { rate_plan: { id: "workers_paid", public_name: "Workers Paid Plan" }, price: 5 },
+    ])).toBe("paid");
+    // price alone is enough even if the names are vague
+    expect(workersPlanFromSubs([
+      { product: { name: "workers" }, rate_plan: { id: "biz" }, price: 5 },
+    ])).toBe("paid");
+  });
+
+  it("treats no Workers subscription as the Free plan", () => {
+    expect(workersPlanFromSubs([])).toBe("free");
+    expect(workersPlanFromSubs([
+      { rate_plan: { id: "pages_pro", public_name: "Pages Pro" }, price: 20 }, // unrelated product
+    ])).toBe("free");
+  });
+
+  it("treats an explicit zero-price Workers row as free", () => {
+    expect(workersPlanFromSubs([
+      { product: { name: "workers" }, rate_plan: { id: "free", public_name: "Workers Free" }, price: 0 },
+    ])).toBe("free");
+  });
+
+  it("returns null (unknown) when the subscriptions list was unreadable", () => {
+    expect(workersPlanFromSubs(null)).toBe(null);
+    expect(workersPlanFromSubs(undefined)).toBe(null);
   });
 });
 

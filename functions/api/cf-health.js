@@ -6,7 +6,7 @@
 // /api/* via _routes.json. Result is edge-cached 5 min so CF's API is hit at most
 // ~once per 5 min no matter how many superadmins refresh.
 
-import { shapeHealth, countBuildsThisMonth } from "./_cf-health-shape.js";
+import { shapeHealth, countBuildsThisMonth, workersPlanFromSubs } from "./_cf-health-shape.js";
 import { neon } from "@neondatabase/serverless";
 
 const json = (obj, status = 200) =>
@@ -92,6 +92,9 @@ export async function onRequestGet(context) {
   // after a plan upgrade; applies on the next deploy.
   const envNum = (v, dflt) => (Number.isFinite(+v) && +v > 0 ? +v : dflt);
   const LIMIT_REQ_MONTH = envNum(env.CF_LIMIT_REQ_MONTH, 10_000_000);
+  // Workers Free is capped per DAY (100k), not per month — the gauge switches to
+  // today/limitDay when the detected plan is "free".
+  const LIMIT_REQ_DAY = envNum(env.CF_LIMIT_REQ_DAY, 100_000);
   const LIMIT_BUILDS_MONTH = envNum(env.CF_LIMIT_BUILDS_MONTH, 500);
   const LIMIT_R2_GB = envNum(env.CF_LIMIT_R2_GB, 10);
   // Pages free plan: 100 custom domains per project (Pro 250, Business 500).
@@ -156,6 +159,21 @@ export async function onRequestGet(context) {
     try { return (await tryUrl("?per_page=100")) ?? (await tryUrl("")); } catch { return null; }
   };
 
+  // Workers plan (paid vs free) — decides which limit the router gauge uses.
+  // Read from the account subscriptions API; CF_PLAN_WORKERS=free|paid overrides
+  // (e.g. if the token can't get Billing: Read). null => unknown, UI shows a hint.
+  const fetchWorkersPlan = async () => {
+    if (env.CF_PLAN_WORKERS === "free" || env.CF_PLAN_WORKERS === "paid") return env.CF_PLAN_WORKERS;
+    try {
+      const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${acct}/subscriptions`, {
+        headers: { authorization: `Bearer ${CF_TOKEN}` },
+      });
+      if (!r.ok) return null; // 403 until the token gets Billing: Read — soft-fail
+      const jr = await r.json();
+      return workersPlanFromSubs(jr.result || []);
+    } catch { return null; }
+  };
+
   // Neon storage — all data lives on Neon (5 shards). Read the shard registry
   // from Neon app_config, then ask each shard's Data API for pg_database_size via
   // the public db_size_bytes() RPC (anon token).
@@ -188,9 +206,9 @@ export async function onRequestGet(context) {
     } catch { return null; }
   };
 
-  let data, buildsMonth, domainCount, neonUsage;
+  let data, buildsMonth, domainCount, neonUsage, workersPlan;
   try {
-    const [resp, builds, doms, neonU] = await Promise.all([
+    const [resp, builds, doms, neonU, plan] = await Promise.all([
       fetch("https://api.cloudflare.com/client/v4/graphql", {
         method: "POST",
         headers: { authorization: `Bearer ${CF_TOKEN}`, "content-type": "application/json" },
@@ -199,8 +217,9 @@ export async function onRequestGet(context) {
       fetchBuildsMonth(),
       fetchDomainCount(),
       fetchNeonUsage(),
+      fetchWorkersPlan(),
     ]);
-    buildsMonth = builds; domainCount = doms; neonUsage = neonU;
+    buildsMonth = builds; domainCount = doms; neonUsage = neonU; workersPlan = plan;
     const jr = await resp.json();
     if (!resp.ok || (jr.errors && jr.errors.length) || !jr.data) {
       return json({ configured: true, error: "upstream" }); // soft — do not cache, do not leak details
@@ -216,6 +235,8 @@ export async function onRequestGet(context) {
     limitMonth: LIMIT_REQ_MONTH,
     updatedAt: now.toISOString(),
   });
+  payload.workersPlan = workersPlan ?? null; // "paid" | "free" | null (token lacks Billing:Read)
+  payload.limitDay = LIMIT_REQ_DAY;
   payload.builds = { month: buildsMonth, limit: LIMIT_BUILDS_MONTH }; // null month => token lacks Pages:Read
   payload.domains = { count: domainCount, limit: LIMIT_DOMAINS }; // null count => token lacks Pages:Read
   payload.r2.limitBytes = LIMIT_R2_GB * 1024 ** 3;
