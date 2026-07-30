@@ -38,6 +38,17 @@ const { useState, useEffect, useRef } = React;
 
 const MODULES = ["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"];
 
+// Width cap for the clients list's "Event address" column. The address wraps to
+// as many lines as it needs (owner wants the WHOLE address, never an ellipsis),
+// so this is what stops one long venue from stretching the table sideways. Used
+// on the <th>, the <td> and the cell body so the cap holds under table-layout:auto.
+const ADDR_MAX_W = 240;
+// ...and a floor. The other columns are all `white-space: nowrap`, so the address
+// is the only cell the table can squeeze — without a min it collapsed to ~112px
+// (a 12-line address) on a phone. The clients table already scrolls sideways at
+// that width (`.tbl--clients { min-width: 760px }`), so a floor is safe here.
+const ADDR_MIN_W = 180;
+
 // Owner-edit grant lists come from the ONE source in roles.js
 // (OWNER_EDIT_HOME / OWNER_EDIT_TABS), so adding a grant there shows here AND in
 // the client's own Settings → Access, and gates the tab, with no duplication.
@@ -506,18 +517,26 @@ export function ClientsAdmin() {
     const content = (cl && cl.content) || {};
     return venuesFrom(content, content)[0] || null; // settings fields live flattened on content, so one arg does both jobs
   };
+  // The address WRAPS instead of being cut off (owner: "don't cut the address, I
+  // want to see the full address") — the column is bounded by ADDR_MAX_W so a long
+  // venue can't stretch the table sideways; it grows in height instead.
+  // whiteSpace must be set explicitly: `.admin--sa .tbl--clients td` forces
+  // nowrap (that rule keeps the OTHER columns on one line on mobile), so the
+  // inner elements have to opt back in. overflowWrap breaks a pasted URL or a
+  // single very long token that has no spaces to wrap at.
   const eventAddressCell = (cl) => {
     const v = primaryVenue(cl);
     if (!v || (!v.name && !v.address)) return <span style={{ color: "var(--muted)" }}>—</span>;
+    const wrap = { whiteSpace: "normal", overflowWrap: "anywhere" };
     return (
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 6, maxWidth: 210 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 6, maxWidth: ADDR_MAX_W }}>
         <span style={{ color: "var(--muted)", flex: "none", marginTop: 2 }}>{Icon.pin({ style: { width: 13, height: 13 } })}</span>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={v.name || v.address}>
+          <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.35, ...wrap }}>
             {v.name || v.address}
           </div>
           {v.name && v.address && (
-            <div style={{ fontSize: 12, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={v.address}>{v.address}</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.35, ...wrap }}>{v.address}</div>
           )}
         </div>
       </div>
@@ -1047,7 +1066,7 @@ export function ClientsAdmin() {
                 <th style={{ width: 34 }}><input type="checkbox" aria-label="Select all offline"
                   checked={clients.filter((c) => !c.is_active).length > 0 && clients.filter((c) => !c.is_active).every((c) => sel.has(c.id))}
                   onChange={(e) => setSel((p) => { const n = new Set(p); clients.filter((c) => !c.is_active).forEach((c) => e.target.checked ? n.add(c.id) : n.delete(c.id)); return n; })} /></th>
-                <th>Client</th><th>Event address</th><th>Notes</th><th>Status</th><th>Donate ad</th><th></th></tr></thead>
+                <th>Client</th><th style={{ minWidth: ADDR_MIN_W, maxWidth: ADDR_MAX_W }}>Event address</th><th>Notes</th><th>Status</th><th>Donate ad</th><th></th></tr></thead>
               <tbody>
                 {clients.filter((c) => !c.is_active).map((c) => (
                   <tr key={c.id}>
@@ -1060,7 +1079,7 @@ export function ClientsAdmin() {
                         </div>
                       </div>
                     </td>
-                    <td>{eventAddressCell(c)}</td>
+                    <td style={{ minWidth: ADDR_MIN_W, maxWidth: ADDR_MAX_W, whiteSpace: "normal" }}>{eventAddressCell(c)}</td>
                     <td style={{ maxWidth: 220 }}>{notes[c.id]
                       ? <span title={notes[c.id]} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{notes[c.id]}</span>
                       : <span style={{ color: "var(--muted)" }}>—</span>}</td>
@@ -1098,7 +1117,7 @@ export function ClientsAdmin() {
                   <th style={{ width: 34 }}><input type="checkbox" aria-label="Select all on this page"
                     checked={pg.pageItems.length > 0 && pg.pageItems.every((c) => sel.has(c.id))}
                     onChange={(e) => setSel((p) => { const n = new Set(p); pg.pageItems.forEach((c) => e.target.checked ? n.add(c.id) : n.delete(c.id)); return n; })} /></th>
-                  <th>Client</th><th>Event address</th><th>Notes</th><th>Status</th><th>Donate ad</th><th></th></tr></thead>
+                  <th>Client</th><th style={{ minWidth: ADDR_MIN_W, maxWidth: ADDR_MAX_W }}>Event address</th><th>Notes</th><th>Status</th><th>Donate ad</th><th></th></tr></thead>
                 <tbody>
                   {pg.pageItems.map((c) => (
                     <tr key={c.id}>
@@ -1117,7 +1136,7 @@ export function ClientsAdmin() {
                           </div>
                         </div>
                       </td>
-                      <td>{eventAddressCell(c)}</td>
+                      <td style={{ minWidth: ADDR_MIN_W, maxWidth: ADDR_MAX_W, whiteSpace: "normal" }}>{eventAddressCell(c)}</td>
                       <td style={{ maxWidth: 180 }}>{notes[c.id]
                         ? <span title={notes[c.id]} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{notes[c.id]}</span>
                         : <span style={{ color: "var(--muted)" }}>—</span>}</td>
