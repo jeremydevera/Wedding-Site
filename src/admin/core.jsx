@@ -508,7 +508,9 @@ export function AdminDashboard({ goTab }) {
         ))}
       </div>
 
-      <React.Suspense fallback={null}><RsvpCharts rsvps={counted} /></React.Suspense>
+      {/* "See more" in a slice's tooltip lands on the RSVPs page, where the full
+          guest list lives (owner request — the tooltip caps at 5 names). */}
+      <React.Suspense fallback={null}><RsvpCharts rsvps={counted} onSeeMore={() => goTab("rsvps")} /></React.Suspense>
 
       <div style={{ display: "grid", gap: 24, gridTemplateColumns: "1fr" }}>
         <div className="panel">

@@ -3153,6 +3153,11 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+/* The UI font stack is set on the CARD, not just its title: everything else in
+   here (eyebrow, legend labels, counts, the empty state) was inheriting the
+   couple's SERIF body font from <body> — measured Times beside the title's
+   -apple-system — so one card mixed two typefaces (owner asked why the font
+   looked different). One rule covers every descendant. Matches .admin__title. */
 .rsvp-chart-card {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -3161,6 +3166,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   display: flex;
   flex-direction: column;
   min-height: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
   animation: rsvp-kpi-in .45s ease both;
 }
 .rsvp-chart-card__head {
@@ -3232,21 +3238,26 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    necessarily its visual neighbors — and a plain z-index bump could not
    reliably fix that. Living directly under <body> sidesteps the question
    entirely: nothing in the ordinary page can out-stack it.
-   🔴 pointer-events:none is intentional (moving the cursor onto the tooltip
-   must NOT make Chart.js think it left the canvas — that flips opacity back
-   to 0 mid-hover) — but that also means an internal scrollbar can't actually
-   be scrolled (wheel/drag events can't hit a pointer-events:none element).
-   Owner-reported: a 22-name slice was clipped by the old 260px cap with no way
-   to reach the rest. So max-height is now generous (vh-based) — tall enough
-   for realistic guest counts to render with NO internal scrolling needed at
-   all; overflow-y:auto only guards a truly pathological list, and for that
-   rare case the PAGE itself can still scroll (position:fixed tracks the
-   viewport, not the page, but the tooltip only ever appears while the canvas
-   is being hovered — scrolling away hides it via the chart's own mouseout). */
+   🔴 pointer-events is none while HIDDEN and auto only while shown (.is-on,
+   toggled with the opacity in rsvp-charts.jsx) — reversing an earlier blanket
+   `none`. The tooltip caps at 5 names and ends in a clickable "See more" row
+   (owner request), and a pointer-events:none element cannot be clicked — nor
+   scrolled. It must go back to `none` when hidden: this is a fixed, body-level
+   node that stays in the layout at opacity 0, so a permanent `auto` would let an
+   INVISIBLE box swallow clicks on whatever sits under its last position.
+   What the blanket `none` used to buy (Chart.js reports the pointer as having
+   left the canvas the moment it touches the tooltip, flipping opacity to 0
+   mid-hover) is now handled in JS: rsvp-charts.jsx delays the hide ~240ms and
+   cancels it while the pointer is over the tooltip — see HIDE_DELAY_MS there.
+   font-family is explicit because this node lives on <body>, OUTSIDE .admin —
+   it would otherwise inherit the couple's serif body font (var(--font-body))
+   and read as a different typeface from the dashboard around it (owner asked
+   why the font looked different). Same stack as .rsvp-chart-card__title. */
 .rsvp-tip {
   position: fixed;
   z-index: 1000;
   pointer-events: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
   opacity: 0;
   transition: opacity .1s ease;
   left: 0; top: 0;
@@ -3262,9 +3273,16 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   padding: 10px 12px;
   box-shadow: 0 16px 32px -14px rgba(0, 0, 0, 0.55);
 }
+.rsvp-tip.is-on { pointer-events: auto; }
 .rsvp-tip__head { font-weight: 700; white-space: nowrap; }
 .rsvp-tip__list { list-style: none; margin: 6px 0 0; padding: 6px 0 0; border-top: 1px solid rgba(255,255,255,.14); display: flex; flex-direction: column; gap: 4px; }
 .rsvp-tip__list li { color: rgba(255, 255, 255, 0.85); }
+/* Last row when a slice holds more than 5 guests — opens the RSVPs page. */
+.rsvp-tip__more {
+  margin-top: 2px; padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, .14);
+  color: #93b4ff !important; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.rsvp-tip__more:hover { color: #c3d4ff !important; text-decoration: underline; }
 
 @media (max-width: 680px) {
   .rsvp-charts__row { grid-template-columns: 1fr; }
