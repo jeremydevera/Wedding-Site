@@ -1421,16 +1421,49 @@ const DONATE_DEFAULT_NUMBERS = [
   { id: "n-maya", label: "Maya", value: "09150860371" },
 ];
 function donateTileSrc(t) { return t.img ? mediaUrl(t.img) : (DONATE_FALLBACK[t.id] || ""); }
-// Read-only QR tile (owner view).
+// Brand covers: a tile with one starts logo-side up and FLIPS to its QR on click
+// (owner request). Keyed by tile id, so a method without a logo here keeps
+// showing its QR straight away — nothing to flip, no cover to hide it behind.
+const DONATE_LOGO = { gcash: "/assets/donate/gcash-logo.png" };
+// Read-only QR tile (owner view). With a brand cover it becomes a flip card: the
+// logo faces up, a click turns it over to the QR (and back). Both faces are laid
+// on top of each other in a fixed square, so flipping never reflows the grid.
 function DonateCard({ t }) {
   const [broken, setBroken] = useState(false);
+  const [flipped, setFlipped] = useState(false);
   const src = donateTileSrc(t);
+  const logo = DONATE_LOGO[t.id];
+  const qr = src && !broken
+    ? <img className="donate-card__img" src={src} alt={(t.label || "") + " QR code"} loading="lazy" onError={() => setBroken(true)} />
+    : <div className="donate-card__img donate-card__ph">QR coming soon</div>;
+  if (!logo) {
+    return (
+      <figure className="donate-card">
+        {qr}
+        <figcaption className="donate-card__label">{t.label}</figcaption>
+      </figure>
+    );
+  }
   return (
     <figure className="donate-card">
-      {src && !broken
-        ? <img className="donate-card__img" src={src} alt={(t.label || "") + " QR code"} loading="lazy" onError={() => setBroken(true)} />
-        : <div className="donate-card__img donate-card__ph">QR coming soon</div>}
-      <figcaption className="donate-card__label">{t.label}</figcaption>
+      {/* A real <button>: it is a control, so it must be keyboard- and
+          screen-reader-reachable. aria-pressed announces which side is up. */}
+      <button type="button" className={"donate-flip" + (flipped ? " is-flipped" : "")}
+        onClick={() => setFlipped((v) => !v)} aria-pressed={flipped}
+        aria-label={flipped ? `Hide the ${t.label} QR code` : `Show the ${t.label} QR code`}>
+        <span className="donate-flip__inner">
+          <span className="donate-flip__face donate-flip__face--front">
+            <img className="donate-flip__logo" src={logo} alt="" loading="lazy" />
+          </span>
+          {/* aria-hidden while face-down so the QR's alt text isn't read out
+              from behind the cover. */}
+          <span className="donate-flip__face donate-flip__face--back" aria-hidden={!flipped}>{qr}</span>
+        </span>
+      </button>
+      <figcaption className="donate-card__label">
+        {t.label}
+        <span className="donate-card__hint">{flipped ? "Tap to flip back" : "Tap to show QR"}</span>
+      </figcaption>
     </figure>
   );
 }
