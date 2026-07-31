@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { render, cleanup, waitFor, fireEvent } from "@testing-library/react";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { render, cleanup, waitFor, fireEvent, act } from "@testing-library/react";
 import React from "react";
 import { Store } from "@/lib/store.jsx";
 import { DonateToDevTab } from "@/admin/manage.jsx";
@@ -24,7 +24,7 @@ describe("Donate to Dev — GCash logo flips to the QR", () => {
     await waitFor(() => expect(container.querySelectorAll(".donate-card").length).toBe(4));
     expect(container.querySelectorAll(".donate-flip").length).toBe(1);
     const card = [...container.querySelectorAll(".donate-card")].find((f) => f.querySelector(".donate-flip"));
-    expect(card.textContent).toContain("GCash");
+    expect(card.querySelector(".donate-flip__face--front img").getAttribute("src")).toContain("gcash-logo");
     // every other tile keeps a plain, always-visible QR image
     const plain = [...container.querySelectorAll(".donate-card")].filter((f) => !f.querySelector(".donate-flip"));
     expect(plain.length).toBe(3);
@@ -47,16 +47,68 @@ describe("Donate to Dev — GCash logo flips to the QR", () => {
     const { container } = render(<DonateToDevTab />);
     await waitFor(() => expect(flipOf(container)).toBeTruthy());
     const flip = flipOf(container);
-    expect(container.textContent).toContain("Tap to show QR");
 
     fireEvent.click(flip);
     expect(flip.classList.contains("is-flipped")).toBe(true);   // CSS rotates the inner face
     expect(flip.getAttribute("aria-pressed")).toBe("true");
-    expect(container.textContent).toContain("Tap to flip back");
 
     fireEvent.click(flip);
     expect(flip.classList.contains("is-flipped")).toBe(false);
     expect(flip.getAttribute("aria-pressed")).toBe("false");
+  });
+
+  // Owner: "delete the GCASH word, instead use TAP ME. once tapped flip it then
+  // change the WORD 'TAP ME' to gcash number 09150860371 then allow option to
+  // copy just like in the section 'OR SEND TO THESE NUMBERS'."
+  it("captions the cover with TAP ME — no wallet name", async () => {
+    const { container } = render(<DonateToDevTab />);
+    await waitFor(() => expect(flipOf(container)).toBeTruthy());
+    const cap = container.querySelector(".donate-card:has(.donate-flip) .donate-card__label");
+    expect(cap.textContent.trim()).toBe("Tap me"); // CSS uppercases it to TAP ME
+    expect(cap.textContent).not.toMatch(/gcash/i);
+    expect(cap.querySelector("button")).toBeNull(); // no Copy until it's flipped
+  });
+
+  it("swaps TAP ME for the number + a Copy button once flipped", async () => {
+    const { container } = render(<DonateToDevTab />);
+    await waitFor(() => expect(flipOf(container)).toBeTruthy());
+    fireEvent.click(flipOf(container));
+    const cap = container.querySelector(".donate-card:has(.donate-flip) .donate-card__label");
+    expect(cap.querySelector(".donate-card__paynum").textContent).toBe("09150860371");
+    expect(cap.textContent).not.toContain("Tap me");
+    expect(cap.querySelector("button").textContent).toBe("Copy");
+  });
+
+  it("Copy copies the number and does NOT flip the card back", async () => {
+    const writeText = vi.fn(async () => {});
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    const { container } = render(<DonateToDevTab />);
+    await waitFor(() => expect(flipOf(container)).toBeTruthy());
+    fireEvent.click(flipOf(container));
+    const cap = container.querySelector(".donate-card:has(.donate-flip) .donate-card__label");
+
+    await act(async () => { fireEvent.click(cap.querySelector("button")); });
+    expect(writeText).toHaveBeenCalledWith("09150860371");
+    expect(cap.querySelector("button").textContent).toBe("Copied!"); // same feedback as the numbers list
+    // the Copy button sits OUTSIDE the flip button, so the card stays face-up
+    expect(flipOf(container).classList.contains("is-flipped")).toBe(true);
+
+    // Let the handler's 1.6s "Copied!" reset land INSIDE act. Left pending it
+    // fires after the environment is torn down, which surfaced as an
+    // intermittent unhandled "ReferenceError: window is not defined".
+    await act(async () => { await new Promise((r) => setTimeout(r, 1700)); });
+    expect(cap.querySelector("button").textContent).toBe("Copy");
+  });
+
+  it("takes the number from the configured numbers list, matched by label", async () => {
+    // Same source as "Or send to these numbers" — the tile can't show a stale copy.
+    const { container } = render(<DonateToDevTab />);
+    await waitFor(() => expect(flipOf(container)).toBeTruthy());
+    fireEvent.click(flipOf(container));
+    const tileNum = container.querySelector(".donate-card__paynum").textContent;
+    const listRow = [...container.querySelectorAll(".donate-num")]
+      .find((r) => r.querySelector(".donate-num__wallet").textContent === "GCash");
+    expect(listRow.querySelector(".donate-num__value").textContent).toBe(tileNum);
   });
 
   it("is a real button, labelled, and hides the face-down QR from screen readers", async () => {

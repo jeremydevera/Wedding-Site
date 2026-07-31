@@ -1421,6 +1421,17 @@ const DONATE_DEFAULT_NUMBERS = [
   { id: "n-maya", label: "Maya", value: "09150860371" },
 ];
 function donateTileSrc(t) { return t.img ? mediaUrl(t.img) : (DONATE_FALLBACK[t.id] || ""); }
+// The number to show on a flipped brand tile: the `numbers` entry whose label
+// matches the tile's ("GCash" tile → "GCash" number). Label-matched on purpose —
+// the two lists are managed separately in app_config, and this way the tile can
+// never show a stale number the superadmin has already changed. No match → the
+// tile just doesn't offer one.
+function numberFor(numbers, label) {
+  const key = String(label || "").trim().toLowerCase();
+  if (!key) return "";
+  const hit = (numbers || []).find((n) => String(n.label || "").trim().toLowerCase() === key);
+  return (hit && hit.value) || "";
+}
 // Brand covers: a tile with one starts logo-side up and FLIPS to its QR on click
 // (owner request). Keyed by tile id, so a method without a logo here keeps
 // showing its QR straight away — nothing to flip, no cover to hide it behind.
@@ -1428,7 +1439,7 @@ const DONATE_LOGO = { gcash: "/assets/donate/gcash-logo.png" };
 // Read-only QR tile (owner view). With a brand cover it becomes a flip card: the
 // logo faces up, a click turns it over to the QR (and back). Both faces are laid
 // on top of each other in a fixed square, so flipping never reflows the grid.
-function DonateCard({ t }) {
+function DonateCard({ t, number, onCopy, copied }) {
   const [broken, setBroken] = useState(false);
   const [flipped, setFlipped] = useState(false);
   const src = donateTileSrc(t);
@@ -1460,9 +1471,24 @@ function DonateCard({ t }) {
           <span className="donate-flip__face donate-flip__face--back" aria-hidden={!flipped}>{qr}</span>
         </span>
       </button>
+      {/* The caption is the tile's second state, not a static name (owner: drop
+          the "GCash" word for "TAP ME", and once flipped show the number with a
+          Copy button). It lives OUTSIDE the flip button, so tapping Copy can't
+          also turn the card back over. Copy shares DonateToDevTab's handler and
+          `copied` value, so the feedback matches "Or send to these numbers"
+          exactly. Without a number configured for this method it stays a plain
+          prompt rather than an empty row with a dead Copy button. */}
       <figcaption className="donate-card__label">
-        {t.label}
-        <span className="donate-card__hint">{flipped ? "Tap to flip back" : "Tap to show QR"}</span>
+        {flipped && number ? (
+          <span className="donate-card__pay">
+            <span className="donate-card__paynum">{number}</span>
+            <Button variant="secondary" size="sm" onClick={() => onCopy && onCopy(number)}>
+              {copied === number ? "Copied!" : "Copy"}
+            </Button>
+          </span>
+        ) : (
+          <span className="donate-card__tap">{flipped ? "Tap to flip back" : "Tap me"}</span>
+        )}
       </figcaption>
     </figure>
   );
@@ -1626,7 +1652,18 @@ export function DonateToDevTab() {
               here
             </a>
           </p>
-          {tiles.length > 0 && <div className="donate-grid">{tiles.map((t) => <DonateCard key={t.id} t={t} />)}</div>}
+          {tiles.length > 0 && (
+            <div className="donate-grid">
+              {tiles.map((t) => (
+                <DonateCard key={t.id} t={t} onCopy={copy} copied={copied}
+                  /* A flipped brand tile shows that wallet's number. Matched to the
+                     numbers list BY LABEL so it follows whatever the superadmin
+                     configured in app_config — not a second hardcoded copy of the
+                     number that would silently drift when it changes there. */
+                  number={numberFor(numbers, t.label)} />
+              ))}
+            </div>
+          )}
           {numbers.length > 0 && (
             <div className="donate-numbers">
               <div className="donate-numbers__title">Or send to these numbers</div>
