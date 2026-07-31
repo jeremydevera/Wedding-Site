@@ -158,7 +158,20 @@ export default function LoginPromo3D() {
         }
       });
 
-      const loadTex = (url) => { const tex = texLoader.load(url); tex.colorSpace = THREE.SRGBColorSpace; return tex; };
+      // Sharpness: the phone is almost always tilted/rotated, so without
+      // anisotropic filtering the screenshot samples badly and reads BLURRY
+      // (owner report). Max anisotropy + a mipmapped min filter keeps the UI
+      // legible at every angle; premultiply nothing, these are opaque JPEGs.
+      const maxAniso = renderer.capabilities.getMaxAnisotropy();
+      const loadTex = (url) => {
+        const tex = texLoader.load(url);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = maxAniso;
+        tex.generateMipmaps = true;
+        tex.minFilter = THREE.LinearMipmapLinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        return tex;
+      };
       texInvite = loadTex(SHOTS[0]);   // slot0 default (s1 "invitation")
       texSchedule = loadTex(S2_SHOT);  // slot0 during s2 "everything in one place"
       const R = 1.72;
