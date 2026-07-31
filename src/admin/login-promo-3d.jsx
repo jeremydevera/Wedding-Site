@@ -47,10 +47,13 @@ const ZOOM = [[0, 1.14], [40, 1.14], [100, 1]];
 // place" beat. Carousel fronts map to their captions: dashboard → "know your
 // guest list", entourage → "your entourage", setup → "set up fast".
 // Owner request 2026-07-31: the invite hero is the red Velvet Envelope cover
-// (closed, wax seal) and the s2 shot is the dashboard RSVP donut charts. The
-// superseded login-shot-2/-3 files stay on disk — cached bundles still fetch them.
-const SHOTS = ["/assets/login-shot-envelope.jpg", "/assets/login-shot-dash.jpg", "/assets/login-shot-4.jpg", "/assets/login-setup.jpg"];
-const S2_SHOT = "/assets/login-shot-charts.jpg"; // dashboard donuts — swapped onto the front phone for the s2 caption
+// (closed, wax seal) and the s2 shot is the dashboard RSVP donut charts.
+// Every screen is a login-scr-*.jpg: the app screen composited INSIDE mobile
+// browser chrome (status bar + URL pill + bottom toolbar). Edge-to-edge app
+// renders read as fake — a real phone always shows the browser around the page.
+// Superseded login-shot-* files stay on disk — cached bundles still fetch them.
+const SHOTS = ["/assets/login-scr-invite.jpg", "/assets/login-scr-dash.jpg", "/assets/login-scr-entourage.jpg", "/assets/login-scr-setup.jpg"];
+const S2_SHOT = "/assets/login-scr-charts.jpg"; // dashboard donuts — swapped onto the front phone for the s2 caption
 // Feature copy for the ?lgpv showcases — names each screen as it appears. Order
 // matches cycleTex = [invite, schedule, dashboard, entourage, setup].
 const FEATURES = [
