@@ -37,14 +37,14 @@ describe("Health tab — long explainers are hover-only", () => {
     expect(document.body.textContent).not.toMatch(DOMAINS_SNIPPET);
   });
 
-  it("shows the Firebase explainer ONLY while hovering its own tile", async () => {
+  it("shows the Firebase explainer ONLY while hovering its own row", async () => {
     const { container } = render(<CloudflareHealth />);
     await waitFor(() => expect(container.textContent).toMatch(/Firebase Auth/));
-    const tile = [...container.querySelectorAll(".kpi")].find((k) => k.textContent.includes("Firebase Auth"));
+    const tile = [...container.querySelectorAll("tr")].find((k) => k.textContent.includes("Firebase Auth"));
     expect(tile).toBeTruthy();
 
     fireEvent.mouseEnter(tile);
-    // portalled to <body> so `.kpi { overflow:hidden }` can't clip it
+    // portalled to <body> so the table wrapper's overflow can't clip it
     expect(document.body.textContent).toMatch(FIREBASE_SNIPPET);
     const pop = document.body.querySelector('[role="tooltip"]');
     expect(pop).toBeTruthy();
@@ -55,10 +55,10 @@ describe("Health tab — long explainers are hover-only", () => {
     expect(document.body.textContent).not.toMatch(FIREBASE_SNIPPET);
   });
 
-  it("hovering a DIFFERENT tile does not reveal the Firebase explainer", async () => {
+  it("hovering a DIFFERENT row does not reveal the Firebase explainer", async () => {
     const { container } = render(<CloudflareHealth />);
     await waitFor(() => expect(container.textContent).toMatch(/Firebase Auth/));
-    const other = [...container.querySelectorAll(".kpi")].find((k) => k.textContent.includes("Cache hit"));
+    const other = [...container.querySelectorAll("tr")].find((k) => k.textContent.includes("Cache hit"));
     fireEvent.mouseEnter(other);
     expect(document.body.textContent).not.toMatch(FIREBASE_SNIPPET);
   });
@@ -66,7 +66,7 @@ describe("Health tab — long explainers are hover-only", () => {
   it("keyboard focus opens it too (not mouse-only)", async () => {
     const { container } = render(<CloudflareHealth />);
     await waitFor(() => expect(container.textContent).toMatch(/Firebase Auth/));
-    const tile = [...container.querySelectorAll(".kpi")].find((k) => k.textContent.includes("Firebase Auth"));
+    const tile = [...container.querySelectorAll("tr")].find((k) => k.textContent.includes("Firebase Auth"));
     expect(tile.getAttribute("tabindex")).toBe("0"); // reachable
     fireEvent.focus(tile);
     expect(document.body.textContent).toMatch(FIREBASE_SNIPPET);
@@ -77,7 +77,7 @@ describe("Health tab — long explainers are hover-only", () => {
   it("tap toggles it open and closed (touch has no hover)", async () => {
     const { container } = render(<CloudflareHealth />);
     await waitFor(() => expect(container.textContent).toMatch(/Firebase Auth/));
-    const tile = [...container.querySelectorAll(".kpi")].find((k) => k.textContent.includes("Firebase Auth"));
+    const tile = [...container.querySelectorAll("tr")].find((k) => k.textContent.includes("Firebase Auth"));
     fireEvent.click(tile);
     expect(document.body.textContent).toMatch(FIREBASE_SNIPPET);
     fireEvent.click(tile);

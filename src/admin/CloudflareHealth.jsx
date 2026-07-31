@@ -74,26 +74,25 @@ const FIREBASE_INFO = (
   </>
 );
 
-// Same KPI card design as SuperOverview / the client dashboard tiles
-// (chip icon, bold value, dashed footer) so Health matches the console look.
-function Stat({ label, value, sub, icon = "grid", accent = "info", info }) {
-  // `info` = long-form explainer revealed on hover/focus/tap of this tile only.
+function MetricRow({ icon = "grid", label, value, detail, warn, info }) {
+  // One metric = one table row (owner request: a single table, not tile cards —
+  // a wrapping tile grid still reads as separate sections). `info` = long-form
+  // explainer popover on hover/focus/tap of the row.
   const { open, anchor, bind } = useInfoHover(!!info);
   return (
-    <div className={"kpi kpi--" + accent} {...bind} style={{ position: "relative", ...(bind.style || {}) }}>
-      {info && open && <InfoPop anchor={anchor}>{info}</InfoPop>}
-      <div className="kpi__top">
-        <span className="kpi__chip" aria-hidden="true">{Icon[icon] ? Icon[icon]({}) : null}</span>
-        <span className="kpi__label">{label}{info && <InfoDot />}</span>
-      </div>
-      {/* Slightly smaller + nowrap than the stock 44px — health values ("144.8k",
-          "43.9 MB") are wider than Overview's tiny counts and a tile can be ~158px. */}
-      <div className="kpi__value" style={{ fontSize: 32, whiteSpace: "nowrap" }}>{value}</div>
-      <div className="kpi__foot"><span className="kpi__tick" aria-hidden="true" />{sub || " "}</div>
-    </div>
+    <tr {...bind} style={{ cursor: info ? "help" : "default", ...(bind.style || {}) }}>
+      <td style={{ whiteSpace: "nowrap" }}>
+        {info && open && <InfoPop anchor={anchor}>{info}</InfoPop>}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 600 }}>
+          <span style={{ color: "var(--muted)", display: "inline-flex" }} aria-hidden="true">{Icon[icon] ? Icon[icon]({ style: { width: 15, height: 15 } }) : null}</span>
+          {label}{info && <InfoDot />}
+        </span>
+      </td>
+      <td style={{ whiteSpace: "nowrap", fontWeight: 800, fontVariantNumeric: "tabular-nums", color: warn ? "#a05a1a" : "inherit" }}>{value}</td>
+      <td style={{ color: "var(--muted)" }}>{detail || ""}</td>
+    </tr>
   );
 }
-
 // Two-line sparkline (router + functions) over the day series, no chart dep.
 function Spark({ series }) {
   const W = 520, H = 70, pad = 6;
@@ -193,42 +192,46 @@ export function CloudflareHealth() {
           ]} />
         </Suspense>
 
-        {/* ONE KPI section (owner request): ops tiles (bill, deploy, hosts,
-            errors) + the no-limit metrics together in a single grid. */}
-        <div className="sa-stats" style={{ marginBottom: 0 }}>
-          <Stat
-            label="Monthly bill"
-            value={data.bill ? `$${data.bill.monthlyUSD.toFixed(2)}` : "—"}
-            sub={data.bill
-              ? (data.bill.projectedUSD > data.bill.monthlyUSD
-                  ? `projected $${data.bill.projectedUSD.toFixed(2)} with overage`
-                  : (data.bill.items || []).map((i) => i.name).join(" + ") || "no paid subscriptions")
-              : "token needs Billing: Read"}
-            icon="calendar" accent="info"
-          />
-          <Stat
-            label="Last deploy"
-            value={data.deploy?.commit || "—"}
-            sub={data.deploy ? `${data.deploy.status || "?"} · ${ago(data.deploy.createdOn) || "just now"}` : "token needs Pages: Read"}
-            icon="upload" accent={data.deploy && data.deploy.status !== "success" ? "amber" : "success"}
-          />
-          <Stat
-            label="Hosts up"
-            value={data.hosts ? `${data.hosts.filter((h) => h.ok).length}/${data.hosts.length}` : "—"}
-            sub={data.hosts
-              ? (data.hosts.every((h) => h.ok)
-                  ? `all reachable · ${Math.max(...data.hosts.map((h) => h.ms))}ms slowest`
-                  : `DOWN: ${data.hosts.filter((h) => !h.ok).map((h) => h.host).join(", ")}`)
-              : "no data"}
-            icon="home" accent={data.hosts && !data.hosts.every((h) => h.ok) ? "amber" : "success"}
-          />
-          <Stat label="Router errors" value={nf(data.router?.errorsToday)} sub="worker errors today" icon="bell" accent={(data.router?.errorsToday || 0) > 0 ? "amber" : "success"} />
-          <Stat label="Functions" value={nfc(data.functions?.today)} sub={`today · ${nfc(data.functions?.month)} this month`} icon="gear" accent="success" />
-          <Stat label="R2 ops" value={nfc(data.r2?.opsToday)} sub="reads + writes today" icon="download" accent="amber" />
-          <Stat label="Cache hit" value={`${data.zone?.cacheHitPct ?? 0}%`} sub={`${nfc(data.zone?.reqToday)} edge req today`} icon="check" accent="success" />
-          <Stat label="5xx errors" value={nf(data.zone?.err5xx)} sub="server errors today" icon="bell" accent="amber" />
-          <Stat label="Bandwidth" value={fmtBytes(data.zone?.bytesToday)} sub={`${nfc(data.zone?.uniquesToday)} unique visitors today`} icon="grid" accent="info" />
-          <Stat label="Firebase Auth" value="Free" sub="client logins" icon="user" accent="info" info={FIREBASE_INFO} />
+        {/* ONE table (owner request 2026-07-31 — tiles in a wrapping grid still
+            read as separate rows/sections): every no-gauge metric is a row. */}
+        <div className="table-wrap">
+          <table className="tbl">
+            <thead><tr><th>Metric</th><th style={{ whiteSpace: "nowrap" }}>Value</th><th>Detail</th></tr></thead>
+            <tbody>
+              <MetricRow
+                icon="calendar" label="Monthly bill"
+                value={data.bill ? `$${data.bill.monthlyUSD.toFixed(2)}` : "—"}
+                detail={data.bill
+                  ? (data.bill.projectedUSD > data.bill.monthlyUSD
+                      ? `projected $${data.bill.projectedUSD.toFixed(2)} with overage`
+                      : (data.bill.items || []).map((i) => i.name).join(" + ") || "no paid subscriptions")
+                  : "token needs Billing: Read"}
+              />
+              <MetricRow
+                icon="upload" label="Last deploy"
+                value={data.deploy?.commit || "—"}
+                warn={!!data.deploy && data.deploy.status !== "success"}
+                detail={data.deploy ? `${data.deploy.status || "?"} · ${ago(data.deploy.createdOn) || "just now"}` : "token needs Pages: Read"}
+              />
+              <MetricRow
+                icon="home" label="Hosts up"
+                value={data.hosts ? `${data.hosts.filter((h) => h.ok).length}/${data.hosts.length}` : "—"}
+                warn={!!data.hosts && !data.hosts.every((h) => h.ok)}
+                detail={data.hosts
+                  ? (data.hosts.every((h) => h.ok)
+                      ? `all reachable · ${Math.max(...data.hosts.map((h) => h.ms))}ms slowest`
+                      : `DOWN: ${data.hosts.filter((h) => !h.ok).map((h) => h.host).join(", ")}`)
+                  : "no data"}
+              />
+              <MetricRow icon="bell" label="Router errors" value={nf(data.router?.errorsToday)} warn={(data.router?.errorsToday || 0) > 0} detail="worker errors today" />
+              <MetricRow icon="gear" label="Functions" value={nfc(data.functions?.today)} detail={`today · ${nfc(data.functions?.month)} this month`} />
+              <MetricRow icon="download" label="R2 ops" value={nfc(data.r2?.opsToday)} detail="reads + writes today" />
+              <MetricRow icon="check" label="Cache hit" value={`${data.zone?.cacheHitPct ?? 0}%`} detail={`${nfc(data.zone?.reqToday)} edge req today`} />
+              <MetricRow icon="bell" label="5xx errors" value={nf(data.zone?.err5xx)} warn={(data.zone?.err5xx || 0) > 0} detail="server errors today" />
+              <MetricRow icon="grid" label="Bandwidth" value={fmtBytes(data.zone?.bytesToday)} detail={`${nfc(data.zone?.uniquesToday)} unique visitors today`} />
+              <MetricRow icon="user" label="Firebase Auth" value="Free" detail="client logins" info={FIREBASE_INFO} />
+            </tbody>
+          </table>
         </div>
 
         {/* Month-end pace line under the gauges' numbers. */}
