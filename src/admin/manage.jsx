@@ -19,7 +19,7 @@ import { stateToClientRow } from "@/lib/mappers.js";
 import { BRAND_NAME } from "@/config/site.js";
 import { featureLevel, visibleAdminTabs, canEnterAdmin, tabsForClient, DISABLED_MODULES, moduleLabel, moduleEnabled, OWNER_EDIT_HOME, OWNER_EDIT_TABS, FEATURE_ROWS, FEATURE_LEVELS, FEATURE_DEFAULTS, LOCKED_COPY } from "@/lib/roles.js";
 import { MAP_STYLES, mapStyleKey, mapStyleFilter } from "@/lib/mapStyles.js";
-import { ClientsAdmin, R2LibraryAdmin, SuperOverview, SupportAdmin } from "@/admin/superadmin.jsx";
+import { ClientsAdmin, R2LibraryAdmin, SupportAdmin } from "@/admin/superadmin.jsx";
 import { CloudflareHealth } from "@/admin/CloudflareHealth.jsx";
 import { LocationPicker } from "@/ui/location-picker.jsx";
 
@@ -5081,8 +5081,6 @@ export function AdminApp() {
     settings.accessV2 === true && clientId && auth.role !== "superadmin" && featureLevel(settings, featureKey) === "locked"
       ? <LockedFeature featureKey={featureKey} goPurchase={() => setTab("purchase")}>{node}</LockedFeature>
       : node;
-  const onPlatformTab = activeTab === "overview" || activeTab === "clients" || (activeTab === "support" && !clientId);
-
   // Arrange is superadmin-only (matches the SA-only "Enable arrange" toggle) — a
   // client with a stale arrangeEnabled=true must NOT see the Arrange Now button.
   const canArrange = auth.role === "superadmin" && settings.arrangeEnabled && isPremiumTheme(settings.theme);
@@ -5177,7 +5175,6 @@ export function AdminApp() {
           {activeTab === "purchase" && clientId && <PurchasePremiumPage />}
           {activeTab === "qr" && <QrAdmin />}
           {activeTab === "settings" && <SettingsAdmin />}
-          {activeTab === "overview" && <SuperOverview />}
           {activeTab === "clients" && <ClientsAdmin />}
           {activeTab === "r2media" && !clientId && <R2LibraryAdmin />}
           {activeTab === "health" && !clientId && <CloudflareHealth />}

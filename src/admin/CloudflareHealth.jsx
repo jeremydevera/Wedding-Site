@@ -193,8 +193,8 @@ export function CloudflareHealth() {
           ]} />
         </Suspense>
 
-        {/* Ops row: bill, latest deploy, host reachability — the "is everything
-            OK and what does it cost" strip (owner request). */}
+        {/* ONE KPI section (owner request): ops tiles (bill, deploy, hosts,
+            errors) + the no-limit metrics together in a single grid. */}
         <div className="sa-stats" style={{ marginBottom: 0 }}>
           <Stat
             label="Monthly bill"
@@ -223,11 +223,6 @@ export function CloudflareHealth() {
             icon="home" accent={data.hosts && !data.hosts.every((h) => h.ok) ? "amber" : "success"}
           />
           <Stat label="Router errors" value={nf(data.router?.errorsToday)} sub="worker errors today" icon="bell" accent={(data.router?.errorsToday || 0) > 0 ? "amber" : "success"} />
-        </div>
-
-        {/* No-limit metrics stay KPI tiles (same design as the Overview tab).
-            Firebase Auth gets a tile so its explainer has a home to hover. */}
-        <div className="sa-stats" style={{ marginBottom: 0 }}>
           <Stat label="Functions" value={nfc(data.functions?.today)} sub={`today · ${nfc(data.functions?.month)} this month`} icon="gear" accent="success" />
           <Stat label="R2 ops" value={nfc(data.r2?.opsToday)} sub="reads + writes today" icon="download" accent="amber" />
           <Stat label="Cache hit" value={`${data.zone?.cacheHitPct ?? 0}%`} sub={`${nfc(data.zone?.reqToday)} edge req today`} icon="check" accent="success" />

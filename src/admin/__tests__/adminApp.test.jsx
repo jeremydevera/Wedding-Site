@@ -29,10 +29,10 @@ describe("AdminApp rendered tab gating", () => {
     Store.setAuth({ session: { user: { email: "su@x" } }, role: "superadmin", clientId: null, email: "su@x" });
     const { container } = render(<AdminApp />);
     const labels = navLabels(container);
-    expect(labels).toContain("Overview");
+    expect(labels[0]).toBe("Health"); // first = the default landing tab
     expect(labels).toContain("Clients");
     expect(labels).toContain("Media");
-    expect(labels).toContain("Health");
+    expect(labels).not.toContain("Overview"); // retired (owner request 2026-07-31)
     expect(labels).not.toContain("Dashboard");
     expect(labels).not.toContain("Guestbook");
   });

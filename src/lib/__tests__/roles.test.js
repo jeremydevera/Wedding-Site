@@ -9,11 +9,12 @@ const TABS = [
 ];
 
 describe("visibleAdminTabs", () => {
-  it("superadmin sees Overview, Clients, and Media (no per-event tabs)", () => {
+  it("superadmin sees Health (first = default), Clients, and Media — Overview retired", () => {
     const keys = visibleAdminTabs("superadmin", TABS).map((t) => t.key);
-    expect(keys).toContain("overview");
+    expect(keys[0]).toBe("health"); // first tab = the default landing tab
     expect(keys).toContain("clients");
     expect(keys).toContain("r2media");
+    expect(keys).not.toContain("overview");
     expect(keys).not.toContain("dashboard");
     expect(keys).not.toContain("guestbook");
   });

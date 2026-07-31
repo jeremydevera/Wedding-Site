@@ -11,13 +11,13 @@ const SUPERADMIN_ONLY = new Set(["settings", "media", "schedule", "details", "ve
 
 export function visibleAdminTabs(role, allTabs, ownerEdit) {
   if (role === "superadmin") {
-    // Superadmin: platform overview + client management + R2 media library + CF health.
+    // Superadmin: CF health (first = the default tab; Overview retired — owner
+    // request 2026-07-31) + client management + R2 media library + support.
     return [
-      { key: "overview", label: "Overview", icon: "grid" },
+      { key: "health", label: "Health", icon: "eye" },
       { key: "clients", label: "Clients", icon: "user" },
       { key: "r2media", label: "Media", icon: "camera" },
       { key: "support", label: "Support", icon: "mail" },
-      { key: "health", label: "Health", icon: "eye" },
     ];
   }
   if (role === "owner") {
