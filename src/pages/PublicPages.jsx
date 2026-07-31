@@ -144,11 +144,11 @@ export function EnvelopeHero() {
   // Settings -> Theme envelope color (paper takes the color, seal stays light).
   // The open state (card/frame/flowers) is unchanged.
   const isEnv2 = s.theme === "envelope2";
-  const sealedSrc = isEnv2 ? "/assets/invite/env2-closed.png" : "/assets/invite/env-closed.webp";
+  const sealedSrc = isEnv2 ? "/assets/invite/env2-closed.webp" : "/assets/invite/env-closed.webp";
   const sealedAlt = isEnv2 ? "Sealed burgundy lace envelope with a wax seal" : "Sealed olive envelope with lace trim and wax seal";
   // Open-state front pocket: env2 uses its own open envelope (olive-toned, fit to
   // the olive pocket's box so the card/heart/flowers still line up).
-  const frontSrc = isEnv2 ? "/assets/invite/red-envelope-front.png" : "/assets/invite/p2-envelope-front.png";
+  const frontSrc = isEnv2 ? "/assets/invite/red-envelope-front.webp" : "/assets/invite/p2-envelope-front.png";
 
   // first screen = envelope only: lock scroll AND hide the nav until it's opened
   const [ready, setReady] = React.useState(false);
@@ -220,7 +220,11 @@ export function EnvelopeHero() {
     };
     Promise.all([decode(sealedSrc), ...(isEnv2 ? [] : [decode("/assets/invite/seal-closed-v2.png")])])
       .then(() => { if (!dead) setArtReady(true); });
-    const t = setTimeout(() => { if (!dead) setArtReady(true); }, 4000);
+    // Fail open LATE (was 4s): the envelope art is a few hundred KB, and on a
+    // slow connection a short timer fired first — the cover then faded in with
+    // the names, wax-seal monogram and pulse over a blank envelope (owner
+    // report). 12s only guards a genuinely broken/blocked image.
+    const t = setTimeout(() => { if (!dead) setArtReady(true); }, 12000);
     return () => { dead = true; clearTimeout(t); };
   }, []);
   React.useEffect(() => {
@@ -232,6 +236,13 @@ export function EnvelopeHero() {
     r1 = requestAnimationFrame(() => { r2 = requestAnimationFrame(() => setReady(true)); });
     return () => { cancelAnimationFrame(r1); cancelAnimationFrame(r2); };
   }, [artReady]);
+  // The open-envelope art (paper, frame, flowers, heart, pocket) is several MB.
+  // Rendering its <img> up-front made those downloads COMPETE with the cover, so
+  // the envelope was the last thing to arrive (owner: "why is the red envelope
+  // so slow"). Hold their src until the cover art is ready — or until the guest
+  // opens it, so a fast click never waits.
+  const openArt = artReady || open;
+
   // Type-on reveal via Web Animations API. Crucially, ON FINISH we clear the
   // clip-path entirely so the resting state is unclipped — otherwise a browser
   // that clamps the negative end-inset to 0 shaves the last glyph ("m" in "From").
@@ -395,7 +406,7 @@ export function EnvelopeHero() {
         <div className={"eg-page" + (open ? " is-active" : "")}>
           <div className={"inv-env-stack eg-open" + (open ? " is-open" : "")}>
             <div className="inv-l-card">
-              <img src={isEnv2 ? "/assets/invite/whitepaper.png" : "/assets/invite/p2-card.png"} alt={isEnv2 ? "White invitation paper" : "Cream invitation card with green striped border"} />
+              <img src={openArt ? (isEnv2 ? "/assets/invite/whitepaper.webp" : "/assets/invite/p2-card.png") : undefined} alt={isEnv2 ? "White invitation paper" : "Cream invitation card with green striped border"} />
               <div className="inv-card-text">
                 <span className="inv-ct-label">Save the Date</span>
                 <span className="inv-ct-name"><span className="inv-ct-ink">{s.partnerA}</span></span>
@@ -405,16 +416,16 @@ export function EnvelopeHero() {
             </div>
             <div className="inv-l-framegroup">
               <div className="inv-l-video" aria-hidden="true">
-                <FrameMedia s={s} />
+                {openArt && <FrameMedia s={s} />}
               </div>
-              <img className="inv-frame-img" src={isEnv2 ? "/assets/invite/white-frame.png" : "/assets/invite/p2-frame.png"} alt={isEnv2 ? "Ornate white oval frame with floral crests" : "Cream oval frame with embossed peony"} />
+              <img className="inv-frame-img" src={openArt ? (isEnv2 ? "/assets/invite/white-frame.webp" : "/assets/invite/p2-frame.png") : undefined} alt={isEnv2 ? "Ornate white oval frame with floral crests" : "Cream oval frame with embossed peony"} />
             </div>
-            {isEnv2 && <img className="inv-l-paperflower" src="/assets/invite/paperflower.png" alt="" aria-hidden="true" />}
+            {isEnv2 && openArt && <img className="inv-l-paperflower" src="/assets/invite/paperflower.webp" alt="" aria-hidden="true" />}
             <div className="inv-l-heart">
-              <img src={isEnv2 ? "/assets/invite/heart-white.png" : "/assets/invite/p2-heart.webp"} alt={isEnv2 ? "White lace heart" : "Burgundy lace heart"} />
+              <img src={openArt ? (isEnv2 ? "/assets/invite/heart-white.webp" : "/assets/invite/p2-heart.webp") : undefined} alt={isEnv2 ? "White lace heart" : "Burgundy lace heart"} />
               <span className="inv-heart-text">{(s.heartText || "").trim()}</span>
             </div>
-            <img className="inv-l-front" src={frontSrc} alt={isEnv2 ? "Open burgundy envelope pocket" : "Olive envelope front pocket"} />
+            <img className="inv-l-front" src={openArt ? frontSrc : undefined} alt={isEnv2 ? "Open burgundy envelope pocket" : "Olive envelope front pocket"} />
             {isEnv2 ? envRecolorOverlay(s, "front", frontSrc) : envRecolorOverlay(s, "front")}
             {/* env2: the pocket's baked oval seal carries the same stacked
                 initials as the sealed cover */}
