@@ -133,6 +133,23 @@ describe("Donate to Dev — GCash logo flips to the QR", () => {
     expect(container.querySelector(".donate-card__pay")).toBeNull();
   });
 
+  // Owner: "put 'or you can send to this number' between gcash and qr code" —
+  // i.e. inside the tile, under the QR and above the number row.
+  it("leads the number row with 'Or you can send to this number', only once flipped", async () => {
+    const { container } = render(<DonateToDevTab />);
+    await waitFor(() => expect(flipOf(container)).toBeTruthy());
+    expect(container.querySelector(".donate-card__or")).toBeNull(); // not on the cover
+
+    fireEvent.click(flipOf(container));
+    const or = container.querySelector(".donate-card__or");
+    expect(or.textContent).toBe("Or you can send to this number");
+    // QR (inside the flip box) → lead-in → number row
+    const flip = flipOf(container);
+    const row = container.querySelector(".donate-num--tile");
+    expect(flip.compareDocumentPosition(or) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(or.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   // Owner: "on middle of qr and code put 'OR Send to these number'".
   it("puts the 'Or send to these numbers' heading between the QR tiles and the numbers", async () => {
     const { container } = render(<DonateToDevTab />);

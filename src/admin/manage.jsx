@@ -1484,15 +1484,20 @@ function DonateCard({ t, number, onCopy, copied }) {
           // same wallet label + number + Copy button (owner: "exactly the gcash
           // copy number, including the gcash word"). Reusing that markup is what
           // keeps the two identical instead of merely similar. Only the SCALE
-          // differs — a tile is ~220px wide, so the row runs at the caption's
-          // 14px rather than the list's 17px (owner: the number read too large).
-          <span className="donate-num donate-num--tile">
-            <span className="donate-num__wallet">{t.label}</span>
-            <span className="donate-num__value">{number}</span>
-            <Button variant="secondary" size="sm" onClick={() => onCopy && onCopy(number)}>
-              {copied === number ? "Copied!" : "Copy"}
-            </Button>
-          </span>
+          // differs — a tile is ~220px wide, so the row runs smaller than the
+          // list's 17px (owner: the number read too large).
+          // The lead-in line sits BETWEEN the QR and that row (owner: "put 'or you
+          // can send to this number' between gcash and qr code").
+          <>
+            <span className="donate-card__or">Or you can send to this number</span>
+            <span className="donate-num donate-num--tile">
+              <span className="donate-num__wallet">{t.label}</span>
+              <span className="donate-num__value">{number}</span>
+              <Button variant="secondary" size="sm" onClick={() => onCopy && onCopy(number)}>
+                {copied === number ? "Copied!" : "Copy"}
+              </Button>
+            </span>
+          </>
         ) : (
           <span className="donate-card__tap">{flipped ? "Tap to flip back" : "Tap me"}</span>
         )}

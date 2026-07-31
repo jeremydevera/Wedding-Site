@@ -1716,9 +1716,13 @@ a.client-domain--link:hover { text-decoration: underline; }
 /* Caption states for a brand tile: the call to action, then the number + Copy.
    min-height keeps both states the same height so flipping doesn't nudge the
    grid (the Copy button is taller than a line of text). */
-/* 47px = the flipped row's own height, so BOTH caption states measure the same
-   and the tile doesn't grow when it turns over (it was jumping 44 → 47). */
-.donate-card__label:has(.donate-card__tap), .donate-card__label:has(.donate-num--tile) { min-height: 47px; display: grid; place-items: center; }
+/* One shared min-height across both caption states — sized to the taller one (the
+   lead-in line + number row) so the tile doesn't grow when it turns over. `gap`
+   spaces the lead-in from the row; the grid centres whichever state is showing. */
+.donate-card__label:has(.donate-card__tap), .donate-card__label:has(.donate-num--tile) { min-height: 72px; display: grid; place-items: center; gap: 5px; align-content: center; }
+/* Lead-in between the QR and the number row (owner request). Deliberately quiet:
+   the number and its Copy button are the thing being pointed at. */
+.donate-card__or { font-size: 11.5px; font-weight: 500; color: var(--muted); letter-spacing: .02em; line-height: 1.3; }
 .donate-card__tap { font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent, #2E5BFF); }
 /* The flipped caption borrows the numbers list's row wholesale; this modifier
    only stops it stretching (the list rows fill a 420px column, a tile row should
