@@ -74,6 +74,9 @@ describe("Donate to Dev — GCash logo flips to the QR", () => {
     await waitFor(() => expect(flipOf(container)).toBeTruthy());
     fireEvent.click(flipOf(container));
     const cap = container.querySelector(".donate-card:has(.donate-flip) .donate-card__label");
+    // the GCash row, verbatim: wallet label + number + Copy (owner: "exactly the
+    // gcash copy number, including the gcash word")
+    expect(cap.querySelector(".donate-num__wallet").textContent).toBe("GCash");
     expect(cap.querySelector(".donate-num__value").textContent).toBe("09150860371");
     expect(cap.textContent).not.toContain("Tap me");
     expect(cap.querySelector("button").textContent).toBe("Copy");
@@ -122,7 +125,9 @@ describe("Donate to Dev — GCash logo flips to the QR", () => {
     const row = container.querySelector(".donate-card__label .donate-num");
     expect(row).toBeTruthy();                                  // same block as a list row
     expect(row.classList.contains("donate-num--tile")).toBe(true); // + a sizing modifier only
-    expect(row.querySelector(".donate-num__value")).toBeTruthy();
+    expect(row.querySelector(".donate-num__wallet")).toBeTruthy();  // same three parts…
+    expect(row.querySelector(".donate-num__value")).toBeTruthy();   // …in the same order
+    expect(row.querySelector("button")).toBeTruthy();
     // no parallel bespoke classes left behind
     expect(container.querySelector(".donate-card__paynum")).toBeNull();
     expect(container.querySelector(".donate-card__pay")).toBeNull();

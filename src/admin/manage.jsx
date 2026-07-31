@@ -1480,12 +1480,14 @@ function DonateCard({ t, number, onCopy, copied }) {
           prompt rather than an empty row with a dead Copy button. */}
       <figcaption className="donate-card__label">
         {flipped && number ? (
-          // Same classes as a row in "Or send to these numbers" (donate-num +
-          // donate-num__value + the same Button), so the number and the Copy
-          // button read identically in both places — owner asked for that
-          // explicitly, and duplicating the look with its own styles is exactly
-          // how the two drift apart later.
+          // The GCash row from "Or send to these numbers", verbatim: same block,
+          // same wallet label + number + Copy button (owner: "exactly the gcash
+          // copy number, including the gcash word"). Reusing that markup is what
+          // keeps the two identical instead of merely similar. Only the SCALE
+          // differs — a tile is ~220px wide, so the row runs at the caption's
+          // 14px rather than the list's 17px (owner: the number read too large).
           <span className="donate-num donate-num--tile">
+            <span className="donate-num__wallet">{t.label}</span>
             <span className="donate-num__value">{number}</span>
             <Button variant="secondary" size="sm" onClick={() => onCopy && onCopy(number)}>
               {copied === number ? "Copied!" : "Copy"}

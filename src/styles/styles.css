@@ -1716,17 +1716,27 @@ a.client-domain--link:hover { text-decoration: underline; }
 /* Caption states for a brand tile: the call to action, then the number + Copy.
    min-height keeps both states the same height so flipping doesn't nudge the
    grid (the Copy button is taller than a line of text). */
-.donate-card__label:has(.donate-card__tap), .donate-card__label:has(.donate-num--tile) { min-height: 44px; display: grid; place-items: center; }
+/* 47px = the flipped row's own height, so BOTH caption states measure the same
+   and the tile doesn't grow when it turns over (it was jumping 44 → 47). */
+.donate-card__label:has(.donate-card__tap), .donate-card__label:has(.donate-num--tile) { min-height: 47px; display: grid; place-items: center; }
 .donate-card__tap { font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent, #2E5BFF); }
 /* The flipped caption borrows the numbers list's row wholesale; this modifier
    only stops it stretching (the list rows fill a 420px column, a tile row should
    hug its number) and undoes the caption's bold/centered text inheritance so the
    number matches .donate-num__value exactly. */
-/* 17px = the body base size the list rows inherit. Stated explicitly because the
-   caption this row sits in sets 14px, which the number would otherwise inherit —
-   measured 14px/0.56em against the list's 17px/0.68em before this line. */
-.donate-num--tile { justify-content: center; padding: 7px 10px; font-weight: 400; font-size: 17px; }
+/* Same row, smaller scale: it inherits the caption's 14px instead of the list's
+   17px, because a ~220px tile is a third the width of a list row and 17px read
+   oversized there (owner). Wrapping is allowed so the wallet label + number +
+   Copy never overflow a narrow tile, and the label drops its 64px column floor
+   (that exists to align several stacked rows — there's only one here). */
+.donate-num--tile { justify-content: center; flex-wrap: nowrap; gap: 7px; padding: 6px 8px; font-weight: 400; font-size: 13px; }
+.donate-num--tile .donate-num__wallet { min-width: 0; }
 .donate-num--tile .donate-num__value { flex: none; }
+/* The Copy button scales with the rest of the row. A ~220px tile can't fit the
+   list's full-size row on one line (measured: it wrapped, and the tile grew 45px
+   taller on every flip), and wrapping it is worse than shrinking it — the caption
+   would have to reserve two lines' height in BOTH states. */
+.donate-num--tile .btn { font-size: 11px; padding: 6px 10px; min-height: 0; }
 @media (prefers-reduced-motion: reduce) {
   .donate-flip__inner { transition: none; }
 }
