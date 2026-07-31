@@ -74,7 +74,7 @@ describe("Donate to Dev — GCash logo flips to the QR", () => {
     await waitFor(() => expect(flipOf(container)).toBeTruthy());
     fireEvent.click(flipOf(container));
     const cap = container.querySelector(".donate-card:has(.donate-flip) .donate-card__label");
-    expect(cap.querySelector(".donate-card__paynum").textContent).toBe("09150860371");
+    expect(cap.querySelector(".donate-num__value").textContent).toBe("09150860371");
     expect(cap.textContent).not.toContain("Tap me");
     expect(cap.querySelector("button").textContent).toBe("Copy");
   });
@@ -105,10 +105,40 @@ describe("Donate to Dev — GCash logo flips to the QR", () => {
     const { container } = render(<DonateToDevTab />);
     await waitFor(() => expect(flipOf(container)).toBeTruthy());
     fireEvent.click(flipOf(container));
-    const tileNum = container.querySelector(".donate-card__paynum").textContent;
-    const listRow = [...container.querySelectorAll(".donate-num")]
+    const tileNum = container.querySelector(".donate-num--tile .donate-num__value").textContent;
+    // the tile row is itself a .donate-num, so scope the lookup to the LIST
+    const listRow = [...container.querySelectorAll(".donate-numbers__list .donate-num")]
       .find((r) => r.querySelector(".donate-num__wallet").textContent === "GCash");
     expect(listRow.querySelector(".donate-num__value").textContent).toBe(tileNum);
+  });
+
+  // Owner: "i want the style of copy text to be like in the 'or send to these
+  // number'". Reusing the row's classes is what guarantees that — a second set of
+  // bespoke styles is how the two drift apart.
+  it("renders the flipped caption with the numbers list's own row classes", async () => {
+    const { container } = render(<DonateToDevTab />);
+    await waitFor(() => expect(flipOf(container)).toBeTruthy());
+    fireEvent.click(flipOf(container));
+    const row = container.querySelector(".donate-card__label .donate-num");
+    expect(row).toBeTruthy();                                  // same block as a list row
+    expect(row.classList.contains("donate-num--tile")).toBe(true); // + a sizing modifier only
+    expect(row.querySelector(".donate-num__value")).toBeTruthy();
+    // no parallel bespoke classes left behind
+    expect(container.querySelector(".donate-card__paynum")).toBeNull();
+    expect(container.querySelector(".donate-card__pay")).toBeNull();
+  });
+
+  // Owner: "on middle of qr and code put 'OR Send to these number'".
+  it("puts the 'Or send to these numbers' heading between the QR tiles and the numbers", async () => {
+    const { container } = render(<DonateToDevTab />);
+    await waitFor(() => expect(container.querySelector(".donate-numbers__title")).toBeTruthy());
+    const grid = container.querySelector(".donate-grid");
+    const title = container.querySelector(".donate-numbers__title");
+    const list = container.querySelector(".donate-numbers__list");
+    expect(title.textContent).toBe("Or send to these numbers");
+    // DOM order: tiles → heading → number rows (CSS centres it and draws the rules)
+    expect(grid.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(title.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("is a real button, labelled, and hides the face-down QR from screen readers", async () => {

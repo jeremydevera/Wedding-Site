@@ -1716,10 +1716,17 @@ a.client-domain--link:hover { text-decoration: underline; }
 /* Caption states for a brand tile: the call to action, then the number + Copy.
    min-height keeps both states the same height so flipping doesn't nudge the
    grid (the Copy button is taller than a line of text). */
-.donate-card__label:has(.donate-card__tap), .donate-card__label:has(.donate-card__pay) { min-height: 34px; display: grid; place-items: center; }
+.donate-card__label:has(.donate-card__tap), .donate-card__label:has(.donate-num--tile) { min-height: 44px; display: grid; place-items: center; }
 .donate-card__tap { font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent, #2E5BFF); }
-.donate-card__pay { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
-.donate-card__paynum { font-size: 15px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+/* The flipped caption borrows the numbers list's row wholesale; this modifier
+   only stops it stretching (the list rows fill a 420px column, a tile row should
+   hug its number) and undoes the caption's bold/centered text inheritance so the
+   number matches .donate-num__value exactly. */
+/* 17px = the body base size the list rows inherit. Stated explicitly because the
+   caption this row sits in sets 14px, which the number would otherwise inherit —
+   measured 14px/0.56em against the list's 17px/0.68em before this line. */
+.donate-num--tile { justify-content: center; padding: 7px 10px; font-weight: 400; font-size: 17px; }
+.donate-num--tile .donate-num__value { flex: none; }
 @media (prefers-reduced-motion: reduce) {
   .donate-flip__inner { transition: none; }
 }
@@ -1732,16 +1739,26 @@ a.client-domain--link:hover { text-decoration: underline; }
 .donate-tbl td { vertical-align: middle; }
 .donate-tbl__imgcell .imgup { max-width: 240px; }
 .donate-tbl__imgcell .imgup__thumb { max-width: 140px; }
-/* Indented under the QR tiles (owner request): the heading and the number rows
-   both step in from the left edge. */
-.donate-numbers { margin-top: 22px; border-top: 1px solid var(--line, #e4e1d8); padding-top: 16px; padding-left: 18px; }
-.donate-numbers__list { display: flex; flex-direction: column; gap: 10px; max-width: 420px; padding-left: 14px; }
+/* Centred under the QR tiles (owner request — this replaced an earlier
+   left-indented treatment). No border-top: the heading itself is the divider
+   (see __title below), and keeping both drew two rules a line apart. */
+.donate-numbers { margin-top: 22px; padding-top: 4px; }
+.donate-numbers__list { display: flex; flex-direction: column; gap: 10px; max-width: 420px; margin: 0 auto; }
 /* Desktop: lay the number rows side by side instead of stacking. */
 @media (min-width: 700px) {
-  .donate-numbers__list { flex-direction: row; flex-wrap: wrap; max-width: none; }
+  .donate-numbers__list { flex-direction: row; flex-wrap: wrap; max-width: none; justify-content: center; }
   .donate-numbers__list .donate-num { flex: 0 1 320px; }
 }
-.donate-numbers__title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 10px; }
+/* Owner: put it in the MIDDLE between the QR tiles and the numbers. So the
+   heading is centred and doubles as the separator — a rule runs out to each side
+   of the text instead of a full-width line sitting above a left-aligned label. */
+.donate-numbers__title {
+  font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--muted); margin: 0 0 14px; display: flex; align-items: center; gap: 14px;
+}
+.donate-numbers__title::before, .donate-numbers__title::after {
+  content: ""; flex: 1; height: 1px; background: var(--line, #e4e1d8);
+}
 .donate-num { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid var(--line, #e4e1d8); border-radius: 10px; padding: 10px 12px; }
 .donate-num__wallet { font-weight: 600; color: var(--ink); min-width: 64px; }
 .donate-num__value { font-variant-numeric: tabular-nums; letter-spacing: .04em; color: var(--ink); flex: 1; }
