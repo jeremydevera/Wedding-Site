@@ -2416,6 +2416,9 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
    painted (owner request). It used to pulse over a blank cover on slow links. */
 .inv-seal-hotspot::after { content: ""; position: absolute; inset: 0; border-radius: 50%; }
 .is-ready .inv-seal-hotspot::after { animation: invSealPulse 2.4s ease-out infinite; }
+/* Tapped, but the open-envelope art is still decoding: quicken the pulse so the
+   tap reads as acknowledged. Beats opening onto half-painted paper/flowers. */
+.is-ready.is-opening .inv-seal-hotspot::after { animation-duration: .85s; }
 @keyframes invSealPulse {
   0%   { box-shadow: 0 0 0 0 rgba(255, 248, 235, .55); }
   70%  { box-shadow: 0 0 0 18px rgba(255, 248, 235, 0); }

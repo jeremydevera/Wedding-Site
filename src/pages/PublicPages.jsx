@@ -117,6 +117,14 @@ export function egTintVars(s) {
 // as its OWN unfiltered image on top — so the seal is pixel-identical to the
 // original artwork no matter the paper color. The sealed-cover seal renders
 // even WITHOUT a recolor: it carries the "pump" click-affordance animation.
+// Decode an image off-DOM. Resolves when the bitmap is ready to paint (or on
+// failure), so callers can gate a reveal on "this will not pop in".
+function decodeImage(src) {
+  const im = new Image();
+  im.src = src;
+  return (im.decode ? im.decode() : Promise.resolve()).catch(() => {});
+}
+
 function envRecolorOverlay(s, kind, artSrc) {
   const recolor = envColorFilterFor(s.envColor, s.envColorCustom);
   if (kind === "sealed") return (<>
@@ -213,11 +221,7 @@ export function EnvelopeHero() {
   const [artReady, setArtReady] = React.useState(false);
   React.useEffect(() => {
     let dead = false;
-    const decode = (src) => {
-      const im = new Image();
-      im.src = src;
-      return (im.decode ? im.decode() : Promise.resolve()).catch(() => {});
-    };
+    const decode = decodeImage;
     Promise.all([decode(sealedSrc), ...(isEnv2 ? [] : [decode("/assets/invite/seal-closed-v2.png")])])
       .then(() => { if (!dead) setArtReady(true); });
     // Fail open LATE (was 4s): the envelope art is a few hundred KB, and on a
@@ -242,6 +246,34 @@ export function EnvelopeHero() {
   // so slow"). Hold their src until the cover art is ready — or until the guest
   // opens it, so a fast click never waits.
   const openArt = artReady || open;
+
+  // ...but the guest must never SEE those pieces paint in one by one (owner
+  // report: "I can see the letter, flower, heart, frame rendering"). So preload
+  // them as soon as the cover is up, and hold the open animation until they are
+  // decoded. In practice they are ready long before anyone taps; a tap that
+  // beats them just waits (with a quickened seal pulse) instead of opening onto
+  // half-drawn art.
+  const frameMediaSrc = mediaUrl(s.frameImage) || "/assets/invite/frame-photo.mp4";
+  const openArtList = React.useMemo(() => {
+    const list = isEnv2
+      ? ["/assets/invite/whitepaper.webp", "/assets/invite/white-frame.webp", "/assets/invite/paperflower.webp", "/assets/invite/heart-white.webp", frontSrc]
+      : ["/assets/invite/p2-card.png", "/assets/invite/p2-frame.png", "/assets/invite/p2-heart.webp", frontSrc];
+    // the framed media is only decodable when it is an image (video handles itself)
+    if (!/\.(mp4|webm|mov|m4v)(\?|$)/i.test(frameMediaSrc)) list.push(frameMediaSrc);
+    return list;
+  }, [isEnv2, frontSrc, frameMediaSrc]);
+  const [openReady, setOpenReady] = React.useState(false);
+  React.useEffect(() => {
+    if (!artReady) return;            // cover first — never compete with it
+    let dead = false;
+    Promise.all(openArtList.map(decodeImage)).then(() => { if (!dead) setOpenReady(true); });
+    const t = setTimeout(() => { if (!dead) setOpenReady(true); }, 10000); // never trap the guest
+    return () => { dead = true; clearTimeout(t); };
+  }, [artReady, openArtList]);
+  // A tap before the art is decoded queues the open instead of dropping it.
+  const [opening, setOpening] = React.useState(false);
+  const requestOpen = React.useCallback(() => { setOpening(true); }, []);
+  React.useEffect(() => { if (opening && openReady) setOpen(true); }, [opening, openReady]);
 
   // Type-on reveal via Web Animations API. Crucially, ON FINISH we clear the
   // clip-path entirely so the resting state is unclipped — otherwise a browser
@@ -359,7 +391,7 @@ export function EnvelopeHero() {
       <div className="eg-stage">
         {/* Sealed envelope */}
         <div className={"eg-page" + (open ? "" : " is-active")}>
-          <div className={"inv-sealed-wrap eg-sealed" + (ready ? " is-ready" : "")} style={{ opacity: artReady ? 1 : 0, transition: "opacity .45s ease" }}>
+          <div className={"inv-sealed-wrap eg-sealed" + (ready ? " is-ready" : "") + (opening && !open ? " is-opening" : "")} style={{ opacity: artReady ? 1 : 0, transition: "opacity .45s ease" }}>
             <img ref={artRef} className="inv-sealed-art" src={sealedSrc} alt={sealedAlt} onLoad={triggerReady} />
             {/* Envelope 2 now runs through the SAME olive recolor path
                 (envColorFilterFor -> --eg-env-recolor -> .inv-art-recolor), just
@@ -396,9 +428,9 @@ export function EnvelopeHero() {
               )}
               {isEnv2 && <span className="inv-lf-sub">We are getting married</span>}
             </div>
-            <button className="inv-seal-hotspot" type="button" aria-label={isEnv2 ? "Click to open" : "Open the invitation"} onClick={() => setOpen(true)} />
+            <button className="inv-seal-hotspot" type="button" aria-label={isEnv2 ? "Click to open" : "Open the invitation"} onClick={requestOpen} />
             {/* env2 shows no text cue (owner request) — the pulsing seal is the affordance */}
-            {!isEnv2 && <span className="inv-open-cue" onClick={() => setOpen(true)} role="button">Open the invitation</span>}
+            {!isEnv2 && <span className="inv-open-cue" onClick={requestOpen} role="button">Open the invitation</span>}
           </div>
         </div>
 
@@ -454,7 +486,7 @@ export function EnvelopeHero() {
 // env2's .inv-l-video window: 42.5% x 57.5% of the square white-frame canvas.
 const ENV2_FRAME_BOX_ASPECT = 42.5 / 57.5;
 function FrameMedia({ s }) {
-  const src = mediaUrl(s.frameImage) || "/assets/invite/frame-video.gif";
+  const src = mediaUrl(s.frameImage) || "/assets/invite/frame-photo.mp4";
   const isEnv2 = s.theme === "envelope2";
   const [nat, setNat] = React.useState(null);
   if (!/\.(mp4|webm|mov|m4v)(\?|$)/i.test(src)) return <img src={src} alt="" />;
