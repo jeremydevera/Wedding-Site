@@ -43,11 +43,14 @@ const RING = [[0, 0], [41, 0], [44, -90 * D], [53, -90 * D], [56, -180 * D], [65
 const ZOOM = [[0, 1.14], [40, 1.14], [100, 1]];
 
 // One screenshot PER FEATURE. slot0 = the invite hero (front during the s1
-// "invitation" beat); it swaps to the schedule shot for the s2 "everything in
-// one place" beat. Carousel fronts map to their captions: dashboard → "know
-// your guest list", entourage → "your entourage", setup → "set up fast".
-const SHOTS = ["/assets/login-shot-2.jpg", "/assets/login-shot-dash.jpg", "/assets/login-shot-4.jpg", "/assets/login-setup.jpg"];
-const S2_SHOT = "/assets/login-shot-3.jpg"; // schedule — swapped onto the front phone for the s2 caption
+// "invitation" beat); it swaps to the S2 shot for the s2 "everything in one
+// place" beat. Carousel fronts map to their captions: dashboard → "know your
+// guest list", entourage → "your entourage", setup → "set up fast".
+// Owner request 2026-07-31: the invite hero is the red Velvet Envelope cover
+// (closed, wax seal) and the s2 shot is the dashboard RSVP donut charts. The
+// superseded login-shot-2/-3 files stay on disk — cached bundles still fetch them.
+const SHOTS = ["/assets/login-shot-envelope.jpg", "/assets/login-shot-dash.jpg", "/assets/login-shot-4.jpg", "/assets/login-setup.jpg"];
+const S2_SHOT = "/assets/login-shot-charts.jpg"; // dashboard donuts — swapped onto the front phone for the s2 caption
 // Feature copy for the ?lgpv showcases — names each screen as it appears. Order
 // matches cycleTex = [invite, schedule, dashboard, entourage, setup].
 const FEATURES = [
