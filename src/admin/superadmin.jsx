@@ -549,10 +549,14 @@ export function ClientsAdmin() {
     const raw = cl && cl.created_at;
     const d = raw ? new Date(raw) : null;
     if (!d || isNaN(d.getTime())) return <span style={{ color: "var(--muted)" }}>—</span>;
+    // Date on top, TIME under it (owner request) — stacked rather than inline so
+    // the column stays narrow; both lines nowrap since the shared
+    // `.tbl--clients td` rule keeps compact columns on one line.
     return (
-      <span style={{ fontSize: 13, color: "var(--muted)", whiteSpace: "nowrap" }} title={d.toLocaleString()}>
-        {d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
-      </span>
+      <div style={{ whiteSpace: "nowrap" }} title={d.toLocaleString()}>
+        <div style={{ fontSize: 13 }}>{d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</div>
+        <div style={{ fontSize: 12, color: "var(--muted)" }}>{d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}</div>
+      </div>
     );
   };
   const donateCell = (cl) => {
