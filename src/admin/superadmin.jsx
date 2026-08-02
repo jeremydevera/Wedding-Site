@@ -542,6 +542,19 @@ export function ClientsAdmin() {
       </div>
     );
   };
+  // When the site was created (clients.created_at). Same shared-cell treatment as
+  // the other row columns so every Clients sub-tab renders it identically. Full
+  // timestamp on hover; request rows that have no client yet show "—".
+  const createdCell = (cl) => {
+    const raw = cl && cl.created_at;
+    const d = raw ? new Date(raw) : null;
+    if (!d || isNaN(d.getTime())) return <span style={{ color: "var(--muted)" }}>—</span>;
+    return (
+      <span style={{ fontSize: 13, color: "var(--muted)", whiteSpace: "nowrap" }} title={d.toLocaleString()}>
+        {d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+      </span>
+    );
+  };
   const donateCell = (cl) => {
     if (!cl) return <span style={{ color: "var(--muted)" }}>—</span>;
     const off = cl.content && cl.content.hideDonateAd === true;
@@ -1066,7 +1079,7 @@ export function ClientsAdmin() {
                 <th style={{ width: 34 }}><input type="checkbox" aria-label="Select all offline"
                   checked={clients.filter((c) => !c.is_active).length > 0 && clients.filter((c) => !c.is_active).every((c) => sel.has(c.id))}
                   onChange={(e) => setSel((p) => { const n = new Set(p); clients.filter((c) => !c.is_active).forEach((c) => e.target.checked ? n.add(c.id) : n.delete(c.id)); return n; })} /></th>
-                <th>Client</th><th style={{ minWidth: ADDR_MIN_W, maxWidth: ADDR_MAX_W }}>Event address</th><th>Notes</th><th>Status</th><th>Donate ad</th><th></th></tr></thead>
+                <th>Client</th><th style={{ minWidth: ADDR_MIN_W, maxWidth: ADDR_MAX_W }}>Event address</th><th>Created</th><th>Notes</th><th>Status</th><th>Donate ad</th><th></th></tr></thead>
               <tbody>
                 {clients.filter((c) => !c.is_active).map((c) => (
                   <tr key={c.id}>
@@ -1080,6 +1093,7 @@ export function ClientsAdmin() {
                       </div>
                     </td>
                     <td style={{ minWidth: ADDR_MIN_W, maxWidth: ADDR_MAX_W, whiteSpace: "normal" }}>{eventAddressCell(c)}</td>
+                      <td>{createdCell(c)}</td>
                     <td style={{ maxWidth: 220 }}>{notes[c.id]
                       ? <span title={notes[c.id]} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{notes[c.id]}</span>
                       : <span style={{ color: "var(--muted)" }}>—</span>}</td>
@@ -1096,7 +1110,7 @@ export function ClientsAdmin() {
                     </td>
                   </tr>
                 ))}
-                {clients.filter((c) => !c.is_active).length === 0 && <tr><td colSpan={7} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>All clients are online. 🎉</td></tr>}
+                {clients.filter((c) => !c.is_active).length === 0 && <tr><td colSpan={8} style={{ color: "var(--muted)", textAlign: "center", padding: 32 }}>All clients are online. 🎉</td></tr>}
               </tbody>
             </table>
           </div>
@@ -1117,7 +1131,7 @@ export function ClientsAdmin() {
                   <th style={{ width: 34 }}><input type="checkbox" aria-label="Select all on this page"
                     checked={pg.pageItems.length > 0 && pg.pageItems.every((c) => sel.has(c.id))}
                     onChange={(e) => setSel((p) => { const n = new Set(p); pg.pageItems.forEach((c) => e.target.checked ? n.add(c.id) : n.delete(c.id)); return n; })} /></th>
-                  <th>Client</th><th style={{ minWidth: ADDR_MIN_W, maxWidth: ADDR_MAX_W }}>Event address</th><th>Notes</th><th>Status</th><th>Donate ad</th><th></th></tr></thead>
+                  <th>Client</th><th style={{ minWidth: ADDR_MIN_W, maxWidth: ADDR_MAX_W }}>Event address</th><th>Created</th><th>Notes</th><th>Status</th><th>Donate ad</th><th></th></tr></thead>
                 <tbody>
                   {pg.pageItems.map((c) => (
                     <tr key={c.id}>
@@ -1137,6 +1151,7 @@ export function ClientsAdmin() {
                         </div>
                       </td>
                       <td style={{ minWidth: ADDR_MIN_W, maxWidth: ADDR_MAX_W, whiteSpace: "normal" }}>{eventAddressCell(c)}</td>
+                      <td>{createdCell(c)}</td>
                       <td style={{ maxWidth: 180 }}>{notes[c.id]
                         ? <span title={notes[c.id]} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13 }}>{notes[c.id]}</span>
                         : <span style={{ color: "var(--muted)" }}>—</span>}</td>
@@ -1168,6 +1183,7 @@ export function ClientsAdmin() {
                         </div>
                       </td>
                       <td style={{ maxWidth: 200 }}>{c.owner_email ? <span className="client-domain" style={{ fontSize: 13 }}>{c.owner_email}</span> : <span style={{ color: "var(--muted)", fontSize: 13 }}>no login</span>}</td>
+                      <td>{createdCell(c)}</td>
                       <td><span style={{ color: "var(--muted)" }}>—</span></td>
                       <td>
                         <select value={c.status || "not_paid"} disabled={busy} aria-label={`Status for ${c.subdomain}`}
@@ -1242,7 +1258,7 @@ export function ClientsAdmin() {
                       </td>
                     </tr>
                   ))}
-                  {filtered.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center", padding: 40, color: "var(--muted)" }}>{clients.length ? "No matches." : "No clients yet — use “Add client”."}</td></tr>}
+                  {filtered.length === 0 && <tr><td colSpan={8} style={{ textAlign: "center", padding: 40, color: "var(--muted)" }}>{clients.length ? "No matches." : "No clients yet — use “Add client”."}</td></tr>}
                 </tbody>
               </table>
             </div>
