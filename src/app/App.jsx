@@ -105,6 +105,76 @@ const DECOR_OPTS = [
   ...FX_LIST.map((e) => ["fx-" + e.id, e.title]),
 ];
 
+// One-time "you can sign in here" coach-mark for a couple who JUST registered.
+// Trigger is ?welcome=1 on the link the register success screen gives them —
+// localStorage can't carry the flag because that screen lives on the apex origin
+// and their site is a different subdomain. Shown once ever per browser, then
+// remembered so it never nags. Anchors to whichever control is actually visible:
+// the Login CTA on desktop, the burger on mobile (Login lives inside the drawer
+// there). Waits for the envelope cover to be opened first — the nav is
+// display:none while body.env-sealed is up, so measuring earlier gives garbage.
+const LOGIN_HINT_KEY = "cel:loginHintSeen";
+function LoginHint() {
+  const [armed, setArmed] = useState(false);
+  const [box, setBox] = useState(null); // {top,left,mobile} in viewport coords
+  useEffect(() => {
+    let seen = true;
+    try { seen = !!localStorage.getItem(LOGIN_HINT_KEY); } catch (e) { /* private mode */ }
+    const params = new URLSearchParams(window.location.search);
+    if (seen || !params.has("welcome")) return;
+    // strip the param so a refresh or a shared link never replays the tutorial
+    params.delete("welcome");
+    const qs = params.toString();
+    try { window.history.replaceState(null, "", window.location.pathname + (qs ? "?" + qs : "") + window.location.hash); } catch (e) { /* ignore */ }
+    setArmed(true);
+  }, []);
+  const dismiss = useCallback(() => {
+    try { localStorage.setItem(LOGIN_HINT_KEY, "1"); } catch (e) { /* ignore */ }
+    setArmed(false); setBox(null);
+  }, []);
+  useEffect(() => {
+    if (!armed) return;
+    const place = () => {
+      if (document.body.classList.contains("env-sealed")) { setBox(null); return; } // cover still up
+      // `Button` is a plain function component (no forwardRef), so anchor via
+      // the DOM: the Login CTA is desktop-only (.nav__cta is display:none on
+      // phones), where the burger is the visible control instead.
+      const cta = document.querySelector(".nav .nav__cta--login");
+      const burger = document.querySelector(".nav .nav__burger");
+      const el = cta && cta.offsetParent !== null ? cta : (burger && burger.offsetParent !== null ? burger : null);
+      if (!el) { setBox(null); return; }
+      const r = el.getBoundingClientRect();
+      // Clamp the card inside the viewport: the burger sits near the right edge,
+      // so centring the card on it pushed half of it off-screen and cut the copy.
+      // The arrow keeps pointing at the control via its own offset.
+      const pad = 10;
+      const cardW = Math.min(304, window.innerWidth - 24); // matches the CSS width
+      const anchorX = r.left + r.width / 2;
+      const left = Math.max(cardW / 2 + pad, Math.min(window.innerWidth - cardW / 2 - pad, anchorX));
+      setBox({ top: r.bottom + 10, left, arrow: anchorX - left, mobile: el === burger });
+    };
+    place();
+    const t = setInterval(place, 400); // cheap: also catches the cover opening
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => { clearInterval(t); window.removeEventListener("resize", place); window.removeEventListener("scroll", place, true); };
+  }, [armed]);
+  if (!armed || !box) return null;
+  return (
+    <div className="loginhint" role="dialog" aria-label="Where to sign in"
+      style={{ top: box.top, left: box.left }}>
+      <span className="loginhint__arrow" aria-hidden="true" style={{ left: `calc(50% + ${Math.round(box.arrow || 0)}px)` }} />
+      <div className="loginhint__title">This is your site 🎉</div>
+      <p className="loginhint__body">
+        {box.mobile
+          ? <>Tap the menu, then <strong>Login</strong> — that's where you edit your details, see RSVPs, and manage everything.</>
+          : <>Sign in with <strong>Login</strong> anytime to edit your details, see RSVPs, and manage everything.</>}
+      </p>
+      <button type="button" className="loginhint__ok" onClick={dismiss}>Got it</button>
+    </div>
+  );
+}
+
 // --- Public nav -------------------------------------------------------------
 export function Nav({ route }) {
   const { settings, auth, clientId } = useStore();
@@ -179,12 +249,13 @@ export function Nav({ route }) {
               Same destination as the footer's "Admin sign in" — go("admin") on
               this site — just surfaced where people actually look. RSVP stays
               primary: it's what guests came for. */}
-          <Button className="nav__cta" variant="ghost" size="sm" onClick={() => go("admin")}>Login</Button>
+          <Button className="nav__cta nav__cta--login" variant="ghost" size="sm" onClick={() => go("admin")}>Login</Button>
           {isDemo && <Button className="nav__cta" variant="ghost" size="sm" onClick={() => { window.location.href = "https://celebrately.us/register"; }}>Register</Button>}
           <button className="nav__burger" onClick={() => setDrawer(true)} aria-label="Menu">{Icon.menu({})}</button>
         </div>
       </div>
       </nav>
+      <LoginHint />
 
       {drawer && (
         <div className="drawer">

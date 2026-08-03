@@ -173,7 +173,7 @@ export function RegisterPage() {
               <span className="rdone__url" title={siteUrl}>{siteUrl}</span>
               <button type="button" className="rdone__copy" onClick={copyLink}>Copy link</button>
             </div>
-            <a className="rdone__open" href={`https://${siteUrl}`} target="_blank" rel="noreferrer">Open my website →</a>
+            <a className="rdone__open" href={`https://${siteUrl}/?welcome=1`} target="_blank" rel="noreferrer">Open my website →</a>
           </div>
 
           {/* clear next steps */}
@@ -191,7 +191,7 @@ export function RegisterPage() {
                 <span className="rdone__num">2</span>
                 <div className="rdone__stepbody">
                   <b>Manage your site anytime</b>
-                  <p>Tap <strong>Open my website</strong>, scroll to the bottom, then tap <strong>Admin sign in</strong>.</p>
+                  <p>Tap <strong>Open my website</strong>, then tap <strong>Login</strong> in the menu — we'll point it out for you.</p>
                 </div>
               </li>
             </ol>
