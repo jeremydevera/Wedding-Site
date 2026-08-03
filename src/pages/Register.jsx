@@ -87,6 +87,18 @@ export function RegisterPage() {
     // site_requests are all covered by subdomain_free.
     return await neonRpc("subdomain_free", { p_sub: s }).then((v) => v === true).catch(() => false);
   };
+  // Ask the server to email this owner their site link (auto-approve path — see
+  // the call site). Swallows everything: the site is live regardless, and a
+  // registration that reported failure because an email bounced would be a lie.
+  const emailSiteLink = async () => {
+    try {
+      const { firebaseUserToken } = await import("@/lib/firebase.js");
+      const token = await firebaseUserToken();
+      if (!token) return;
+      await fetch("/api/site-ready", { method: "POST", headers: { authorization: `Bearer ${token}` } });
+    } catch (_) { /* best effort */ }
+  };
+
   const submitOverride = async (p) => {
     const res = await authedRpc("register_site", {
       p_subdomain: p.subdomain, p_event_type: p.eventType || "wedding",
@@ -94,7 +106,14 @@ export function RegisterPage() {
       p_partner_a: p.partnerA || "", p_partner_b: p.partnerB || "", p_content: p.content || {},
     });
     try { localStorage.removeItem("neonRegDraft"); } catch { /* ignore */ }
-    if (res?.result === "created") { setSub(res.subdomain); setPhase("done"); return { approved: true }; }
+    if (res?.result === "created") {
+      // Auto-approve is on, so the site is live already — email the owner their
+      // link. Deliberately NOT awaited: the "done" screen must not wait on (or be
+      // blocked by) an email, and /api/site-ready is idempotent per client, so a
+      // refresh or a retry can't produce a second message.
+      emailSiteLink();
+      setSub(res.subdomain); setPhase("done"); return { approved: true };
+    }
     setSub(res?.subdomain || p.subdomain); setPhase("pending");
     return { approved: false };
   };

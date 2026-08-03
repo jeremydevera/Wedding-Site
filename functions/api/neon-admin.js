@@ -3,6 +3,7 @@
 // token (verified below → Neon superadmin profile); Neon rows are read/written
 // via the NEON_DATABASE_URL secret. POST {action, ...params}.
 import { neon } from "@neondatabase/serverless";
+import { sendSiteReadyEmail } from "./_site-ready-email.js";
 
 const json = (o, s = 200) => new Response(JSON.stringify(o), { status: s, headers: { "content-type": "application/json" } });
 
@@ -117,7 +118,20 @@ export async function onRequestPost({ request, env }) {
         const [row] = await sql`select public.approve_site_request(${body.id}) as res`;
         const res = row?.res || {};
         if (res.error) return json({ error: res.error }, res.error === "subdomain already taken" ? 409 : 404);
-        return json({ ok: true, subdomain: res.subdomain });
+        // Tell the owner their site is live, with the link. Sent from HERE, not
+        // the dashboard, because the owner isn't in a browser when a superadmin
+        // approves — and because a send that depends on the approving tab staying
+        // open would silently skip whenever it doesn't. Best-effort: the approval
+        // has already committed, so an email failure must not fail this response.
+        let emailed = null;
+        try {
+          const [cl] = await sql`
+            select c.id, c.subdomain, c.owner_email as email,
+                   c.content->>'partnerA' as partner_a, c.content->>'partnerB' as partner_b
+              from clients c where lower(c.subdomain) = lower(${res.subdomain}) limit 1`;
+          if (cl) emailed = await sendSiteReadyEmail(env, sql, cl);
+        } catch (e) { emailed = { error: String((e && e.message) || e) }; }
+        return json({ ok: true, subdomain: res.subdomain, emailed });
       }
       case "reject_request":
         await sql`update site_requests set status = 'rejected' where id = ${body.id}`;
