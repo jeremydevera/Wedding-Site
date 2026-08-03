@@ -174,6 +174,12 @@ export function Nav({ route }) {
           {isDemo && <ThemePicker />}
           {isDemo && !isPremiumTheme(settings.theme) && <span className="nav__pick-desktop"><DecorPicker /></span>}
           <Button className="nav__cta" variant="primary" size="sm" onClick={() => go("rsvp")}>{sectionLabel("rsvp", settings.moduleLabels)}</Button>
+          {/* Login sits BESIDE the RSVP CTA on every client site (owner request
+              2026-08-03) so the couple can find it without hunting the footer.
+              Same destination as the footer's "Admin sign in" — go("admin") on
+              this site — just surfaced where people actually look. RSVP stays
+              primary: it's what guests came for. */}
+          <Button className="nav__cta" variant="ghost" size="sm" onClick={() => go("admin")}>Login</Button>
           {isDemo && <Button className="nav__cta" variant="ghost" size="sm" onClick={() => { window.location.href = "https://celebrately.us/register"; }}>Register</Button>}
           <button className="nav__burger" onClick={() => setDrawer(true)} aria-label="Menu">{Icon.menu({})}</button>
         </div>
@@ -193,8 +199,11 @@ export function Nav({ route }) {
             ))}
             {moduleEnabled(settings.modules, "gallery") && <button className="drawer__link" onClick={() => { go("upload"); setDrawer(false); }}>Share Photos</button>}
             {settings.uploadsEnabled && moduleEnabled(settings.modules, "video-message") && <button className="drawer__link" onClick={() => { go("video-message"); setDrawer(false); }}>Video Message</button>}
-            <div style={{ marginTop: 20 }}>
+            <div style={{ marginTop: 20, display: "grid", gap: 8 }}>
               <Button variant="primary" block onClick={() => { go("rsvp"); setDrawer(false); }}>{sectionLabel("rsvp", settings.moduleLabels)} Now</Button>
+              {/* .nav__cta is desktop-only, so mobile gets Login here — the
+                  drawer is where phone visitors look for it. */}
+              <Button variant="ghost" block onClick={() => { go("admin"); setDrawer(false); }}>Login</Button>
             </div>
           </div>
         </div>
