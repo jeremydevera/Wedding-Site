@@ -199,7 +199,11 @@ export function EnvelopeHero() {
     // the reveal hostage.
     const measure = () => {
       const fonts = document.fonts;
-      if (fonts && fonts.check && !fonts.check('16px "Cormorant Garamond"')) return;
+      // Must name the font the cover ACTUALLY renders in (env2 is the Mrs Saint
+      // Delafield script since 2026-08-05) — checking the wrong family lets the
+      // measurement commit on fallback metrics and mis-sizes the stacked names.
+      const titleFont = isEnv2 ? '16px "Mrs Saint Delafield"' : '16px "Cormorant Garamond"';
+      if (fonts && fonts.check && !fonts.check(titleFont)) return;
       commit();
     };
     measure();
