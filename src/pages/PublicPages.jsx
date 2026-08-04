@@ -298,10 +298,10 @@ export function EnvelopeHero() {
       // Force the hidden start + reflow so the reveal ALWAYS plays — otherwise a
       // cached image (instant on desktop) flips ready before first paint and the
       // animation gets skipped.
-      el.style.clipPath = "inset(-18% 100% -18% 0)";
+      el.style.clipPath = "inset(-18% 100% -18% -10%)";
       void el.offsetWidth;
       const anim = el.animate(
-        [{ clipPath: "inset(-18% 100% -18% 0)" }, { clipPath: "inset(-18% 0% -18% 0)" }],
+        [{ clipPath: "inset(-18% 100% -18% -10%)" }, { clipPath: "inset(-18% -10% -18% -10%)" }],
         { duration: dur, delay, easing: `steps(${count})`, fill: "forwards" }
       );
       anim.onfinish = () => { el.style.clipPath = "none"; anim.cancel(); }; // cancel so forwards-fill can't override the unclipped resting state
@@ -313,7 +313,7 @@ export function EnvelopeHero() {
       const lines = Array.prototype.slice.call(stack.querySelectorAll(":scope > span"));
       // Hide each line WHILE the container is still CSS-clipped, then unclip the
       // container so only the per-line wipes are visible (no all-at-once flash).
-      lines.forEach((l) => { if (l.animate) l.style.clipPath = "inset(-18% 100% -18% 0)"; });
+      lines.forEach((l) => { if (l.animate) l.style.clipPath = "inset(-18% 100% -18% -10%)"; });
       stack.style.clipPath = "none";
       void stack.offsetWidth;
       lines.forEach((line, i) => {

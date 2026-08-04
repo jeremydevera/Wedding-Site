@@ -2517,8 +2517,8 @@ img.inv-seal-img--front { left: 48.28%; top: 89.56%; width: 10.15%; transform: t
 /* Type-on reveal: start hidden (clip from the right). JS (WAAPI) animates the
    reveal, then CLEARS the clip-path on finish — so the resting state has no clip
    and a browser clamping the negative end-inset can't shave the last glyph. */
-.inv-lf-label { position: relative; display: inline-block; white-space: nowrap; clip-path: inset(-18% 100% -18% 0); }
-.inv-lf-type { position: relative; display: inline-block; white-space: nowrap; clip-path: inset(-14% 100% -14% 0); }
+.inv-lf-label { position: relative; display: inline-block; white-space: nowrap; clip-path: inset(-18% 100% -18% -10%); }
+.inv-lf-type { position: relative; display: inline-block; white-space: nowrap; clip-path: inset(-14% 100% -14% -10%); }
 /* Blinking type cursor (nib) — tracks the reveal edge, then hides. Runs in sync
    with the WAAPI reveal (both start on .is-ready). opacity:0 by default so it
    never shows statically when the animation doesn't run. */
@@ -2716,7 +2716,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   font-family: "Mrs Saint Delafield", "Great Vibes", cursive;
   font-variant: normal;
   letter-spacing: .02em;
-  font-size: min(calc(var(--eg-title-cqw, 2.3) * 3.4cqw), 13vw);
+  font-size: min(calc(var(--eg-title-cqw, 2.3) * 2.6cqw), 10vw);
 }
 /* Hidden probe that measures what the ONE-LINE title would take (same classes
    = same font-size rules). Absolute + invisible: no layout, no paint. */
@@ -2728,7 +2728,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* Mobile: the cover text is capped by the vw terms (the cqw terms are huge on
    phones) — raise the caps so the title/sub read larger (owner request). */
 @media (max-width: 860px) {
-  [data-theme="envelope2"] .eg-sealed .inv-lf-names { font-size: min(calc(var(--eg-title-cqw, 2.3) * 3cqw), 17vw); }
+  [data-theme="envelope2"] .eg-sealed .inv-lf-names { font-size: min(calc(var(--eg-title-cqw, 2.3) * 2.3cqw), 13vw); }
   [data-theme="envelope2"] .eg-sealed .inv-lf-sub { font-size: min(2cqw, 4.6vw); }
 }
 .eg-sealed .inv-open-cue { font-size: 3.8vw; font-size: min(1.6cqw, 3.8vw); top: 75%; }
