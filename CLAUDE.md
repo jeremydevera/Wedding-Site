@@ -1,5 +1,17 @@
 # Project notes for Claude
 
+## 🔴 ALWAYS run the UI check on any visual change — `npm run build && npm run ui:check`
+Enabled by default (owner request 2026-08-05). Unit tests pass while the UI is
+visibly broken, because this project's bugs are GEOMETRY, not logic: cover names
+overlapping the wax seal, names off the top on wide/short desktops (mobile looked
+perfect), a coach-mark cut off a phone's edge, a tooltip behind a table, a clipped
+chart legend. Run it BEFORE pushing anything touching CSS/themes/layout, the
+envelope cover, public nav, or admin tables/charts/tooltips — and **look at the
+screenshots in `.ui-check/`**, don't just trust the assertions. Details + what to
+extend: `.claude/skills/ui-check/SKILL.md` (skill: `ui-check`). Report the actual
+numbers to the owner. If a check fails, fix the UI — only loosen an assertion when
+it is provably measuring the wrong thing.
+
 ## 🔴 Before adding admin controls — read docs/DEV-RULES.md
 Hard rules. R1: any control editing a persisted setting MUST write via
 `Store.updateSettings` (never local state / `previewSettings`) or the "Save

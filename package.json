@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "ui:check": "node scripts/ui-check.mjs",
+    "ui:shots": "node scripts/ui-check.mjs --shots-only"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
