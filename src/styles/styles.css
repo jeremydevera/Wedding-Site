@@ -2716,7 +2716,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   font-family: "Mrs Saint Delafield", "Great Vibes", cursive;
   font-variant: normal;
   letter-spacing: .02em;
-  font-size: min(calc(var(--eg-title-cqw, 2.3) * 2.6cqw), 10vw);
+  font-size: min(calc(var(--eg-title-cqw, 2.3) * 3cqw), 11.5vw);
 }
 /* Hidden probe that measures what the ONE-LINE title would take (same classes
    = same font-size rules). Absolute + invisible: no layout, no paint. */
@@ -2728,7 +2728,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* Mobile: the cover text is capped by the vw terms (the cqw terms are huge on
    phones) — raise the caps so the title/sub read larger (owner request). */
 @media (max-width: 860px) {
-  [data-theme="envelope2"] .eg-sealed .inv-lf-names { font-size: min(calc(var(--eg-title-cqw, 2.3) * 2.3cqw), 13vw); }
+  [data-theme="envelope2"] .eg-sealed .inv-lf-names { font-size: min(calc(var(--eg-title-cqw, 2.3) * 2.7cqw), 15vw); }
   [data-theme="envelope2"] .eg-sealed .inv-lf-sub { font-size: min(2cqw, 4.6vw); }
 }
 .eg-sealed .inv-open-cue { font-size: 3.8vw; font-size: min(1.6cqw, 3.8vw); top: 75%; }
