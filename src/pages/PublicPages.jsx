@@ -430,7 +430,8 @@ export function EnvelopeHero() {
               ) : (
                 <span className="inv-lf-names"><span className="inv-lf-type">{s.partnerA} &amp; {s.partnerB}</span></span>
               )}
-              {isEnv2 && <span className="inv-lf-sub">We are getting married</span>}
+              {/* "We are getting married" removed on owner request 2026-08-05 —
+                  the velvet cover is names + wax seal only. */}
             </div>
             <button className="inv-seal-hotspot" type="button" aria-label={isEnv2 ? "Click to open" : "Open the invitation"} onClick={requestOpen} />
             {/* env2 shows no text cue (owner request) — the pulsing seal is the affordance */}

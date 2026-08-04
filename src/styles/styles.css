@@ -2684,13 +2684,8 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 }
 /* env2 cover names: NORMAL text (owner request — letterpress emboss removed).
    No override: inherits the cover's cream ink + soft shadow, same as olive. */
-/* "We are getting married" under the names (env2 only) — fades in after the
-   names finish typing on. */
-.eg-sealed .inv-lf-sub {
-  font-family: "Cormorant Garamond", Georgia, serif; font-variant: small-caps;
-  letter-spacing: .24em; font-size: min(1.5cqw, 3.6vw); line-height: 1.3; opacity: 0;
-}
-.eg-sealed.is-ready .inv-lf-sub { animation: lfSubIn .9s ease 1.8s forwards; }
+/* Shared "fade up to opacity 1" used by the env2 wax-seal monogram (the
+   "We are getting married" sub line it was written for was removed 2026-08-05). */
 @keyframes lfSubIn { to { opacity: 1; } }
 /* cover hero is much larger than the contain wrap, so scale its overlay text down + keep the cue on-screen */
 /* cqw is sized off max(142vw,215vh); on tall/narrow phones the 215vh term blows
@@ -2726,10 +2721,9 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 .inv-lf-stack { display: flex; flex-direction: column; align-items: center; font-size: .78em; line-height: 1; }
 .inv-lf-stack__amp { font-size: .55em; line-height: 1.15; opacity: .85; }
 /* Mobile: the cover text is capped by the vw terms (the cqw terms are huge on
-   phones) — raise the caps so the title/sub read larger (owner request). */
+   phones) — raise the cap so the title reads larger (owner request). */
 @media (max-width: 860px) {
   [data-theme="envelope2"] .eg-sealed .inv-lf-names { font-size: min(calc(var(--eg-title-cqw, 2.3) * 3.1cqw), 17vw); }
-  [data-theme="envelope2"] .eg-sealed .inv-lf-sub { font-size: min(2cqw, 4.6vw); }
 }
 .eg-sealed .inv-open-cue { font-size: 3.8vw; font-size: min(1.6cqw, 3.8vw); top: 75%; }
 /* Mobile: the sealed cover is blown up (215vh term wins on tall/narrow phones), so the
