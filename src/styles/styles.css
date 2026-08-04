@@ -2645,13 +2645,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
 /* env2: the burgundy art is the envelope FACE (aspect 1.735). Desktop AND
    mobile cover the whole viewport (owner request) — 174vh guarantees height
    coverage (100/1.735), the overflow crops symmetrically (page centers it). */
-/* Owner request 2026-08-05: the full-bleed cover read as TOO BIG on desktop —
-   show the WHOLE envelope with the page background around it instead. The art is
-   aspect 1.735, so fitting it entirely means width <= 173.5vh; 86% of both
-   constraints leaves an even margin. Mobile deliberately KEEPS the full-bleed
-   crop below (the whole envelope on a phone would be a thin letterboxed strip,
-   and the owner confirmed mobile already looks right). */
-[data-theme="envelope2"] .eg-sealed { width: min(86vw, 149vh); }
+[data-theme="envelope2"] .eg-sealed { width: max(100vw, 174vh); }
 @media (max-width: 860px) {
   /* cover the whole phone screen like Olive Envelope, anchored to the TOP */
   [data-theme="envelope2"] .eg-sealed { width: max(100vw, 175svh); align-self: flex-start; }
