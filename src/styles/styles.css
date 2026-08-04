@@ -2716,7 +2716,7 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   font-family: "Mrs Saint Delafield", "Great Vibes", cursive;
   font-variant: normal;
   letter-spacing: .02em;
-  font-size: min(calc(var(--eg-title-cqw, 2.3) * 3.5cqw), 13.5vw);
+  font-size: min(calc(var(--eg-title-cqw, 2.3) * 3.5cqw), 13.5vw, 13vh);
 }
 /* Hidden probe that measures what the ONE-LINE title would take (same classes
    = same font-size rules). Absolute + invisible: no layout, no paint. */
