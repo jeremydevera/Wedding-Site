@@ -152,6 +152,10 @@ function LoginHint() {
       const anchorX = r.left + r.width / 2;
       const left = Math.max(cardW / 2 + pad, Math.min(window.innerWidth - cardW / 2 - pad, anchorX));
       setBox({ top: r.bottom + 10, left, arrow: anchorX - left, mobile: el === burger });
+      // Mark it seen as soon as it is actually ON SCREEN, not only on "Got it" —
+      // otherwise closing the tab without tapping it would replay the tutorial on
+      // the next visit with the welcome link. Owner asked for strictly one time.
+      try { localStorage.setItem(LOGIN_HINT_KEY, "1"); } catch (e) { /* ignore */ }
     };
     place();
     const t = setInterval(place, 400); // cheap: also catches the cover opening
