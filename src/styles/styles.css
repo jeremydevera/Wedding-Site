@@ -2716,7 +2716,10 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
   font-family: "Mrs Saint Delafield", "Great Vibes", cursive;
   font-variant: normal;
   letter-spacing: .02em;
-  font-size: min(calc(var(--eg-title-cqw, 2.3) * 3.5cqw), 13.5vw, 13vh);
+  font-size: min(calc(var(--eg-title-cqw, 2.3) * 4cqw), 14vw, 13.6vh);
+  /* Optical centring: script side-bearings are asymmetric, so geometrically
+     centred lines read as pushed left. Same nudge the invitation card uses. */
+  text-indent: .04em;
 }
 /* Hidden probe that measures what the ONE-LINE title would take (same classes
    = same font-size rules). Absolute + invisible: no layout, no paint. */
