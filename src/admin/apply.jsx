@@ -299,7 +299,9 @@ export function ApplyWizard({ initial = null, onSave, onCancel, submitOverride =
     if (s === 0) {
       if (f.eventType === "birthday") {
         if (!f.eventTitle.trim()) return "Please enter the event title.";
-      } else if (!f.partnerA.trim() || !f.partnerB.trim()) return "Please enter both names.";
+      } else if (!f.partnerA.trim() && !f.partnerB.trim()) return "Please enter both partners' first names.";
+      else if (!f.partnerA.trim()) return "Please enter Partner A's first name.";
+      else if (!f.partnerB.trim()) return "Please enter Partner B's first name.";
       // presetEmail = the already-registered account's email; the field is hidden
       // in that case (nothing to validate). Only the manual /apply + SA editor
       // paths (no preset) still ask for and validate an email.
@@ -346,24 +348,24 @@ export function ApplyWizard({ initial = null, onSave, onCancel, submitOverride =
           </Select>
         </Field>
         {f.eventType === "birthday" ? (
-          <Field label="Event title" id="a-title" hint="What the site should celebrate — shown as the headline.">
+          <Field label="Event title" required id="a-title" hint="What the site should celebrate — shown as the headline.">
             <Input id="a-title" value={f.eventTitle} onChange={set("eventTitle")} placeholder="Leo's 7th Birthday" />
           </Field>
         ) : (
           <div className="field-row field-row--2">
-            <Field label="Partner A — first name" id="a-pa"><Input id="a-pa" value={f.partnerA} onChange={set("partnerA")} placeholder="Romeo" /></Field>
-            <Field label="Partner B — first name" id="a-pb"><Input id="a-pb" value={f.partnerB} onChange={set("partnerB")} placeholder="Juliet" /></Field>
+            <Field label="Partner A — first name" required id="a-pa"><Input id="a-pa" required aria-required="true" value={f.partnerA} onChange={set("partnerA")} placeholder="Romeo" /></Field>
+            <Field label="Partner B — first name" required id="a-pb"><Input id="a-pb" required aria-required="true" value={f.partnerB} onChange={set("partnerB")} placeholder="Juliet" /></Field>
           </div>
         )}
         {/* Email is only asked when there's no registered account yet. Self-serve
             registrants already signed up, so f.email is their login email
             (presetEmail) — hide the field to avoid asking twice. */}
-        {!presetEmail && <Field label="Your email" id="a-email" hint="We'll reach you here once your site is approved."><Input id="a-email" type="email" value={f.email} onChange={set("email")} placeholder="you@example.com" /></Field>}
+        {!presetEmail && <Field label="Your email" required id="a-email" hint="We'll reach you here once your site is approved."><Input id="a-email" type="email" value={f.email} onChange={set("email")} placeholder="you@example.com" /></Field>}
         <Field label="Mobile number" required id="a-phone" hint="So we can reach you about your site."><Input id="a-phone" type="tel" inputMode="tel" value={f.phone} onChange={set("phone")} placeholder="09xx xxx xxxx" /></Field>
         <Field label="Event date" id="a-date" hint="Optional — skip it if you haven't picked a date yet.">
           <EasyDateInput value={f.weddingDate} onChange={set("weddingDate")} />
         </Field>
-        <Field label="Site address" id="a-sub">
+        <Field label="Site address" required id="a-sub">
           <div className="reg-sub">
             <Input id="a-sub" value={f.subdomain} onChange={(e) => { setTouchedSub(true); set("subdomain")(e); }} spellCheck={false} placeholder="romeo-juliet" />
             <span className="reg-sub__suffix">.celebrately.us</span>
