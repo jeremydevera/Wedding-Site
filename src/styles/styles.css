@@ -2707,6 +2707,11 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    small-caps and the wide tracking OFF (they wreck joined letterforms), and it
    renders much smaller per px than serif caps, so the factors go back up.
    The "A Love Letter From" label line is not rendered on env2 — names only. */
+/* Cover text block sits higher on env2 (owner request 2026-08-05). It also fixes
+   a real collision: at the current cursive size the names' descenders ran 17px
+   INTO the wax seal on desktop (shared top:33% was tuned for the old serif caps
+   plus the since-removed sub line). */
+[data-theme="envelope2"] .eg-sealed .inv-letter-from { top: 27%; }
 [data-theme="envelope2"] .eg-sealed .inv-lf-names {
   font-family: "Mrs Saint Delafield", "Great Vibes", cursive;
   font-variant: normal;
