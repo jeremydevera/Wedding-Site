@@ -2,10 +2,10 @@ import React from "react";
 import { go } from "@/lib/nav.js";
 import { scrollToTop } from "@/lib/scroll.js";
 import { Store, useStore } from "@/lib/store.jsx";
-import { postRsvp, rsvpNameTaken, upsertRsvp, guestAllocation } from "@/lib/api.js";
+import { postRsvp, rsvpNameTaken, upsertRsvp, guestAllocation, guestMatchByName, guestPickById } from "@/lib/api.js";
 import { isRsvpClosed, joinPlusOnes, isValidOptionalEmail, maxPartySize } from "@/lib/rsvp.js";
 import { sectionLabel } from "@/lib/roles.js";
-import { Button, Field, Icon, Input, Select, Textarea, confirmDialog } from "@/ui/components.jsx";
+import { Button, Field, Icon, Input, Modal, Select, Textarea, confirmDialog } from "@/ui/components.jsx";
 import { PageHero } from "@/pages/PublicPages.jsx";
 const { useState, useEffect, useRef, useMemo, useCallback, useReducer } = React;
 
@@ -34,7 +34,7 @@ export function deadlineUTC(dl) {
 export function RSVPPage() {
   const { settings } = useStore();
   const [form, setForm] = useState({
-    firstName: "", middleName: "", lastName: "", email: "", phone: "", status: "attending", count: 0,
+    name: "", firstName: "", middleName: "", lastName: "", email: "", phone: "", status: "attending", count: 0,
     guestNames: [], diet: "None", dietNotes: "", song: "", notes: "",
   });
   const [errors, setErrors] = useState({});
@@ -58,6 +58,19 @@ export function RSVPPage() {
 
   const attending = form.status === "attending";
   const strict = settings.strictRsvp === true;
+  // Single-name mode (per-client settings.rsvpSingleName): ONE "Name" box that is
+  // matched against the guest list as a whole, instead of first/middle/last
+  // boxes that had to match exactly. The reply is still STORED under the invited
+  // guest's canonical parts, so the admin table, reconcile, exports and the
+  // duplicate check all keep working untouched.
+  const singleName = settings.rsvpSingleName === true;
+  // Ambiguity picker: several invited guests fit the typed name, so the guest
+  // says which one they are. Resolves the promise submit() is awaiting.
+  const [picker, setPicker] = useState(null); // null | { candidates, resolve }
+  const askWhichGuest = (candidates) => new Promise((resolve) => setPicker({ candidates, resolve }));
+  const closePicker = (choice) => {
+    setPicker((p) => { if (p) p.resolve(choice || null); return null; });
+  };
   const phoneRequired = settings.rsvpRequirePhone === true;
 
   // Strict RSVP: once a first+last name is typed, look up the guest on the list
@@ -69,6 +82,19 @@ export function RSVPPage() {
   const [lookup, setLookup] = useState(null); // null | "checking" | { status, allocation }
   useEffect(() => {
     if (!strict) return;
+    if (singleName) {
+      // Wait for at least two words: one word is "too_vague" server-side, and a
+      // hint on every keystroke of a first name would be noise.
+      if (form.name.trim().split(/\s+/).filter(Boolean).length < 2) { setLookup(null); return; }
+      setLookup("checking");
+      let live = true;
+      const t = setTimeout(() => {
+        guestMatchByName(form.name)
+          .then((res) => { if (live) setLookup(res); })
+          .catch(() => { if (live) setLookup(null); });
+      }, 450);
+      return () => { live = false; clearTimeout(t); };
+    }
     if (!form.firstName.trim() || !form.lastName.trim()) { setLookup(null); return; }
     setLookup("checking");
     let live = true;
@@ -78,7 +104,7 @@ export function RSVPPage() {
         .catch(() => { if (live) setLookup(null); });
     }, 450);
     return () => { live = false; clearTimeout(t); };
-  }, [strict, form.firstName, form.middleName, form.lastName]);
+  }, [strict, singleName, form.name, form.firstName, form.middleName, form.lastName]);
   const alloc = lookup && lookup !== "checking" && lookup.status === "ok" ? lookup.allocation : null;
 
   // Open mode: same live pattern, but against prior replies — tell the guest
@@ -121,8 +147,14 @@ export function RSVPPage() {
 
   function validate() {
     const er = {};
-    if (!form.firstName.trim()) er.firstName = "Please enter your first name.";
-    if (!form.lastName.trim()) er.lastName = "Please enter your last name.";
+    if (singleName) {
+      const words = form.name.trim().split(/\s+/).filter(Boolean);
+      if (!words.length) er.name = "Please enter your name.";
+      else if (words.length < 2) er.name = "Please enter your full name as it appears on your invitation.";
+    } else {
+      if (!form.firstName.trim()) er.firstName = "Please enter your first name.";
+      if (!form.lastName.trim()) er.lastName = "Please enter your last name.";
+    }
     if (!isValidOptionalEmail(form.email)) er.email = "Please enter a valid email, or leave it blank.";
     if (phoneRequired && !form.phone.trim()) er.phone = "Please enter your contact number.";
     if (attending) {
@@ -146,12 +178,12 @@ export function RSVPPage() {
 
   // Show validation errors AND bring the first offending field into view —
   // on a long mobile form the message is otherwise off-screen.
-  const FIELD_IDS = { firstName: "r-first", lastName: "r-last", middleName: "r-middle", email: "r-email", phone: "r-phone", count: "r-count", dietNotes: "r-dietnote", notes: "r-notes" };
+  const FIELD_IDS = { name: "r-name", firstName: "r-first", lastName: "r-last", middleName: "r-middle", email: "r-email", phone: "r-phone", count: "r-count", dietNotes: "r-dietnote", notes: "r-notes" };
   function showErrors(er) {
     setErrors(er);
     // Order matches the form top-to-bottom; phone was missing, so a required
     // contact number never got scrolled to / focused on "Send RSVP".
-    const first = ["firstName", "middleName", "lastName", "email", "phone", "count", "dietNotes", "notes"].find((k) => er[k]);
+    const first = ["name", "firstName", "middleName", "lastName", "email", "phone", "count", "dietNotes", "notes"].find((k) => er[k]);
     const el = first && document.getElementById(FIELD_IDS[first]);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -164,21 +196,83 @@ export function RSVPPage() {
     if (submitting) return;
     const er = validate();
     if (Object.keys(er).length) { showErrors(er); return; }
-    const fullName = [form.firstName, form.middleName, form.lastName].map((s) => s.trim()).filter(Boolean).join(" ");
+    // Resolve the typed name to ONE invited guest first (single-name mode); the
+    // reply is then stored under that guest's canonical parts so everything
+    // downstream — reconcile, the admin table, exports, the duplicate check —
+    // keeps matching on first/middle/last exactly as before.
+    let parts = { firstName: form.firstName, middleName: form.middleName, lastName: form.lastName };
+    let matched = null;
+    if (singleName) {
+      if (strict) {
+        let res;
+        try { res = await guestMatchByName(form.name); }
+        catch (err) {
+          setSubmitting(false);
+          await confirmDialog({ title: "We couldn't check the guest list", message: "Something went wrong looking up your name. Please try again in a moment.", confirmLabel: "OK", okOnly: true, noIcon: true });
+          return;
+        }
+        if (res.status === "too_vague") {
+          setSubmitting(false);
+          showErrors({ name: "Please enter your full name as it appears on your invitation." });
+          return;
+        }
+        if (res.status === "ambiguous") {
+          // Several invited guests fit — let the guest say which one they are.
+          setSubmitting(false);
+          const chosen = await askWhichGuest(res.candidates);
+          if (!chosen) return;                     // dismissed: nothing submitted
+          setSubmitting(true);
+          const picked = await guestPickById(chosen.id).catch(() => ({ status: "not_found" }));
+          if (picked.status !== "ok") {
+            setSubmitting(false);
+            showErrors({ name: "We couldn't confirm that name — please try again." });
+            return;
+          }
+          matched = picked;
+        } else if (res.status === "ok") {
+          matched = res;
+        } else {
+          setSubmitting(false);
+          await confirmDialog({
+            title: "We can't find your name",
+            message: `${form.name.trim()} isn't on the guest list for this event. Please double-check the spelling matches your invitation, or contact the couple.`,
+            confirmLabel: "OK", okOnly: true, noIcon: true,
+          });
+          return;
+        }
+        parts = { firstName: matched.first, middleName: matched.middle, lastName: matched.last };
+      } else {
+        // No guest list to match against: split the typed name so the stored
+        // columns (and the admin table) still have something sensible.
+        const w = form.name.trim().split(/\s+/).filter(Boolean);
+        parts = { firstName: w[0] || "", middleName: w.slice(1, -1).join(" "), lastName: w.length > 1 ? w[w.length - 1] : "" };
+      }
+    }
+    const fullName = [parts.firstName, parts.middleName, parts.lastName].map((s) => (s || "").trim()).filter(Boolean).join(" ");
     const picked = attending ? (parseInt(form.count, 10) || 0) : 0;
     const companions = (form.guestNames || []).slice(0, slots).map((s) => (s || "").trim()).filter(Boolean);
     const plusOne = companions.join(", ");
     // Head count: strict = who they NAMED plus themselves (slots are advisory);
     // open = typed companions + themselves (names optional there).
     const count = attending ? (strict ? companions.length + 1 : picked + 1) : 0;
-    const payload = { ...form, fullName, count, plusOne, companions };
+    const payload = { ...form, ...parts, fullName, count, plusOne, companions };
     setSubmitting(true);
     try {
       // Strict RSVP: only invited guests may respond, capped at their seat
       // allocation. Checked server-side at submit (the live hint is advisory,
       // so editing the name after the lookup can't bypass the gate).
       let gateRes = null;
-      if (strict) {
+      if (strict && singleName) {
+        // Already resolved server-side above; reuse it rather than re-querying
+        // with parts the old exact-match RPC may not find.
+        gateRes = { status: "ok", allocation: matched.allocation, guestStatus: matched.guestStatus };
+        const seats = matched.allocation;
+        if (attending && count > seats) {
+          setSubmitting(false);
+          showErrors({ count: `Your invitation reserves ${seats} ${seats === 1 ? "seat" : "seats"} — please choose up to ${seats}.` });
+          return;
+        }
+      } else if (strict) {
         const res = await guestAllocation(form.firstName, form.middleName, form.lastName);
         gateRes = res;
         if (res.status === "ambiguous") {
@@ -214,7 +308,7 @@ export function RSVPPage() {
       // Duplicate name. Strict mode: verified guests may UPDATE their response
       // (coming or not + companions, via the rsvp_upsert RPC). Open mode stays
       // one-response-per-name — changes go through the couple.
-      if (!forceUpdate && (await rsvpNameTaken(form.firstName, form.middleName, form.lastName))) {
+      if (!forceUpdate && (await rsvpNameTaken(parts.firstName, parts.middleName, parts.lastName))) {
         setSubmitting(false);
         if (!strict) {
           await confirmDialog({
@@ -318,17 +412,24 @@ export function RSVPPage() {
       <section className="block" style={{ paddingTop: 20 }}>
         <div className="container container--narrow">
           <form className="card card--pad-lg" onSubmit={submit} noValidate>
-            <div className="field-row field-row--3">
-              <Field label="First name" required error={errors.firstName} id="r-first">
-                <Input id="r-first" value={form.firstName} onChange={set("firstName")} />
+            {singleName ? (
+              <Field label="Name" required error={errors.name} id="r-name"
+                hint={strict ? "As it appears on your invitation." : undefined}>
+                <Input id="r-name" value={form.name} onChange={set("name")} autoComplete="name" placeholder="Juan Dela Cruz" />
               </Field>
-              <Field label="Middle name" error={errors.middleName} id="r-middle">
-                <Input id="r-middle" value={form.middleName} onChange={set("middleName")} />
-              </Field>
-              <Field label="Last name" required error={errors.lastName} id="r-last">
-                <Input id="r-last" value={form.lastName} onChange={set("lastName")} />
-              </Field>
-            </div>
+            ) : (
+              <div className="field-row field-row--3">
+                <Field label="First name" required error={errors.firstName} id="r-first">
+                  <Input id="r-first" value={form.firstName} onChange={set("firstName")} />
+                </Field>
+                <Field label="Middle name" error={errors.middleName} id="r-middle">
+                  <Input id="r-middle" value={form.middleName} onChange={set("middleName")} />
+                </Field>
+                <Field label="Last name" required error={errors.lastName} id="r-last">
+                  <Input id="r-last" value={form.lastName} onChange={set("lastName")} />
+                </Field>
+              </div>
+            )}
             {strict && lookup && (
               <div style={{ marginTop: -8, marginBottom: 16, fontSize: 14 }} aria-live="polite">
                 {lookup === "checking"
@@ -336,8 +437,12 @@ export function RSVPPage() {
                   : lookup.status === "ok"
                     ? <span style={{ color: "#2e7d32", fontWeight: 600 }}>✓ You're on the guest list — {lookup.allocation} {lookup.allocation === 1 ? "seat" : "seats"} reserved</span>
                     : lookup.status === "ambiguous"
-                      ? <span style={{ color: "var(--danger, #a33)" }}>More than one guest has this name — please add your middle name.</span>
-                      : <span style={{ color: "var(--danger, #a33)" }}>We can't find this name on the guest list — please check the spelling.</span>}
+                      ? <span style={{ color: "var(--muted)" }}>{singleName
+                          ? "More than one guest matches — we'll ask which one you are."
+                          : "More than one guest has this name — please add your middle name."}</span>
+                      : lookup.status === "too_vague"
+                        ? <span style={{ color: "var(--muted)" }}>Please enter your full name.</span>
+                        : <span style={{ color: "var(--danger, #a33)" }}>We can't find this name on the guest list — please check the spelling.</span>}
               </div>
             )}
             {!strict && openTaken && (
@@ -437,6 +542,26 @@ export function RSVPPage() {
           </form>
         </div>
       </section>
+
+      {/* Several invited guests match the typed name — ask which one, instead of
+          the old "add your middle name" dead end. Shows names ONLY; the matcher
+          deliberately withholds seat counts and contact details here. */}
+      <Modal open={!!picker} onClose={() => closePicker(null)} label="Which one are you?">
+        <div style={{ padding: 4 }}>
+          <h3 style={{ margin: "0 0 6px", fontSize: 20 }}>Which one are you?</h3>
+          <p style={{ margin: "0 0 16px", color: "var(--muted)", fontSize: 14, lineHeight: 1.5 }}>
+            More than one guest on the list matches <strong>{form.name.trim()}</strong>. Choose your name so we file your reply correctly.
+          </p>
+          <div style={{ display: "grid", gap: 8 }}>
+            {(picker ? picker.candidates : []).map((c) => (
+              <Button key={c.id} variant="secondary" block onClick={() => closePicker(c)}>{c.name}</Button>
+            ))}
+          </div>
+          <div style={{ marginTop: 14 }}>
+            <Button variant="ghost" block onClick={() => closePicker(null)}>None of these</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

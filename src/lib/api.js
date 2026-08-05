@@ -100,6 +100,55 @@ export async function guestAllocation(first, middle, last) {
     guestStatus: d.guest_status || null,
   };
 }
+// Strict RSVP, SINGLE-NAME mode (settings.rsvpSingleName): match ONE typed name
+// against the guest list via rsvp_guest_match. The whole rule lives server-side
+// (SECURITY DEFINER, strictRsvp-gated) so the browser can't widen it:
+//   ok        -> resolved to exactly one guest; returns that guest's canonical
+//                first/middle/last so the reply is stored under the invited name
+//   ambiguous -> several guests fit; `candidates` is [{id, name}] ONLY (no
+//                allocation/phone/email) for the "which one are you?" dialog
+//   too_vague -> fewer than two words typed; asking would let anyone enumerate
+//                the couple's guest list one first name at a time
+//   not_found -> nobody on the list fits
+async function rsvpMatchApi(payload) {
+  const res = await fetch("/api/rsvp-match", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok && res.status !== 400) throw new Error(`rsvp-match ${res.status}`);
+  return (await res.json().catch(() => ({}))) || {};
+}
+
+export async function guestMatchByName(name) {
+  const clientId = Store.get().clientId;
+  if (!clientId || !(name || "").trim()) return { status: "not_found" };
+  const d = await rsvpMatchApi({ clientId, name });
+  return {
+    status: d.status || "not_found",
+    guestId: d.guest_id || null,
+    first: d.first || "", middle: d.middle || "", last: d.last || "",
+    allocation: d.allocation == null ? null : Number(d.allocation),
+    guestStatus: d.guest_status || null,
+    candidates: Array.isArray(d.candidates) ? d.candidates : [],
+  };
+}
+
+// Resolve the guest the visitor chose in the ambiguity dialog. Same client +
+// strictRsvp scoping as the matcher, so a guessed id resolves to nothing.
+export async function guestPickById(guestId) {
+  const clientId = Store.get().clientId;
+  if (!clientId || !guestId) return { status: "not_found" };
+  const d = await rsvpMatchApi({ clientId, guestId });
+  return {
+    status: d.status || "not_found",
+    guestId: d.guest_id || null,
+    first: d.first || "", middle: d.middle || "", last: d.last || "",
+    allocation: d.allocation == null ? null : Number(d.allocation),
+    guestStatus: d.guest_status || null,
+  };
+}
+
 // Admin edit of a reply's status (owner-update RLS, 0016).
 export async function updateRsvpStatusDb(id, status) {
   await neonAuthedUpdate("rsvps", `id=eq.${id}`, { status });
