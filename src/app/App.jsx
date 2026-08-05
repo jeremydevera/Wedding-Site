@@ -254,7 +254,11 @@ export function Nav({ route }) {
               this site — just surfaced where people actually look. RSVP stays
               primary: it's what guests came for. */}
           <Button className="nav__cta nav__cta--login" variant="ghost" size="sm" onClick={() => go("admin")}>Login</Button>
-          {isDemo && <Button className="nav__cta" variant="ghost" size="sm" onClick={() => { window.location.href = "https://celebrately.us/register"; }}>Register</Button>}
+          {/* No Register button here on the demo (owner request 2026-08-05): the
+              floating Register FAB below is the one entry point, and it beats a
+              nav button — it also shows over the sealed envelope cover, where the
+              nav is display:none. Two of them side by side just crowded a nav that
+              now also carries Login. */}
           <button className="nav__burger" onClick={() => setDrawer(true)} aria-label="Menu">{Icon.menu({})}</button>
         </div>
       </div>
