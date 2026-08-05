@@ -2712,6 +2712,12 @@ html:has(body.env-sealed) { overflow: hidden; overscroll-behavior: none; }
    INTO the wax seal on desktop (shared top:33% was tuned for the old serif caps
    plus the since-removed sub line). */
 [data-theme="envelope2"] .eg-sealed .inv-letter-from { top: 27%; }
+/* Desktop sits LOWER (owner request 2026-08-05); mobile keeps 27% — confirmed
+   good there. Headroom is small: at 1440x900 the descenders are only 27px above
+   the wax seal, so every 1% down costs ~9px of that gap. */
+@media (min-width: 861px) {
+  [data-theme="envelope2"] .eg-sealed .inv-letter-from { top: 28.6%; }
+}
 [data-theme="envelope2"] .eg-sealed .inv-lf-names {
   font-family: "Mrs Saint Delafield", "Great Vibes", cursive;
   font-variant: normal;
