@@ -6,7 +6,17 @@
 import { headsOf } from "./rsvp.js";
 
 export function normName(s) {
-  return (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  // MUST stay byte-identical to SQL public.norm_name — reconcileGuests here and
+  // the RSVP gate there have to agree, or a reply matches on the site and shows
+  // as unmatched in the admin (or vice versa).
+  // NFD + stripping combining marks folds accents (ñ->n, é->e) the way the SQL
+  // translate() list does. The old version DELETED accented letters, so "Peña"
+  // normalised to "pea" and could never match a guest typing "Pena".
+  return (s || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
 }
 
 // Middle names match if equal, if one side is an initial of the other, or if

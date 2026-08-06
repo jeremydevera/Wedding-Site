@@ -63,7 +63,7 @@ export function RSVPPage() {
   // boxes that had to match exactly. The reply is still STORED under the invited
   // guest's canonical parts, so the admin table, reconcile, exports and the
   // duplicate check all keep working untouched.
-  const singleName = settings.rsvpSingleName === true;
+  const singleName = settings.rsvpSingleName !== false; // default ON for every client (owner 2026-08-07); set false to opt a client out
   // Ambiguity picker: several invited guests fit the typed name, so the guest
   // says which one they are. Resolves the promise submit() is awaiting.
   const [picker, setPicker] = useState(null); // null | { candidates, resolve }

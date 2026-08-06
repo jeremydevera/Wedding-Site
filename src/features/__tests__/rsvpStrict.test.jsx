@@ -10,10 +10,12 @@ import { isRsvpClosed } from "@/lib/rsvp.js";
 describe("RSVPPage under Strict RSVP", () => {
   beforeEach(() => cleanup());
 
+  // Single-name mode is the DEFAULT for every client (owner 2026-08-07): one
+  // "Name" box instead of first/middle/last.
   it("renders the full form when strictRsvp is ON", () => {
     Store.updateSettings({ strictRsvp: true, rsvpDeadlineDate: "" });
     const { container } = render(<RSVPPage />);
-    expect(container.querySelector("#r-first")).toBeTruthy();
+    expect(container.querySelector("#r-name")).toBeTruthy();
     expect(container.querySelector("#r-count")).toBeTruthy();
     expect(container.textContent).toContain("Send RSVP");
   });
@@ -21,8 +23,26 @@ describe("RSVPPage under Strict RSVP", () => {
   it("renders the full form when strictRsvp is OFF", () => {
     Store.updateSettings({ strictRsvp: false, rsvpDeadlineDate: "" });
     const { container } = render(<RSVPPage />);
-    expect(container.querySelector("#r-first")).toBeTruthy();
+    expect(container.querySelector("#r-name")).toBeTruthy();
     expect(container.textContent).toContain("Send RSVP");
+  });
+
+  it("one Name box by default, and no leftover first/middle/last inputs", () => {
+    Store.updateSettings({ strictRsvp: true, rsvpDeadlineDate: "" });
+    const { container } = render(<RSVPPage />);
+    expect(container.querySelector("#r-name")).toBeTruthy();
+    expect(container.querySelector("#r-first")).toBeNull();
+    expect(container.querySelector("#r-middle")).toBeNull();
+    expect(container.querySelector("#r-last")).toBeNull();
+  });
+
+  it("a client can opt OUT and keep the three name fields", () => {
+    Store.updateSettings({ strictRsvp: true, rsvpSingleName: false, rsvpDeadlineDate: "" });
+    const { container } = render(<RSVPPage />);
+    expect(container.querySelector("#r-name")).toBeNull();
+    expect(container.querySelector("#r-first")).toBeTruthy();
+    expect(container.querySelector("#r-last")).toBeTruthy();
+    Store.updateSettings({ rsvpSingleName: undefined });
   });
 
   it("locks the count picker until the name is verified (strict on)", () => {
