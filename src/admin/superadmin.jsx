@@ -34,7 +34,7 @@ import { fmtDate } from "@/admin/core.jsx";
 import { AdminToggle } from "@/admin/manage.jsx";
 import { fileNameFromKey } from "@/lib/mediaLibrary.js";
 import { mediaUrl } from "@/lib/media.js";
-const { useState, useEffect, useRef } = React;
+const { useState, useEffect, useRef, useCallback } = React;
 
 const MODULES = ["story", "details", "schedule", "venue", "gallery", "guestbook", "quiz", "rsvp"];
 
@@ -374,6 +374,93 @@ export function SupportAdmin() {
   );
 }
 
+// Email thread with a client: what the platform has sent, plus (once inbound
+// email is wired) their replies. Sending goes through /api/client-email, which
+// is superadmin-gated server-side — this component never sees the Resend key.
+function ClientEmailThread({ client, onClose }) {
+  const [messages, setMessages] = useState(null); // null = loading
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      const token = await adminBridgeToken();
+      const res = await fetch(`/api/client-email?clientId=${encodeURIComponent(client.id)}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const j = await res.json().catch(() => ({}));
+      setMessages(Array.isArray(j.messages) ? j.messages : []);
+    } catch { setMessages([]); }
+  }, [client.id]);
+  useEffect(() => { load(); }, [load]);
+
+  const send = async () => {
+    if (busy || !body.trim()) return;
+    setBusy(true); setErr("");
+    try {
+      const token = await adminBridgeToken();
+      const res = await fetch("/api/client-email", {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ clientId: client.id, subject, body }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) { setErr(j.error || `Send failed (${res.status})`); return; }
+      setBody(""); setSubject("");
+      toast("Email sent", "success");
+      await load();
+    } catch (e) { setErr(e.message || "Send failed"); }
+    finally { setBusy(false); }
+  };
+
+  const when = (t) => { const d = new Date(t); return isNaN(d) ? "" : d.toLocaleString(); };
+  return (
+    <Modal open onClose={onClose} wide label="Client email">
+      <div style={{ display: "flex", flexDirection: "column", gap: 14, maxHeight: "78vh" }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: 20 }}>Email {client.subdomain}</h3>
+          <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>{client.owner_email}</div>
+        </div>
+
+        <div style={{ flex: "1 1 auto", overflowY: "auto", display: "grid", gap: 10, padding: "2px 2px 6px" }}>
+          {messages === null && <div style={{ color: "var(--muted)", fontSize: 14 }}>Loading conversation…</div>}
+          {messages && messages.length === 0 && (
+            <div style={{ color: "var(--muted)", fontSize: 14 }}>No messages yet — send the first one below.</div>
+          )}
+          {(messages || []).map((m) => (
+            <div key={m.id} style={{
+              justifySelf: m.direction === "out" ? "end" : "start",
+              maxWidth: "82%", background: m.direction === "out" ? "#eef4ff" : "#f4f4f2",
+              border: "1px solid " + (m.direction === "out" ? "#d8e4fb" : "#e6e4df"),
+              borderRadius: 12, padding: "10px 12px",
+            }}>
+              {m.subject && <div style={{ fontWeight: 700, fontSize: 13.5, marginBottom: 3 }}>{m.subject}</div>}
+              <div style={{ fontSize: 14, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{m.body}</div>
+              <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>
+                {m.direction === "out" ? "Sent" : "Received"} · {when(m.created_at)}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: "grid", gap: 8, borderTop: "1px solid #eee", paddingTop: 12 }}>
+          <Input placeholder="Subject (optional)" value={subject} onChange={(e) => setSubject(e.target.value)} />
+          <Textarea rows={4} placeholder={`Write to ${client.owner_email}…`} value={body} onChange={(e) => setBody(e.target.value)} />
+          {err && <div style={{ color: "#c0392b", fontSize: 13 }}>{err}</div>}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <span style={{ color: "var(--muted)", fontSize: 12 }}>
+              Replies aren’t received yet — the domain has no inbound mail set up.
+            </span>
+            <Button variant="primary" disabled={busy || !body.trim()} onClick={send}>{busy ? "Sending…" : "Send email"}</Button>
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 export function ClientsAdmin() {
   // list | add | edit | requests | approved | rejected | offline. The console
   // bell deep-links to Requests via a one-shot sessionStorage flag.
@@ -405,6 +492,7 @@ export function ClientsAdmin() {
   const [requests, setRequests] = useState([]);     // prospect intake (/apply) awaiting approval
   const [reqInfo, setReqInfo] = useState(null);      // request shown in the details modal (eye)
   const [info, setInfo] = useState(null);            // client shown in the info modal (eye icon)
+  const [mailFor, setMailFor] = useState(null);      // client whose email thread is open
   const [reqEdit, setReqEdit] = useState(null);      // request being edited in a modal (pencil)
   const [reqEditTab, setReqEditTab] = useState("design"); // Edit-request modal: design (wizard) | access
   const [reqAccess, setReqAccess] = useState(null);  // request's access/feature settings for the Access tab
@@ -545,6 +633,12 @@ export function ClientsAdmin() {
   // When the site was created (clients.created_at). Same shared-cell treatment as
   // the other row columns so every Clients sub-tab renders it identically. Full
   // timestamp on hover; request rows that have no client yet show "—".
+  // Email the couple from the row, and read the conversation so far. Disabled
+  // when the client has no login email — there is nowhere to send it.
+  const mailCell = (cl) => (
+    <button className="icon-btn" title={cl && cl.owner_email ? `Email ${cl.owner_email}` : "No login email on file"}
+      disabled={!cl || !cl.owner_email} onClick={() => setMailFor(cl)}>{Icon.mail({})}</button>
+  );
   const createdCell = (cl) => {
     const raw = cl && cl.created_at;
     const d = raw ? new Date(raw) : null;
@@ -1107,6 +1201,7 @@ export function ClientsAdmin() {
                       <div className="row-actions">
                         <Button variant="primary" size="sm" disabled={busy} onClick={() => toggleActive(c)}>Enable</Button>
                         <a className="icon-btn" href={`/admin?client=${c.subdomain}`} title="Open admin">{Icon.grid({})}</a>
+                        {mailCell(c)}
                         <button className="icon-btn" onClick={() => setInfo(c)} title="Client info">{Icon.eye({})}</button>
                         <button className="icon-btn" onClick={() => openEdit(c)} title="Edit">{Icon.edit({})}</button>
                         <button className="icon-btn icon-btn--danger" onClick={() => deleteClient(c)} title="Delete">{Icon.trash({})}</button>
@@ -1167,6 +1262,7 @@ export function ClientsAdmin() {
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 3.5v8" /><path d="M6.6 6.8a8 8 0 1 0 10.8 0" /></svg>
                           </button>
                           <a className="icon-btn" href={`/admin?client=${c.subdomain}`} title="Open admin">{Icon.grid({})}</a>
+                          {mailCell(c)}
                           <button className="icon-btn" onClick={() => setInfo(c)} title="Client info">{Icon.eye({})}</button>
                           <button className="icon-btn" onClick={() => openEdit(c)} title="Edit">{Icon.edit({})}</button>
                           <button className="icon-btn icon-btn--danger" onClick={() => deleteClient(c)} title="Delete">{Icon.trash({})}</button>
@@ -1370,6 +1466,8 @@ export function ClientsAdmin() {
 
       {/* Eye icon → read-only snapshot of the client (links + quick Edit). */}
       <Modal open={!!info} onClose={() => setInfo(null)} label="Client info">
+        {mailFor && <ClientEmailThread client={mailFor} onClose={() => setMailFor(null)} />}
+
         {info && (() => {
           const c = info;
           const modsOn = MODULES.filter((m) => c.content?.modules?.[m] !== false).map(moduleLabel);
